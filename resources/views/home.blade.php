@@ -1,12 +1,16 @@
 @extends('layouts.public')
 
 @section('content')
+<x-magazine-ticker />
+
 <section class="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-emerald-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 lg:pt-28 lg:pb-32">
-        <div class="max-w-4xl">
+        <div class="max-w-5xl">
             <p class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-sm font-medium mb-6">{{ __('talenma.home.badge') }}</p>
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-                {!! __('talenma.home.hero_title', ['highlight' => '<span class="text-indigo-600">'.__('talenma.home.hero_highlight').'</span>']) !!}
+                {!! __('talenma.home.hero_title', [
+                    'talents' => '<span class="text-indigo-600">'.__('talenma.home.hero_talents').'</span>',
+                ]) !!}
             </h1>
             <p class="mt-6 text-lg text-gray-600 max-w-2xl leading-relaxed">{{ __('talenma.home.hero_subtitle') }}</p>
             <div class="mt-10 flex flex-col sm:flex-row gap-4">

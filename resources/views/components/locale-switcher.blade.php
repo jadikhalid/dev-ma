@@ -2,7 +2,6 @@
     $locales = [
         'fr' => ['label' => 'FR', 'name' => 'Français'],
         'en' => ['label' => 'EN', 'name' => 'English'],
-        'ar' => ['label' => 'AR', 'name' => 'العربية'],
     ];
     $current = app()->getLocale();
 @endphp

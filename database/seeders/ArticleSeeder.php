@@ -23,11 +23,6 @@ class ArticleSeeder extends Seeder
                         'excerpt' => 'Morocco has over 30,000 qualified tech talents. Discover why French companies are turning to them.',
                         'content' => '<p>Morocco has established itself as a major tech hub in North Africa.</p>',
                     ],
-                    'ar' => [
-                        'title' => 'مجموعة المواهب التقنية في المغرب: نظرة 2026',
-                        'excerpt' => 'يضم المغرب أكثر من 30,000 موهبة تقنية مؤهلة. اكتشف لماذا تتجه الشركات الفرنسية إليه.',
-                        'content' => '<p>أثبت المغرب نفسه كمركز تقني رئيسي في شمال أفريقيا.</p>',
-                    ],
                 ],
             ],
             [
@@ -42,11 +37,6 @@ class ArticleSeeder extends Seeder
                         'title' => 'France-Morocco remote: best practices',
                         'excerpt' => 'Time zones, communication, collaborative tools: everything you need to know.',
                         'content' => '<p>The France-Morocco time difference is an asset for collaboration.</p>',
-                    ],
-                    'ar' => [
-                        'title' => 'العمل عن بُعد فرنسا-المغرب: أفضل الممارسات',
-                        'excerpt' => 'المناطق الزمنية والتواصل وأدوات التعاون: كل ما تحتاج معرفته.',
-                        'content' => '<p>فرق التوقيت بين فرنسا والمغرب ميزة للتعاون.</p>',
                     ],
                 ],
             ],
@@ -63,11 +53,6 @@ class ArticleSeeder extends Seeder
                         'excerpt' => 'Quality, cost, cultural proximity: reasons that convince French IT departments.',
                         'content' => '<p>French companies choose Morocco for the quality of profiles.</p>',
                     ],
-                    'ar' => [
-                        'title' => 'لماذا الاستعانة بمصادر خارجية في المغرب؟',
-                        'excerpt' => 'الجودة والتكلفة والقرب الثقافي: أسباب تقنع إدارات تقنية المعلومات الفرنسية.',
-                        'content' => '<p>تختار الشركات الفرنسية المغرب لجودة الملفات.</p>',
-                    ],
                 ],
             ],
             [
@@ -82,11 +67,6 @@ class ArticleSeeder extends Seeder
                         'title' => 'Setting up in Morocco: a guide for French companies',
                         'excerpt' => 'Legal, tax, HR: key steps to establish your tech business.',
                         'content' => '<p>Beyond recruitment, many companies are establishing themselves in Morocco.</p>',
-                    ],
-                    'ar' => [
-                        'title' => 'التأسيس في المغرب: دليل الشركة الفرنسية',
-                        'excerpt' => 'قانوني ومالي وموارد بشرية: الخطوات الرئيسية لتأسيس نشاطك التقني.',
-                        'content' => '<p>بعيداً عن التوظيف، تؤسس العديد من الشركات نفسها في المغرب.</p>',
                     ],
                 ],
             ],

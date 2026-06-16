@@ -12,6 +12,6 @@
 @endphp
 
 <a {{ $attributes->merge(['href' => '/', 'class' => 'flex items-center gap-2']) }}>
-    <span class="flex items-center justify-center {{ $s['box'] }} rounded-lg bg-indigo-600 text-white font-bold shrink-0">T</span>
-    <span class="font-semibold {{ $s['text'] }} tracking-tight {{ $textClass }}">Talen<span class="{{ $accentClass }}">MA</span></span>
+    <span class="flex items-center justify-center {{ $s['box'] }} rounded-lg bg-indigo-600 text-white font-bold shrink-0">MA</span>
+    <span class="font-semibold {{ $s['text'] }} tracking-tight {{ $textClass }}">Talents du <span class="{{ $accentClass }}">Maroc</span></span>
 </a>

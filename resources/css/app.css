@@ -5,3 +5,20 @@
 [dir="rtl"] .rtl-flip {
     transform: scaleX(-1);
 }
+
+@keyframes magazine-marquee {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.magazine-marquee-track {
+    animation: magazine-marquee 45s linear infinite;
+}
+
+.magazine-marquee-track:hover {
+    animation-play-state: paused;
+}

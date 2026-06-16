@@ -19,7 +19,6 @@ class ServiceSeeder extends Seeder
                 'sort_order' => 1,
                 'translations' => [
                     'en' => ['title' => 'Legal advisory', 'summary' => 'Company formation, contracts, compliance and regulatory support for setting up in Morocco.', 'content' => '<p>We support French and European companies with legal procedures in Morocco.</p>'],
-                    'ar' => ['title' => 'استشارات قانونية', 'summary' => 'تأسيس الشركات والعقود والامتثال والدعم التنظيمي للتأسيس في المغرب.', 'content' => '<p>نرافق الشركات الفرنسية والأوروبية في إجراءاتها القانونية في المغرب.</p>'],
                 ],
             ],
             [
@@ -31,7 +30,6 @@ class ServiceSeeder extends Seeder
                 'sort_order' => 2,
                 'translations' => [
                     'en' => ['title' => 'Financial advisory & CFO', 'summary' => 'Tax, accounting, treasury and financial management for your Moroccan operations.', 'content' => '<p>Optimize your financial structure in Morocco with tailored support.</p>'],
-                    'ar' => ['title' => 'استشارات مالية ومدير مالي', 'summary' => 'الضرائب والمحاسبة والخزينة والإدارة المالية لنشاطك في المغرب.', 'content' => '<p>حسّن هيكلك المالي في المغرب بمرافقة مخصصة.</p>'],
                 ],
             ],
             [
@@ -43,7 +41,6 @@ class ServiceSeeder extends Seeder
                 'sort_order' => 3,
                 'translations' => [
                     'en' => ['title' => 'Public relations', 'summary' => 'Local visibility, press relations and communication to anchor your brand in Morocco.', 'content' => '<p>Build your reputation in Morocco with an adapted PR strategy.</p>'],
-                    'ar' => ['title' => 'العلاقات العامة', 'summary' => 'الظهور المحلي والعلاقات الإعلامية والتواصل لترسيخ علامتك في المغرب.', 'content' => '<p>طور سمعتك في المغرب باستراتيجية علاقات عامة مناسبة.</p>'],
                 ],
             ],
             [
@@ -55,7 +52,6 @@ class ServiceSeeder extends Seeder
                 'sort_order' => 4,
                 'translations' => [
                     'en' => ['title' => 'Human resources', 'summary' => 'Local recruitment, team management and Moroccan labour compliance.', 'content' => '<p>Build and manage your teams in Morocco.</p>'],
-                    'ar' => ['title' => 'الموارد البشرية', 'summary' => 'التوظيف المحلي وإدارة الفرق والامتثال الاجتماعي المغربي.', 'content' => '<p>كوّن وأدر فرقك في المغرب.</p>'],
                 ],
             ],
             [
@@ -67,7 +63,6 @@ class ServiceSeeder extends Seeder
                 'sort_order' => 5,
                 'translations' => [
                     'en' => ['title' => 'Setup support', 'summary' => 'Office, coworking, local network and connection to the Moroccan tech ecosystem.', 'content' => '<p>From finding premises to integrating into tech hubs.</p>'],
-                    'ar' => ['title' => 'مرافقة التأسيس', 'summary' => 'المكتب والعمل المشترك والشبكة المحلية والربط بالمنظومة التقنية المغربية.', 'content' => '<p>من البحث عن مقرات إلى الاندماج في مراكز التكنولوجيا.</p>'],
                 ],
             ],
         ];
