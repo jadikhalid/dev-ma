@@ -7,7 +7,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8 lg:pt-16 lg:pb-10">
         <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
             {{-- Colonne texte + recherche --}}
-            <div class="order-2 lg:order-1">
+            <div>
                 <p class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs sm:text-sm font-medium mb-4">
                     {{ __('talenma.home.badge') }}
                 </p>
@@ -80,18 +80,30 @@
                     <p class="mt-3 text-xs sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
                 @endif
 
-                <div class="mt-5 flex flex-col sm:flex-row gap-2.5">
-                    <a href="{{ route('register') }}" class="inline-flex justify-center px-5 py-2.5 bg-white border border-gray-200 text-gray-800 text-sm font-semibold rounded-xl hover:border-indigo-300 hover:text-indigo-700 transition">
-                        {{ __('talenma.home.cta_talent') }}
-                    </a>
-                    <a href="{{ route('register') }}" class="inline-flex justify-center px-5 py-2.5 text-indigo-600 text-sm font-semibold hover:text-indigo-800 transition">
-                        {{ __('talenma.home.cta_company') }} →
-                    </a>
-                </div>
+                @guest
+                    <div class="mt-6 rounded-xl border border-gray-100 bg-gray-50/70 p-4 sm:p-5">
+                        <p class="text-sm sm:text-base font-semibold text-gray-900">{{ __('talenma.home.cta_new_visitor_question') }}</p>
+                        <p class="mt-1.5 text-sm text-gray-600 leading-relaxed">{{ __('talenma.home.cta_new_visitor_hint') }}</p>
+                        <div class="mt-4 flex flex-col sm:flex-row gap-2.5">
+                            <a href="{{ route('register', ['role' => 'dev']) }}" class="inline-flex justify-center px-5 py-2.5 bg-white border border-gray-200 text-gray-800 text-sm font-semibold rounded-xl hover:border-indigo-300 hover:text-indigo-700 transition">
+                                {{ __('talenma.home.cta_talent') }}
+                            </a>
+                            <a href="{{ route('register', ['role' => 'company']) }}" class="inline-flex justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
+                                {{ __('talenma.home.cta_company') }}
+                            </a>
+                        </div>
+                    </div>
+                @else
+                    <div class="mt-5">
+                        <a href="{{ route('dashboard') }}" class="inline-flex justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
+                            {{ __('talenma.nav.my_space') }} →
+                        </a>
+                    </div>
+                @endguest
             </div>
 
-            {{-- Visuel droit — mosaïque bento --}}
-            <div class="order-1 lg:order-2">
+            {{-- Visuel droit — mosaïque bento (masqué sur petits écrans) --}}
+            <div class="hidden lg:flex justify-end lg:order-2">
                 <x-hero-freelancers-visual :talents-count="$talentsCount" />
             </div>
         </div>

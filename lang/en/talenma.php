@@ -48,6 +48,8 @@ return [
         'hero_available' => 'Available',
         'cta_talent' => 'I\'m a talent',
         'cta_company' => 'I\'m hiring',
+        'cta_new_visitor_question' => 'Not registered yet?',
+        'cta_new_visitor_hint' => 'Choose your profile to join the platform in just a few minutes.',
         'talent_count' => ':count active talents on the platform',
         'modes_title' => 'Three ways to collaborate',
         'modes_subtitle' => 'Choose the approach that fits your recruitment or visibility needs.',
@@ -99,6 +101,7 @@ return [
         'hr' => 'Human resources',
         'copyright' => 'On — Moroccan talents',
         'tech' => 'Morocco → France → Europe',
+        'follow_us' => 'Follow us',
     ],
     'auth' => [
         'login_title' => 'Log in',

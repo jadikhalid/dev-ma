@@ -29,13 +29,13 @@ return [
             'profile_index' => 2,
         ],
         [
-            'size' => 'landscape',
-            'photo' => 'images/hero/equipe.jpg',
+            'size' => 'square',
+            'photo' => 'images/hero/omar.jpg',
             'profile_index' => 3,
         ],
         [
             'size' => 'square',
-            'photo' => 'images/hero/omar.jpg',
+            'photo' => 'images/hero/equipe.jpg',
             'profile_index' => 3,
         ],
     ],

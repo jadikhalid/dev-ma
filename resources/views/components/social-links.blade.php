@@ -1,4 +1,4 @@
-@props(['size' => 'md'])
+@props(['size' => 'md', 'variant' => 'light'])
 
 @php
     $sizes = [
@@ -6,6 +6,10 @@
         'md' => 'w-5 h-5',
     ];
     $iconSize = $sizes[$size] ?? $sizes['md'];
+
+    $linkClass = $variant === 'dark'
+        ? 'border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 hover:bg-gray-800/60'
+        : 'border-gray-300 text-gray-500 hover:text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50/50';
 
     $networks = [
         'x' => [
@@ -41,7 +45,7 @@
            target="_blank"
            rel="noopener noreferrer"
            aria-label="{{ $network['label'] }}"
-           class="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 text-gray-500 hover:text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50/50 transition-all duration-300 ease-in-out">
+           class="flex items-center justify-center w-9 h-9 rounded-full border {{ $linkClass }} transition-all duration-300 ease-in-out">
             <svg class="{{ $iconSize }}" viewBox="{{ $network['viewBox'] }}" fill="currentColor" aria-hidden="true">
                 <path d="{{ $network['path'] }}"/>
             </svg>

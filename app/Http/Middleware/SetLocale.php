@@ -12,7 +12,8 @@ class SetLocale
 
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = session('locale', config('app.locale'));
+        // Première visite (sans choix explicite via le sélecteur) : français par défaut.
+        $locale = session('locale', 'fr');
 
         if (! in_array($locale, self::SUPPORTED, true)) {
             $locale = 'fr';

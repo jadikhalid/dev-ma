@@ -25,14 +25,14 @@
             <x-input-label :value="__('talenma.auth.register_as')" />
             <div class="mt-3 grid gap-3">
                 <label class="flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
-                    <input type="radio" name="role" value="dev" class="mt-1" {{ old('role', 'dev') === 'dev' ? 'checked' : '' }}>
+                    <input type="radio" name="role" value="dev" class="mt-1" {{ old('role', request('role', 'dev')) === 'dev' ? 'checked' : '' }}>
                     <div>
                         <span class="font-semibold text-sm">{{ __('talenma.auth.role_talent') }}</span>
                         <p class="text-xs text-gray-500">{{ __('talenma.auth.role_talent_desc') }}</p>
                     </div>
                 </label>
                 <label class="flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50">
-                    <input type="radio" name="role" value="company" class="mt-1" {{ old('role') === 'company' ? 'checked' : '' }}>
+                    <input type="radio" name="role" value="company" class="mt-1" {{ old('role', request('role')) === 'company' ? 'checked' : '' }}>
                     <div>
                         <span class="font-semibold text-sm">{{ __('talenma.auth.role_company') }}</span>
                         <p class="text-xs text-gray-500">{{ __('talenma.auth.role_company_desc') }}</p>

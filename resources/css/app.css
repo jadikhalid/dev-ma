@@ -27,11 +27,11 @@
     box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
-/* ── Hero mosaic (contenu, centré, sans débordement) ── */
+/* ── Hero mosaic (largeur étendue, hauteur verrouillée) ── */
 .hero-visual {
     position: relative;
     width: 100%;
-    max-width: 16rem;
+    max-width: 19.52rem;
     margin-left: auto;
     margin-right: auto;
     overflow: hidden;
@@ -40,13 +40,13 @@
 
 @media (min-width: 640px) {
     .hero-visual {
-        max-width: 18rem;
+        max-width: 21.96rem;
     }
 }
 
 @media (min-width: 1024px) {
     .hero-visual {
-        max-width: 19rem;
+        max-width: 32rem;
         margin-left: auto;
         margin-right: 0;
     }
@@ -112,6 +112,14 @@
     }
 }
 
+@media (min-width: 1024px) {
+    .hero-mosaic {
+        grid-template-columns: 1.15fr 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        height: 21.25rem;
+    }
+}
+
 .hero-mosaic__cell {
     position: relative;
     min-width: 0;
@@ -142,14 +150,40 @@
     grid-row: 2;
 }
 
-.hero-mosaic__cell--landscape {
-    grid-column: 1;
+.hero-mosaic__cell--square:nth-of-type(4) {
     grid-row: 3;
-    aspect-ratio: 11 / 9;
 }
 
 .hero-mosaic__cell--square:nth-of-type(5) {
     grid-row: 3;
+}
+
+@media (min-width: 1024px) {
+    .hero-mosaic__cell--square {
+        grid-column: auto;
+        aspect-ratio: auto;
+        min-height: 0;
+    }
+
+    .hero-mosaic__cell--square:nth-of-type(2) {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .hero-mosaic__cell--square:nth-of-type(3) {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .hero-mosaic__cell--square:nth-of-type(4) {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .hero-mosaic__cell--square:nth-of-type(5) {
+        grid-column: 3;
+        grid-row: 2;
+    }
 }
 
 .hero-mosaic__img {
@@ -232,6 +266,12 @@
     font-size: 0.5625rem;
     font-weight: 500;
     color: #6b7280;
+}
+
+@media (min-width: 1024px) {
+    .hero-visual__legend {
+        justify-content: flex-end;
+    }
 }
 
 .hero-visual__pill {

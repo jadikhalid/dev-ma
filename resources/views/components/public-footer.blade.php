@@ -4,6 +4,10 @@
             <div class="md:col-span-2">
                 <x-brand-logo href="{{ route('home') }}" light size="sm" class="[&_span:first-child]:bg-indigo-500" />
                 <p class="mt-4 text-sm text-gray-400 max-w-md">{{ __('talenma.footer.tagline') }}</p>
+                <div class="mt-5">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">{{ __('talenma.footer.follow_us') }}</p>
+                    <x-social-links variant="dark" />
+                </div>
             </div>
             <div>
                 <h4 class="font-semibold text-white text-sm mb-3">{{ __('talenma.footer.platform') }}</h4>
