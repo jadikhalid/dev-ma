@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
             ServiceSeeder::class,
             ArticleSeeder::class,
             ProfessionSeeder::class,
+            MagazineBannerSeeder::class,
+            AdminUserSeeder::class,
         ]);
 
         User::factory(10)->create([

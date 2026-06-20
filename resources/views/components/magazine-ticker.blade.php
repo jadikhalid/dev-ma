@@ -1,7 +1,10 @@
 @php
-    $articles = array_slice(__('talenma.home.magazine_ticker_articles'), 0, 7);
+    use App\Models\MagazineBannerItem;
+
+    $bannerItems = MagazineBannerItem::forBanner();
 @endphp
 
+@if ($bannerItems->isNotEmpty())
 <div
     x-data="magazineTicker"
     x-init="init()"
@@ -31,26 +34,32 @@
                 <div class="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
 
                 <div class="magazine-marquee-track flex w-max items-center py-3">
-                        @foreach ([1, 2] as $loopPass)
-                            @foreach ($articles as $article)
-                                <a href="{{ route('magazine.index') }}"
-                                   class="group flex items-center gap-3 shrink-0 px-6 sm:px-8 border-r border-gray-100 last:border-r-0 hover:bg-indigo-50/40 transition-colors duration-300">
-                                    <div class="flex flex-col justify-center min-w-[12rem] sm:min-w-[16rem] max-w-xs sm:max-w-sm">
-                                        <span class="text-[10px] sm:text-[11px] text-gray-400 tracking-wide">{{ $article['date'] ?? '' }}</span>
-                                        <span class="mt-0.5 text-sm sm:text-base font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors duration-300 line-clamp-1">
-                                            {{ $article['title'] }}
-                                        </span>
-                                        <span class="mt-0.5 text-xs sm:text-sm text-gray-500 line-clamp-1">
-                                            {{ $article['subtitle'] }}
-                                        </span>
-                                    </div>
-                                    <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-lg shrink-0 overflow-hidden ring-1 ring-gray-200/80 shadow-sm bg-gradient-to-br {{ $article['thumb'] ?? 'from-indigo-400 to-indigo-600' }}"
-                                         aria-hidden="true"></div>
-                                </a>
-                            @endforeach
+                    @foreach ([1, 2] as $loopPass)
+                        @foreach ($bannerItems as $item)
+                            <a href="{{ $item->url }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="group flex items-center gap-3 shrink-0 px-6 sm:px-8 border-r border-gray-100 last:border-r-0 hover:bg-indigo-50/40 transition-colors duration-300">
+                                <div class="flex flex-col justify-center min-w-[12rem] sm:min-w-[16rem] max-w-xs sm:max-w-sm">
+                                    <span class="text-[10px] sm:text-[11px] text-gray-400 tracking-wide">{{ $item->created_at->translatedFormat('d M Y') }}</span>
+                                    <span class="mt-0.5 text-sm sm:text-base font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors duration-300 line-clamp-1">
+                                        {{ $item->title }}
+                                    </span>
+                                    <span class="mt-0.5 text-xs sm:text-sm text-gray-500 line-clamp-1">
+                                        {{ $item->subtitle }}
+                                    </span>
+                                </div>
+                                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-lg shrink-0 overflow-hidden ring-1 ring-gray-200/80 shadow-sm bg-gradient-to-br from-indigo-400 to-indigo-600">
+                                    @if ($item->thumbnailUrl())
+                                        <img src="{{ $item->thumbnailUrl() }}" alt="" class="w-full h-full object-cover" loading="lazy">
+                                    @endif
+                                </div>
+                            </a>
                         @endforeach
+                    @endforeach
                 </div>
             </div>
         </div>
     </section>
 </div>
+@endif

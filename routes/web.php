@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\MagazineBannerController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanySearchController;
 use App\Http\Controllers\DashboardController;
@@ -33,6 +34,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/magazine-banner', [MagazineBannerController::class, 'index'])->name('magazine-banner.index');
+        Route::post('/magazine-banner', [MagazineBannerController::class, 'store'])->name('magazine-banner.store');
+        Route::delete('/magazine-banner/{magazineBannerItem}', [MagazineBannerController::class, 'destroy'])->name('magazine-banner.destroy');
+    });
 
     Route::get('/talent/profile', [ProfileDetailsController::class, 'edit'])->name('profile.details.edit');
     Route::post('/talent/profile', [ProfileDetailsController::class, 'update'])->name('profile.details.update');

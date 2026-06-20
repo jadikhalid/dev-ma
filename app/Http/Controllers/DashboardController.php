@@ -10,6 +10,10 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.magazine-banner.index');
+        }
+
         if ($user->isCompany()) {
             $user->load('companyProfile');
             $recentRequests = $user->recruitmentRequests()->with('talent.profile')->latest()->take(5)->get();

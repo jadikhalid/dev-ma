@@ -4,8 +4,10 @@
             <div class="flex items-center gap-4">
                 <x-brand-logo :href="route('dashboard')" size="sm" />
                 <div class="hidden sm:flex items-center gap-1">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">{{ __('talenma.nav.dashboard') }}</x-nav-link>
-                    @if (Auth::user()->isTalent())
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard') || request()->routeIs('admin.*')">{{ __('talenma.nav.dashboard') }}</x-nav-link>
+                    @if (Auth::user()->isAdmin())
+                        <x-nav-link :href="route('admin.magazine-banner.index')" :active="request()->routeIs('admin.magazine-banner.*')">{{ __('talenma.nav.banner_magazine') }}</x-nav-link>
+                    @elseif (Auth::user()->isTalent())
                         <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')">{{ __('talenma.nav.my_profile') }}</x-nav-link>
                     @elseif (Auth::user()->isCompany())
                         <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.*')">{{ __('talenma.nav.talents') }}</x-nav-link>
@@ -17,8 +19,14 @@
             </div>
             <div class="hidden sm:flex items-center gap-3">
                 <x-locale-switcher />
-                <span class="text-xs px-2.5 py-1 rounded-full font-medium {{ Auth::user()->isTalent() ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700' }}">
-                    {{ Auth::user()->isTalent() ? __('talenma.roles.talent') : __('talenma.roles.company') }}
+                <span class="text-xs px-2.5 py-1 rounded-full font-medium {{ Auth::user()->isAdmin() ? 'bg-violet-100 text-violet-700' : (Auth::user()->isTalent() ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700') }}">
+                    @if (Auth::user()->isAdmin())
+                        {{ __('talenma.roles.admin') }}
+                    @elseif (Auth::user()->isTalent())
+                        {{ __('talenma.roles.talent') }}
+                    @else
+                        {{ __('talenma.roles.company') }}
+                    @endif
                 </span>
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
@@ -44,9 +52,11 @@
     </div>
     <div :class="{'block': open, 'hidden': !open}" class="hidden sm:hidden border-t px-4 py-3 space-y-1">
         <x-responsive-nav-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-responsive-nav-link>
-        @if (Auth::user()->isTalent())
+        @if (Auth::user()->isAdmin())
+            <x-responsive-nav-link :href="route('admin.magazine-banner.index')">{{ __('talenma.nav.banner_magazine') }}</x-responsive-nav-link>
+        @elseif (Auth::user()->isTalent())
             <x-responsive-nav-link :href="route('profile.details.edit')">{{ __('talenma.nav.my_profile') }}</x-responsive-nav-link>
-        @else
+        @elseif (Auth::user()->isCompany())
             <x-responsive-nav-link :href="route('company.search')">{{ __('talenma.nav.talents') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('company.profile.edit')">{{ __('talenma.nav.my_company') }}</x-responsive-nav-link>
         @endif

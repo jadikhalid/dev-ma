@@ -20,7 +20,7 @@
 }
 
 .magazine-marquee-track {
-    animation: magazine-marquee 45s linear infinite;
+    animation: magazine-marquee 22.5s linear infinite;
 }
 
 .magazine-marquee-track:hover {

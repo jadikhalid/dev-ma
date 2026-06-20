@@ -59,6 +59,11 @@ class User extends Authenticatable
         return $this->role === 'company';
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
     public function hasActiveSubscription(): bool
     {
         return $this->is_subscribed
