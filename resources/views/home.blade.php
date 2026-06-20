@@ -6,7 +6,7 @@
 <section class="relative overflow-hidden bg-white hero-section" aria-label="hero">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8 lg:pt-16 lg:pb-10">
         <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
-            {{-- Colonne texte + recherche --}}
+            {{-- Colonne texte --}}
             <div>
                 <p class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs sm:text-sm font-medium mb-4">
                     {{ __('talenma.home.badge') }}
@@ -19,66 +19,11 @@
                     ]) !!}
                 </h1>
 
-                <p class="mt-4 text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl">
-                    {{ __('talenma.home.hero_subtitle') }}
+                <p class="hidden lg:block mt-4 text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl">
+                    {!! __('talenma.home.hero_subtitle', [
+                        'modes' => '<strong class="font-semibold text-gray-900">'.__('talenma.home.hero_subtitle_modes').'</strong>',
+                    ]) !!}
                 </p>
-
-                {{-- Panneau recherche style Malt --}}
-                <div class="mt-7 hero-search-panel rounded-xl border border-gray-100 bg-white overflow-hidden">
-                    <div class="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 bg-gray-50/80">
-                        <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                        <span class="text-sm font-semibold text-gray-800">{{ __('talenma.home.search_tab') }}</span>
-                    </div>
-
-                    <form method="GET" action="{{ route('company.search') }}" class="p-3 sm:p-4">
-                        <div class="flex flex-col sm:flex-row gap-2.5">
-                            <div class="flex-1 min-w-0">
-                                <label for="hero-keyword" class="sr-only">{{ __('talenma.home.search_tab') }}</label>
-                                <input
-                                    id="hero-keyword"
-                                    type="text"
-                                    name="keyword"
-                                    value="{{ request('keyword') }}"
-                                    placeholder="{{ __('talenma.home.search_placeholder') }}"
-                                    maxlength="128"
-                                    class="w-full rounded-lg border-gray-200 text-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 px-3"
-                                >
-                            </div>
-                            <div class="sm:w-52 shrink-0 relative">
-                                <label for="hero-city" class="sr-only">{{ __('talenma.home.search_location') }}</label>
-                                <select
-                                    id="hero-city"
-                                    name="city"
-                                    class="w-full rounded-lg border-gray-200 text-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 pl-3 pr-10 appearance-none bg-white"
-                                >
-                                    <option value="">{{ __('talenma.home.search_location') }}</option>
-                                    @foreach (['Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Agadir'] as $city)
-                                        <option value="{{ $city }}" @selected(request('city') === $city)>{{ $city }}</option>
-                                    @endforeach
-                                </select>
-                                <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                            </div>
-                            <button
-                                type="submit"
-                                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shrink-0"
-                            >
-                                {{ __('talenma.home.search_submit') }}
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                @if ($talentsCount > 0)
-                    <p class="mt-3 text-xs sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
-                @endif
 
                 @guest
                     <div class="mt-6 rounded-xl border border-gray-100 bg-gray-50/70 p-4 sm:p-5">
@@ -107,6 +52,57 @@
                 <x-hero-freelancers-visual :talents-count="$talentsCount" />
             </div>
         </div>
+
+        {{-- Panneau recherche pleine largeur --}}
+        <div class="mt-8 lg:mt-10 w-full hero-search-panel rounded-xl border border-gray-100 bg-white overflow-visible">
+            <div class="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 bg-gray-50/80">
+                <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <span class="text-sm font-semibold text-gray-800">{{ __('talenma.home.search_tab') }}</span>
+            </div>
+
+            <form method="GET" action="{{ route('company.search') }}" class="p-3 sm:p-4">
+                <div class="flex flex-col sm:flex-row gap-2.5 w-full">
+                    <x-hero-skill-autocomplete
+                        id="hero-keyword"
+                        name="keyword"
+                        :value="request('keyword')"
+                        :placeholder="__('talenma.home.search_placeholder')"
+                    />
+                    <div class="sm:w-52 shrink-0 relative">
+                        <label for="hero-city" class="sr-only">{{ __('talenma.home.search_location') }}</label>
+                        <select
+                            id="hero-city"
+                            name="city"
+                            class="w-full rounded-lg border-gray-200 text-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 pl-3 pr-10 appearance-none bg-white"
+                        >
+                            <option value="">{{ __('talenma.home.search_location') }}</option>
+                            @foreach (['Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Agadir'] as $city)
+                                <option value="{{ $city }}" @selected(request('city') === $city)>{{ $city }}</option>
+                            @endforeach
+                        </select>
+                        <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+                    <button
+                        type="submit"
+                        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shrink-0"
+                    >
+                        {{ __('talenma.home.search_submit') }}
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        @if ($talentsCount > 0)
+            <p class="mt-3 text-xs sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
+        @endif
 
         {{-- Bandeau réassurance style Malt --}}
         <div class="mt-8 lg:mt-10 pt-6 border-t border-gray-100">

@@ -10,12 +10,16 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileDetailsController;
 use App\Http\Controllers\RecruitmentRequestController;
+use App\Http\Controllers\SkillSuggestionController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/skill-suggestions', SkillSuggestionController::class)
+    ->middleware('throttle:60,1')
+    ->name('skill-suggestions');
 Route::get('/magazine', [MagazineController::class, 'index'])->name('magazine.index');
 Route::get('/magazine/{slug}', [MagazineController::class, 'show'])->name('magazine.show');
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');

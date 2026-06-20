@@ -38,7 +38,11 @@
                         <p class="hero-mosaic__role">{{ $profile['role'] }}</p>
                         <div class="hero-mosaic__footer">
                             <span>📍 {{ $profile['city'] }}</span>
-                            <span class="hero-mosaic__rate">{{ $profile['rate'] }}</span>
+                            @php
+                                $status = $profile['availability'] ?? 'available';
+                                $statusLabel = __('talenma.home.hero_availability.'.$status);
+                            @endphp
+                            <span class="hero-mosaic__status hero-mosaic__status--{{ $status }}">{{ $statusLabel }}</span>
                         </div>
                     </div>
                 @endif
