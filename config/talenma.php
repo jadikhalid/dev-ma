@@ -41,4 +41,15 @@ return [
     ],
 
     'hero_fallback_photo' => 'images/hero/fallback.jpg',
+
+    /*
+    | Pays francophones — locale FR sur mobile (détection IP).
+    | Codes ISO 3166-1 alpha-2.
+    */
+    'francophone_countries' => [
+        'FR', 'MA', 'BE', 'CH', 'LU', 'MC', 'CA',
+        'SN', 'CI', 'ML', 'BF', 'NE', 'TG', 'BJ', 'CM', 'CD', 'CG', 'GA', 'GN',
+        'MG', 'HT', 'MU', 'RW', 'SC', 'TD', 'CF', 'DJ', 'KM', 'TN', 'DZ', 'VU',
+        'NC', 'PF', 'RE', 'GP', 'MQ', 'GF', 'YT', 'PM', 'WF', 'BL', 'MF',
+    ],
 ];

@@ -6,7 +6,9 @@
                 <x-social-links />
             </div>
             <div class="flex items-center gap-2 sm:gap-3">
-                <x-locale-switcher />
+                <div class="hidden lg:block">
+                    <x-locale-switcher />
+                </div>
                 @auth
                     <a href="{{ route('dashboard') }}" class="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600">{{ __('talenma.nav.my_space') }}</a>
                 @else

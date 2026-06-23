@@ -109,19 +109,19 @@
             <div class="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-8 lg:gap-12 text-xs sm:text-sm font-medium text-gray-700">
                 <div class="flex items-center gap-2">
                     <svg class="w-6 h-6 shrink-0 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
                     </svg>
                     {{ __('talenma.home.reinsurance_remote') }}
                 </div>
                 <div class="flex items-center gap-2">
                     <svg class="w-6 h-6 shrink-0 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                     </svg>
                     {{ __('talenma.home.reinsurance_verified') }}
                 </div>
                 <div class="flex items-center gap-2">
                     <svg class="w-6 h-6 shrink-0 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                     {{ __('talenma.home.reinsurance_free') }}
                 </div>
@@ -159,7 +159,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-8">
         <div class="bg-white p-8 rounded-2xl border shadow-sm">
             <h3 class="text-xl font-bold">{{ __('talenma.home.talent_card_title') }}</h3>
-            <p class="mt-3 text-gray-600">{!! __('talenma.home.talent_card_desc', ['price' => '<strong>'.__('talenma.common.price').'</strong>']) !!}</p>
+            <p class="mt-3 text-gray-600">{{ __('talenma.home.talent_card_desc') }}</p>
             <ul class="mt-4 space-y-2 text-sm text-gray-700">
                 <li>✓ {{ __('talenma.home.talent_card_1') }}</li>
                 <li>✓ {{ __('talenma.home.talent_card_2') }}</li>
@@ -168,7 +168,7 @@
         </div>
         <div class="bg-white p-8 rounded-2xl border shadow-sm">
             <h3 class="text-xl font-bold">{{ __('talenma.home.company_card_title') }}</h3>
-            <p class="mt-3 text-gray-600">{!! __('talenma.home.company_card_desc', ['free' => '<strong>'.__('talenma.home.free').'</strong>']) !!}</p>
+            <p class="mt-3 text-gray-600">{{ __('talenma.home.company_card_desc') }}</p>
             <ul class="mt-4 space-y-2 text-sm text-gray-700">
                 <li>✓ {{ __('talenma.home.company_card_1') }}</li>
                 <li>✓ {{ __('talenma.home.company_card_2') }}</li>

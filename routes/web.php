@@ -15,6 +15,9 @@ use App\Http\Controllers\SkillSuggestionController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/locale/suggest-from-ip', [LocaleController::class, 'suggest'])
+    ->middleware('throttle:30,1')
+    ->name('locale.suggest');
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');

@@ -12,15 +12,20 @@
 
 @keyframes magazine-marquee {
     0% {
-        transform: translateX(0);
+        transform: translate3d(0, 0, 0);
     }
     100% {
-        transform: translateX(-50%);
+        transform: translate3d(calc(-1 * var(--marquee-distance, 0px)), 0, 0);
     }
 }
 
 .magazine-marquee-track {
-    animation: magazine-marquee 22.5s linear infinite;
+    animation: magazine-marquee var(--marquee-duration, 22.5s) linear infinite;
+    will-change: transform;
+}
+
+.magazine-marquee-track:not(.magazine-marquee-ready) {
+    animation: none;
 }
 
 .magazine-marquee-track:hover {
