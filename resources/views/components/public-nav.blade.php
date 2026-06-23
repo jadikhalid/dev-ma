@@ -1,5 +1,11 @@
-<header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+@props(['fullWidth' => false])
+
+<header class="sticky top-0 z-50 w-full bg-white/90 backdrop-blur border-b border-gray-100">
+    <div @class([
+        'w-full mx-auto',
+        'px-4 sm:px-6 lg:px-10 xl:px-12' => $fullWidth,
+        'max-w-7xl px-4 sm:px-6 lg:px-8' => ! $fullWidth,
+    ])>
         <div class="flex items-center justify-between h-16">
             <x-brand-logo href="{{ route('home') }}" size="sm" />
             <div class="hidden md:flex items-center">
