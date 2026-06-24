@@ -2,10 +2,10 @@
 
 return [
     'social' => [
-        'x' => env('SOCIAL_X_URL', 'https://x.com'),
-        'instagram' => env('SOCIAL_INSTAGRAM_URL', 'https://instagram.com'),
-        'linkedin' => env('SOCIAL_LINKEDIN_URL', 'https://linkedin.com'),
-        'youtube' => env('SOCIAL_YOUTUBE_URL', 'https://youtube.com'),
+        'x' => env('SOCIAL_X_URL', 'https://x.com/talentsdumaroc'),
+        'instagram' => env('SOCIAL_INSTAGRAM_URL', 'https://www.instagram.com/talentsdumaroc/'),
+        'linkedin' => env('SOCIAL_LINKEDIN_URL', 'https://www.linkedin.com/company/talentsdumaroc/'),
+        'youtube' => env('SOCIAL_YOUTUBE_URL', 'https://www.youtube.com/channel/UCjmtHFsH0U-Uddo5xM3mhgg'),
     ],
 
     /*
