@@ -35,8 +35,8 @@ return [
         ],
         [
             'size' => 'square',
-            'photo' => 'images/hero/equipe.jpg',
-            'profile_index' => 3,
+            'photo' => 'images/hero/tarik.jpg',
+            'profile_index' => 4,
         ],
     ],
 

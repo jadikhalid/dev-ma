@@ -9,11 +9,39 @@ Alpine.data('magazineTicker', () => ({
     translateY: 0,
     pointerEvents: 'auto',
     _marqueeResizeTimer: null,
+    _autoScrollFrame: null,
+    _lastAutoScrollTime: null,
+    _dragMoved: false,
+    _dragStartX: 0,
+    _dragStartOffset: 0,
+    _canUseArrows: false,
+    arrowHoldDirection: 0,
+    arrowScrollSpeed: 240,
+
+    marqueeOffset: 0,
+    marqueeStart: 0,
+    marqueeDistance: 0,
+    marqueeSpeed: 72,
+
+    isBannerHovered: false,
+    isDragging: false,
 
     init() {
+        this._canUseArrows = window.matchMedia('(min-width: 1024px)').matches;
+
+        const arrowMedia = window.matchMedia('(min-width: 1024px)');
+        arrowMedia.addEventListener('change', (event) => {
+            this._canUseArrows = event.matches;
+
+            if (! event.matches) {
+                this.isBannerHovered = false;
+            }
+        });
+
         this.$nextTick(() => {
             this.setupMarquee();
             this.update();
+            this.startAutoScroll();
         });
     },
 
@@ -22,11 +50,52 @@ Alpine.data('magazineTicker', () => ({
         this._marqueeResizeTimer = setTimeout(() => this.setupMarquee(true), 200);
     },
 
+    startAutoScroll() {
+        if (this._autoScrollFrame) {
+            cancelAnimationFrame(this._autoScrollFrame);
+        }
+
+        this._lastAutoScrollTime = null;
+
+        const tick = (time) => {
+            this._autoScrollFrame = requestAnimationFrame(tick);
+
+            if (this._lastAutoScrollTime === null) {
+                this._lastAutoScrollTime = time;
+
+                return;
+            }
+
+            const delta = (time - this._lastAutoScrollTime) / 1000;
+            this._lastAutoScrollTime = time;
+
+            if (this.arrowHoldDirection !== 0) {
+                this.marqueeOffset += this.arrowHoldDirection * this.arrowScrollSpeed * delta;
+                this.normalizeOffset();
+
+                return;
+            }
+
+            if (this.isDragging) {
+                return;
+            }
+
+            if (this.isBannerHovered) {
+                return;
+            }
+
+            this.marqueeOffset -= this.marqueeSpeed * delta;
+            this.normalizeOffset();
+        };
+
+        this._autoScrollFrame = requestAnimationFrame(tick);
+    },
+
     setupMarquee(reset = false) {
         const track = this.$refs.marqueeTrack;
         const setA = this.$refs.marqueeSetA;
         const setB = this.$refs.marqueeSetB;
-        const container = track?.parentElement;
+        const container = this.$refs.marqueeViewport;
 
         if (! track || ! setA || ! setB || ! container) {
             return;
@@ -38,8 +107,8 @@ Alpine.data('magazineTicker', () => ({
             while (setA.children.length > initialCount) {
                 setA.lastElementChild?.remove();
             }
+
             setB.innerHTML = '';
-            track.classList.remove('magazine-marquee-ready');
         }
 
         const templateItems = Array.from(setA.children);
@@ -61,17 +130,125 @@ Alpine.data('magazineTicker', () => ({
         setB.innerHTML = setA.innerHTML;
 
         const distance = setA.offsetWidth;
-        const pixelsPerSecond = 72;
+        let originalWidth = 0;
 
-        track.style.setProperty('--marquee-distance', `${distance}px`);
-        track.style.setProperty('--marquee-duration', `${Math.max(18, distance / pixelsPerSecond)}s`);
-        track.classList.add('magazine-marquee-ready');
+        for (let i = 0; i < Math.min(initialCount, setA.children.length); i++) {
+            originalWidth += setA.children[i].offsetWidth;
+        }
+
+        const initialOffset = Math.max(0, originalWidth - container.offsetWidth);
+
+        this.marqueeStart = -initialOffset;
+        this.marqueeDistance = distance;
+
+        if (! reset || ! this.isDragging) {
+            this.marqueeOffset = this.marqueeStart;
+        }
+
+        this.normalizeOffset();
 
         setA.querySelectorAll('img').forEach((img) => {
             if (! img.complete) {
                 img.addEventListener('load', () => this.setupMarquee(true), { once: true });
             }
         });
+    },
+
+    normalizeOffset() {
+        if (! this.marqueeDistance) {
+            return;
+        }
+
+        const end = this.marqueeStart - this.marqueeDistance;
+
+        while (this.marqueeOffset <= end) {
+            this.marqueeOffset += this.marqueeDistance;
+        }
+
+        while (this.marqueeOffset > this.marqueeStart) {
+            this.marqueeOffset -= this.marqueeDistance;
+        }
+    },
+
+    marqueeTrackStyle() {
+        return {
+            transform: `translate3d(${this.marqueeOffset}px, 0, 0)`,
+        };
+    },
+
+    onBannerEnter() {
+        this.isBannerHovered = true;
+    },
+
+    onBannerLeave() {
+        this.isBannerHovered = false;
+        this.stopArrowScroll();
+    },
+
+    onArrowPointerDown(direction, event) {
+        event.preventDefault();
+
+        this.arrowHoldDirection = direction;
+
+        const onRelease = () => {
+            this.stopArrowScroll();
+            window.removeEventListener('pointerup', onRelease);
+            window.removeEventListener('pointercancel', onRelease);
+        };
+
+        window.addEventListener('pointerup', onRelease);
+        window.addEventListener('pointercancel', onRelease);
+    },
+
+    stopArrowScroll() {
+        this.arrowHoldDirection = 0;
+    },
+
+    onPointerDown(event) {
+        if (this._canUseArrows && event.pointerType === 'mouse') {
+            return;
+        }
+
+        this.isDragging = true;
+        this._dragMoved = false;
+        this._dragStartX = event.clientX;
+        this._dragStartOffset = this.marqueeOffset;
+        event.currentTarget.setPointerCapture(event.pointerId);
+    },
+
+    onPointerMove(event) {
+        if (! this.isDragging) {
+            return;
+        }
+
+        const delta = event.clientX - this._dragStartX;
+
+        if (Math.abs(delta) > 6) {
+            this._dragMoved = true;
+        }
+
+        this.marqueeOffset = this._dragStartOffset + delta;
+        this.normalizeOffset();
+    },
+
+    onPointerUp(event) {
+        if (! this.isDragging) {
+            return;
+        }
+
+        this.isDragging = false;
+
+        if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+    },
+
+    onMarqueeClick(event) {
+        if (this._dragMoved) {
+            event.preventDefault();
+            event.stopPropagation();
+            this._dragMoved = false;
+        }
     },
 
     update() {

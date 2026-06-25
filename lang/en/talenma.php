@@ -72,8 +72,9 @@ return [
         'hero_profiles' => [
             ['name' => 'Yasmine B.', 'role' => 'Full-stack Developer', 'city' => 'Casablanca', 'availability' => 'available'],
             ['name' => 'Karim M.', 'role' => 'DevOps Engineer', 'city' => 'Rabat', 'availability' => 'listening'],
-            ['name' => 'Salma T.', 'role' => 'Product Designer', 'city' => 'Marrakech', 'availability' => 'available'],
-            ['name' => 'Omar H.', 'role' => 'Data Analyst', 'city' => 'Tangier', 'availability' => 'busy'],
+            ['name' => 'Salma T.', 'role' => 'Doctor', 'city' => 'Marrakech', 'availability' => 'available'],
+            ['name' => 'Omar H.', 'role' => 'HVAC Technician', 'city' => 'Tangier', 'availability' => 'busy'],
+            ['name' => 'Tarik A.', 'role' => 'Finance Professional', 'city' => 'Casablanca', 'availability' => 'listening'],
         ],
         'hero_available' => 'Available',
         'cta_talent' => 'I\'m a talent',
@@ -106,6 +107,8 @@ return [
         'magazine_all' => 'All articles →',
         'magazine_ticker_label' => 'Magazine',
         'magazine_ticker_tagline' => 'News & guides',
+        'magazine_ticker_scroll_prev' => 'Scroll to older news',
+        'magazine_ticker_scroll_next' => 'Scroll to newer news',
         'magazine_ticker_articles' => [
             ['title' => 'Morocco\'s tech talent pool in 2026', 'subtitle' => 'Market overview and key trends', 'date' => 'May 28, 2026', 'thumb' => 'from-indigo-500 to-violet-600'],
             ['title' => 'France-Morocco remote: best practices', 'subtitle' => 'Time zones, tools and communication', 'date' => 'May 15, 2026', 'thumb' => 'from-sky-500 to-cyan-600'],

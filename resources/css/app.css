@@ -10,26 +10,45 @@
     transform: scaleX(-1);
 }
 
-@keyframes magazine-marquee {
-    0% {
-        transform: translate3d(0, 0, 0);
-    }
-    100% {
-        transform: translate3d(calc(-1 * var(--marquee-distance, 0px)), 0, 0);
-    }
-}
-
 .magazine-marquee-track {
-    animation: magazine-marquee var(--marquee-duration, 22.5s) linear infinite;
     will-change: transform;
 }
 
-.magazine-marquee-track:not(.magazine-marquee-ready) {
-    animation: none;
+.magazine-marquee-viewport {
+    touch-action: pan-y pinch-zoom;
+    @apply cursor-grab lg:cursor-default;
 }
 
-.magazine-marquee-track:hover {
-    animation-play-state: paused;
+.magazine-marquee-nav {
+    @apply absolute top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-gray-600 shadow-[0_8px_24px_rgba(15,23,42,0.12)] backdrop-blur-md transition-all duration-300 ease-out;
+}
+
+.magazine-marquee-nav:hover {
+    @apply border-indigo-200 bg-white text-indigo-600 shadow-[0_10px_28px_rgba(79,70,229,0.18)] scale-105;
+}
+
+.magazine-marquee-nav--active {
+    @apply border-indigo-300 bg-indigo-50 text-indigo-700 shadow-[0_10px_28px_rgba(79,70,229,0.22)] scale-105;
+}
+
+.magazine-marquee-nav:focus-visible {
+    @apply outline-none ring-2 ring-indigo-500 ring-offset-2;
+}
+
+.magazine-marquee-nav--left {
+    @apply left-3;
+}
+
+.magazine-marquee-nav--right {
+    @apply right-3;
+}
+
+.magazine-marquee-viewport.is-dragging .magazine-marquee-track {
+    cursor: grabbing;
+}
+
+.magazine-marquee-viewport.is-dragging a {
+    pointer-events: none;
 }
 
 .hero-search-panel {

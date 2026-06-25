@@ -72,8 +72,9 @@ return [
         'hero_profiles' => [
             ['name' => 'Yasmine B.', 'role' => 'Développeuse full-stack', 'city' => 'Casablanca', 'availability' => 'available'],
             ['name' => 'Karim M.', 'role' => 'Ingénieur DevOps', 'city' => 'Rabat', 'availability' => 'listening'],
-            ['name' => 'Salma T.', 'role' => 'Designer produit', 'city' => 'Marrakech', 'availability' => 'available'],
-            ['name' => 'Omar H.', 'role' => 'Analyste de données', 'city' => 'Tanger', 'availability' => 'busy'],
+            ['name' => 'Salma T.', 'role' => 'Médecin', 'city' => 'Marrakech', 'availability' => 'available'],
+            ['name' => 'Omar H.', 'role' => 'Technicien HVAC', 'city' => 'Tanger', 'availability' => 'busy'],
+            ['name' => 'Tarik A.', 'role' => 'Financier', 'city' => 'Casablanca', 'availability' => 'listening'],
         ],
         'hero_available' => 'Disponible',
         'cta_talent' => 'Je suis un talent',
@@ -106,6 +107,8 @@ return [
         'magazine_all' => 'Tous les articles →',
         'magazine_ticker_label' => 'Magazine',
         'magazine_ticker_tagline' => 'Actualités & guides',
+        'magazine_ticker_scroll_prev' => 'Faire défiler vers les actualités précédentes',
+        'magazine_ticker_scroll_next' => 'Faire défiler vers les actualités plus récentes',
         'magazine_ticker_articles' => [
             ['title' => 'Le pool de talents tech au Maroc en 2026', 'subtitle' => 'État des lieux et tendances du marché', 'date' => '28 mai 2026', 'thumb' => 'from-indigo-500 to-violet-600'],
             ['title' => 'Remote France-Maroc : les bonnes pratiques', 'subtitle' => 'Fuseaux horaires, outils et communication', 'date' => '15 mai 2026', 'thumb' => 'from-sky-500 to-cyan-600'],
