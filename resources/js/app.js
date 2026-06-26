@@ -15,6 +15,7 @@ Alpine.data('magazineTicker', () => ({
     _dragStartX: 0,
     _dragStartOffset: 0,
     _canUseArrows: false,
+    _marqueeOriginals: null,
     arrowHoldDirection: 0,
     arrowScrollSpeed: 240,
 
@@ -101,27 +102,40 @@ Alpine.data('magazineTicker', () => ({
             return;
         }
 
-        const initialCount = Number.parseInt(setA.dataset.initialCount ?? '0', 10);
-
-        if (reset && initialCount > 0) {
-            while (setA.children.length > initialCount) {
-                setA.lastElementChild?.remove();
-            }
-
-            setB.innerHTML = '';
+        if (! this._marqueeOriginals?.length) {
+            this._marqueeOriginals = Array.from(setA.children).map((item) => item.cloneNode(true));
         }
 
-        const templateItems = Array.from(setA.children);
+        setA.innerHTML = '';
+        this._marqueeOriginals.forEach((item) => {
+            setA.appendChild(item.cloneNode(true));
+        });
 
-        if (! templateItems.length) {
+        const originals = Array.from(setA.children);
+
+        if (! originals.length) {
             return;
         }
 
-        const minSetWidth = container.offsetWidth + 64;
+        const containerWidth = container.offsetWidth;
+        const firstItemWidth = originals[0].offsetWidth;
+        const targetPrepend = Math.max(0, (containerWidth - firstItemWidth) / 2);
+        let prependWidth = 0;
+        let sourceIndex = originals.length - 1;
+        let prependedCount = 0;
         let safety = 0;
 
-        while (setA.scrollWidth < minSetWidth && safety < 40) {
-            templateItems.forEach((item) => {
+        while (prependWidth < targetPrepend && safety < 40) {
+            const clone = originals[sourceIndex].cloneNode(true);
+            setA.insertBefore(clone, setA.firstChild);
+            prependWidth += clone.offsetWidth;
+            sourceIndex = (sourceIndex - 1 + originals.length) % originals.length;
+            prependedCount++;
+            safety++;
+        }
+
+        while (setA.scrollWidth < containerWidth + prependWidth + 64 && safety < 80) {
+            originals.forEach((item) => {
                 setA.appendChild(item.cloneNode(true));
             });
             safety++;
@@ -130,15 +144,17 @@ Alpine.data('magazineTicker', () => ({
         setB.innerHTML = setA.innerHTML;
 
         const distance = setA.offsetWidth;
-        let originalWidth = 0;
+        let prefixWidth = 0;
 
-        for (let i = 0; i < Math.min(initialCount, setA.children.length); i++) {
-            originalWidth += setA.children[i].offsetWidth;
+        for (let i = 0; i < prependedCount; i++) {
+            prefixWidth += setA.children[i].offsetWidth;
         }
 
-        const initialOffset = Math.max(0, originalWidth - container.offsetWidth);
+        const centeredOffset = prefixWidth + (setA.children[prependedCount]?.offsetWidth ?? 0) / 2 - containerWidth / 2;
+        const maxOffset = 0;
+        const minOffset = distance > containerWidth ? -(distance - containerWidth) : 0;
 
-        this.marqueeStart = -initialOffset;
+        this.marqueeStart = Math.max(minOffset, Math.min(maxOffset, centeredOffset));
         this.marqueeDistance = distance;
 
         if (! reset || ! this.isDragging) {
@@ -152,6 +168,28 @@ Alpine.data('magazineTicker', () => ({
                 img.addEventListener('load', () => this.setupMarquee(true), { once: true });
             }
         });
+    },
+
+    clampOffsetToViewport() {
+        const container = this.$refs.marqueeViewport;
+
+        if (! container || ! this.marqueeDistance) {
+            return;
+        }
+
+        const containerWidth = container.offsetWidth;
+        const maxOffset = 0;
+        const minOffset = this.marqueeDistance > containerWidth
+            ? -(this.marqueeDistance - containerWidth)
+            : 0;
+
+        if (minOffset > maxOffset) {
+            this.marqueeOffset = 0;
+
+            return;
+        }
+
+        this.marqueeOffset = Math.max(minOffset, Math.min(maxOffset, this.marqueeOffset));
     },
 
     normalizeOffset() {
@@ -168,6 +206,8 @@ Alpine.data('magazineTicker', () => ({
         while (this.marqueeOffset > this.marqueeStart) {
             this.marqueeOffset -= this.marqueeDistance;
         }
+
+        this.clampOffsetToViewport();
     },
 
     marqueeTrackStyle() {
