@@ -13,13 +13,13 @@ Alpine.data('magazineTicker', () => ({
     _lastAutoScrollTime: null,
     _dragMoved: false,
     _dragStartX: 0,
-    _dragStartOffset: 0,
+    _dragStartScroll: 0,
     _canUseArrows: false,
     _marqueeOriginals: null,
     arrowHoldDirection: 0,
     arrowScrollSpeed: 240,
 
-    marqueeOffset: 0,
+    marqueeScrollPx: 0,
     marqueeStart: 0,
     marqueeDistance: 0,
     marqueeSpeed: 72,
@@ -71,8 +71,7 @@ Alpine.data('magazineTicker', () => ({
             this._lastAutoScrollTime = time;
 
             if (this.arrowHoldDirection !== 0) {
-                this.marqueeOffset += this.arrowHoldDirection * this.arrowScrollSpeed * delta;
-                this.normalizeOffset();
+                this.marqueeScrollPx -= this.arrowHoldDirection * this.arrowScrollSpeed * delta;
 
                 return;
             }
@@ -85,8 +84,7 @@ Alpine.data('magazineTicker', () => ({
                 return;
             }
 
-            this.marqueeOffset -= this.marqueeSpeed * delta;
-            this.normalizeOffset();
+            this.marqueeScrollPx += this.marqueeSpeed * delta;
         };
 
         this._autoScrollFrame = requestAnimationFrame(tick);
@@ -158,10 +156,8 @@ Alpine.data('magazineTicker', () => ({
         this.marqueeDistance = distance;
 
         if (! reset || ! this.isDragging) {
-            this.marqueeOffset = this.marqueeStart;
+            this.marqueeScrollPx = 0;
         }
-
-        this.normalizeOffset();
 
         setA.querySelectorAll('img').forEach((img) => {
             if (! img.complete) {
@@ -170,49 +166,19 @@ Alpine.data('magazineTicker', () => ({
         });
     },
 
-    clampOffsetToViewport() {
-        const container = this.$refs.marqueeViewport;
-
-        if (! container || ! this.marqueeDistance) {
-            return;
-        }
-
-        const containerWidth = container.offsetWidth;
-        const maxOffset = 0;
-        const minOffset = this.marqueeDistance > containerWidth
-            ? -(this.marqueeDistance - containerWidth)
-            : 0;
-
-        if (minOffset > maxOffset) {
-            this.marqueeOffset = 0;
-
-            return;
-        }
-
-        this.marqueeOffset = Math.max(minOffset, Math.min(maxOffset, this.marqueeOffset));
-    },
-
-    normalizeOffset() {
-        if (! this.marqueeDistance) {
-            return;
-        }
-
-        const end = this.marqueeStart - this.marqueeDistance;
-
-        while (this.marqueeOffset <= end) {
-            this.marqueeOffset += this.marqueeDistance;
-        }
-
-        while (this.marqueeOffset > this.marqueeStart) {
-            this.marqueeOffset -= this.marqueeDistance;
-        }
-
-        this.clampOffsetToViewport();
-    },
-
     marqueeTrackStyle() {
+        const distance = this.marqueeDistance;
+
+        if (! distance) {
+            return {
+                transform: `translate3d(${this.marqueeStart}px, 0, 0)`,
+            };
+        }
+
+        const looped = ((this.marqueeScrollPx % distance) + distance) % distance;
+
         return {
-            transform: `translate3d(${this.marqueeOffset}px, 0, 0)`,
+            transform: `translate3d(${this.marqueeStart - looped}px, 0, 0)`,
         };
     },
 
@@ -251,8 +217,8 @@ Alpine.data('magazineTicker', () => ({
 
         this.isDragging = true;
         this._dragMoved = false;
+        this._dragStartScroll = this.marqueeScrollPx;
         this._dragStartX = event.clientX;
-        this._dragStartOffset = this.marqueeOffset;
         event.currentTarget.setPointerCapture(event.pointerId);
     },
 
@@ -267,8 +233,7 @@ Alpine.data('magazineTicker', () => ({
             this._dragMoved = true;
         }
 
-        this.marqueeOffset = this._dragStartOffset + delta;
-        this.normalizeOffset();
+        this.marqueeScrollPx = this._dragStartScroll - delta;
     },
 
     onPointerUp(event) {
