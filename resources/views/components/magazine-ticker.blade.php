@@ -76,6 +76,7 @@
                 class="magazine-marquee-track flex w-max items-center py-3 select-none"
                 :style="marqueeTrackStyle()"
             >
+                <div x-ref="marqueeLeadSpacer" class="shrink-0" aria-hidden="true"></div>
                 <div
                     x-ref="marqueeSetA"
                     class="magazine-marquee-set flex shrink-0 items-center"

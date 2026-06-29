@@ -93,9 +93,10 @@ Alpine.data('magazineTicker', () => ({
     setupMarquee(reset = false) {
         const setA = this.$refs.marqueeSetA;
         const setB = this.$refs.marqueeSetB;
+        const leadSpacer = this.$refs.marqueeLeadSpacer;
         const container = this.$refs.marqueeViewport;
 
-        if (! setA || ! setB || ! container) {
+        if (! setA || ! setB || ! leadSpacer || ! container) {
             return;
         }
 
@@ -127,6 +128,7 @@ Alpine.data('magazineTicker', () => ({
         };
 
         setA.innerHTML = '';
+        leadSpacer.style.width = '0px';
         setA.appendChild(buildUniqueCycle(true));
 
         const uniqueCycleWidth = setA.scrollWidth;
@@ -150,12 +152,8 @@ Alpine.data('magazineTicker', () => ({
         let centerBase = newest.offsetLeft + newest.offsetWidth / 2 - containerWidth / 2;
 
         if (centerBase < 0) {
-            const spacer = document.createElement('div');
-            spacer.className = 'shrink-0';
-            spacer.setAttribute('aria-hidden', 'true');
-            spacer.style.width = `${Math.ceil(-centerBase)}px`;
-            setA.insertBefore(spacer, setA.firstChild);
-            centerBase = newest.offsetLeft + newest.offsetWidth / 2 - containerWidth / 2;
+            leadSpacer.style.width = `${Math.ceil(-centerBase)}px`;
+            centerBase = leadSpacer.offsetWidth + newest.offsetLeft + newest.offsetWidth / 2 - containerWidth / 2;
         }
 
         setB.innerHTML = setA.innerHTML;
