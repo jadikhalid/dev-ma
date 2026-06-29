@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Article;
 use App\Models\CompanyProfile;
 use App\Models\Profile;
 use App\Models\User;
@@ -14,9 +13,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             ServiceSeeder::class,
-            ArticleSeeder::class,
             ProfessionSeeder::class,
-            MagazineBannerSeeder::class,
+            SocialFeedSeeder::class,
+            SocialPostSeeder::class,
             AdminUserSeeder::class,
         ]);
 

@@ -14,7 +14,7 @@
                 <ul class="space-y-2 text-sm">
                     <li><a href="{{ route('register') }}" class="hover:text-white">{{ __('talenma.footer.become_talent') }}</a></li>
                     <li><a href="{{ route('register') }}" class="hover:text-white">{{ __('talenma.footer.recruit_free') }}</a></li>
-                    <li><a href="{{ route('magazine.index') }}" class="hover:text-white">{{ __('talenma.nav.magazine') }}</a></li>
+                    <li><a href="{{ route('home') }}#publications" class="hover:text-white">{{ __('talenma.nav.publications') }}</a></li>
                 </ul>
             </div>
             <div>

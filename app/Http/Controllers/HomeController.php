@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Article;
 use App\Models\ProfessionSector;
+use App\Models\SocialPost;
 use App\Models\User;
 
 class HomeController extends Controller
@@ -19,8 +19,7 @@ class HomeController extends Controller
                 ->orderBy('sort_order')
                 ->with(['suggestions' => fn ($suggestions) => $suggestions
                     ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->limit(2)])])
+                    ->orderBy('sort_order')])])
             ->orderBy('sort_order')
             ->get()
             ->map(fn (ProfessionSector $sector) => [
@@ -29,7 +28,7 @@ class HomeController extends Controller
                 'professions' => $sector->professions->map(fn ($profession) => [
                     'slug' => $profession->slug,
                     'name' => $profession->localizedName($locale),
-                    'examples' => $profession->suggestions
+                    'specializations' => $profession->suggestions
                         ->map(fn ($suggestion) => $suggestion->localizedLabel($locale))
                         ->values(),
                 ])->values(),
@@ -38,7 +37,7 @@ class HomeController extends Controller
 
         return view('home', [
             'talentsCount' => User::where('role', 'dev')->where('is_subscribed', true)->count(),
-            'latestArticles' => Article::published()->latest('published_at')->take(3)->get(),
+            'socialPosts' => SocialPost::forSlider(),
             'professionSectors' => $professionSectors,
         ]);
     }

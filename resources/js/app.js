@@ -21,7 +21,7 @@ Alpine.data('magazineTicker', () => ({
 
     marqueeScrollPx: 0,
     marqueeCenterBase: 0,
-    marqueePeriod: 0,
+    marqueeDistance: 0,
     marqueeSpeed: 72,
 
     isBannerHovered: false,
@@ -111,9 +111,7 @@ Alpine.data('magazineTicker', () => ({
             return;
         }
 
-        const buildUniqueCycle = (markNewest = false) => {
-            const fragment = document.createDocumentFragment();
-
+        const appendCycle = (markNewest = false) => {
             originals.forEach((template, index) => {
                 const clone = template.cloneNode(true);
 
@@ -121,27 +119,40 @@ Alpine.data('magazineTicker', () => ({
                     clone.dataset.newest = '1';
                 }
 
-                fragment.appendChild(clone);
+                setA.appendChild(clone);
             });
-
-            return fragment;
         };
 
         setA.innerHTML = '';
         leadSpacer.style.width = '0px';
-        setA.appendChild(buildUniqueCycle(true));
 
-        const uniqueCycleWidth = setA.scrollWidth;
-        const minPeriodWidth = containerWidth + 64;
-        let cycleCopies = 1;
+        const widthProbe = originals[0].cloneNode(true);
+        setA.appendChild(widthProbe);
+        const firstItemWidth = widthProbe.offsetWidth;
+        setA.removeChild(widthProbe);
 
-        while (uniqueCycleWidth * cycleCopies < minPeriodWidth && cycleCopies < 24) {
-            cycleCopies++;
+        const targetPrepend = Math.max(0, (containerWidth - firstItemWidth) / 2);
+        let prependWidth = 0;
+        let safety = 0;
+
+        if (originals.length > 1) {
+            let sourceIndex = originals.length - 1;
+
+            while (prependWidth < targetPrepend && safety < 48) {
+                const clone = originals[sourceIndex].cloneNode(true);
+                setA.insertBefore(clone, setA.firstChild);
+                prependWidth += clone.offsetWidth;
+                safety++;
+
+                sourceIndex--;
+
+                if (sourceIndex < 1) {
+                    sourceIndex = originals.length - 1;
+                }
+            }
         }
 
-        for (let copy = 1; copy < cycleCopies; copy++) {
-            setA.appendChild(buildUniqueCycle(false));
-        }
+        appendCycle(true);
 
         const newest = setA.querySelector('[data-newest="1"]');
 
@@ -149,22 +160,45 @@ Alpine.data('magazineTicker', () => ({
             return;
         }
 
-        let centerBase = newest.offsetLeft + newest.offsetWidth / 2 - containerWidth / 2;
+        let cycleWidth = 0;
+        let cycleNode = newest;
 
-        if (centerBase < 0) {
-            leadSpacer.style.width = `${Math.ceil(-centerBase)}px`;
-            centerBase = leadSpacer.offsetWidth + newest.offsetLeft + newest.offsetWidth / 2 - containerWidth / 2;
+        for (let index = 0; index < originals.length; index++) {
+            if (! cycleNode) {
+                break;
+            }
+
+            cycleWidth += cycleNode.offsetWidth;
+            cycleNode = cycleNode.nextElementSibling;
+        }
+
+        if (! cycleWidth) {
+            return;
+        }
+
+        const newestPosition = newest.offsetLeft;
+
+        while (setA.scrollWidth < newestPosition + cycleWidth + containerWidth + 64 && safety < 80) {
+            appendCycle(false);
+            safety++;
         }
 
         setB.innerHTML = setA.innerHTML;
 
-        this.marqueePeriod = setA.offsetWidth;
+        let centerBase = newestPosition + firstItemWidth / 2 - containerWidth / 2;
+
+        if (centerBase < 0) {
+            leadSpacer.style.width = `${Math.ceil(-centerBase)}px`;
+            centerBase = leadSpacer.offsetWidth + newestPosition + firstItemWidth / 2 - containerWidth / 2;
+        }
+
+        this.marqueeDistance = cycleWidth;
         this.marqueeCenterBase = centerBase;
 
         if (! reset || ! this.isDragging) {
             this.marqueeScrollPx = 0;
-        } else if (this.marqueePeriod > 0) {
-            this.marqueeScrollPx = ((this.marqueeScrollPx % this.marqueePeriod) + this.marqueePeriod) % this.marqueePeriod;
+        } else if (this.marqueeDistance > 0) {
+            this.marqueeScrollPx = ((this.marqueeScrollPx % this.marqueeDistance) + this.marqueeDistance) % this.marqueeDistance;
         }
 
         setA.querySelectorAll('img').forEach((img) => {
@@ -175,18 +209,18 @@ Alpine.data('magazineTicker', () => ({
     },
 
     marqueeTrackStyle() {
-        const period = this.marqueePeriod;
+        const distance = this.marqueeDistance;
 
-        if (! period) {
+        if (! distance) {
             return {
                 transform: 'translate3d(0px, 0, 0)',
             };
         }
 
-        const scrolled = ((this.marqueeScrollPx % period) + period) % period;
+        const looped = ((this.marqueeScrollPx % distance) + distance) % distance;
 
         return {
-            transform: `translate3d(${-(this.marqueeCenterBase + scrolled)}px, 0, 0)`,
+            transform: `translate3d(${-(this.marqueeCenterBase + looped)}px, 0, 0)`,
         };
     },
 
@@ -297,23 +331,101 @@ Alpine.data('magazineTicker', () => ({
     },
 }));
 
+Alpine.data('socialPostsSlider', (config) => ({
+    items: config.items ?? [],
+    prevLabel: config.prevLabel ?? '',
+    nextLabel: config.nextLabel ?? '',
+    startIndex: 0,
+    visibleCount: 3,
+    cardWidthPx: 0,
+    stepPx: 0,
+    gapPx: 20,
+    _resizeTimer: null,
+
+    init() {
+        this.$nextTick(() => this.updateLayout());
+
+        window.addEventListener('resize', () => {
+            clearTimeout(this._resizeTimer);
+            this._resizeTimer = setTimeout(() => this.updateLayout(), 150);
+        });
+    },
+
+    updateLayout() {
+        const width = window.innerWidth;
+
+        if (width >= 1024) {
+            this.visibleCount = 3;
+        } else if (width >= 640) {
+            this.visibleCount = 2;
+        } else {
+            this.visibleCount = 1;
+        }
+
+        this.startIndex = Math.min(this.startIndex, this.maxIndex);
+        this.$nextTick(() => this.measure());
+    },
+
+    measure() {
+        const viewport = this.$refs.viewport;
+
+        if (! viewport) {
+            return;
+        }
+
+        const gaps = (this.visibleCount - 1) * this.gapPx;
+        this.cardWidthPx = (viewport.offsetWidth - gaps) / this.visibleCount;
+        this.stepPx = this.cardWidthPx + this.gapPx;
+    },
+
+    get maxIndex() {
+        return Math.max(0, this.items.length - this.visibleCount);
+    },
+
+    get canPrev() {
+        return this.startIndex > 0;
+    },
+
+    get canNext() {
+        return this.startIndex < this.maxIndex;
+    },
+
+    prev() {
+        if (this.canPrev) {
+            this.startIndex--;
+        }
+    },
+
+    next() {
+        if (this.canNext) {
+            this.startIndex++;
+        }
+    },
+
+    cardStyle() {
+        if (! this.cardWidthPx) {
+            return {};
+        }
+
+        return {
+            width: `${this.cardWidthPx}px`,
+        };
+    },
+
+    trackStyle() {
+        return {
+            transform: `translate3d(-${this.startIndex * this.stepPx}px, 0, 0)`,
+        };
+    },
+}));
+
 Alpine.data('heroProgressiveSearch', (config) => ({
     sectors: config.sectors ?? [],
-    suggestionsUrl: config.suggestionsUrl,
     sectorSlug: config.initialSector ?? '',
     professionSlug: config.initialProfession ?? '',
     query: config.initialKeyword ?? '',
-    loadingLabel: config.loadingLabel,
-    emptyLabel: config.emptyLabel,
-    placeholderDefault: config.placeholderDefault ?? '',
-    placeholderSector: config.placeholderSector ?? '',
-    placeholderProfession: config.placeholderProfession ?? '',
-    placeholderProfessionShort: config.placeholderProfessionShort ?? '',
-    suggestions: [],
-    open: false,
-    loading: false,
-    activeIndex: -1,
-    debounceTimer: null,
+    specializationAllLabel: config.specializationAllLabel ?? '',
+    specializationSelectProfessionLabel: config.specializationSelectProfessionLabel ?? '',
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
@@ -325,10 +437,6 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         return sector?.professions ?? [];
     },
 
-    get selectedSector() {
-        return this.sectors.find((item) => item.slug === this.sectorSlug) ?? null;
-    },
-
     get selectedProfession() {
         return this.filteredProfessions.find((item) => item.slug === this.professionSlug)
             ?? this.sectors
@@ -337,30 +445,24 @@ Alpine.data('heroProgressiveSearch', (config) => ({
             ?? null;
     },
 
-    get placeholder() {
-        const profession = this.selectedProfession;
-        const sector = this.selectedSector;
-
-        if (profession) {
-            const examples = (profession.examples ?? [])
-                .slice(0, 2)
-                .map((example) => `« ${example} »`)
-                .join(', ');
-
-            if (examples) {
-                return this.placeholderProfession
-                    .replace(':profession', profession.name)
-                    .replace(':examples', examples);
+    get filteredSpecializations() {
+        if (! this.professionSlug) {
+            if (! this.sectorSlug) {
+                return [];
             }
 
-            return this.placeholderProfessionShort.replace(':profession', profession.name);
+            return this.filteredProfessions.flatMap((profession) => profession.specializations ?? []);
         }
 
-        if (sector) {
-            return this.placeholderSector.replace(':sector', sector.name);
+        return this.selectedProfession?.specializations ?? [];
+    },
+
+    get specializationPlaceholder() {
+        if (! this.professionSlug && ! this.sectorSlug) {
+            return this.specializationSelectProfessionLabel;
         }
 
-        return this.placeholderDefault;
+        return this.specializationAllLabel;
     },
 
     onSectorChange() {
@@ -372,115 +474,20 @@ Alpine.data('heroProgressiveSearch', (config) => ({
             this.professionSlug = '';
         }
 
-        if (this.query.trim()) {
-            this.fetchSuggestions();
-        }
+        this.resetKeywordIfInvalid();
     },
 
     onProfessionChange() {
-        if (this.query.trim()) {
-            this.fetchSuggestions();
-        }
+        this.resetKeywordIfInvalid();
     },
 
-    onInput() {
-        clearTimeout(this.debounceTimer);
-        this.debounceTimer = setTimeout(() => this.fetchSuggestions(), 200);
-    },
-
-    onFocus() {
-        if (this.query.trim()) {
-            this.fetchSuggestions();
-        }
-    },
-
-    buildSuggestionsUrl() {
-        const params = new URLSearchParams({ q: this.query.trim() });
-
-        if (this.professionSlug) {
-            params.set('profession', this.professionSlug);
-        }
-
-        if (this.sectorSlug) {
-            params.set('sector', this.sectorSlug);
-        }
-
-        return `${this.suggestionsUrl}?${params.toString()}`;
-    },
-
-    async fetchSuggestions() {
-        const term = this.query.trim();
-
-        if (! term) {
-            this.suggestions = [];
-            this.open = false;
-            this.activeIndex = -1;
-
+    resetKeywordIfInvalid() {
+        if (! this.query) {
             return;
         }
 
-        this.loading = true;
-        this.open = true;
-
-        try {
-            const response = await fetch(this.buildSuggestionsUrl(), {
-                headers: { Accept: 'application/json' },
-            });
-
-            if (! response.ok) {
-                throw new Error('suggestions failed');
-            }
-
-            const data = await response.json();
-            this.suggestions = data.suggestions ?? [];
-            this.activeIndex = -1;
-        } catch {
-            this.suggestions = [];
-        } finally {
-            this.loading = false;
-        }
-    },
-
-    selectSuggestion(item) {
-        this.query = item.label;
-
-        if (item.profession_slug) {
-            this.professionSlug = item.profession_slug;
-        }
-
-        if (item.sector_slug) {
-            this.sectorSlug = item.sector_slug;
-        }
-
-        this.closeSuggestions();
-        this.$refs.input?.focus();
-    },
-
-    closeSuggestions() {
-        this.open = false;
-        this.activeIndex = -1;
-    },
-
-    onKeydown(event) {
-        if (event.key === 'Escape') {
-            this.closeSuggestions();
-
-            return;
-        }
-
-        if (! this.open || ! this.suggestions.length) {
-            return;
-        }
-
-        if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            this.activeIndex = Math.min(this.activeIndex + 1, this.suggestions.length - 1);
-        } else if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            this.activeIndex = Math.max(this.activeIndex - 1, 0);
-        } else if (event.key === 'Enter' && this.activeIndex >= 0) {
-            event.preventDefault();
-            this.selectSuggestion(this.suggestions[this.activeIndex]);
+        if (! this.filteredSpecializations.includes(this.query)) {
+            this.query = '';
         }
     },
 }));

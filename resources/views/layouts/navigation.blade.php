@@ -6,7 +6,7 @@
                 <div class="hidden sm:flex items-center gap-1">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard') || request()->routeIs('admin.*')">{{ __('talenma.nav.dashboard') }}</x-nav-link>
                     @if (Auth::user()->isAdmin())
-                        <x-nav-link :href="route('admin.magazine-banner.index')" :active="request()->routeIs('admin.magazine-banner.*')">{{ __('talenma.nav.banner_magazine') }}</x-nav-link>
+                        <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
                     @elseif (Auth::user()->isTalent())
                         <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')">{{ __('talenma.nav.my_profile') }}</x-nav-link>
                     @elseif (Auth::user()->isCompany())
@@ -14,7 +14,7 @@
                         <x-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')">{{ __('talenma.nav.my_company') }}</x-nav-link>
                         <x-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')">{{ __('talenma.nav.morocco_setup') }}</x-nav-link>
                     @endif
-                    <x-nav-link :href="route('magazine.index')" :active="request()->routeIs('magazine.*')">{{ __('talenma.nav.magazine') }}</x-nav-link>
+                    <x-nav-link :href="route('home').'#publications'" :active="false">{{ __('talenma.nav.publications') }}</x-nav-link>
                 </div>
             </div>
             <div class="hidden sm:flex items-center gap-3">
@@ -53,13 +53,13 @@
     <div :class="{'block': open, 'hidden': !open}" class="hidden sm:hidden border-t px-4 py-3 space-y-1">
         <x-responsive-nav-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-responsive-nav-link>
         @if (Auth::user()->isAdmin())
-            <x-responsive-nav-link :href="route('admin.magazine-banner.index')">{{ __('talenma.nav.banner_magazine') }}</x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.publications.index')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
         @elseif (Auth::user()->isTalent())
             <x-responsive-nav-link :href="route('profile.details.edit')">{{ __('talenma.nav.my_profile') }}</x-responsive-nav-link>
         @elseif (Auth::user()->isCompany())
             <x-responsive-nav-link :href="route('company.search')">{{ __('talenma.nav.talents') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('company.profile.edit')">{{ __('talenma.nav.my_company') }}</x-responsive-nav-link>
         @endif
-        <x-responsive-nav-link :href="route('magazine.index')">{{ __('talenma.nav.magazine') }}</x-responsive-nav-link>
+        <x-responsive-nav-link :href="route('home').'#publications'">{{ __('talenma.nav.publications') }}</x-responsive-nav-link>
     </div>
 </nav>

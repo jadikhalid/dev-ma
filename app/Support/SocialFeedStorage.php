@@ -6,7 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
-class MagazineBannerStorage
+class SocialFeedStorage
 {
     public const PUBLIC_DIR = 'magazine-banner';
 
@@ -64,33 +64,5 @@ class MagazineBannerStorage
         if (Storage::disk('public')->exists($path)) {
             Storage::disk('public')->delete($path);
         }
-    }
-
-    public static function migrateLegacyFilesToPublic(): int
-    {
-        $moved = 0;
-        $legacyDir = storage_path('app/public/'.self::PUBLIC_DIR);
-
-        if (! is_dir($legacyDir)) {
-            return 0;
-        }
-
-        $targetDir = public_path(self::PUBLIC_DIR);
-
-        if (! is_dir($targetDir)) {
-            mkdir($targetDir, 0755, true);
-        }
-
-        foreach (File::files($legacyDir) as $file) {
-            $filename = $file->getFilename();
-            $target = $targetDir.DIRECTORY_SEPARATOR.$filename;
-
-            if (! is_file($target)) {
-                File::copy($file->getPathname(), $target);
-                $moved++;
-            }
-        }
-
-        return $moved;
     }
 }

@@ -1,12 +1,11 @@
 <?php
 
-use App\Http\Controllers\Admin\MagazineBannerController;
+use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanySearchController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocaleController;
-use App\Http\Controllers\MagazineController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileDetailsController;
@@ -24,8 +23,6 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/skill-suggestions', SkillSuggestionController::class)
     ->middleware('throttle:60,1')
     ->name('skill-suggestions');
-Route::get('/magazine', [MagazineController::class, 'index'])->name('magazine.index');
-Route::get('/magazine/{slug}', [MagazineController::class, 'show'])->name('magazine.show');
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
 Route::get('/services/{slug}', [ServiceController::class, 'show'])->name('services.show');
 
@@ -39,9 +36,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/magazine-banner', [MagazineBannerController::class, 'index'])->name('magazine-banner.index');
-        Route::post('/magazine-banner', [MagazineBannerController::class, 'store'])->name('magazine-banner.store');
-        Route::delete('/magazine-banner/{magazineBannerItem}', [MagazineBannerController::class, 'destroy'])->name('magazine-banner.destroy');
+        Route::get('/publications', [PublicationsController::class, 'index'])->name('publications.index');
+        Route::post('/publications/news', [PublicationsController::class, 'storeNews'])->name('publications.news.store');
+        Route::delete('/publications/news/{newsItem}', [PublicationsController::class, 'destroyNews'])->name('publications.news.destroy');
+        Route::post('/publications/social-posts', [PublicationsController::class, 'storeSocialPost'])->name('publications.social-posts.store');
+        Route::delete('/publications/social-posts/{socialPost}', [PublicationsController::class, 'destroySocialPost'])->name('publications.social-posts.destroy');
+
+        Route::redirect('/magazine-banner', '/admin/publications');
+        Route::redirect('/news', '/admin/publications');
+        Route::redirect('/social-posts', '/admin/publications');
+        Route::redirect('/social-feed', '/admin/publications');
     });
 
     Route::get('/talent/profile', [ProfileDetailsController::class, 'edit'])->name('profile.details.edit');
