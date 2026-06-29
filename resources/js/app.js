@@ -115,7 +115,7 @@ Alpine.data('magazineTicker', () => ({
             originals.forEach((template, index) => {
                 const clone = template.cloneNode(true);
 
-                if (markNewest && index === originals.length - 1) {
+                if (markNewest && index === 0) {
                     clone.dataset.newest = '1';
                 }
 
@@ -149,9 +149,9 @@ Alpine.data('magazineTicker', () => ({
             const newest = setA.querySelector('[data-newest="1"]');
 
             if (! newest) {
-                const last = setA.lastElementChild;
+                const first = setA.firstElementChild;
 
-                return last ? last.offsetLeft + last.offsetWidth / 2 : 0;
+                return first ? first.offsetLeft + first.offsetWidth / 2 : 0;
             }
 
             return newest.offsetLeft + newest.offsetWidth / 2;
