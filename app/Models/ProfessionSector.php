@@ -3,13 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Profession extends Model
+class ProfessionSector extends Model
 {
     protected $fillable = [
-        'profession_sector_id',
         'slug',
         'name_fr',
         'name_en',
@@ -24,14 +22,9 @@ class Profession extends Model
         ];
     }
 
-    public function sector(): BelongsTo
+    public function professions(): HasMany
     {
-        return $this->belongsTo(ProfessionSector::class, 'profession_sector_id');
-    }
-
-    public function suggestions(): HasMany
-    {
-        return $this->hasMany(ProfessionSuggestion::class);
+        return $this->hasMany(Profession::class);
     }
 
     public function localizedName(?string $locale = null): string

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Profession;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -27,12 +28,24 @@ class CompanySearchController extends Controller
             $query->whereHas('profile', fn ($q) => $q->where('country', $request->country));
         }
 
+        if ($request->filled('profession')) {
+            $profession = Profession::query()
+                ->where('slug', $request->profession)
+                ->where('is_active', true)
+                ->first();
+
+            if ($profession) {
+                $name = $profession->localizedName();
+                $query->whereHas('profile', fn ($q) => $q->where('title', 'like', '%'.$name.'%'));
+            }
+        }
+
         if ($request->filled('keyword')) {
             $keyword = str_replace(['%', '_'], ['\\%', '\\_'], $request->keyword);
             $query->whereHas('profile', function ($q) use ($keyword) {
                 $q->where(function ($subQ) use ($keyword) {
-                    $subQ->where('title', 'like', '%' . $keyword . '%')
-                        ->orWhere('bio', 'like', '%' . $keyword . '%');
+                    $subQ->where('title', 'like', '%'.$keyword.'%')
+                        ->orWhere('bio', 'like', '%'.$keyword.'%');
                 });
             });
         }

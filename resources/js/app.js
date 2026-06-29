@@ -284,6 +284,194 @@ Alpine.data('magazineTicker', () => ({
     },
 }));
 
+Alpine.data('heroProgressiveSearch', (config) => ({
+    sectors: config.sectors ?? [],
+    suggestionsUrl: config.suggestionsUrl,
+    sectorSlug: config.initialSector ?? '',
+    professionSlug: config.initialProfession ?? '',
+    query: config.initialKeyword ?? '',
+    loadingLabel: config.loadingLabel,
+    emptyLabel: config.emptyLabel,
+    placeholderDefault: config.placeholderDefault ?? '',
+    placeholderSector: config.placeholderSector ?? '',
+    placeholderProfession: config.placeholderProfession ?? '',
+    placeholderProfessionShort: config.placeholderProfessionShort ?? '',
+    suggestions: [],
+    open: false,
+    loading: false,
+    activeIndex: -1,
+    debounceTimer: null,
+
+    get filteredProfessions() {
+        if (! this.sectorSlug) {
+            return this.sectors.flatMap((sector) => sector.professions ?? []);
+        }
+
+        const sector = this.sectors.find((item) => item.slug === this.sectorSlug);
+
+        return sector?.professions ?? [];
+    },
+
+    get selectedSector() {
+        return this.sectors.find((item) => item.slug === this.sectorSlug) ?? null;
+    },
+
+    get selectedProfession() {
+        return this.filteredProfessions.find((item) => item.slug === this.professionSlug)
+            ?? this.sectors
+                .flatMap((sector) => sector.professions ?? [])
+                .find((item) => item.slug === this.professionSlug)
+            ?? null;
+    },
+
+    get placeholder() {
+        const profession = this.selectedProfession;
+        const sector = this.selectedSector;
+
+        if (profession) {
+            const examples = (profession.examples ?? [])
+                .slice(0, 2)
+                .map((example) => `« ${example} »`)
+                .join(', ');
+
+            if (examples) {
+                return this.placeholderProfession
+                    .replace(':profession', profession.name)
+                    .replace(':examples', examples);
+            }
+
+            return this.placeholderProfessionShort.replace(':profession', profession.name);
+        }
+
+        if (sector) {
+            return this.placeholderSector.replace(':sector', sector.name);
+        }
+
+        return this.placeholderDefault;
+    },
+
+    onSectorChange() {
+        const isValidProfession = this.filteredProfessions.some(
+            (profession) => profession.slug === this.professionSlug
+        );
+
+        if (! isValidProfession) {
+            this.professionSlug = '';
+        }
+
+        if (this.query.trim()) {
+            this.fetchSuggestions();
+        }
+    },
+
+    onProfessionChange() {
+        if (this.query.trim()) {
+            this.fetchSuggestions();
+        }
+    },
+
+    onInput() {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => this.fetchSuggestions(), 200);
+    },
+
+    onFocus() {
+        if (this.query.trim()) {
+            this.fetchSuggestions();
+        }
+    },
+
+    buildSuggestionsUrl() {
+        const params = new URLSearchParams({ q: this.query.trim() });
+
+        if (this.professionSlug) {
+            params.set('profession', this.professionSlug);
+        }
+
+        if (this.sectorSlug) {
+            params.set('sector', this.sectorSlug);
+        }
+
+        return `${this.suggestionsUrl}?${params.toString()}`;
+    },
+
+    async fetchSuggestions() {
+        const term = this.query.trim();
+
+        if (! term) {
+            this.suggestions = [];
+            this.open = false;
+            this.activeIndex = -1;
+
+            return;
+        }
+
+        this.loading = true;
+        this.open = true;
+
+        try {
+            const response = await fetch(this.buildSuggestionsUrl(), {
+                headers: { Accept: 'application/json' },
+            });
+
+            if (! response.ok) {
+                throw new Error('suggestions failed');
+            }
+
+            const data = await response.json();
+            this.suggestions = data.suggestions ?? [];
+            this.activeIndex = -1;
+        } catch {
+            this.suggestions = [];
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    selectSuggestion(item) {
+        this.query = item.label;
+
+        if (item.profession_slug) {
+            this.professionSlug = item.profession_slug;
+        }
+
+        if (item.sector_slug) {
+            this.sectorSlug = item.sector_slug;
+        }
+
+        this.closeSuggestions();
+        this.$refs.input?.focus();
+    },
+
+    closeSuggestions() {
+        this.open = false;
+        this.activeIndex = -1;
+    },
+
+    onKeydown(event) {
+        if (event.key === 'Escape') {
+            this.closeSuggestions();
+
+            return;
+        }
+
+        if (! this.open || ! this.suggestions.length) {
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            this.activeIndex = Math.min(this.activeIndex + 1, this.suggestions.length - 1);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            this.activeIndex = Math.max(this.activeIndex - 1, 0);
+        } else if (event.key === 'Enter' && this.activeIndex >= 0) {
+            event.preventDefault();
+            this.selectSuggestion(this.suggestions[this.activeIndex]);
+        }
+    },
+}));
+
 Alpine.data('heroSkillAutocomplete', (config) => ({
     url: config.url,
     query: config.initial ?? '',

@@ -15,7 +15,7 @@ return [
     'hero_bento' => [
         [
             'size' => 'tall',
-            'photo' => 'images/hero/yasmine.jpg',
+            'photo' => 'images/hero/infirmiere.jpg',
             'profile_index' => 0,
         ],
         [
