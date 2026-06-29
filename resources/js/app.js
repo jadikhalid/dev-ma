@@ -104,58 +104,85 @@ Alpine.data('magazineTicker', () => ({
             this._marqueeOriginals = Array.from(setA.children).map((item) => item.cloneNode(true));
         }
 
-        setA.innerHTML = '';
-        this._marqueeOriginals.forEach((item) => {
-            setA.appendChild(item.cloneNode(true));
-        });
-
-        const originals = Array.from(setA.children);
+        const originals = this._marqueeOriginals;
+        const containerWidth = container.offsetWidth;
 
         if (! originals.length) {
             return;
         }
 
-        const containerWidth = container.offsetWidth;
-        const firstItemWidth = originals[0].offsetWidth;
-        let cycleWidth = 0;
+        const appendCycle = (markNewest = false) => {
+            originals.forEach((template, index) => {
+                const clone = template.cloneNode(true);
 
-        originals.forEach((item) => {
-            cycleWidth += item.offsetWidth;
-        });
+                if (markNewest && index === originals.length - 1) {
+                    clone.dataset.newest = '1';
+                }
 
-        const targetPrepend = Math.max(0, (containerWidth - firstItemWidth) / 2);
-        let prependWidth = 0;
+                setA.appendChild(clone);
+            });
+        };
+
+        const prependCycle = () => {
+            const prepended = [];
+
+            originals.forEach((template) => {
+                prepended.push(template.cloneNode(true));
+            });
+
+            prepended.forEach((clone) => {
+                setA.insertBefore(clone, setA.firstChild);
+            });
+        };
+
+        const measureUniqueCycleWidth = () => {
+            let width = 0;
+
+            for (let index = 0; index < originals.length; index++) {
+                width += setA.children[index].offsetWidth;
+            }
+
+            return width;
+        };
+
+        const measureNewestCenter = () => {
+            const newest = setA.querySelector('[data-newest="1"]');
+
+            if (! newest) {
+                const last = setA.lastElementChild;
+
+                return last ? last.offsetLeft + last.offsetWidth / 2 : 0;
+            }
+
+            return newest.offsetLeft + newest.offsetWidth / 2;
+        };
+
+        setA.innerHTML = '';
+        appendCycle(true);
+
+        const uniqueCycleWidth = measureUniqueCycleWidth();
+        let newestCenter = measureNewestCenter();
+        let centerBase = newestCenter - containerWidth / 2;
         let safety = 0;
 
-        if (originals.length > 1) {
-            let sourceIndex = originals.length - 1;
-
-            while (prependWidth < targetPrepend && safety < 40) {
-                const clone = originals[sourceIndex].cloneNode(true);
-                setA.insertBefore(clone, setA.firstChild);
-                prependWidth += clone.offsetWidth;
-                safety++;
-
-                sourceIndex--;
-                if (sourceIndex <= 0) {
-                    sourceIndex = originals.length - 1;
-                }
-            }
+        while (centerBase < 32 && safety < 40) {
+            prependCycle();
+            newestCenter = measureNewestCenter();
+            centerBase = newestCenter - containerWidth / 2;
+            safety++;
         }
 
-        const newestPosition = prependWidth;
+        safety = 0;
 
-        while (setA.scrollWidth < newestPosition + cycleWidth + containerWidth + 64 && safety < 80) {
-            originals.forEach((item) => {
-                setA.appendChild(item.cloneNode(true));
-            });
+        while (setA.scrollWidth < centerBase + containerWidth + 64 && safety < 80) {
+            appendCycle(false);
             safety++;
         }
 
         setB.innerHTML = setA.innerHTML;
 
-        this.marqueeDistance = cycleWidth;
-        this.marqueeCenterBase = newestPosition + firstItemWidth / 2 - containerWidth / 2;
+        this.marqueeDistance = uniqueCycleWidth || setA.scrollWidth;
+        this.marqueeCenterBase = centerBase;
 
         if (! reset || ! this.isDragging) {
             this.marqueeScrollPx = 0;

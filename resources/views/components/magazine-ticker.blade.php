@@ -1,7 +1,7 @@
 @php
     use App\Models\MagazineBannerItem;
 
-    $bannerItems = MagazineBannerItem::forBanner()->sortByDesc('created_at')->values();
+    $bannerItems = MagazineBannerItem::forBanner()->sortBy('created_at')->values();
 @endphp
 
 @if ($bannerItems->isNotEmpty())
