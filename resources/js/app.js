@@ -21,7 +21,7 @@ Alpine.data('magazineTicker', () => ({
 
     marqueeScrollPx: 0,
     marqueeCenterBase: 0,
-    marqueeDistance: 0,
+    marqueePeriod: 0,
     marqueeSpeed: 72,
 
     isBannerHovered: false,
@@ -91,12 +91,11 @@ Alpine.data('magazineTicker', () => ({
     },
 
     setupMarquee(reset = false) {
-        const track = this.$refs.marqueeTrack;
         const setA = this.$refs.marqueeSetA;
         const setB = this.$refs.marqueeSetB;
         const container = this.$refs.marqueeViewport;
 
-        if (! track || ! setA || ! setB || ! container) {
+        if (! setA || ! setB || ! container) {
             return;
         }
 
@@ -107,11 +106,13 @@ Alpine.data('magazineTicker', () => ({
         const originals = this._marqueeOriginals;
         const containerWidth = container.offsetWidth;
 
-        if (! originals.length) {
+        if (! originals.length || ! containerWidth) {
             return;
         }
 
-        const appendCycle = (markNewest = false) => {
+        const buildUniqueCycle = (markNewest = false) => {
+            const fragment = document.createDocumentFragment();
+
             originals.forEach((template, index) => {
                 const clone = template.cloneNode(true);
 
@@ -119,73 +120,53 @@ Alpine.data('magazineTicker', () => ({
                     clone.dataset.newest = '1';
                 }
 
-                setA.appendChild(clone);
-            });
-        };
-
-        const prependCycle = () => {
-            const prepended = [];
-
-            originals.forEach((template) => {
-                prepended.push(template.cloneNode(true));
+                fragment.appendChild(clone);
             });
 
-            prepended.forEach((clone) => {
-                setA.insertBefore(clone, setA.firstChild);
-            });
-        };
-
-        const measureUniqueCycleWidth = () => {
-            let width = 0;
-
-            for (let index = 0; index < originals.length; index++) {
-                width += setA.children[index].offsetWidth;
-            }
-
-            return width;
-        };
-
-        const measureNewestCenter = () => {
-            const newest = setA.querySelector('[data-newest="1"]');
-
-            if (! newest) {
-                const first = setA.firstElementChild;
-
-                return first ? first.offsetLeft + first.offsetWidth / 2 : 0;
-            }
-
-            return newest.offsetLeft + newest.offsetWidth / 2;
+            return fragment;
         };
 
         setA.innerHTML = '';
-        appendCycle(true);
+        setA.appendChild(buildUniqueCycle(true));
 
-        const uniqueCycleWidth = measureUniqueCycleWidth();
-        let newestCenter = measureNewestCenter();
-        let centerBase = newestCenter - containerWidth / 2;
-        let safety = 0;
+        const uniqueCycleWidth = setA.scrollWidth;
+        const minPeriodWidth = containerWidth + 64;
+        let cycleCopies = 1;
 
-        while (centerBase < 32 && safety < 40) {
-            prependCycle();
-            newestCenter = measureNewestCenter();
-            centerBase = newestCenter - containerWidth / 2;
-            safety++;
+        while (uniqueCycleWidth * cycleCopies < minPeriodWidth && cycleCopies < 24) {
+            cycleCopies++;
         }
 
-        safety = 0;
+        for (let copy = 1; copy < cycleCopies; copy++) {
+            setA.appendChild(buildUniqueCycle(false));
+        }
 
-        while (setA.scrollWidth < centerBase + containerWidth + 64 && safety < 80) {
-            appendCycle(false);
-            safety++;
+        const newest = setA.querySelector('[data-newest="1"]');
+
+        if (! newest) {
+            return;
+        }
+
+        let centerBase = newest.offsetLeft + newest.offsetWidth / 2 - containerWidth / 2;
+
+        if (centerBase < 0) {
+            const spacer = document.createElement('div');
+            spacer.className = 'shrink-0';
+            spacer.setAttribute('aria-hidden', 'true');
+            spacer.style.width = `${Math.ceil(-centerBase)}px`;
+            setA.insertBefore(spacer, setA.firstChild);
+            centerBase = newest.offsetLeft + newest.offsetWidth / 2 - containerWidth / 2;
         }
 
         setB.innerHTML = setA.innerHTML;
 
-        this.marqueeDistance = uniqueCycleWidth || setA.scrollWidth;
+        this.marqueePeriod = setA.offsetWidth;
         this.marqueeCenterBase = centerBase;
 
         if (! reset || ! this.isDragging) {
             this.marqueeScrollPx = 0;
+        } else if (this.marqueePeriod > 0) {
+            this.marqueeScrollPx = ((this.marqueeScrollPx % this.marqueePeriod) + this.marqueePeriod) % this.marqueePeriod;
         }
 
         setA.querySelectorAll('img').forEach((img) => {
@@ -196,18 +177,18 @@ Alpine.data('magazineTicker', () => ({
     },
 
     marqueeTrackStyle() {
-        const distance = this.marqueeDistance;
+        const period = this.marqueePeriod;
 
-        if (! distance) {
+        if (! period) {
             return {
                 transform: 'translate3d(0px, 0, 0)',
             };
         }
 
-        const looped = ((this.marqueeScrollPx % distance) + distance) % distance;
+        const scrolled = ((this.marqueeScrollPx % period) + period) % period;
 
         return {
-            transform: `translate3d(${-(this.marqueeCenterBase + looped)}px, 0, 0)`,
+            transform: `translate3d(${-(this.marqueeCenterBase + scrolled)}px, 0, 0)`,
         };
     },
 
