@@ -1,0 +1,20 @@
+ssh -p 65002 u282907555@46.202.182.44
+
+
+Pour les prochaines mises à jour
+Sur ton PC :
+
+git add .
+git commit -m "..."
+git push
+npm run build   # si tu changes CSS/JS
+Sur Hostinger (SSH) :
+ssh -p 65002 u282907555@46.202.182.44
+cd ~/domains/talentsdumaroc.com/laravel
+git pull
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+Bonne continuation avec Talents du Maroc.

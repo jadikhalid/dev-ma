@@ -1,4 +1,4 @@
-@props(['size' => 'md', 'light' => false])
+@props(['size' => 'md', 'light' => false, 'linked' => true])
 
 @php
     $sizes = [
@@ -8,10 +8,19 @@
     ];
     $s = $sizes[$size] ?? $sizes['md'];
     $textClass = $light ? 'text-white' : 'text-gray-900';
-    $accentClass = $light ? 'text-emerald-300' : 'text-indigo-600';
+    $accentClass = $light ? 'text-white' : 'text-indigo-600';
+    $classes = $attributes->merge(['class' => 'flex items-center gap-2']);
 @endphp
 
-<a {{ $attributes->merge(['href' => '/', 'class' => 'flex items-center gap-2']) }}>
+@if ($linked)
+    <a {{ $classes->merge(['href' => $attributes->get('href', '/')]) }}>
+@else
+    <div {{ $classes }}>
+@endif
     <span class="flex items-center justify-center {{ $s['box'] }} rounded-lg bg-indigo-600 text-white font-bold shrink-0">MA</span>
     <span class="font-semibold {{ $s['text'] }} tracking-tight {{ $textClass }}">Talents du <span class="{{ $accentClass }}">Maroc</span></span>
-</a>
+@if ($linked)
+    </a>
+@else
+    </div>
+@endif

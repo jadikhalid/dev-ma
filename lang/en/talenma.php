@@ -155,7 +155,7 @@ return [
         'cta_subtitle' => 'The platform bridging Moroccan talents and international companies.',
     ],
     'footer' => [
-        'tagline' => 'The Moroccan talents marketplace. We connect Moroccan talents (and soon African talent) with French and European companies.',
+        'tagline' => 'The Moroccan talents marketplace. We connect Moroccan talents with international companies.',
         'platform' => 'Platform',
         'become_talent' => 'Become a talent',
         'recruit_free' => 'Hire (free)',
@@ -163,8 +163,9 @@ return [
         'morocco_setup' => 'Set up in Morocco',
         'legal' => 'Legal advisory',
         'hr' => 'Human resources',
-        'copyright' => 'On — Moroccan talents',
-        'tech' => 'Morocco → France → Europe',
+        'copyright' => 'MA — Talents du Maroc',
+        'developed_by' => 'Developed by',
+        'jadi_digital' => 'JADI DIGITAL',
         'follow_us' => 'Follow us',
     ],
     'auth' => [

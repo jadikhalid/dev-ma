@@ -155,7 +155,7 @@ return [
         'cta_subtitle' => 'La plateforme qui fait le pont entre les talents du Maroc et les entreprises internationales.',
     ],
     'footer' => [
-        'tagline' => 'La marketplace des talents marocains. Nous connectons les talents marocains (et bientôt africains) aux entreprises françaises et européennes.',
+        'tagline' => 'La marketplace des talents marocains. Nous connectons les talents marocains aux entreprises internationales.',
         'platform' => 'Plateforme',
         'become_talent' => 'Devenir talent',
         'recruit_free' => 'Recruter (gratuit)',
@@ -163,8 +163,9 @@ return [
         'morocco_setup' => 'S\'installer au Maroc',
         'legal' => 'Conseil juridique',
         'hr' => 'Ressources humaines',
-        'copyright' => 'On — Talents marocains',
-        'tech' => 'Maroc → France → Europe',
+        'copyright' => 'MA — Talents du maroc',
+        'developed_by' => 'Développé par',
+        'jadi_digital' => 'JADI DIGITAL',
         'follow_us' => 'Nous suivre',
     ],
     'auth' => [
