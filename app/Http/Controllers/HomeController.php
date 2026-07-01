@@ -36,7 +36,10 @@ class HomeController extends Controller
             ->values();
 
         return view('home', [
-            'talentsCount' => User::where('role', 'dev')->where('is_subscribed', true)->count(),
+            'talentsCount' => User::where('role', 'dev')
+                ->where('approval_status', User::APPROVAL_APPROVED)
+                ->where('is_subscribed', true)
+                ->count(),
             'socialPosts' => SocialPost::forSlider(),
             'professionSectors' => $professionSectors,
         ]);

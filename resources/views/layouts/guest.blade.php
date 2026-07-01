@@ -15,14 +15,13 @@
         <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 text-white">
             <div class="relative flex flex-col justify-between p-12 w-full">
                 <div class="flex items-center justify-between">
-                    <x-brand-logo href="{{ route('home') }}" light size="lg" />
+                    <x-brand-logo href="{{ route('home') }}" light size="lg" :badge-border="true" />
                     <x-locale-switcher />
                 </div>
                 <div>
-                    <h1 class="text-3xl font-bold leading-tight">{{ __('talenma.auth.guest_title') }}</h1>
-                    <p class="mt-4 text-indigo-100 max-w-md">{{ __('talenma.auth.guest_desc') }}</p>
+                    <p class="text-xl font-semibold leading-relaxed max-w-md">{{ __('talenma.auth.guest_intro') }}</p>
                 </div>
-                <p class="text-sm text-indigo-200">&copy; {{ date('Y') }} On</p>
+                <p class="text-sm text-indigo-200">&copy; {{ date('Y') }} {{ __('talenma.footer.copyright') }}</p>
             </div>
         </div>
         <div class="flex-1 flex flex-col justify-center items-center px-6 py-12 bg-gray-50">

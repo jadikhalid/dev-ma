@@ -3,18 +3,37 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'is_subscribed', 'subscription_expires_at'])]
+#[Fillable([
+    'name',
+    'email',
+    'password',
+    'role',
+    'approval_status',
+    'approved_at',
+    'approved_by',
+    'rejection_reason',
+    'is_subscribed',
+    'subscription_expires_at',
+])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
+    public const APPROVAL_PENDING = 'pending';
+
+    public const APPROVAL_APPROVED = 'approved';
+
+    public const APPROVAL_REJECTED = 'rejected';
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -22,6 +41,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'approved_at' => 'datetime',
             'password' => 'hashed',
             'is_subscribed' => 'boolean',
             'subscription_expires_at' => 'datetime',
@@ -43,6 +63,16 @@ class User extends Authenticatable
         return $this->hasMany(RecruitmentRequest::class, 'company_user_id');
     }
 
+    public function moderationRequests(): HasMany
+    {
+        return $this->hasMany(ModerationRequest::class, 'requested_by');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
     public function isTalent(): bool
     {
         return $this->role === 'dev';
@@ -62,6 +92,35 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function isModerator(): bool
+    {
+        return $this->role === 'moderator';
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->isAdmin() || $this->isModerator();
+    }
+
+    public function isApproved(): bool
+    {
+        if ($this->isStaff() || $this->isCompany()) {
+            return true;
+        }
+
+        return $this->approval_status === self::APPROVAL_APPROVED;
+    }
+
+    public function isPendingApproval(): bool
+    {
+        return $this->isTalent() && $this->approval_status === self::APPROVAL_PENDING;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->isTalent() && $this->approval_status === self::APPROVAL_REJECTED;
     }
 
     public function hasActiveSubscription(): bool

@@ -15,6 +15,7 @@ class CompanySearchController extends Controller
         }
 
         $query = User::where('role', 'dev')
+            ->where('approval_status', User::APPROVAL_APPROVED)
             ->where('is_subscribed', true)
             ->where('subscription_expires_at', '>', now())
             ->with('profile')
@@ -61,7 +62,7 @@ class CompanySearchController extends Controller
             return redirect()->route('dashboard');
         }
 
-        if ($talent->role !== 'dev' || ! $talent->hasActiveSubscription()) {
+        if ($talent->role !== 'dev' || $talent->approval_status !== User::APPROVAL_APPROVED || ! $talent->hasActiveSubscription()) {
             abort(404);
         }
 

@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'staff' => \App\Http\Middleware\EnsureUserIsStaff::class,
+            'talent.approved' => \App\Http\Middleware\EnsureTalentIsApproved::class,
+            'talent.pending' => \App\Http\Middleware\EnsureTalentIsPending::class,
+            'talent.rejected' => \App\Http\Middleware\EnsureTalentIsRejected::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

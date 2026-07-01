@@ -10,8 +10,8 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if ($user->isAdmin()) {
-            return redirect()->route('admin.publications.index');
+        if ($user->isStaff()) {
+            return redirect()->route('admin.users.index');
         }
 
         if ($user->isCompany()) {

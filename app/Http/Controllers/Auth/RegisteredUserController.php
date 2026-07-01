@@ -3,55 +3,40 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
     public function create(): View
     {
-        return view('auth.register');
+        $role = request('role');
+        $defaultRole = in_array($role, ['dev', 'company'], true) ? $role : 'dev';
+
+        return view('auth.register', [
+            'defaultRole' => $defaultRole,
+        ]);
     }
 
     /**
-     * Handle an incoming registration request.
-     *
-     * @throws ValidationException
+     * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(RegisterRequest $request): RedirectResponse
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'string', 'in:dev,company'],
-        ]);
+        $validated = $request->validated();
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'role' => $validated['role'],
+            'approval_status' => $validated['role'] === 'dev' ? User::APPROVAL_PENDING : User::APPROVAL_APPROVED,
+            'approved_at' => $validated['role'] === 'company' ? now() : null,
         ]);
-
-        if ($user->role === 'dev') {
-            $user->profile()->create([
-                'title' => null,
-                'bio' => null,
-                'experience_years' => 0,
-                'country' => 'Maroc',
-            ]);
-        }
 
         if ($user->role === 'company') {
             $user->companyProfile()->create([
@@ -63,6 +48,10 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        $request->session()->regenerate();
+
+        $request->clearRateLimiter();
+
+        return redirect(route('verification.notice', absolute: false));
     }
 }

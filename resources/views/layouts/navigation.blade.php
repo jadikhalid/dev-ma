@@ -4,9 +4,12 @@
             <div class="flex items-center gap-4">
                 <x-brand-logo :href="route('dashboard')" size="sm" />
                 <div class="hidden sm:flex items-center gap-1">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard') || request()->routeIs('admin.*')">{{ __('talenma.nav.dashboard') }}</x-nav-link>
-                    @if (Auth::user()->isAdmin())
-                        <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">{{ __('talenma.nav.dashboard') }}</x-nav-link>
+                    @if (Auth::user()->isStaff())
+                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
+                        @if (Auth::user()->isAdmin())
+                            <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
+                        @endif
                     @elseif (Auth::user()->isTalent())
                         <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')">{{ __('talenma.nav.my_profile') }}</x-nav-link>
                     @elseif (Auth::user()->isCompany())
@@ -19,9 +22,11 @@
             </div>
             <div class="hidden sm:flex items-center gap-3">
                 <x-locale-switcher />
-                <span class="text-xs px-2.5 py-1 rounded-full font-medium {{ Auth::user()->isAdmin() ? 'bg-violet-100 text-violet-700' : (Auth::user()->isTalent() ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700') }}">
+                <span class="text-xs px-2.5 py-1 rounded-full font-medium {{ Auth::user()->isAdmin() ? 'bg-violet-100 text-violet-700' : (Auth::user()->isModerator() ? 'bg-purple-100 text-purple-700' : (Auth::user()->isTalent() ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700')) }}">
                     @if (Auth::user()->isAdmin())
                         {{ __('talenma.roles.admin') }}
+                    @elseif (Auth::user()->isModerator())
+                        {{ __('talenma.roles.moderator') }}
                     @elseif (Auth::user()->isTalent())
                         {{ __('talenma.roles.talent') }}
                     @else
@@ -52,8 +57,11 @@
     </div>
     <div :class="{'block': open, 'hidden': !open}" class="hidden sm:hidden border-t px-4 py-3 space-y-1">
         <x-responsive-nav-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-responsive-nav-link>
-        @if (Auth::user()->isAdmin())
-            <x-responsive-nav-link :href="route('admin.publications.index')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
+        @if (Auth::user()->isStaff())
+            <x-responsive-nav-link :href="route('admin.users.index')">{{ __('talenma.nav.admin_users') }}</x-responsive-nav-link>
+            @if (Auth::user()->isAdmin())
+                <x-responsive-nav-link :href="route('admin.publications.index')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
+            @endif
         @elseif (Auth::user()->isTalent())
             <x-responsive-nav-link :href="route('profile.details.edit')">{{ __('talenma.nav.my_profile') }}</x-responsive-nav-link>
         @elseif (Auth::user()->isCompany())
