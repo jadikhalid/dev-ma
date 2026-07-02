@@ -18,7 +18,7 @@ class CompanySearchController extends Controller
             ->where('approval_status', User::APPROVAL_APPROVED)
             ->where('is_subscribed', true)
             ->where('subscription_expires_at', '>', now())
-            ->with('profile')
+            ->with(['profile.profession', 'profile.professionSector'])
             ->whereHas('profile', fn ($q) => $q->whereNotNull('title')->whereNotNull('bio'));
 
         if ($request->filled('city')) {
@@ -29,6 +29,10 @@ class CompanySearchController extends Controller
             $query->whereHas('profile', fn ($q) => $q->where('country', $request->country));
         }
 
+        if ($request->filled('sector')) {
+            $query->whereHas('profile.professionSector', fn ($q) => $q->where('slug', $request->sector));
+        }
+
         if ($request->filled('profession')) {
             $profession = Profession::query()
                 ->where('slug', $request->profession)
@@ -36,8 +40,7 @@ class CompanySearchController extends Controller
                 ->first();
 
             if ($profession) {
-                $name = $profession->localizedName();
-                $query->whereHas('profile', fn ($q) => $q->where('title', 'like', '%'.$name.'%'));
+                $query->whereHas('profile', fn ($q) => $q->where('profession_id', $profession->id));
             }
         }
 
@@ -45,7 +48,8 @@ class CompanySearchController extends Controller
             $keyword = str_replace(['%', '_'], ['\\%', '\\_'], $request->keyword);
             $query->whereHas('profile', function ($q) use ($keyword) {
                 $q->where(function ($subQ) use ($keyword) {
-                    $subQ->where('title', 'like', '%'.$keyword.'%')
+                    $subQ->where('specialization', 'like', '%'.$keyword.'%')
+                        ->orWhere('title', 'like', '%'.$keyword.'%')
                         ->orWhere('bio', 'like', '%'.$keyword.'%');
                 });
             });
@@ -66,7 +70,7 @@ class CompanySearchController extends Controller
             abort(404);
         }
 
-        $talent->load('profile');
+        $talent->load(['profile.profession', 'profile.professionSector']);
 
         return view('company.talent-show', compact('talent'));
     }

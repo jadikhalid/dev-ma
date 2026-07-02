@@ -4,14 +4,22 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Models\ProfessionSector;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
+use App\Services\ProfessionCatalogService;
+use App\Services\ProfileDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Throwable;
 
 class RegisteredUserController extends Controller
 {
+    public function __construct(
+        private ProfessionCatalogService $professionCatalog,
+        private ProfileDocumentService $documentService,
+    ) {}
+
     public function create(): View
     {
         $role = request('role');
@@ -19,12 +27,10 @@ class RegisteredUserController extends Controller
 
         return view('auth.register', [
             'defaultRole' => $defaultRole,
+            'professionSectors' => $this->professionCatalog->sectorsForLocale(),
         ]);
     }
 
-    /**
-     * @throws \Illuminate\Validation\ValidationException
-     */
     public function store(RegisterRequest $request): RedirectResponse
     {
         $validated = $request->validated();
@@ -44,14 +50,39 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-        event(new Registered($user));
+        if ($user->role === 'dev') {
+            $sector = ProfessionSector::query()
+                ->where('slug', $validated['sector'])
+                ->where('is_active', true)
+                ->firstOrFail();
 
-        Auth::login($user);
+            $profile = $user->profile()->create([
+                'profession_sector_id' => $sector->id,
+                'registration_description' => $validated['description'],
+                'experience_years' => 0,
+                'country' => 'Maroc',
+            ]);
 
-        $request->session()->regenerate();
+            $this->documentService->storeMany($profile, $request->file('documents', []));
+        }
 
         $request->clearRateLimiter();
 
-        return redirect(route('verification.notice', absolute: false));
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            return redirect()
+                ->route('verification.notice')
+                ->with('toast_error', __('talenma.auth.verification_email_failed'));
+        }
+
+        return redirect()
+            ->route('login')
+            ->with('toast_success', __('talenma.auth.register_success'));
     }
 }

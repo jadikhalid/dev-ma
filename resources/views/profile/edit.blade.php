@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
         <div>
-            <h2 class="text-xl font-bold text-gray-900">Mon compte</h2>
-            <p class="text-sm text-gray-500 mt-0.5">Gérez vos informations personnelles et la sécurité</p>
+            <h2 class="text-xl font-bold text-gray-900">{{ __('talenma.account.title') }}</h2>
+            <p class="text-sm text-gray-500 mt-0.5">{{ __('talenma.account.subtitle') }}</p>
         </div>
     </x-slot>
 

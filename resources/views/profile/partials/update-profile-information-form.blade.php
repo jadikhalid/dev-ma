@@ -1,40 +1,64 @@
 <section>
     <header>
-        <h2 class="text-lg font-semibold text-gray-900">Informations personnelles</h2>
-        <p class="mt-1 text-sm text-gray-600">Mettez à jour votre nom et votre adresse e-mail.</p>
+        <h2 class="text-lg font-semibold text-gray-900">{{ __('talenma.account.personal_info_title') }}</h2>
+        <p class="mt-1 text-sm text-gray-600">{{ __('talenma.account.personal_info_desc') }}</p>
     </header>
 
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
+    <form method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-6 space-y-6">
         @csrf
         @method('patch')
 
+        <div class="flex flex-col sm:flex-row sm:items-center gap-5 pb-6 border-b border-gray-100">
+            <x-user-avatar :user="$user" size="xl" />
+            <div class="flex-1 space-y-3">
+                <div>
+                    <x-input-label for="avatar" :value="__('talenma.account.avatar')" />
+                    <input
+                        id="avatar"
+                        name="avatar"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                    >
+                    <p class="mt-1 text-xs text-gray-500">{{ __('talenma.account.avatar_hint') }}</p>
+                    <x-input-error class="mt-2" :messages="$errors->get('avatar')" />
+                </div>
+                @if ($user->avatar_path)
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" name="remove_avatar" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        {{ __('talenma.account.avatar_remove') }}
+                    </label>
+                @endif
+            </div>
+        </div>
+
         <div>
-            <x-input-label for="name" value="Nom complet" />
+            <x-input-label for="name" :value="__('talenma.account.name')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
         <div>
-            <x-input-label for="email" value="Adresse e-mail" />
+            <x-input-label for="email" :value="__('talenma.account.email')" />
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
                     <p class="text-sm mt-2 text-gray-800">
-                        Votre adresse e-mail n'est pas vérifiée.
+                        {{ __('talenma.account.email_unverified') }}
                         <button form="send-verification" class="underline text-sm text-indigo-600 hover:text-indigo-800">
-                            Cliquez ici pour renvoyer l'e-mail de vérification.
+                            {{ __('talenma.account.resend_verification') }}
                         </button>
                     </p>
 
                     @if (session('status') === 'verification-link-sent')
                         <p class="mt-2 font-medium text-sm text-green-600">
-                            Un nouveau lien de vérification a été envoyé.
+                            {{ __('talenma.account.verification_sent') }}
                         </p>
                     @endif
                 </div>
@@ -42,11 +66,11 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button>Enregistrer</x-primary-button>
+            <x-primary-button>{{ __('talenma.common.save') }}</x-primary-button>
 
             @if (session('status') === 'profile-updated')
                 <p x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 2000)" class="text-sm text-green-600 font-medium">
-                    Enregistré.
+                    {{ __('talenma.account.saved') }}
                 </p>
             @endif
         </div>

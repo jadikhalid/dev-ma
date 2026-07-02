@@ -3,13 +3,22 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use Database\Seeders\ProfessionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(ProfessionSeeder::class);
+    }
 
     private function validPayload(array $overrides = []): array
     {
@@ -22,6 +31,17 @@ class RegistrationTest extends TestCase
         ], $overrides);
     }
 
+    private function validTalentPayload(array $overrides = []): array
+    {
+        return array_merge($this->validPayload(), [
+            'sector' => 'it-digital',
+            'description' => 'Développeur passionné avec plus de cinq ans d\'expérience en Laravel et React.',
+            'documents' => [
+                UploadedFile::fake()->create('diploma.pdf', 100, 'application/pdf'),
+            ],
+        ], $overrides);
+    }
+
     public function test_registration_screen_can_be_rendered(): void
     {
         $response = $this->get('/register');
@@ -31,17 +51,40 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
-        $response = $this->post('/register', $this->validPayload());
+        $response = $this->post('/register', $this->validTalentPayload());
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('verification.notice', absolute: false));
+        $this->assertGuest();
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('toast_success');
         $this->assertDatabaseHas('users', [
             'email' => 'test@example.com',
             'role' => 'dev',
         ]);
         $this->assertNull(User::query()->where('email', 'test@example.com')->value('email_verified_at'));
-        $this->assertNull(User::query()->where('email', 'test@example.com')->first()?->profile);
-        $this->assertSame(User::APPROVAL_PENDING, User::query()->where('email', 'test@example.com')->value('approval_status'));
+        $user = User::query()->where('email', 'test@example.com')->first();
+        $this->assertNotNull($user->profile);
+        $this->assertSame('Développeur passionné avec plus de cinq ans d\'expérience en Laravel et React.', $user->profile->registration_description);
+        $this->assertCount(1, $user->profile->documents);
+        $this->assertSame(User::APPROVAL_PENDING, $user->approval_status);
+    }
+
+    public function test_company_registration_does_not_require_talent_fields(): void
+    {
+        $response = $this->post('/register', $this->validPayload([
+            'role' => 'company',
+            'email' => 'company@example.com',
+        ]));
+
+        $response->assertRedirect(route('login'));
+        $this->assertNull(User::query()->where('email', 'company@example.com')->first()?->profile);
+    }
+
+    public function test_talent_registration_requires_sector_and_documents(): void
+    {
+        $response = $this->from('/register')->post('/register', $this->validPayload());
+
+        $response->assertRedirect('/register');
+        $response->assertSessionHasErrors(['sector', 'description', 'documents']);
     }
 
     public function test_verified_pending_talent_cannot_access_dashboard(): void
@@ -75,7 +118,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_requires_a_valid_role(): void
     {
-        $response = $this->from('/register')->post('/register', $this->validPayload([
+        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
             'role' => 'admin',
         ]));
 
@@ -86,7 +129,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_rejects_honeypot_field(): void
     {
-        $response = $this->from('/register')->post('/register', $this->validPayload([
+        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
             'website' => 'https://spam.example',
         ]));
 
@@ -97,7 +140,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_rejects_invalid_name_characters(): void
     {
-        $response = $this->from('/register')->post('/register', $this->validPayload([
+        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
             'name' => '<script>alert(1)</script>',
         ]));
 
@@ -108,7 +151,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_rejects_weak_password(): void
     {
-        $response = $this->from('/register')->post('/register', $this->validPayload([
+        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
             'password' => 'password',
             'password_confirmation' => 'password',
         ]));
@@ -123,14 +166,14 @@ class RegistrationTest extends TestCase
         RateLimiter::clear('register|test@example.com|127.0.0.1');
 
         for ($i = 0; $i < 5; $i++) {
-            $this->from('/register')->post('/register', $this->validPayload([
+            $this->from('/register')->post('/register', $this->validTalentPayload([
                 'email' => 'test@example.com',
                 'password' => 'short',
                 'password_confirmation' => 'short',
             ]));
         }
 
-        $response = $this->from('/register')->post('/register', $this->validPayload([
+        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
             'email' => 'test@example.com',
         ]));
 
@@ -141,7 +184,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_does_not_allow_privilege_escalation_fields(): void
     {
-        $this->post('/register', $this->validPayload([
+        $this->post('/register', $this->validTalentPayload([
             'is_subscribed' => true,
             'subscription_expires_at' => now()->addYear()->toDateTimeString(),
         ]));

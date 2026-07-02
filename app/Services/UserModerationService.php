@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Mail\TalentApprovedMail;
+use App\Mail\TalentRejectedMail;
 use App\Models\ModerationRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class UserModerationService
@@ -144,6 +147,8 @@ class UserModerationService
                 'country' => 'Maroc',
             ]);
         }
+
+        Mail::to($user->email)->send(new TalentApprovedMail($user->fresh()));
     }
 
     public function rejectTalent(User $user, ?string $reason, User $reviewer): void
@@ -160,6 +165,8 @@ class UserModerationService
             'approved_by' => $reviewer->id,
             'rejection_reason' => $reason,
         ]);
+
+        Mail::to($user->email)->send(new TalentRejectedMail($user->fresh(), $reason));
     }
 
     public function deleteUser(User $user): void

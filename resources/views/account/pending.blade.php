@@ -9,9 +9,9 @@
             <p class="mt-4 text-sm text-gray-500">{{ __('talenma.account.pending_email', ['email' => $user->email]) }}</p>
             <form method="POST" action="{{ route('logout') }}" class="mt-8">
                 @csrf
-                <button type="submit" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                <x-primary-button class="w-full sm:w-auto justify-center">
                     {{ __('talenma.nav.logout') }}
-                </button>
+                </x-primary-button>
             </form>
         </div>
     </div>

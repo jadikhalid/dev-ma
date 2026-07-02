@@ -16,7 +16,9 @@
                     <x-locale-switcher />
                 </div>
                 @auth
-                    <a href="{{ route('dashboard') }}" class="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600">{{ __('talenma.nav.my_space') }}</a>
+                    <a href="{{ route('dashboard') }}" class="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm hover:shadow transition-colors duration-300 ease-in-out">
+                        {{ __('talenma.nav.my_space') }}
+                    </a>
                 @else
                     {{-- Mobile : icônes --}}
                     <a href="{{ route('login') }}"

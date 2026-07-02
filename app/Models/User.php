@@ -12,10 +12,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'name',
     'email',
+    'avatar_path',
     'password',
     'role',
     'approval_status',
@@ -128,5 +130,25 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->is_subscribed
             && $this->subscription_expires_at
             && $this->subscription_expires_at->isFuture();
+    }
+
+    public function avatarUrl(): ?string
+    {
+        if (! $this->avatar_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->avatar_path);
+    }
+
+    public function initials(): string
+    {
+        $parts = preg_split('/\s+/u', trim($this->name)) ?: [];
+
+        if (count($parts) >= 2) {
+            return strtoupper(mb_substr($parts[0], 0, 1).mb_substr(end($parts), 0, 1));
+        }
+
+        return strtoupper(mb_substr($this->name, 0, 2));
     }
 }

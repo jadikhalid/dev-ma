@@ -19,7 +19,7 @@
     <div {{ $classes }}>
 @endif
     <span class="{{ $badgeClass }}">MA</span>
-    <span class="font-semibold {{ $s['text'] }} tracking-tight {{ $textClass }}">Talents du <span class="{{ $accentClass }}">Maroc</span></span>
+    <span class="font-semibold {{ $s['text'] }} tracking-tight {{ $textClass }} max-[420px]:hidden">Talents du <span class="{{ $accentClass }}">Maroc</span></span>
 @if ($linked)
     </a>
 @else

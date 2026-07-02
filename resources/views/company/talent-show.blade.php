@@ -25,6 +25,36 @@
                 <span>⏱ {{ __('talenma.talent.'.($availabilityLabels[$talent->profile->availability] ?? 'available')) }}</span>
             </div>
 
+            @if ($talent->profile->specialization)
+                <p class="mb-4 text-sm text-gray-600">
+                    <span class="font-medium text-gray-900">{{ $talent->profile->sectorLabel() }}</span>
+                    · {{ $talent->profile->professionLabel() }}
+                    · <span class="text-indigo-700">{{ $talent->profile->specialization }}</span>
+                </p>
+            @endif
+
+            @if ($talent->profile->work_modes)
+                @php
+                    $workModeLabels = [
+                        'remote' => 'work_mode_remote',
+                        'visa_sponsorship' => 'work_mode_visa',
+                        'local' => 'work_mode_local',
+                    ];
+                @endphp
+                <div class="flex flex-wrap gap-2 mb-4">
+                    @foreach ($talent->profile->work_modes as $mode)
+                        <span class="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ __('talenma.talent.'.($workModeLabels[$mode] ?? $mode)) }}</span>
+                    @endforeach
+                </div>
+            @endif
+
+            @if ($talent->profile->languages)
+                <p class="mb-4 text-sm text-gray-600">
+                    {{ __('talenma.talent.languages') }} :
+                    {{ collect($talent->profile->languages)->map(fn ($code) => __('talenma.talent.lang_'.$code))->join(', ') }}
+                </p>
+            @endif
+
             @if ($talent->profile->skills)
                 <div class="flex flex-wrap gap-2 mb-6">
                     @foreach ($talent->profile->skills as $skill)

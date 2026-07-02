@@ -426,6 +426,7 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     query: config.initialKeyword ?? '',
     specializationAllLabel: config.specializationAllLabel ?? '',
     specializationSelectProfessionLabel: config.specializationSelectProfessionLabel ?? '',
+    titleInputId: config.titleInputId ?? null,
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
@@ -489,6 +490,20 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         if (! this.filteredSpecializations.includes(this.query)) {
             this.query = '';
         }
+    },
+
+    suggestTitle() {
+        if (! this.titleInputId || ! this.query) {
+            return;
+        }
+
+        const titleInput = document.getElementById(this.titleInputId);
+
+        if (! titleInput || titleInput.value.trim()) {
+            return;
+        }
+
+        titleInput.value = this.query;
     },
 }));
 
@@ -618,5 +633,42 @@ function initMobileLocaleFromIp() {
 }
 
 document.addEventListener('DOMContentLoaded', initMobileLocaleFromIp);
+
+Alpine.data('toastStack', (initialToasts = []) => ({
+    toasts: [],
+
+    init() {
+        initialToasts.forEach((toast) => {
+            this.push(toast.type, toast.message);
+        });
+    },
+
+    push(type, message) {
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+        this.toasts.push({
+            id,
+            type,
+            message,
+            visible: true,
+        });
+
+        window.setTimeout(() => this.dismiss(id), type === 'success' ? 7000 : 9000);
+    },
+
+    dismiss(id) {
+        const toast = this.toasts.find((item) => item.id === id);
+
+        if (! toast) {
+            return;
+        }
+
+        toast.visible = false;
+
+        window.setTimeout(() => {
+            this.toasts = this.toasts.filter((item) => item.id !== id);
+        }, 300);
+    },
+}));
 
 Alpine.start();

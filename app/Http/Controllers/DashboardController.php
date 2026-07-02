@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\TalentProfileCompletionService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    public function __construct(private TalentProfileCompletionService $profileCompletion) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -21,8 +24,10 @@ class DashboardController extends Controller
             return view('dashboard.company', compact('recentRequests'));
         }
 
-        $user->load('profile');
+        $user->load(['profile.profession', 'profile.professionSector', 'profile.documents']);
+        $profile = $user->profile;
+        $completion = $this->profileCompletion->assess($profile);
 
-        return view('dashboard.talent');
+        return view('dashboard.talent', compact('profile', 'completion'));
     }
 }
