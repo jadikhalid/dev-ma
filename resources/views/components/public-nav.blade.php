@@ -16,9 +16,29 @@
                     <x-locale-switcher />
                 </div>
                 @auth
-                    <a href="{{ route('dashboard') }}" class="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm hover:shadow transition-colors duration-300 ease-in-out">
-                        {{ __('talenma.nav.my_space') }}
-                    </a>
+                    @if (Auth::user()->isStaff() || Auth::user()->isTalent())
+                        <x-dropdown align="right" width="48">
+                            <x-slot name="trigger">
+                                <button
+                                    type="button"
+                                    class="rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                    aria-label="{{ Auth::user()->name }}"
+                                >
+                                    <x-user-avatar :user="Auth::user()" size="sm" initials-only />
+                                </button>
+                            </x-slot>
+                            <x-slot name="content">
+                                <x-dropdown-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-dropdown-link>
+                                <form method="POST" action="{{ route('logout') }}">@csrf
+                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
+                                </form>
+                            </x-slot>
+                        </x-dropdown>
+                    @else
+                        <a href="{{ route('dashboard') }}" class="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm hover:shadow transition-colors duration-300 ease-in-out">
+                            {{ __('talenma.nav.my_space') }}
+                        </a>
+                    @endif
                 @else
                     {{-- Mobile : icônes --}}
                     <a href="{{ route('login') }}"

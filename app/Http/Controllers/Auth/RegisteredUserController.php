@@ -23,7 +23,7 @@ class RegisteredUserController extends Controller
     public function create(): View
     {
         $role = request('role');
-        $defaultRole = in_array($role, ['dev', 'company'], true) ? $role : 'dev';
+        $defaultRole = in_array($role, ['dev', 'company'], true) ? $role : '';
 
         return view('auth.register', [
             'defaultRole' => $defaultRole,
@@ -46,6 +46,10 @@ class RegisteredUserController extends Controller
 
         if ($user->role === 'company') {
             $user->companyProfile()->create([
+                'company_name' => $validated['name'],
+                'representative_name' => $validated['representative_name'],
+                'representative_email' => $validated['representative_email'],
+                'hiring_needs' => $validated['company_need'],
                 'country' => 'France',
             ]);
         }

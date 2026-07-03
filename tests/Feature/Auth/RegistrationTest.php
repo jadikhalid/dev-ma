@@ -42,6 +42,16 @@ class RegistrationTest extends TestCase
         ], $overrides);
     }
 
+    private function validCompanyPayload(array $overrides = []): array
+    {
+        return array_merge($this->validPayload(), [
+            'role' => 'company',
+            'representative_name' => 'Jean Dupont',
+            'representative_email' => 'jean.dupont@acme.com',
+            'company_need' => 'Nous recherchons un développeur Laravel senior pour une mission de 6 mois en télétravail.',
+        ], $overrides);
+    }
+
     public function test_registration_screen_can_be_rendered(): void
     {
         $response = $this->get('/register');
@@ -70,13 +80,29 @@ class RegistrationTest extends TestCase
 
     public function test_company_registration_does_not_require_talent_fields(): void
     {
-        $response = $this->post('/register', $this->validPayload([
-            'role' => 'company',
+        $response = $this->post('/register', $this->validCompanyPayload([
             'email' => 'company@example.com',
+            'name' => 'Acme SAS',
         ]));
 
         $response->assertRedirect(route('login'));
-        $this->assertNull(User::query()->where('email', 'company@example.com')->first()?->profile);
+        $user = User::query()->where('email', 'company@example.com')->first();
+        $this->assertNull($user?->profile);
+        $this->assertSame('Acme SAS', $user?->companyProfile?->company_name);
+        $this->assertSame('Jean Dupont', $user?->companyProfile?->representative_name);
+        $this->assertSame('jean.dupont@acme.com', $user?->companyProfile?->representative_email);
+        $this->assertStringContainsString('développeur Laravel', $user?->companyProfile?->hiring_needs ?? '');
+    }
+
+    public function test_company_registration_requires_company_fields(): void
+    {
+        $response = $this->from('/register')->post('/register', $this->validPayload([
+            'role' => 'company',
+            'email' => 'company2@example.com',
+        ]));
+
+        $response->assertRedirect('/register');
+        $response->assertSessionHasErrors(['representative_name', 'representative_email', 'company_need']);
     }
 
     public function test_talent_registration_requires_sector_and_documents(): void

@@ -5,7 +5,10 @@ namespace Tests\Feature\Admin;
 use App\Mail\TalentApprovedMail;
 use App\Mail\TalentRejectedMail;
 use App\Models\ModerationRequest;
+use App\Models\ProfessionSector;
+use App\Models\ProfileDocument;
 use App\Models\User;
+use Database\Seeders\ProfessionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -105,5 +108,79 @@ class UserManagementTest extends TestCase
         $talent = User::factory()->create(['role' => 'dev', 'approval_status' => User::APPROVAL_APPROVED]);
 
         $this->actingAs($moderator)->post(route('admin.users.moderator.grant', $talent))->assertForbidden();
+    }
+
+    public function test_staff_can_view_pending_registration_details(): void
+    {
+        $this->seed(ProfessionSeeder::class);
+
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $sector = ProfessionSector::query()->firstOrFail();
+        $talent = User::factory()->create([
+            'role' => 'dev',
+            'approval_status' => User::APPROVAL_PENDING,
+            'name' => 'Talent En Attente',
+            'email' => 'pending@example.com',
+        ]);
+        $talent->profile()->create([
+            'profession_sector_id' => $sector->id,
+            'registration_description' => 'Développeur full-stack avec cinq ans d\'expérience.',
+            'experience_years' => 0,
+            'country' => 'Maroc',
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.users.registration', $talent))
+            ->assertOk()
+            ->assertJsonPath('name', 'Talent En Attente')
+            ->assertJsonPath('email', 'pending@example.com')
+            ->assertJsonPath('description', 'Développeur full-stack avec cinq ans d\'expérience.')
+            ->assertJsonPath('sector', $sector->localizedName());
+    }
+
+    public function test_registration_details_are_not_available_for_approved_talents(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $talent = User::factory()->create([
+            'role' => 'dev',
+            'approval_status' => User::APPROVAL_APPROVED,
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.users.registration', $talent))
+            ->assertNotFound();
+    }
+
+    public function test_staff_can_view_profile_document_through_secure_route(): void
+    {
+        $this->seed(ProfessionSeeder::class);
+
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $sector = ProfessionSector::query()->firstOrFail();
+        $talent = User::factory()->create([
+            'role' => 'dev',
+            'approval_status' => User::APPROVAL_PENDING,
+        ]);
+        $profile = $talent->profile()->create([
+            'profession_sector_id' => $sector->id,
+            'registration_description' => 'Profil test.',
+            'experience_years' => 0,
+            'country' => 'Maroc',
+        ]);
+
+        $path = 'profile-documents/'.$profile->id.'/test.pdf';
+        \Illuminate\Support\Facades\Storage::disk('public')->put($path, '%PDF-1.4 test');
+        $document = $profile->documents()->create([
+            'path' => $path,
+            'original_name' => 'diploma.pdf',
+            'mime_type' => 'application/pdf',
+            'size' => 128,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.profile-documents.show', $document))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
     }
 }

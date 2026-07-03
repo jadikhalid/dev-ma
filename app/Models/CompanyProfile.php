@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id',
     'company_name',
+    'representative_name',
+    'representative_email',
     'sector',
     'country',
     'city',

@@ -1,4 +1,4 @@
-@props(['user', 'size' => 'md'])
+@props(['user', 'size' => 'md', 'initialsOnly' => false])
 
 @php
     $sizes = [
@@ -10,7 +10,7 @@
     $sizeClass = $sizes[$size] ?? $sizes['md'];
 @endphp
 
-@if ($user->avatarUrl())
+@if (! $initialsOnly && $user->avatarUrl())
     <img
         src="{{ $user->avatarUrl() }}"
         alt="{{ $user->name }}"

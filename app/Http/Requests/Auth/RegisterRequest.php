@@ -25,6 +25,13 @@ class RegisterRequest extends FormRequest
         $this->merge([
             'name' => is_string($this->name) ? trim(preg_replace('/\s+/u', ' ', $this->name) ?? '') : $this->name,
             'email' => is_string($this->email) ? Str::lower(trim($this->email)) : $this->email,
+            'representative_name' => is_string($this->representative_name)
+                ? trim(preg_replace('/\s+/u', ' ', $this->representative_name) ?? '')
+                : $this->representative_name,
+            'representative_email' => is_string($this->representative_email)
+                ? Str::lower(trim($this->representative_email))
+                : $this->representative_email,
+            'company_need' => is_string($this->company_need) ? trim($this->company_need) : $this->company_need,
         ]);
     }
 
@@ -78,6 +85,29 @@ class RegisterRequest extends FormRequest
                 'max:1024',
                 'mimes:pdf,jpg,jpeg,png,webp',
             ],
+            'representative_name' => [
+                Rule::requiredIf(fn () => $this->input('role') === 'company'),
+                'nullable',
+                'string',
+                'min:2',
+                'max:255',
+                'regex:/^[\p{L}\p{M}][\p{L}\p{M}\s\'\-\.]*$/u',
+            ],
+            'representative_email' => [
+                Rule::requiredIf(fn () => $this->input('role') === 'company'),
+                'nullable',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+            ],
+            'company_need' => [
+                Rule::requiredIf(fn () => $this->input('role') === 'company'),
+                'nullable',
+                'string',
+                'min:20',
+                'max:1000',
+            ],
         ];
     }
 
@@ -95,6 +125,9 @@ class RegisterRequest extends FormRequest
             'sector' => __('talenma.auth.sector'),
             'description' => __('talenma.auth.registration_description'),
             'documents' => __('talenma.auth.registration_documents'),
+            'representative_name' => __('talenma.auth.representative_name'),
+            'representative_email' => __('talenma.auth.representative_email'),
+            'company_need' => __('talenma.auth.company_need'),
         ];
     }
 
@@ -131,6 +164,16 @@ class RegisterRequest extends FormRequest
             'documents.max' => __('talenma.auth.validation.documents_max'),
             'documents.*.max' => __('talenma.auth.validation.documents_size'),
             'documents.*.mimes' => __('talenma.auth.validation.documents_type'),
+            'representative_name.required' => __('talenma.auth.validation.representative_name_required'),
+            'representative_name.min' => __('talenma.auth.validation.representative_name_min'),
+            'representative_name.max' => __('talenma.auth.validation.representative_name_max'),
+            'representative_name.regex' => __('talenma.auth.validation.representative_name_format'),
+            'representative_email.required' => __('talenma.auth.validation.representative_email_required'),
+            'representative_email.email' => __('talenma.auth.validation.representative_email_invalid'),
+            'representative_email.max' => __('talenma.auth.validation.representative_email_max'),
+            'company_need.required' => __('talenma.auth.validation.company_need_required'),
+            'company_need.min' => __('talenma.auth.validation.company_need_min'),
+            'company_need.max' => __('talenma.auth.validation.company_need_max'),
         ];
     }
 

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreManagedUserRequest;
 use App\Models\ModerationRequest;
 use App\Models\User;
+use App\Services\PendingRegistrationPresenter;
 use App\Services\UserModerationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,7 +29,10 @@ class UserManagementController extends Controller
             ->latest();
 
         if ($filter === 'pending') {
-            $usersQuery->where('role', 'dev')->where('approval_status', User::APPROVAL_PENDING);
+            $usersQuery
+                ->where('role', 'dev')
+                ->where('approval_status', User::APPROVAL_PENDING)
+                ->with(['profile.professionSector', 'profile.documents']);
         } elseif ($filter === 'talents') {
             $usersQuery->where('role', 'dev');
         } elseif ($filter === 'companies') {
@@ -53,6 +58,13 @@ class UserManagementController extends Controller
                 ->where('approval_status', User::APPROVAL_PENDING)
                 ->count(),
         ]);
+    }
+
+    public function registration(User $user, PendingRegistrationPresenter $presenter): JsonResponse
+    {
+        abort_unless($user->isTalent() && $user->isPendingApproval(), 404);
+
+        return response()->json($presenter->present($user));
     }
 
     public function store(StoreManagedUserRequest $request): RedirectResponse

@@ -24,6 +24,11 @@ class ProfileDocument extends Model
 
     public function url(): string
     {
+        return route('admin.profile-documents.show', $this);
+    }
+
+    public function publicUrl(): string
+    {
         return Storage::disk('public')->url($this->path);
     }
 

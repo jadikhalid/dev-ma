@@ -671,4 +671,159 @@ Alpine.data('toastStack', (initialToasts = []) => ({
     },
 }));
 
+Alpine.data('registerWizard', (config) => ({
+    role: config.initialRole ?? '',
+    step: config.initialStep ?? 1,
+    name: config.initialName ?? '',
+    email: config.initialEmail ?? '',
+    password: '',
+    passwordConfirmation: '',
+    sector: config.initialSector ?? '',
+    description: config.initialDescription ?? '',
+    documentsCount: config.initialDocumentsCount ?? 0,
+    representativeName: config.initialRepresentativeName ?? '',
+    representativeEmail: config.initialRepresentativeEmail ?? '',
+    companyNeed: config.initialCompanyNeed ?? '',
+
+    init() {
+        this.$watch('role', (value) => {
+            if (value !== 'dev') {
+                this.step = 1;
+            }
+        });
+    },
+
+    get isTalent() {
+        return this.role === 'dev';
+    },
+
+    get isCompany() {
+        return this.role === 'company';
+    },
+
+    get hasRole() {
+        return this.isTalent || this.isCompany;
+    },
+
+    get step1Valid() {
+        if (! this.hasRole) {
+            return false;
+        }
+
+        const nameOk = this.name.trim().length >= 2;
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim());
+        const passwordOk = this.password.length >= 8;
+        const confirmOk = this.password === this.passwordConfirmation && this.passwordConfirmation.length > 0;
+
+        return nameOk && emailOk && passwordOk && confirmOk;
+    },
+
+    get companyFieldsValid() {
+        const nameOk = this.representativeName.trim().length >= 2;
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.representativeEmail.trim());
+
+        return nameOk && emailOk && this.companyNeed.trim().length >= 20;
+    },
+
+    get step2Valid() {
+        return this.sector !== ''
+            && this.description.trim().length >= 20
+            && this.documentsCount >= 1
+            && this.documentsCount <= 3;
+    },
+
+    get canGoBack() {
+        return this.isTalent && this.step === 2;
+    },
+
+    get canGoNext() {
+        return this.isTalent && this.step === 1 && this.step1Valid;
+    },
+
+    get showSubmit() {
+        return this.isCompany || (this.isTalent && this.step === 2);
+    },
+
+    get canSubmit() {
+        if (! this.hasRole) {
+            return false;
+        }
+
+        if (this.isCompany) {
+            return this.step1Valid && this.companyFieldsValid;
+        }
+
+        return this.step === 2 && this.step1Valid && this.step2Valid;
+    },
+
+    get navEnabled() {
+        return this.isTalent;
+    },
+
+    onDocumentsChange(event) {
+        this.documentsCount = event.target.files?.length ?? 0;
+    },
+
+    next() {
+        if (this.canGoNext) {
+            this.step = 2;
+        }
+    },
+
+    prev() {
+        if (this.canGoBack) {
+            this.step = 1;
+        }
+    },
+
+    onSubmit(event) {
+        if (! this.canSubmit) {
+            event.preventDefault();
+        }
+    },
+}));
+
+Alpine.data('adminPendingDrawer', (config) => ({
+    open: false,
+    loading: false,
+    error: null,
+    user: null,
+    labels: config.labels ?? {},
+
+    async openFor(userId) {
+        this.open = true;
+        this.loading = true;
+        this.error = null;
+        this.user = null;
+        document.body.classList.add('overflow-hidden');
+
+        try {
+            const response = await fetch(`/admin/users/${userId}/registration`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (! response.ok) {
+                throw new Error('load_failed');
+            }
+
+            this.user = await response.json();
+        } catch {
+            this.error = config.loadError ?? 'Error';
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    close() {
+        this.open = false;
+        this.loading = false;
+        this.error = null;
+        this.user = null;
+        document.body.classList.remove('overflow-hidden');
+    },
+}));
+
 Alpine.start();

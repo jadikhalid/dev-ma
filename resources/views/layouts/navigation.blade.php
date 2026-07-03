@@ -44,7 +44,7 @@
                         </button>
                     </x-slot>
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('home')">{{ __('talenma.nav.home') }}</x-dropdown-link>
+                        <x-dropdown-link :href="route('home')" :disabled="$pendingTalent">{{ __('talenma.nav.home') }}</x-dropdown-link>
                         <x-dropdown-link :href="route('profile.edit')" :disabled="$pendingTalent">{{ __('talenma.nav.my_account') }}</x-dropdown-link>
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
@@ -102,7 +102,7 @@
                     @endif
                 </div>
             @endunless
-            <x-dropdown-link :href="route('home')">{{ __('talenma.nav.home') }}</x-dropdown-link>
+            <x-dropdown-link :href="route('home')" :disabled="$pendingTalent">{{ __('talenma.nav.home') }}</x-dropdown-link>
             <x-dropdown-link :href="route('profile.edit')" :disabled="$pendingTalent">{{ __('talenma.nav.my_account') }}</x-dropdown-link>
             <form method="POST" action="{{ route('logout') }}">@csrf
                 <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>

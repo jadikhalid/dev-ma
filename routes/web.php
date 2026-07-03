@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountStatusController;
+use App\Http\Controllers\Admin\ProfileDocumentController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\CompanyProfileController;
@@ -46,6 +47,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('staff')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}/registration', [UserManagementController::class, 'registration'])->name('users.registration');
+        Route::get('/profile-documents/{profileDocument}', [ProfileDocumentController::class, 'show'])->name('profile-documents.show');
         Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
         Route::post('/users/{user}/approve', [UserManagementController::class, 'approve'])->name('users.approve');
         Route::post('/users/{user}/reject', [UserManagementController::class, 'reject'])->name('users.reject');

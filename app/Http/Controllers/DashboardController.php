@@ -2,19 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AdminDashboardService;
 use App\Services\TalentProfileCompletionService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function __construct(private TalentProfileCompletionService $profileCompletion) {}
+    public function __construct(
+        private TalentProfileCompletionService $profileCompletion,
+        private AdminDashboardService $adminDashboard,
+    ) {}
 
     public function index(Request $request)
     {
         $user = $request->user();
 
         if ($user->isStaff()) {
-            return redirect()->route('admin.users.index');
+            return view('dashboard.admin', [
+                'dashboard' => $this->adminDashboard->build($user),
+            ]);
         }
 
         if ($user->isCompany()) {

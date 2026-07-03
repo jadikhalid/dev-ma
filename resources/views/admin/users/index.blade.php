@@ -91,7 +91,21 @@
             </form>
         </section>
 
-        <section class="bg-white rounded-2xl border overflow-hidden">
+        <section
+            class="bg-white rounded-2xl border overflow-hidden"
+            @if ($filter === 'pending')
+                x-data="adminPendingDrawer({
+                    loadError: @js(__('talenma.admin.users.registration_load_error')),
+                    labels: {
+                        drawerTitle: @js(__('talenma.admin.users.registration_drawer_title')),
+                        close: @js(__('talenma.admin.users.registration_close')),
+                        emailVerified: @js(__('talenma.admin.users.registration_email_verified')),
+                        emailUnverified: @js(__('talenma.admin.users.registration_email_unverified')),
+                        rejectReason: @js(__('talenma.admin.users.reject_reason')),
+                    },
+                })"
+            @endif
+        >
             <div class="px-6 py-4 border-b flex flex-wrap gap-2">
                 @foreach (['pending' => __('talenma.admin.users.filter_pending'), 'talents' => __('talenma.admin.users.filter_talents'), 'companies' => __('talenma.admin.users.filter_companies'), 'moderators' => __('talenma.admin.users.filter_moderators'), 'all' => __('talenma.admin.users.filter_all')] as $key => $label)
                     <a href="{{ route('admin.users.index', ['filter' => $key]) }}"
@@ -106,25 +120,49 @@
 
             <div class="divide-y">
                 @forelse ($users as $user)
-                    <div class="px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div>
-                            <p class="font-medium text-gray-900">{{ $user->name }}</p>
-                            <p class="text-sm text-gray-500">{{ $user->email }}</p>
-                            <p class="text-xs mt-1 text-gray-400">
-                                {{ __('talenma.admin.users.role_label') }} :
-                                @if ($user->isModerator())
-                                    {{ __('talenma.roles.moderator') }}
-                                @elseif ($user->isCompany())
-                                    {{ __('talenma.roles.company') }}
-                                @else
-                                    {{ __('talenma.roles.talent') }}
+                    @php
+                        $isPendingTalent = $filter === 'pending' && $user->isTalent() && $user->isPendingApproval();
+                    @endphp
+                    <div
+                        @class([
+                            'px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4',
+                            'cursor-pointer hover:bg-indigo-50/50 transition-colors' => $isPendingTalent,
+                        ])
+                        @if ($isPendingTalent)
+                            role="button"
+                            tabindex="0"
+                            @click="openFor({{ $user->id }})"
+                            @keydown.enter.prevent="openFor({{ $user->id }})"
+                        @endif
+                    >
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-start gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-medium text-gray-900">{{ $user->name }}</p>
+                                    <p class="text-sm text-gray-500">{{ $user->email }}</p>
+                                    <p class="text-xs mt-1 text-gray-400">
+                                        {{ __('talenma.admin.users.role_label') }} :
+                                        @if ($user->isModerator())
+                                            {{ __('talenma.roles.moderator') }}
+                                        @elseif ($user->isCompany())
+                                            {{ __('talenma.roles.company') }}
+                                        @else
+                                            {{ __('talenma.roles.talent') }}
+                                        @endif
+                                        @if ($user->isTalent())
+                                            — {{ __('talenma.admin.users.status_'.$user->approval_status) }}
+                                        @endif
+                                    </p>
+                                </div>
+                                @if ($isPendingTalent)
+                                    <span class="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 mt-0.5">
+                                        {{ __('talenma.admin.users.view_registration') }}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    </span>
                                 @endif
-                                @if ($user->isTalent())
-                                    — {{ __('talenma.admin.users.status_'.$user->approval_status) }}
-                                @endif
-                            </p>
+                            </div>
                         </div>
-                        <div class="flex flex-wrap gap-2">
+                        <div class="flex flex-wrap gap-2" @if ($isPendingTalent) @click.stop @keydown.stop @endif>
                             @if ($user->isTalent() && $user->isPendingApproval())
                                 <form method="POST" action="{{ route('admin.users.approve', $user) }}">
                                     @csrf
@@ -176,6 +214,10 @@
 
             @if ($users->hasPages())
                 <div class="px-6 py-4 border-t">{{ $users->links() }}</div>
+            @endif
+
+            @if ($filter === 'pending')
+                <x-admin.pending-registration-drawer />
             @endif
         </section>
     </div>
