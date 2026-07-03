@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Services\AvatarService;
+use App\Services\UserDeletionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +13,10 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function __construct(private AvatarService $avatars) {}
+    public function __construct(
+        private AvatarService $avatars,
+        private UserDeletionService $userDeletion,
+    ) {}
 
     public function edit(Request $request): View
     {
@@ -58,7 +62,7 @@ class ProfileController extends Controller
 
         Auth::logout();
 
-        $user->delete();
+        $this->userDeletion->delete($user);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

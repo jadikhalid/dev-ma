@@ -19,6 +19,7 @@ class AdminDashboardService
         $talentsPending = User::query()
             ->where('role', 'dev')
             ->where('approval_status', User::APPROVAL_PENDING)
+            ->whereNotNull('email_verified_at')
             ->count();
 
         $talentsApproved = User::query()
@@ -54,6 +55,7 @@ class AdminDashboardService
         $recentPendingTalents = User::query()
             ->where('role', 'dev')
             ->where('approval_status', User::APPROVAL_PENDING)
+            ->whereNotNull('email_verified_at')
             ->with('profile.professionSector')
             ->latest()
             ->take(6)

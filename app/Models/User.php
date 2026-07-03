@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
     'avatar_path',
     'password',
     'role',
+    'email_verified_at',
     'approval_status',
     'approved_at',
     'approved_by',

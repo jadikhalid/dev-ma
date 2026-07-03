@@ -32,6 +32,7 @@ class UserManagementController extends Controller
             $usersQuery
                 ->where('role', 'dev')
                 ->where('approval_status', User::APPROVAL_PENDING)
+                ->whereNotNull('email_verified_at')
                 ->with(['profile.professionSector', 'profile.documents']);
         } elseif ($filter === 'talents') {
             $usersQuery->where('role', 'dev');
@@ -56,13 +57,14 @@ class UserManagementController extends Controller
             'pendingCount' => User::query()
                 ->where('role', 'dev')
                 ->where('approval_status', User::APPROVAL_PENDING)
+                ->whereNotNull('email_verified_at')
                 ->count(),
         ]);
     }
 
     public function registration(User $user, PendingRegistrationPresenter $presenter): JsonResponse
     {
-        abort_unless($user->isTalent() && $user->isPendingApproval(), 404);
+        abort_unless($user->isTalent() && $user->isPendingApproval() && $user->hasVerifiedEmail(), 404);
 
         return response()->json($presenter->present($user));
     }

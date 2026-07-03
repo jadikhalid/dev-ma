@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class UserModerationService
 {
+    public function __construct(private UserDeletionService $userDeletion) {}
     public function submit(User $actor, string $action, ?User $target = null, array $payload = []): ModerationRequest|string
     {
         $this->guardAction($actor, $action, $target);
@@ -171,9 +172,7 @@ class UserModerationService
 
     public function deleteUser(User $user): void
     {
-        $user->profile()?->delete();
-        $user->companyProfile()?->delete();
-        $user->delete();
+        $this->userDeletion->delete($user);
     }
 
     public function createUser(array $payload, User $actor): User

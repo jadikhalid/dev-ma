@@ -24,5 +24,9 @@ class AppServiceProvider extends ServiceProvider
             ->max(128)
             ->letters()
             ->numbers());
+
+        if ($this->app->environment('local') && config('mail.default') === 'log') {
+            logger()->warning('MAIL_MAILER=log : les e-mails sont écrits dans storage/logs/laravel.log, pas dans Mailpit. Utilisez MAIL_MAILER=smtp et MAIL_PORT=1025.');
+        }
     }
 }

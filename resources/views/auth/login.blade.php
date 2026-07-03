@@ -3,6 +3,19 @@
 
     <x-toast-stack />
 
+    @if (session('pending_registration_email'))
+        <div class="mb-4 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+            <p class="mb-3">{{ __('talenma.auth.register_resend_hint', ['email' => session('pending_registration_email')]) }}</p>
+            <form method="POST" action="{{ route('register.resend-verification') }}">
+                @csrf
+                <input type="hidden" name="email" value="{{ session('pending_registration_email') }}">
+                <x-primary-button type="submit" class="text-sm">
+                    {{ __('talenma.auth.resend_registration_verification') }}
+                </x-primary-button>
+            </form>
+        </div>
+    @endif
+
     <x-auth-session-status class="mb-4" :status="session('status')" />
     <form method="POST" action="{{ route('login') }}">@csrf
         <div>

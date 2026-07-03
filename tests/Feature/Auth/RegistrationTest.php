@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Mail\VerifyRegistrationMail;
+use App\Models\PendingRegistration;
 use App\Models\User;
 use Database\Seeders\ProfessionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
@@ -59,39 +62,106 @@ class RegistrationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_new_users_can_register(): void
+    public function test_registration_stores_pending_until_email_is_verified(): void
     {
+        Mail::fake();
+
         $response = $this->post('/register', $this->validTalentPayload());
 
         $this->assertGuest();
         $response->assertRedirect(route('login'));
         $response->assertSessionHas('toast_success');
-        $this->assertDatabaseHas('users', [
-            'email' => 'test@example.com',
-            'role' => 'dev',
-        ]);
-        $this->assertNull(User::query()->where('email', 'test@example.com')->value('email_verified_at'));
+        $this->assertDatabaseMissing('users', ['email' => 'test@example.com']);
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'test@example.com']);
+
+        Mail::assertSent(VerifyRegistrationMail::class, function (VerifyRegistrationMail $mail) {
+            return $mail->hasTo('test@example.com')
+                && str_contains($mail->verificationUrl, '/register/verify/');
+        });
+    }
+
+    public function test_email_verification_creates_user_and_profile(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', $this->validTalentPayload());
+
+        $pending = PendingRegistration::query()->where('email', 'test@example.com')->firstOrFail();
+
+        $response = $this->get(route('register.verify', ['token' => $pending->token]));
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('account.pending'));
+
         $user = User::query()->where('email', 'test@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertNotNull($user->email_verified_at);
         $this->assertNotNull($user->profile);
         $this->assertSame('Développeur passionné avec plus de cinq ans d\'expérience en Laravel et React.', $user->profile->registration_description);
         $this->assertCount(1, $user->profile->documents);
         $this->assertSame(User::APPROVAL_PENDING, $user->approval_status);
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'test@example.com']);
     }
 
-    public function test_company_registration_does_not_require_talent_fields(): void
+    public function test_expired_registration_link_is_rejected_and_purged(): void
     {
+        $pending = PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'expired@example.com',
+            'locale' => 'fr',
+            'payload' => [
+                'name' => 'Expired User',
+                'password' => bcrypt('Password1'),
+                'role' => 'dev',
+                'sector' => 'it-digital',
+                'description' => 'Description suffisamment longue pour validation.',
+            ],
+            'expires_at' => now()->subMinute(),
+        ]);
+
+        $response = $this->get(route('register.verify', ['token' => $pending->token]));
+
+        $response->assertRedirect(route('register'));
+        $response->assertSessionHas('toast_error');
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'expired@example.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'expired@example.com']);
+    }
+
+    public function test_unverified_user_cannot_login(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'email' => 'legacy@example.com',
+        ]);
+
+        $response = $this->from('/login')->post('/login', [
+            'email' => 'legacy@example.com',
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect('/login');
+        $response->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
+    public function test_company_registration_is_pending_until_email_verification(): void
+    {
+        Mail::fake();
+
         $response = $this->post('/register', $this->validCompanyPayload([
             'email' => 'company@example.com',
             'name' => 'Acme SAS',
         ]));
 
         $response->assertRedirect(route('login'));
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'company@example.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'company@example.com']);
+
+        $pending = PendingRegistration::query()->where('email', 'company@example.com')->firstOrFail();
+        $this->get(route('register.verify', ['token' => $pending->token]));
+
         $user = User::query()->where('email', 'company@example.com')->first();
         $this->assertNull($user?->profile);
         $this->assertSame('Acme SAS', $user?->companyProfile?->company_name);
-        $this->assertSame('Jean Dupont', $user?->companyProfile?->representative_name);
-        $this->assertSame('jean.dupont@acme.com', $user?->companyProfile?->representative_email);
-        $this->assertStringContainsString('développeur Laravel', $user?->companyProfile?->hiring_needs ?? '');
     }
 
     public function test_company_registration_requires_company_fields(): void
@@ -210,10 +280,15 @@ class RegistrationTest extends TestCase
 
     public function test_registration_does_not_allow_privilege_escalation_fields(): void
     {
+        Mail::fake();
+
         $this->post('/register', $this->validTalentPayload([
             'is_subscribed' => true,
             'subscription_expires_at' => now()->addYear()->toDateTimeString(),
         ]));
+
+        $pending = PendingRegistration::query()->where('email', 'test@example.com')->firstOrFail();
+        $this->get(route('register.verify', ['token' => $pending->token]));
 
         $user = User::query()->where('email', 'test@example.com')->first();
 

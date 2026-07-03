@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\PendingRegistration;
 use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -54,7 +55,8 @@ class RegisterRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
-                'unique:'.User::class,
+                Rule::unique(User::class),
+                Rule::unique(PendingRegistration::class),
             ],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => ['required', 'string', 'in:dev,company'],

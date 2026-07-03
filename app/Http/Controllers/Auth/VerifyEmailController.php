@@ -14,14 +14,26 @@ class VerifyEmailController extends Controller
      */
     public function __invoke(EmailVerificationRequest $request): RedirectResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        $user = $request->user();
+        $destination = $this->verifiedDestination($user);
+
+        if ($user->hasVerifiedEmail()) {
+            return redirect()->intended($destination.'?verified=1');
         }
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
         }
 
-        return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        return redirect()->intended($destination.'?verified=1');
+    }
+
+    private function verifiedDestination(\App\Models\User $user): string
+    {
+        if ($user->isTalent() && $user->isPendingApproval()) {
+            return route('account.pending', absolute: false);
+        }
+
+        return route('dashboard', absolute: false);
     }
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name') }}</title>
+    <title>{{ config('mail.from.name', 'Talents du Maroc') }}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111827;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f3f4f6;padding:32px 16px;">
@@ -12,7 +12,7 @@
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;">
                     <tr>
                         <td style="padding:32px 32px 8px;">
-                            <p style="margin:0 0 24px;font-size:18px;font-weight:700;color:#4f46e5;">{{ config('app.name') }}</p>
+                            <p style="margin:0 0 24px;font-size:18px;font-weight:700;color:#4f46e5;">{{ config('mail.from.name', 'Talents du Maroc') }}</p>
                             {{ $slot }}
                         </td>
                     </tr>

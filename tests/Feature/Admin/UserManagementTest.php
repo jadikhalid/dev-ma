@@ -5,11 +5,13 @@ namespace Tests\Feature\Admin;
 use App\Mail\TalentApprovedMail;
 use App\Mail\TalentRejectedMail;
 use App\Models\ModerationRequest;
+use App\Models\PendingRegistration;
 use App\Models\ProfessionSector;
 use App\Models\ProfileDocument;
 use App\Models\User;
 use Database\Seeders\ProfessionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -182,5 +184,63 @@ class UserManagementTest extends TestCase
             ->get(route('admin.profile-documents.show', $document))
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_admin_delete_user_removes_database_records_files_and_pending_registration(): void
+    {
+        $this->seed(ProfessionSeeder::class);
+
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $sector = ProfessionSector::query()->firstOrFail();
+        $talent = User::factory()->create([
+            'role' => 'dev',
+            'approval_status' => User::APPROVAL_PENDING,
+            'email' => 'delete-me@example.com',
+            'avatar_path' => 'avatars/99.jpg',
+        ]);
+        $profile = $talent->profile()->create([
+            'profession_sector_id' => $sector->id,
+            'registration_description' => 'Profil à supprimer.',
+            'experience_years' => 0,
+            'country' => 'Maroc',
+        ]);
+
+        $documentPath = 'profile-documents/'.$profile->id.'/test.pdf';
+        \Illuminate\Support\Facades\Storage::disk('public')->put($documentPath, '%PDF-1.4 test');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('avatars/99.jpg', 'avatar-data');
+        $profile->documents()->create([
+            'path' => $documentPath,
+            'original_name' => 'diploma.pdf',
+            'mime_type' => 'application/pdf',
+            'size' => 128,
+            'sort_order' => 1,
+        ]);
+
+        PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'delete-me@example.com',
+            'locale' => 'fr',
+            'payload' => ['name' => 'Pending', 'password' => bcrypt('Password1'), 'role' => 'dev'],
+            'expires_at' => now()->addMinutes(5),
+        ]);
+
+        DB::table('sessions')->insert([
+            'id' => 'test-session-id',
+            'user_id' => $talent->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'test',
+            'payload' => 'test',
+            'last_activity' => time(),
+        ]);
+
+        $this->actingAs($admin)->delete(route('admin.users.destroy', $talent));
+
+        $this->assertDatabaseMissing('users', ['email' => 'delete-me@example.com']);
+        $this->assertDatabaseMissing('profiles', ['id' => $profile->id]);
+        $this->assertDatabaseMissing('profile_documents', ['path' => $documentPath]);
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'delete-me@example.com']);
+        $this->assertDatabaseMissing('sessions', ['id' => 'test-session-id']);
+        $this->assertFalse(\Illuminate\Support\Facades\Storage::disk('public')->exists($documentPath));
+        $this->assertFalse(\Illuminate\Support\Facades\Storage::disk('public')->exists('avatars/99.jpg'));
     }
 }
