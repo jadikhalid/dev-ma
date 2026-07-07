@@ -14,12 +14,15 @@
                         @if (Auth::user()->isAdmin())
                             <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
                         @endif
+                        <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @elseif (Auth::user()->isTalent())
                         <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')" :disabled="$pendingTalent">{{ __('talenma.nav.my_profile') }}</x-nav-link>
+                        <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')" :disabled="$pendingTalent">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @elseif (Auth::user()->isCompany())
                         <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.*')">{{ __('talenma.nav.talents') }}</x-nav-link>
                         <x-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')">{{ __('talenma.nav.my_company') }}</x-nav-link>
                         <x-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')">{{ __('talenma.nav.morocco_setup') }}</x-nav-link>
+                        <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @endif
                 </div>
             </div>
@@ -36,16 +39,15 @@
                         {{ __('talenma.roles.company') }}
                     @endif
                 </span>
-                <x-dropdown align="right" width="48">
+                <x-dropdown align="right" width="48" :open-on-hover="true">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
+                        <button type="button" class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
                             <span class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-xs">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
                             <span class="hidden xl:inline">{{ Auth::user()->name }}</span>
                         </button>
                     </x-slot>
                     <x-slot name="content">
                         <x-dropdown-link :href="route('home')" :disabled="$pendingTalent">{{ __('talenma.nav.home') }}</x-dropdown-link>
-                        <x-dropdown-link :href="route('profile.edit')" :disabled="$pendingTalent">{{ __('talenma.nav.my_account') }}</x-dropdown-link>
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
                         </form>
@@ -93,17 +95,19 @@
                         @if (Auth::user()->isAdmin())
                             <x-responsive-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
                         @endif
+                        <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-responsive-nav-link>
                     @elseif (Auth::user()->isTalent())
                         <x-responsive-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')">{{ __('talenma.nav.my_profile') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-responsive-nav-link>
                     @elseif (Auth::user()->isCompany())
                         <x-responsive-nav-link :href="route('company.search')" :active="request()->routeIs('company.*')">{{ __('talenma.nav.talents') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')">{{ __('talenma.nav.my_company') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')">{{ __('talenma.nav.morocco_setup') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-responsive-nav-link>
                     @endif
                 </div>
             @endunless
             <x-dropdown-link :href="route('home')" :disabled="$pendingTalent">{{ __('talenma.nav.home') }}</x-dropdown-link>
-            <x-dropdown-link :href="route('profile.edit')" :disabled="$pendingTalent">{{ __('talenma.nav.my_account') }}</x-dropdown-link>
             <form method="POST" action="{{ route('logout') }}">@csrf
                 <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
             </form>

@@ -118,6 +118,8 @@ class PendingRegistrationService
 
             $user = User::create([
                 'name' => $payload['name'],
+                'first_name' => $payload['first_name'] ?? null,
+                'last_name' => $payload['last_name'] ?? null,
                 'email' => $pending->email,
                 'password' => $payload['password'],
                 'role' => $payload['role'],
@@ -197,17 +199,23 @@ class PendingRegistrationService
     private function buildPayload(array $validated): array
     {
         $payload = [
-            'name' => $validated['name'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
         ];
 
         if ($validated['role'] === 'dev') {
+            $firstName = $validated['first_name'];
+            $lastName = $validated['last_name'];
+
+            $payload['first_name'] = $firstName;
+            $payload['last_name'] = $lastName;
+            $payload['name'] = trim($firstName.' '.$lastName);
             $payload['sector'] = $validated['sector'];
             $payload['description'] = $validated['description'];
         }
 
         if ($validated['role'] === 'company') {
+            $payload['name'] = $validated['name'];
             $payload['representative_name'] = $validated['representative_name'];
             $payload['representative_email'] = $validated['representative_email'];
             $payload['company_need'] = $validated['company_need'];

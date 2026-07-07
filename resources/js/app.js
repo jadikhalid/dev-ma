@@ -424,8 +424,19 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     sectorSlug: config.initialSector ?? '',
     professionSlug: config.initialProfession ?? '',
     query: config.initialKeyword ?? '',
+    keywordMode: config.keywordMode ?? false,
+    selectedKeywords: config.keywordMode
+        ? (config.initialKeyword ?? '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : [],
+    keywordInput: '',
+    keywordSuggestionsOpen: false,
     specializationAllLabel: config.specializationAllLabel ?? '',
     specializationSelectProfessionLabel: config.specializationSelectProfessionLabel ?? '',
+    keywordPlaceholder: config.keywordPlaceholder ?? '',
+    keywordHint: config.keywordHint ?? '',
     titleInputId: config.titleInputId ?? null,
 
     get filteredProfessions() {
@@ -452,7 +463,7 @@ Alpine.data('heroProgressiveSearch', (config) => ({
                 return [];
             }
 
-            return this.filteredProfessions.flatMap((profession) => profession.specializations ?? []);
+            return [...new Set(this.filteredProfessions.flatMap((profession) => profession.specializations ?? []))];
         }
 
         return this.selectedProfession?.specializations ?? [];
@@ -464,6 +475,20 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         }
 
         return this.specializationAllLabel;
+    },
+
+    get unselectedSpecializations() {
+        return this.filteredSpecializations.filter((item) => ! this.selectedKeywords.includes(item));
+    },
+
+    get filteredAvailableKeywords() {
+        const term = this.keywordInput.trim().toLowerCase();
+
+        return this.unselectedSpecializations.filter((item) => ! term || item.toLowerCase().includes(term));
+    },
+
+    get specializationValue() {
+        return this.keywordMode ? this.selectedKeywords.join(', ') : this.query;
     },
 
     onSectorChange() {
@@ -483,6 +508,14 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     },
 
     resetKeywordIfInvalid() {
+        if (this.keywordMode) {
+            this.selectedKeywords = this.selectedKeywords.filter((item) => this.filteredSpecializations.includes(item));
+            this.keywordInput = '';
+            this.keywordSuggestionsOpen = false;
+
+            return;
+        }
+
         if (! this.query) {
             return;
         }
@@ -492,8 +525,55 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         }
     },
 
+    addKeyword(keyword) {
+        if (! keyword || this.selectedKeywords.includes(keyword)) {
+            return;
+        }
+
+        if (! this.filteredSpecializations.includes(keyword)) {
+            return;
+        }
+
+        this.selectedKeywords.push(keyword);
+        this.keywordInput = '';
+        this.keywordSuggestionsOpen = false;
+        this.suggestTitle();
+    },
+
+    removeKeyword(keyword) {
+        this.selectedKeywords = this.selectedKeywords.filter((item) => item !== keyword);
+    },
+
+    onKeywordInput() {
+        this.keywordSuggestionsOpen = this.keywordInput.trim().length > 0 && this.filteredAvailableKeywords.length > 0;
+    },
+
+    onKeywordKeydown(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+
+            const first = this.filteredAvailableKeywords[0];
+
+            if (first) {
+                this.addKeyword(first);
+            }
+
+            return;
+        }
+
+        if (event.key === 'Backspace' && ! this.keywordInput && this.selectedKeywords.length) {
+            this.selectedKeywords.pop();
+        }
+
+        if (event.key === 'Escape') {
+            this.keywordSuggestionsOpen = false;
+        }
+    },
+
     suggestTitle() {
-        if (! this.titleInputId || ! this.query) {
+        const keyword = this.keywordMode ? this.selectedKeywords[0] : this.query;
+
+        if (! this.titleInputId || ! keyword) {
             return;
         }
 
@@ -503,7 +583,7 @@ Alpine.data('heroProgressiveSearch', (config) => ({
             return;
         }
 
-        titleInput.value = this.query;
+        titleInput.value = keyword;
     },
 }));
 
@@ -674,6 +754,8 @@ Alpine.data('toastStack', (initialToasts = []) => ({
 Alpine.data('registerWizard', (config) => ({
     role: config.initialRole ?? '',
     step: config.initialStep ?? 1,
+    firstName: config.initialFirstName ?? '',
+    lastName: config.initialLastName ?? '',
     name: config.initialName ?? '',
     email: config.initialEmail ?? '',
     password: '',
@@ -710,7 +792,9 @@ Alpine.data('registerWizard', (config) => ({
             return false;
         }
 
-        const nameOk = this.name.trim().length >= 2;
+        const nameOk = this.isCompany
+            ? this.name.trim().length >= 2
+            : this.firstName.trim().length >= 2 && this.lastName.trim().length >= 2;
         const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim());
         const passwordOk = this.password.length >= 8;
         const confirmOk = this.password === this.passwordConfirmation && this.passwordConfirmation.length > 0;

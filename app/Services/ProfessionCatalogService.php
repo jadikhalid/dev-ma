@@ -87,11 +87,26 @@ class ProfessionCatalogService
                 ->map(fn ($suggestion) => $suggestion->localizedLabel())
                 ->all();
 
-            if (! in_array($specialization, $validLabels, true)) {
+            $keywords = array_values(array_filter(array_map(
+                fn (string $keyword) => trim($keyword),
+                explode(',', $specialization),
+            )));
+
+            if ($keywords === []) {
                 throw ValidationException::withMessages([
-                    'specialization' => __('talenma.talent.specialization_invalid'),
+                    'specialization' => __('talenma.talent.specialization_required'),
                 ]);
             }
+
+            foreach ($keywords as $keyword) {
+                if (! in_array($keyword, $validLabels, true)) {
+                    throw ValidationException::withMessages([
+                        'specialization' => __('talenma.talent.specialization_invalid'),
+                    ]);
+                }
+            }
+
+            $specialization = implode(', ', $keywords);
         }
 
         return [

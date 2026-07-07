@@ -64,6 +64,14 @@
                     <section>
                         <h4 class="text-sm font-semibold text-gray-900 mb-3">{{ __('talenma.admin.users.registration_section_identity') }}</h4>
                         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                            <div class="rounded-xl bg-gray-50 px-4 py-3" x-show="user.first_name">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.auth.first_name') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.first_name"></dd>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 px-4 py-3" x-show="user.last_name">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.auth.last_name') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.last_name"></dd>
+                            </div>
                             <div class="rounded-xl bg-gray-50 px-4 py-3">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.auth.full_name') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.name"></dd>
@@ -90,7 +98,25 @@
                     </section>
 
                     <section>
-                        <h4 class="text-sm font-semibold text-gray-900 mb-3">{{ __('talenma.admin.users.registration_section_profile') }}</h4>
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">{{ __('talenma.admin.users.registration_section_approval') }}</h4>
+                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                            <div class="rounded-xl bg-gray-50 px-4 py-3">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.registration_approval_status') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.approval_status_label"></dd>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 px-4 py-3" x-show="user.approved_at">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.registration_approved_at') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.approved_at"></dd>
+                            </div>
+                            <div class="rounded-xl bg-gray-50 px-4 py-3 sm:col-span-2" x-show="user.approved_by">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.registration_approved_by') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.approved_by"></dd>
+                            </div>
+                        </dl>
+                    </section>
+
+                    <section>
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">{{ __('talenma.admin.users.registration_section_registration') }}</h4>
                         <dl class="space-y-4 text-sm">
                             <div class="rounded-xl border border-gray-200 px-4 py-3">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.auth.sector') }}</dt>
@@ -130,11 +156,97 @@
                             </template>
                         </div>
                     </section>
+
+                    <section>
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">{{ __('talenma.admin.users.registration_section_current_profile') }}</h4>
+                        <template x-if="!user.current_profile || Object.keys(user.current_profile).length === 0">
+                            <p class="text-sm text-gray-500 rounded-xl bg-gray-50 px-4 py-3" x-text="labels.currentProfileEmpty"></p>
+                        </template>
+                        <dl
+                            x-show="user.current_profile && Object.keys(user.current_profile).length > 0"
+                            class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"
+                        >
+                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.title">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.title') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.title"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.profession">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_profession') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.profession"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.specialization">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_specialization') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.specialization"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.bio">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.bio') }}</dt>
+                                <dd class="mt-2 text-gray-700 whitespace-pre-line leading-relaxed" x-text="user.current_profile.bio"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.experience_years">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.experience') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.experience_years"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.education_level">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.education') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.education_level"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.city">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.city') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.city"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.country">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.country') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.country"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.daily_rate_eur">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.rate') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.daily_rate_eur"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.availability">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.availability') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.availability"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.work_modes?.length">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.work_modes') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.work_modes?.join(', ')"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.skills">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.skills') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.skills"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.languages">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.languages') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.languages"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.phone">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_phone') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.phone"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.linkedin_url">
+                                <dt class="text-xs text-gray-500">LinkedIn</dt>
+                                <dd class="mt-1">
+                                    <a :href="user.current_profile.linkedin_url" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 font-medium break-all" x-text="user.current_profile.linkedin_url"></a>
+                                </dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.portfolio_url">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_portfolio') }}</dt>
+                                <dd class="mt-1">
+                                    <a :href="user.current_profile.portfolio_url" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 font-medium break-all" x-text="user.current_profile.portfolio_url"></a>
+                                </dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.github_url">
+                                <dt class="text-xs text-gray-500">GitHub</dt>
+                                <dd class="mt-1">
+                                    <a :href="user.current_profile.github_url" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 font-medium break-all" x-text="user.current_profile.github_url"></a>
+                                </dd>
+                            </div>
+                        </dl>
+                    </section>
                 </div>
             </template>
         </div>
 
-        <div x-show="user && !loading" x-cloak class="shrink-0 border-t border-gray-100 px-6 py-4 bg-gray-50 space-y-3">
+        <div x-show="user?.is_pending && !loading" x-cloak class="shrink-0 border-t border-gray-100 px-6 py-4 bg-gray-50 space-y-3">
             <form :action="user?.approve_url" method="POST">
                 @csrf
                 <x-primary-button class="w-full justify-center">{{ __('talenma.admin.users.approve_btn') }}</x-primary-button>

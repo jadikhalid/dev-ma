@@ -15,6 +15,7 @@
         >
         <button
             type="button"
+            tabindex="-1"
             class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 disabled:opacity-50"
             x-on:click="show = !show"
             x-bind:aria-label="show ? @js(__('talenma.auth.hide_password')) : @js(__('talenma.auth.show_password'))"

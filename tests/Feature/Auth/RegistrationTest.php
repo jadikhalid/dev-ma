@@ -26,7 +26,8 @@ class RegistrationTest extends TestCase
     private function validPayload(array $overrides = []): array
     {
         return array_merge([
-            'name' => 'Test User',
+            'first_name' => 'Test',
+            'last_name' => 'User',
             'email' => 'test@example.com',
             'password' => 'Password1',
             'password_confirmation' => 'Password1',
@@ -47,7 +48,11 @@ class RegistrationTest extends TestCase
 
     private function validCompanyPayload(array $overrides = []): array
     {
-        return array_merge($this->validPayload(), [
+        return array_merge([
+            'name' => 'Acme SAS',
+            'email' => 'company@example.com',
+            'password' => 'Password1',
+            'password_confirmation' => 'Password1',
             'role' => 'company',
             'representative_name' => 'Jean Dupont',
             'representative_email' => 'jean.dupont@acme.com',
@@ -95,6 +100,9 @@ class RegistrationTest extends TestCase
 
         $user = User::query()->where('email', 'test@example.com')->first();
         $this->assertNotNull($user);
+        $this->assertSame('Test', $user->first_name);
+        $this->assertSame('User', $user->last_name);
+        $this->assertSame('Test User', $user->name);
         $this->assertNotNull($user->email_verified_at);
         $this->assertNotNull($user->profile);
         $this->assertSame('Développeur passionné avec plus de cinq ans d\'expérience en Laravel et React.', $user->profile->registration_description);
@@ -110,6 +118,8 @@ class RegistrationTest extends TestCase
             'email' => 'expired@example.com',
             'locale' => 'fr',
             'payload' => [
+                'first_name' => 'Expired',
+                'last_name' => 'User',
                 'name' => 'Expired User',
                 'password' => bcrypt('Password1'),
                 'role' => 'dev',
@@ -237,11 +247,11 @@ class RegistrationTest extends TestCase
     public function test_registration_rejects_invalid_name_characters(): void
     {
         $response = $this->from('/register')->post('/register', $this->validTalentPayload([
-            'name' => '<script>alert(1)</script>',
+            'first_name' => '<script>alert(1)</script>',
         ]));
 
         $response->assertRedirect('/register');
-        $response->assertSessionHasErrors('name');
+        $response->assertSessionHasErrors('first_name');
         $this->assertGuest();
     }
 

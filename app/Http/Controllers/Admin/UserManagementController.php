@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreManagedUserRequest;
 use App\Models\ModerationRequest;
 use App\Models\User;
-use App\Services\PendingRegistrationPresenter;
+use App\Services\TalentDossierPresenter;
 use App\Services\UserModerationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -35,11 +35,15 @@ class UserManagementController extends Controller
                 ->whereNotNull('email_verified_at')
                 ->with(['profile.professionSector', 'profile.documents']);
         } elseif ($filter === 'talents') {
-            $usersQuery->where('role', 'dev');
+            $usersQuery
+                ->where('role', 'dev')
+                ->with(['profile.professionSector', 'profile.profession', 'profile.documents', 'approvedBy']);
         } elseif ($filter === 'companies') {
             $usersQuery->where('role', 'company');
         } elseif ($filter === 'moderators') {
             $usersQuery->where('role', 'moderator');
+        } else {
+            $usersQuery->with(['profile.professionSector', 'profile.profession', 'profile.documents', 'approvedBy']);
         }
 
         $pendingRequests = $request->user()->isAdmin()
@@ -62,9 +66,9 @@ class UserManagementController extends Controller
         ]);
     }
 
-    public function registration(User $user, PendingRegistrationPresenter $presenter): JsonResponse
+    public function registration(User $user, TalentDossierPresenter $presenter): JsonResponse
     {
-        abort_unless($user->isTalent() && $user->isPendingApproval() && $user->hasVerifiedEmail(), 404);
+        abort_unless($user->isTalent() && $user->hasVerifiedEmail(), 404);
 
         return response()->json($presenter->present($user));
     }

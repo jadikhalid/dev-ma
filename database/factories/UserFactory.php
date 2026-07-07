@@ -24,8 +24,13 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $fullName = fake()->name();
+        $parts = preg_split('/\s+/u', trim($fullName), 2) ?: [];
+
         return [
-            'name' => fake()->name(),
+            'name' => $fullName,
+            'first_name' => $parts[0] ?? $fullName,
+            'last_name' => $parts[1] ?? '',
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'approval_status' => 'approved',

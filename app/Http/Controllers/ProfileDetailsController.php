@@ -3,15 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Services\ProfessionCatalogService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class ProfileDetailsController extends Controller
 {
+    private const SECTIONS = ['profession', 'presentation', 'availability', 'links'];
+
     public function __construct(private ProfessionCatalogService $professionCatalog) {}
 
-    public function edit()
+    public function edit(): View|RedirectResponse
     {
         $user = Auth::user();
 
@@ -41,7 +45,7 @@ class ProfileDetailsController extends Controller
         ]);
     }
 
-    public function update(Request $request)
+    public function update(Request $request): RedirectResponse
     {
         $user = Auth::user();
 
@@ -49,52 +53,105 @@ class ProfileDetailsController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $data = $request->validate([
-            'sector' => ['required', 'string', 'max:64'],
-            'profession' => ['required', 'string', 'max:64'],
-            'specialization' => ['required', 'string', 'max:255'],
-            'title' => ['required', 'string', 'max:255'],
-            'bio' => ['required', 'string', 'min:30', 'max:5000'],
-            'experience_years' => ['required', 'integer', 'min:0', 'max:50'],
-            'education_level' => ['required', 'string', Rule::in(array_keys($this->educationOptions()))],
-            'certifications' => ['nullable', 'string', 'max:2000'],
-            'daily_rate_eur' => ['required', 'integer', 'min:10', 'max:5000'],
-            'availability' => ['required', 'string', Rule::in(['disponible', 'sous 2 semaines', 'mission en cours'])],
-            'work_modes' => ['required', 'array', 'min:1'],
-            'work_modes.*' => ['string', Rule::in(array_keys($this->workModeOptions()))],
-            'languages' => ['required', 'array', 'min:1'],
-            'languages.*' => ['string', Rule::in(array_keys($this->languageOptions()))],
-            'city' => ['required', 'string', 'max:100'],
-            'country' => ['required', 'string', 'max:100'],
-            'skills' => ['nullable', 'string', 'max:500'],
-            'github_url' => ['nullable', 'url', 'max:255'],
-            'linkedin_url' => ['nullable', 'url', 'max:255'],
-            'portfolio_url' => ['nullable', 'url', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:30'],
-        ]);
+        $section = $request->validate([
+            'section' => ['required', 'string', Rule::in(self::SECTIONS)],
+        ])['section'];
 
-        $professionData = $this->professionCatalog->resolveSelection(
-            $data['sector'],
-            $data['profession'],
-            $data['specialization'],
-        );
-
-        if (! empty($data['skills'])) {
-            $data['skills'] = array_values(array_filter(array_map('trim', explode(',', $data['skills']))));
-        } else {
-            $data['skills'] = [];
-        }
-
-        $payload = array_merge(
-            collect($data)->except(['sector', 'profession'])->all(),
-            $professionData,
-        );
+        $data = $request->validate($this->rulesForSection($section));
+        $payload = $this->payloadForSection($section, $data);
 
         $user->profile()->updateOrCreate(['user_id' => $user->id], $payload);
 
-        return redirect()->route('profile.details.edit')->with('status', 'profile-updated');
+        return redirect()
+            ->route('profile.details.edit')
+            ->with('status', 'profile-updated')
+            ->with('updated_section', $section);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function rulesForSection(string $section): array
+    {
+        return match ($section) {
+            'profession' => [
+                'sector' => ['required', 'string', 'max:64'],
+                'profession' => ['required', 'string', 'max:64'],
+                'specialization' => ['required', 'string', 'max:500'],
+                'title' => ['required', 'string', 'max:255'],
+            ],
+            'presentation' => [
+                'bio' => ['required', 'string', 'min:30', 'max:5000'],
+                'experience_years' => ['required', 'integer', 'min:0', 'max:50'],
+                'education_level' => ['required', 'string', Rule::in(array_keys($this->educationOptions()))],
+                'certifications' => ['nullable', 'string', 'max:2000'],
+                'skills' => ['nullable', 'string', 'max:500'],
+            ],
+            'availability' => [
+                'city' => ['required', 'string', 'max:100'],
+                'country' => ['required', 'string', 'max:100'],
+                'availability' => ['required', 'string', Rule::in(['disponible', 'sous 2 semaines', 'mission en cours'])],
+                'daily_rate_eur' => ['required', 'integer', 'min:10', 'max:5000'],
+                'work_modes' => ['required', 'array', 'min:1'],
+                'work_modes.*' => ['string', Rule::in(array_keys($this->workModeOptions()))],
+                'languages' => ['required', 'array', 'min:1'],
+                'languages.*' => ['string', Rule::in(array_keys($this->languageOptions()))],
+            ],
+            'links' => [
+                'phone' => ['nullable', 'string', 'max:30'],
+                'github_url' => ['nullable', 'url', 'max:255'],
+                'linkedin_url' => ['nullable', 'url', 'max:255'],
+                'portfolio_url' => ['nullable', 'url', 'max:255'],
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function payloadForSection(string $section, array $data): array
+    {
+        return match ($section) {
+            'profession' => array_merge(
+                $this->professionCatalog->resolveSelection(
+                    $data['sector'],
+                    $data['profession'],
+                    $data['specialization'],
+                ),
+                ['title' => $data['title']],
+            ),
+            'presentation' => [
+                'bio' => $data['bio'],
+                'experience_years' => $data['experience_years'],
+                'education_level' => $data['education_level'],
+                'certifications' => $data['certifications'] ?? null,
+                'skills' => filled($data['skills'] ?? null)
+                    ? array_values(array_filter(array_map('trim', explode(',', $data['skills']))))
+                    : [],
+            ],
+            'availability' => [
+                'city' => $data['city'],
+                'country' => $data['country'],
+                'availability' => $data['availability'],
+                'daily_rate_eur' => $data['daily_rate_eur'],
+                'work_modes' => $data['work_modes'],
+                'languages' => $data['languages'],
+            ],
+            'links' => [
+                'phone' => $data['phone'] ?? null,
+                'github_url' => $data['github_url'] ?? null,
+                'linkedin_url' => $data['linkedin_url'] ?? null,
+                'portfolio_url' => $data['portfolio_url'] ?? null,
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
     private function workModeOptions(): array
     {
         return [
@@ -104,6 +161,9 @@ class ProfileDetailsController extends Controller
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
     private function languageOptions(): array
     {
         return [
@@ -115,6 +175,9 @@ class ProfileDetailsController extends Controller
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
     private function educationOptions(): array
     {
         return [

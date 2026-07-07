@@ -140,17 +140,38 @@ class UserManagementTest extends TestCase
             ->assertJsonPath('sector', $sector->localizedName());
     }
 
-    public function test_registration_details_are_not_available_for_approved_talents(): void
+    public function test_staff_can_view_approved_talent_dossier(): void
     {
+        $this->seed(ProfessionSeeder::class);
+
         $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $sector = ProfessionSector::query()->firstOrFail();
         $talent = User::factory()->create([
             'role' => 'dev',
             'approval_status' => User::APPROVAL_APPROVED,
+            'first_name' => 'Karim',
+            'last_name' => 'Benali',
+            'name' => 'Karim Benali',
+            'email' => 'approved@example.com',
+        ]);
+        $talent->profile()->create([
+            'profession_sector_id' => $sector->id,
+            'registration_description' => 'Description à l\'inscription.',
+            'title' => 'Développeur Laravel',
+            'bio' => 'Bio actuelle du talent.',
+            'experience_years' => 5,
+            'country' => 'Maroc',
         ]);
 
         $this->actingAs($admin)
             ->getJson(route('admin.users.registration', $talent))
-            ->assertNotFound();
+            ->assertOk()
+            ->assertJsonPath('first_name', 'Karim')
+            ->assertJsonPath('last_name', 'Benali')
+            ->assertJsonPath('description', 'Description à l\'inscription.')
+            ->assertJsonPath('is_pending', false)
+            ->assertJsonPath('current_profile.title', 'Développeur Laravel')
+            ->assertJsonPath('current_profile.bio', 'Bio actuelle du talent.');
     }
 
     public function test_staff_can_view_profile_document_through_secure_route(): void
