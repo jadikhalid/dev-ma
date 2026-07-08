@@ -131,4 +131,32 @@ class ProfessionCatalogService
             'profession' => $professionSlug ?? '',
         ];
     }
+
+    public function sectorLabelFromSlug(?string $slug, ?string $locale = null): ?string
+    {
+        if (! filled($slug)) {
+            return null;
+        }
+
+        $sector = ProfessionSector::query()
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->first();
+
+        return $sector?->localizedName($locale);
+    }
+
+    public function sectorSlugFromLabel(?string $label, ?string $locale = null): ?string
+    {
+        if (! filled($label)) {
+            return null;
+        }
+
+        $locale = $locale ?? app()->getLocale();
+
+        $match = $this->sectorsForLocale($locale)
+            ->first(fn (array $sector) => $sector['name'] === $label);
+
+        return $match['slug'] ?? null;
+    }
 }

@@ -4,14 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\Profession;
 use App\Models\User;
+use App\Services\CompanyProfileCompletionService;
 use Illuminate\Http\Request;
 
 class CompanySearchController extends Controller
 {
+    public function __construct(private CompanyProfileCompletionService $profileCompletion) {}
+
     public function index(Request $request)
     {
         if (! $request->user()->isCompany()) {
             return redirect()->route('dashboard');
+        }
+
+        $completion = $this->profileCompletion->assess($request->user()->companyProfile);
+
+        if (! $completion['is_catalog_ready']) {
+            return redirect()
+                ->route('dashboard')
+                ->with('toast_error', __('talenma.dashboard.company.profile_incomplete'));
         }
 
         $query = User::where('role', 'dev')
@@ -64,6 +75,14 @@ class CompanySearchController extends Controller
     {
         if (! $request->user()->isCompany()) {
             return redirect()->route('dashboard');
+        }
+
+        $completion = $this->profileCompletion->assess($request->user()->companyProfile);
+
+        if (! $completion['is_catalog_ready']) {
+            return redirect()
+                ->route('dashboard')
+                ->with('toast_error', __('talenma.dashboard.company.profile_incomplete'));
         }
 
         if ($talent->role !== 'dev' || $talent->approval_status !== User::APPROVAL_APPROVED || ! $talent->hasActiveSubscription()) {

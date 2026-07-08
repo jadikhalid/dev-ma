@@ -12,7 +12,11 @@ class EnsureTalentIsPending
     {
         $user = $request->user();
 
-        if (! $user?->isTalent() || $user->isApproved()) {
+        if (! $user || (! $user->isTalent() && ! $user->isCompany())) {
+            return redirect()->route('dashboard');
+        }
+
+        if ($user->isApproved()) {
             return redirect()->route('dashboard');
         }
 

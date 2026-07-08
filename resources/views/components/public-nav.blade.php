@@ -16,8 +16,8 @@
                     <x-locale-switcher />
                 </div>
                 @auth
-                    @if (Auth::user()->isStaff() || Auth::user()->isTalent())
-                        <x-dropdown align="right" width="48">
+                    @if (Auth::user()->isStaff() || Auth::user()->isTalent() || (Auth::user()->isCompany() && Auth::user()->isPendingApproval()))
+                        <x-dropdown align="right" width="48" :open-on-hover="true">
                             <x-slot name="trigger">
                                 <button
                                     type="button"
@@ -28,7 +28,10 @@
                                 </button>
                             </x-slot>
                             <x-slot name="content">
-                                <x-dropdown-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-dropdown-link>
+                                @unless (Auth::user()->isPendingApproval())
+                                    <x-dropdown-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-dropdown-link>
+                                @endunless
+                                <x-dropdown-link :href="route('home')">{{ __('talenma.nav.home') }}</x-dropdown-link>
                                 <form method="POST" action="{{ route('logout') }}">@csrf
                                     <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
                                 </form>

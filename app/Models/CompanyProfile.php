@@ -6,19 +6,25 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'user_id',
     'company_name',
+    'logo_path',
     'representative_name',
     'representative_email',
+    'phone',
+    'linkedin_url',
     'sector',
+    'registration_sector',
     'country',
     'city',
     'description',
     'website',
     'employee_count',
     'hiring_needs',
+    'registration_hiring_needs',
 ])]
 class CompanyProfile extends Model
 {
@@ -27,5 +33,37 @@ class CompanyProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CompanyProfileDocument::class)->orderBy('sort_order');
+    }
+
+    public function logoUrl(): ?string
+    {
+        if (! $this->logo_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->logo_path);
+    }
+
+    public function initials(): string
+    {
+        $name = trim((string) ($this->company_name ?: ''));
+
+        if ($name === '') {
+            return '—';
+        }
+
+        $parts = preg_split('/\s+/u', $name) ?: [];
+        $initials = '';
+
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $initials .= mb_strtoupper(mb_substr($part, 0, 1));
+        }
+
+        return $initials !== '' ? $initials : mb_strtoupper(mb_substr($name, 0, 2));
     }
 }

@@ -30,10 +30,14 @@ class UserManagementController extends Controller
 
         if ($filter === 'pending') {
             $usersQuery
-                ->where('role', 'dev')
+                ->whereIn('role', ['dev', 'company'])
                 ->where('approval_status', User::APPROVAL_PENDING)
                 ->whereNotNull('email_verified_at')
-                ->with(['profile.professionSector', 'profile.documents']);
+                ->with([
+                    'profile.professionSector',
+                    'profile.documents',
+                    'companyProfile.documents',
+                ]);
         } elseif ($filter === 'talents') {
             $usersQuery
                 ->where('role', 'dev')
@@ -59,7 +63,7 @@ class UserManagementController extends Controller
             'filter' => $filter,
             'pendingRequests' => $pendingRequests,
             'pendingCount' => User::query()
-                ->where('role', 'dev')
+                ->whereIn('role', ['dev', 'company'])
                 ->where('approval_status', User::APPROVAL_PENDING)
                 ->whereNotNull('email_verified_at')
                 ->count(),
@@ -68,7 +72,7 @@ class UserManagementController extends Controller
 
     public function registration(User $user, TalentDossierPresenter $presenter): JsonResponse
     {
-        abort_unless($user->isTalent() && $user->hasVerifiedEmail(), 404);
+        abort_unless(($user->isTalent() || $user->isCompany()) && $user->hasVerifiedEmail(), 404);
 
         return response()->json($presenter->present($user));
     }
@@ -93,9 +97,13 @@ class UserManagementController extends Controller
 
     public function approve(Request $request, User $user): RedirectResponse
     {
+        $action = $user->isCompany()
+            ? ModerationRequest::ACTION_APPROVE_COMPANY
+            : ModerationRequest::ACTION_APPROVE_TALENT;
+
         $result = $this->moderation->submit(
             $request->user(),
-            ModerationRequest::ACTION_APPROVE_TALENT,
+            $action,
             $user,
         );
 
@@ -108,9 +116,13 @@ class UserManagementController extends Controller
             'reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $action = $user->isCompany()
+            ? ModerationRequest::ACTION_REJECT_COMPANY
+            : ModerationRequest::ACTION_REJECT_TALENT;
+
         $result = $this->moderation->submit(
             $request->user(),
-            ModerationRequest::ACTION_REJECT_TALENT,
+            $action,
             $user,
             ['reason' => $request->string('reason')->toString() ?: null],
         );

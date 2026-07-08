@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Jobs\PurgePendingRegistrationJob;
 use App\Mail\VerifyRegistrationMail;
+use App\Models\CompanyProfileDocument;
 use App\Models\PendingRegistration;
 use App\Models\ProfessionSector;
 use App\Models\ProfileDocument;
@@ -40,6 +41,12 @@ class PendingRegistrationService
         ]);
 
         if ($validated['role'] === 'dev') {
+            $pending->update([
+                'document_paths' => $this->storeDocuments($pending, $request->file('documents', [])),
+            ]);
+        }
+
+        if ($validated['role'] === 'company' && $request->hasFile('documents')) {
             $pending->update([
                 'document_paths' => $this->storeDocuments($pending, $request->file('documents', [])),
             ]);
@@ -124,18 +131,31 @@ class PendingRegistrationService
                 'password' => $payload['password'],
                 'role' => $payload['role'],
                 'email_verified_at' => now(),
-                'approval_status' => $payload['role'] === 'dev' ? User::APPROVAL_PENDING : User::APPROVAL_APPROVED,
-                'approved_at' => $payload['role'] === 'company' ? now() : null,
+                'approval_status' => User::APPROVAL_PENDING,
+                'approved_at' => null,
             ]);
 
             if ($user->role === 'company') {
-                $user->companyProfile()->create([
+                $sector = ProfessionSector::query()
+                    ->where('slug', $payload['sector'])
+                    ->where('is_active', true)
+                    ->firstOrFail();
+
+                $sectorLabel = $sector->localizedName($pending->locale);
+
+                $companyProfile = $user->companyProfile()->create([
                     'company_name' => $payload['name'],
                     'representative_name' => $payload['representative_name'],
                     'representative_email' => $payload['representative_email'],
+                    'sector' => $sectorLabel,
+                    'registration_sector' => $sectorLabel,
                     'hiring_needs' => $payload['company_need'],
-                    'country' => 'France',
+                    'registration_hiring_needs' => $payload['company_need'],
+                    'website' => $payload['company_website'] ?? null,
+                    'country' => $payload['company_country'] ?? 'France',
                 ]);
+
+                $this->attachCompanyDocuments($companyProfile, $pending);
             }
 
             if ($user->role === 'dev') {
@@ -218,7 +238,10 @@ class PendingRegistrationService
             $payload['name'] = $validated['name'];
             $payload['representative_name'] = $validated['representative_name'];
             $payload['representative_email'] = $validated['representative_email'];
+            $payload['sector'] = $validated['sector'];
             $payload['company_need'] = $validated['company_need'];
+            $payload['company_website'] = $validated['company_website'] ?? null;
+            $payload['company_country'] = $validated['company_country'] ?? 'France';
         }
 
         return $payload;
@@ -257,29 +280,52 @@ class PendingRegistrationService
     private function attachDocuments(\App\Models\Profile $profile, PendingRegistration $pending): void
     {
         foreach ($pending->document_paths ?? [] as $document) {
-            $sourcePath = $document['path'] ?? null;
-
-            if (! is_string($sourcePath) || ! Storage::disk('local')->exists($sourcePath)) {
-                continue;
-            }
-
-            $extension = pathinfo($document['original_name'] ?? 'file', PATHINFO_EXTENSION) ?: 'bin';
-            $destination = 'profile-documents/'.$profile->id.'/'.uniqid('doc_', true).'.'.$extension;
-
-            Storage::disk('public')->writeStream(
-                $destination,
-                Storage::disk('local')->readStream($sourcePath),
-            );
-
-            ProfileDocument::query()->create([
-                'profile_id' => $profile->id,
-                'path' => $destination,
-                'original_name' => $document['original_name'],
-                'mime_type' => $document['mime_type'],
-                'size' => $document['size'],
-                'sort_order' => $document['sort_order'],
-            ]);
+            $this->copyDocumentToProfile($document, function (array $attrs) use ($profile) {
+                ProfileDocument::query()->create(array_merge($attrs, [
+                    'profile_id' => $profile->id,
+                ]));
+            }, 'profile-documents/'.$profile->id);
         }
+    }
+
+    private function attachCompanyDocuments(\App\Models\CompanyProfile $companyProfile, PendingRegistration $pending): void
+    {
+        foreach ($pending->document_paths ?? [] as $document) {
+            $this->copyDocumentToProfile($document, function (array $attrs) use ($companyProfile) {
+                CompanyProfileDocument::query()->create(array_merge($attrs, [
+                    'company_profile_id' => $companyProfile->id,
+                ]));
+            }, 'company-profile-documents/'.$companyProfile->id);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $document
+     * @param  callable(array<string, mixed>): void  $createRecord
+     */
+    private function copyDocumentToProfile(array $document, callable $createRecord, string $destinationDirectory): void
+    {
+        $sourcePath = $document['path'] ?? null;
+
+        if (! is_string($sourcePath) || ! Storage::disk('local')->exists($sourcePath)) {
+            return;
+        }
+
+        $extension = pathinfo($document['original_name'] ?? 'file', PATHINFO_EXTENSION) ?: 'bin';
+        $destination = $destinationDirectory.'/'.uniqid('doc_', true).'.'.$extension;
+
+        Storage::disk('public')->writeStream(
+            $destination,
+            Storage::disk('local')->readStream($sourcePath),
+        );
+
+        $createRecord([
+            'path' => $destination,
+            'original_name' => $document['original_name'],
+            'mime_type' => $document['mime_type'],
+            'size' => $document['size'],
+            'sort_order' => $document['sort_order'],
+        ]);
     }
 
     private function deleteDocumentStorage(PendingRegistration $pending): void

@@ -39,6 +39,8 @@ class RegisterRequest extends FormRequest
                 ? Str::lower(trim($this->representative_email))
                 : $this->representative_email,
             'company_need' => is_string($this->company_need) ? trim($this->company_need) : $this->company_need,
+            'company_website' => is_string($this->company_website) ? trim($this->company_website) : $this->company_website,
+            'company_country' => is_string($this->company_country) ? trim($this->company_country) : $this->company_country,
         ]);
     }
 
@@ -85,7 +87,7 @@ class RegisterRequest extends FormRequest
             'role' => ['required', 'string', 'in:dev,company'],
             'website' => ['prohibited'],
             'sector' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'dev'),
+                Rule::requiredIf(fn () => in_array($this->input('role'), ['dev', 'company'], true)),
                 'nullable',
                 'string',
                 'max:64',
@@ -102,8 +104,9 @@ class RegisterRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->input('role') === 'dev'),
                 'nullable',
                 'array',
-                'min:1',
-                'max:3',
+                Rule::when($this->input('role') === 'dev', 'min:1'),
+                Rule::when($this->input('role') === 'dev', 'max:3'),
+                Rule::when($this->input('role') === 'company', 'max:2'),
             ],
             'documents.*' => [
                 'file',
@@ -133,6 +136,17 @@ class RegisterRequest extends FormRequest
                 'min:20',
                 'max:1000',
             ],
+            'company_website' => [
+                Rule::requiredIf(fn () => false),
+                'nullable',
+                'url',
+                'max:255',
+            ],
+            'company_country' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
         ];
     }
 
@@ -155,6 +169,8 @@ class RegisterRequest extends FormRequest
             'representative_name' => __('talenma.auth.representative_name'),
             'representative_email' => __('talenma.auth.representative_email'),
             'company_need' => __('talenma.auth.company_need'),
+            'company_website' => __('talenma.auth.company_website'),
+            'company_country' => __('talenma.auth.company_country'),
         ];
     }
 

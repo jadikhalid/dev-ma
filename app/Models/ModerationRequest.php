@@ -17,6 +17,10 @@ class ModerationRequest extends Model
 
     public const ACTION_REJECT_TALENT = 'reject_talent';
 
+    public const ACTION_APPROVE_COMPANY = 'approve_company';
+
+    public const ACTION_REJECT_COMPANY = 'reject_company';
+
     public const ACTION_DELETE_USER = 'delete_user';
 
     public const ACTION_CREATE_USER = 'create_user';

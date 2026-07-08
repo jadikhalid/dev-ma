@@ -16,17 +16,7 @@ class AvatarService
 
     public function store(User $user, UploadedFile $file): string
     {
-        if (! in_array($file->getMimeType(), self::ALLOWED_MIMES, true)) {
-            throw ValidationException::withMessages([
-                'avatar' => __('talenma.account.avatar_invalid_type'),
-            ]);
-        }
-
-        if ($file->getSize() > 2 * 1024 * 1024) {
-            throw ValidationException::withMessages([
-                'avatar' => __('talenma.account.avatar_too_large'),
-            ]);
-        }
+        $this->validateUpload($file);
 
         [$contents, $extension] = $this->process($file);
 
@@ -40,6 +30,44 @@ class AvatarService
         $user->update(['avatar_path' => $path]);
 
         return $path;
+    }
+
+    public function storeAt(UploadedFile $file, string $basename, ?string $oldPath = null): string
+    {
+        $this->validateUpload($file);
+
+        [$contents, $extension] = $this->process($file);
+
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $path = $basename.'.'.$extension;
+        Storage::disk('public')->put($path, $contents);
+
+        return $path;
+    }
+
+    public function deleteAt(?string $path): void
+    {
+        if ($path) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
+    private function validateUpload(UploadedFile $file): void
+    {
+        if (! in_array($file->getMimeType(), self::ALLOWED_MIMES, true)) {
+            throw ValidationException::withMessages([
+                'avatar' => __('talenma.account.avatar_invalid_type'),
+            ]);
+        }
+
+        if ($file->getSize() > 2 * 1024 * 1024) {
+            throw ValidationException::withMessages([
+                'avatar' => __('talenma.account.avatar_too_large'),
+            ]);
+        }
     }
 
     public function delete(User $user): void

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Mail\CompanyApprovedMail;
+use App\Mail\CompanyRejectedMail;
 use App\Mail\TalentApprovedMail;
 use App\Mail\TalentRejectedMail;
 use App\Models\ModerationRequest;
@@ -115,6 +117,8 @@ class UserModerationService
         match ($action) {
             ModerationRequest::ACTION_APPROVE_TALENT => $this->approveTalent($target, $actor),
             ModerationRequest::ACTION_REJECT_TALENT => $this->rejectTalent($target, $payload['reason'] ?? null, $actor),
+            ModerationRequest::ACTION_APPROVE_COMPANY => $this->approveCompany($target, $actor),
+            ModerationRequest::ACTION_REJECT_COMPANY => $this->rejectCompany($target, $payload['reason'] ?? null, $actor),
             ModerationRequest::ACTION_DELETE_USER => $this->deleteUser($target),
             ModerationRequest::ACTION_CREATE_USER => $this->createUser($payload, $actor),
             ModerationRequest::ACTION_GRANT_MODERATOR => $this->grantModerator($target),
@@ -170,6 +174,49 @@ class UserModerationService
         Mail::to($user->email)->send(new TalentRejectedMail($user->fresh(), $reason));
     }
 
+    public function approveCompany(User $user, User $approver): void
+    {
+        if (! $user->isCompany()) {
+            throw ValidationException::withMessages([
+                'user' => __('talenma.admin.users.not_a_company'),
+            ]);
+        }
+
+        $user->update([
+            'approval_status' => 'approved',
+            'approved_at' => now(),
+            'approved_by' => $approver->id,
+            'rejection_reason' => null,
+        ]);
+
+        if (! $user->companyProfile) {
+            $user->companyProfile()->create([
+                'company_name' => $user->name,
+                'country' => 'France',
+            ]);
+        }
+
+        Mail::to($user->email)->send(new CompanyApprovedMail($user->fresh()));
+    }
+
+    public function rejectCompany(User $user, ?string $reason, User $reviewer): void
+    {
+        if (! $user->isCompany()) {
+            throw ValidationException::withMessages([
+                'user' => __('talenma.admin.users.not_a_company'),
+            ]);
+        }
+
+        $user->update([
+            'approval_status' => 'rejected',
+            'approved_at' => null,
+            'approved_by' => $reviewer->id,
+            'rejection_reason' => $reason,
+        ]);
+
+        Mail::to($user->email)->send(new CompanyRejectedMail($user->fresh(), $reason));
+    }
+
     public function deleteUser(User $user): void
     {
         $this->userDeletion->delete($user);
@@ -191,11 +238,11 @@ class UserModerationService
             'password' => $payload['password'],
             'role' => $role,
             'email_verified_at' => ($payload['email_verified'] ?? false) ? now() : null,
-            'approval_status' => $role === 'dev'
-                ? (($payload['approve_immediately'] ?? false) ? 'approved' : 'pending')
-                : 'approved',
-            'approved_at' => ($role === 'dev' && ($payload['approve_immediately'] ?? false)) ? now() : null,
-            'approved_by' => ($role === 'dev' && ($payload['approve_immediately'] ?? false)) ? $actor->id : null,
+            'approval_status' => ($payload['approve_immediately'] ?? false)
+                ? 'approved'
+                : 'pending',
+            'approved_at' => ($payload['approve_immediately'] ?? false) ? now() : null,
+            'approved_by' => ($payload['approve_immediately'] ?? false) ? $actor->id : null,
         ]);
 
         if ($role === 'dev' && $user->approval_status === 'approved') {
@@ -209,6 +256,7 @@ class UserModerationService
 
         if ($role === 'company') {
             $user->companyProfile()->create([
+                'company_name' => $payload['name'] ?? $user->name,
                 'country' => $payload['country'] ?? 'France',
             ]);
         }

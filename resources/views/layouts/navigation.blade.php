@@ -1,5 +1,8 @@
 @php
-    $pendingTalent = Auth::user()->isPendingApproval();
+    $pendingAccount = Auth::user()->isPendingApproval();
+    $catalogBlocked = Auth::user()->isCompany()
+        && ! app(\App\Services\CompanyProfileCompletionService::class)
+            ->assess(Auth::user()->companyProfile)['is_catalog_ready'];
 @endphp
 
 <nav x-data="{ open: false }" class="relative bg-white border-b border-gray-100 sticky top-0 z-40">
@@ -8,7 +11,7 @@
             <div class="flex items-center gap-2 sm:gap-4 min-w-0">
                 <x-brand-logo :href="route('home')" size="sm" />
                 <div class="hidden lg:flex items-center gap-1 min-w-0">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingTalent">{{ __('talenma.nav.dashboard') }}</x-nav-link>
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingAccount">{{ __('talenma.nav.dashboard') }}</x-nav-link>
                     @if (Auth::user()->isStaff())
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
                         @if (Auth::user()->isAdmin())
@@ -16,13 +19,13 @@
                         @endif
                         <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @elseif (Auth::user()->isTalent())
-                        <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')" :disabled="$pendingTalent">{{ __('talenma.nav.my_profile') }}</x-nav-link>
-                        <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')" :disabled="$pendingTalent">{{ __('talenma.nav.my_account') }}</x-nav-link>
+                        <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')" :disabled="$pendingAccount">{{ __('talenma.nav.my_profile') }}</x-nav-link>
+                        <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')" :disabled="$pendingAccount">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @elseif (Auth::user()->isCompany())
-                        <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.*')">{{ __('talenma.nav.talents') }}</x-nav-link>
-                        <x-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')">{{ __('talenma.nav.my_company') }}</x-nav-link>
-                        <x-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')">{{ __('talenma.nav.morocco_setup') }}</x-nav-link>
-                        <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-nav-link>
+                        <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.search') || request()->routeIs('company.talent.*')" :disabled="$pendingAccount || $catalogBlocked">{{ __('talenma.nav.talents') }}</x-nav-link>
+                        <x-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')" :disabled="$pendingAccount">{{ __('talenma.nav.my_company') }}</x-nav-link>
+                        <x-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')" :disabled="$pendingAccount">{{ __('talenma.nav.morocco_setup') }}</x-nav-link>
+                        <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')" :disabled="$pendingAccount">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @endif
                 </div>
             </div>
@@ -47,7 +50,7 @@
                         </button>
                     </x-slot>
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('home')" :disabled="$pendingTalent">{{ __('talenma.nav.home') }}</x-dropdown-link>
+                        <x-dropdown-link :href="route('home')" :disabled="$pendingAccount">{{ __('talenma.nav.home') }}</x-dropdown-link>
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
                         </form>
@@ -87,7 +90,7 @@
         class="lg:hidden absolute left-0 right-0 top-full z-50 border-t border-gray-200 bg-white shadow-lg"
     >
         <div class="max-h-[calc(100vh-4rem)] overflow-y-auto py-2">
-            @unless ($pendingTalent)
+            @unless ($pendingAccount)
                 <div class="border-b border-gray-100 pb-2 mb-2">
                     <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">{{ __('talenma.nav.dashboard') }}</x-responsive-nav-link>
                     @if (Auth::user()->isStaff())
@@ -100,14 +103,14 @@
                         <x-responsive-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')">{{ __('talenma.nav.my_profile') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-responsive-nav-link>
                     @elseif (Auth::user()->isCompany())
-                        <x-responsive-nav-link :href="route('company.search')" :active="request()->routeIs('company.*')">{{ __('talenma.nav.talents') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('company.search')" :active="request()->routeIs('company.search') || request()->routeIs('company.talent.*')" :disabled="$catalogBlocked">{{ __('talenma.nav.talents') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')">{{ __('talenma.nav.my_company') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')">{{ __('talenma.nav.morocco_setup') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-responsive-nav-link>
                     @endif
                 </div>
             @endunless
-            <x-dropdown-link :href="route('home')" :disabled="$pendingTalent">{{ __('talenma.nav.home') }}</x-dropdown-link>
+            <x-dropdown-link :href="route('home')" :disabled="$pendingAccount">{{ __('talenma.nav.home') }}</x-dropdown-link>
             <form method="POST" action="{{ route('logout') }}">@csrf
                 <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
             </form>

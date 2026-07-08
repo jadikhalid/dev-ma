@@ -766,12 +766,12 @@ Alpine.data('registerWizard', (config) => ({
     representativeName: config.initialRepresentativeName ?? '',
     representativeEmail: config.initialRepresentativeEmail ?? '',
     companyNeed: config.initialCompanyNeed ?? '',
+    companyWebsite: config.initialCompanyWebsite ?? '',
+    companyCountry: config.initialCompanyCountry ?? config.defaultCompanyCountry ?? '',
 
     init() {
-        this.$watch('role', (value) => {
-            if (value !== 'dev') {
-                this.step = 1;
-            }
+        this.$watch('role', () => {
+            this.step = 1;
         });
     },
 
@@ -785,6 +785,10 @@ Alpine.data('registerWizard', (config) => ({
 
     get hasRole() {
         return this.isTalent || this.isCompany;
+    },
+
+    get maxStep() {
+        return this.isCompany ? 3 : 2;
     },
 
     get step1Valid() {
@@ -802,30 +806,57 @@ Alpine.data('registerWizard', (config) => ({
         return nameOk && emailOk && passwordOk && confirmOk;
     },
 
-    get companyFieldsValid() {
+    get companyStep2Valid() {
         const nameOk = this.representativeName.trim().length >= 2;
         const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.representativeEmail.trim());
 
-        return nameOk && emailOk && this.companyNeed.trim().length >= 20;
+        return nameOk
+            && emailOk
+            && this.sector !== ''
+            && this.companyNeed.trim().length >= 20;
     },
 
-    get step2Valid() {
+    get talentStep2Valid() {
         return this.sector !== ''
             && this.description.trim().length >= 20
             && this.documentsCount >= 1
             && this.documentsCount <= 3;
     },
 
+    get companyStep3Valid() {
+        return this.documentsCount <= 2;
+    },
+
+    get currentStepValid() {
+        if (this.step === 1) {
+            return this.step1Valid;
+        }
+
+        if (this.isCompany && this.step === 2) {
+            return this.companyStep2Valid;
+        }
+
+        if (this.isCompany && this.step === 3) {
+            return this.companyStep3Valid;
+        }
+
+        if (this.isTalent && this.step === 2) {
+            return this.talentStep2Valid;
+        }
+
+        return false;
+    },
+
     get canGoBack() {
-        return this.isTalent && this.step === 2;
+        return this.hasRole && this.step > 1;
     },
 
     get canGoNext() {
-        return this.isTalent && this.step === 1 && this.step1Valid;
+        return this.hasRole && this.step < this.maxStep && this.currentStepValid;
     },
 
     get showSubmit() {
-        return this.isCompany || (this.isTalent && this.step === 2);
+        return (this.isTalent && this.step === 2) || (this.isCompany && this.step === 3);
     },
 
     get canSubmit() {
@@ -834,14 +865,14 @@ Alpine.data('registerWizard', (config) => ({
         }
 
         if (this.isCompany) {
-            return this.step1Valid && this.companyFieldsValid;
+            return this.step === 3 && this.step1Valid && this.companyStep2Valid && this.companyStep3Valid;
         }
 
-        return this.step === 2 && this.step1Valid && this.step2Valid;
+        return this.step === 2 && this.step1Valid && this.talentStep2Valid;
     },
 
     get navEnabled() {
-        return this.isTalent;
+        return this.hasRole;
     },
 
     onDocumentsChange(event) {
@@ -850,13 +881,13 @@ Alpine.data('registerWizard', (config) => ({
 
     next() {
         if (this.canGoNext) {
-            this.step = 2;
+            this.step += 1;
         }
     },
 
     prev() {
         if (this.canGoBack) {
-            this.step = 1;
+            this.step -= 1;
         }
     },
 

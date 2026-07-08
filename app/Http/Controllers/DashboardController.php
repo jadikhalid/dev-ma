@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AdminDashboardService;
+use App\Services\CompanyProfileCompletionService;
 use App\Services\TalentProfileCompletionService;
 use Illuminate\Http\Request;
 
@@ -10,6 +11,7 @@ class DashboardController extends Controller
 {
     public function __construct(
         private TalentProfileCompletionService $profileCompletion,
+        private CompanyProfileCompletionService $companyProfileCompletion,
         private AdminDashboardService $adminDashboard,
     ) {}
 
@@ -25,9 +27,11 @@ class DashboardController extends Controller
 
         if ($user->isCompany()) {
             $user->load('companyProfile');
+            $profile = $user->companyProfile;
+            $completion = $this->companyProfileCompletion->assess($profile);
             $recentRequests = $user->recruitmentRequests()->with('talent.profile')->latest()->take(5)->get();
 
-            return view('dashboard.company', compact('recentRequests'));
+            return view('dashboard.company', compact('recentRequests', 'profile', 'completion'));
         }
 
         $user->load(['profile.profession', 'profile.professionSector', 'profile.documents']);

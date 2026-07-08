@@ -22,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'talent.approved' => \App\Http\Middleware\EnsureTalentIsApproved::class,
             'talent.pending' => \App\Http\Middleware\EnsureTalentIsPending::class,
             'talent.rejected' => \App\Http\Middleware\EnsureTalentIsRejected::class,
+            'account.approved' => \App\Http\Middleware\EnsureTalentIsApproved::class,
+            'account.pending' => \App\Http\Middleware\EnsureTalentIsPending::class,
+            'account.rejected' => \App\Http\Middleware\EnsureTalentIsRejected::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

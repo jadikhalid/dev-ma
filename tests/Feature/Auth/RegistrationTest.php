@@ -56,7 +56,9 @@ class RegistrationTest extends TestCase
             'role' => 'company',
             'representative_name' => 'Jean Dupont',
             'representative_email' => 'jean.dupont@acme.com',
+            'sector' => 'it-digital',
             'company_need' => 'Nous recherchons un développeur Laravel senior pour une mission de 6 mois en télétravail.',
+            'company_country' => 'France',
         ], $overrides);
     }
 
@@ -172,6 +174,60 @@ class RegistrationTest extends TestCase
         $user = User::query()->where('email', 'company@example.com')->first();
         $this->assertNull($user?->profile);
         $this->assertSame('Acme SAS', $user?->companyProfile?->company_name);
+        $this->assertSame(User::APPROVAL_PENDING, $user?->approval_status);
+    }
+
+    public function test_verified_pending_company_cannot_access_dashboard(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'company',
+            'approval_status' => User::APPROVAL_PENDING,
+        ]);
+        $user->companyProfile()->create([
+            'company_name' => 'Acme SAS',
+            'country' => 'France',
+        ]);
+        $user->markEmailAsVerified();
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertRedirect(route('account.pending'));
+    }
+
+    public function test_company_email_verification_redirects_to_pending_page(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', $this->validCompanyPayload([
+            'email' => 'company-pending@example.com',
+            'name' => 'Acme SAS',
+        ]));
+
+        $pending = PendingRegistration::query()->where('email', 'company-pending@example.com')->firstOrFail();
+
+        $response = $this->get(route('register.verify', ['token' => $pending->token]));
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('account.pending'));
+    }
+
+    public function test_admin_can_approve_pending_company(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $company = User::factory()->create([
+            'role' => 'company',
+            'approval_status' => User::APPROVAL_PENDING,
+        ]);
+        $company->companyProfile()->create([
+            'company_name' => 'Acme SAS',
+            'country' => 'France',
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.users.approve', $company));
+
+        $response->assertRedirect();
+        $company->refresh();
+        $this->assertTrue($company->isApproved());
     }
 
     public function test_company_registration_requires_company_fields(): void
@@ -182,7 +238,35 @@ class RegistrationTest extends TestCase
         ]));
 
         $response->assertRedirect('/register');
-        $response->assertSessionHasErrors(['representative_name', 'representative_email', 'company_need']);
+        $response->assertSessionHasErrors(['representative_name', 'representative_email', 'sector', 'company_need']);
+    }
+
+    public function test_company_registration_stores_sector_and_documents_on_verify(): void
+    {
+        Mail::fake();
+
+        $response = $this->post('/register', array_merge($this->validCompanyPayload([
+            'email' => 'company-docs@example.com',
+        ]), [
+            'documents' => [
+                UploadedFile::fake()->create('kbis.pdf', 100, 'application/pdf'),
+            ],
+        ]));
+
+        $response->assertRedirect(route('login'));
+
+        $pending = PendingRegistration::query()->where('email', 'company-docs@example.com')->firstOrFail();
+        $this->assertNotEmpty($pending->document_paths);
+
+        $this->get(route('register.verify', ['token' => $pending->token]));
+
+        $user = User::query()->where('email', 'company-docs@example.com')->firstOrFail();
+        $profile = $user->companyProfile;
+
+        $this->assertNotNull($profile);
+        $this->assertNotNull($profile->registration_sector);
+        $this->assertNotNull($profile->registration_hiring_needs);
+        $this->assertCount(1, $profile->documents);
     }
 
     public function test_talent_registration_requires_sector_and_documents(): void

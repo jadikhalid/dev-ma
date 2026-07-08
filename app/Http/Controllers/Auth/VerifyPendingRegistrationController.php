@@ -32,12 +32,8 @@ class VerifyPendingRegistrationController extends Controller
 
     private function redirectAfterRegistration(User $user): RedirectResponse
     {
-        $route = ($user->isTalent() && $user->isPendingApproval())
-            ? 'account.pending'
-            : 'dashboard';
-
         return redirect()
-            ->route($route)
+            ->route($user->homeRouteName())
             ->with('toast_success', __('talenma.auth.registration_verified_success'));
     }
 }

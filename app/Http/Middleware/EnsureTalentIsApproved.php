@@ -12,7 +12,7 @@ class EnsureTalentIsApproved
     {
         $user = $request->user();
 
-        if ($user?->isTalent() && ! $user->isApproved()) {
+        if ($user && ($user->isTalent() || $user->isCompany()) && ! $user->isApproved()) {
             if ($user->isRejected()) {
                 return redirect()->route('account.rejected');
             }

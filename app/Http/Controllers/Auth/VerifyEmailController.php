@@ -30,10 +30,6 @@ class VerifyEmailController extends Controller
 
     private function verifiedDestination(\App\Models\User $user): string
     {
-        if ($user->isTalent() && $user->isPendingApproval()) {
-            return route('account.pending', absolute: false);
-        }
-
-        return route('dashboard', absolute: false);
+        return route($user->homeRouteName(), absolute: false);
     }
 }

@@ -111,21 +111,40 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isApproved(): bool
     {
-        if ($this->isStaff() || $this->isCompany()) {
+        if ($this->isStaff()) {
             return true;
         }
 
-        return $this->approval_status === self::APPROVAL_APPROVED;
+        if ($this->isTalent() || $this->isCompany()) {
+            return $this->approval_status === self::APPROVAL_APPROVED;
+        }
+
+        return true;
     }
 
     public function isPendingApproval(): bool
     {
-        return $this->isTalent() && $this->approval_status === self::APPROVAL_PENDING;
+        return ($this->isTalent() || $this->isCompany())
+            && $this->approval_status === self::APPROVAL_PENDING;
     }
 
     public function isRejected(): bool
     {
-        return $this->isTalent() && $this->approval_status === self::APPROVAL_REJECTED;
+        return ($this->isTalent() || $this->isCompany())
+            && $this->approval_status === self::APPROVAL_REJECTED;
+    }
+
+    public function homeRouteName(): string
+    {
+        if ($this->isRejected()) {
+            return 'account.rejected';
+        }
+
+        if ($this->isPendingApproval()) {
+            return 'account.pending';
+        }
+
+        return 'dashboard';
     }
 
     public function hasActiveSubscription(): bool

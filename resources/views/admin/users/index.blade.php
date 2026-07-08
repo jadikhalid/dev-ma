@@ -122,16 +122,16 @@
             <div class="divide-y">
                 @forelse ($users as $user)
                     @php
-                        $isClickableTalent = in_array($filter, ['pending', 'talents', 'all'], true)
-                            && $user->isTalent()
+                        $isClickable = in_array($filter, ['pending', 'talents', 'companies', 'all'], true)
+                            && ($user->isTalent() || $user->isCompany())
                             && $user->hasVerifiedEmail();
                     @endphp
                     <div
                         @class([
                             'px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4',
-                            'cursor-pointer hover:bg-indigo-50/50 transition-colors' => $isClickableTalent,
+                            'cursor-pointer hover:bg-indigo-50/50 transition-colors' => $isClickable,
                         ])
-                        @if ($isClickableTalent)
+                        @if ($isClickable)
                             role="button"
                             tabindex="0"
                             @click="openFor({{ $user->id }})"
@@ -152,12 +152,12 @@
                                         @else
                                             {{ __('talenma.roles.talent') }}
                                         @endif
-                                        @if ($user->isTalent())
+                                        @if ($user->isTalent() || $user->isCompany())
                                             — {{ __('talenma.admin.users.status_'.$user->approval_status) }}
                                         @endif
                                     </p>
                                 </div>
-                                @if ($isClickableTalent)
+                                @if ($isClickable)
                                     <span class="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 mt-0.5">
                                         {{ __('talenma.admin.users.view_registration') }}
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -165,8 +165,8 @@
                                 @endif
                             </div>
                         </div>
-                        <div class="flex flex-wrap gap-2" @if ($isClickableTalent) @click.stop @keydown.stop @endif>
-                            @if ($user->isTalent() && $user->isPendingApproval())
+                        <div class="flex flex-wrap gap-2" @if ($isClickable) @click.stop @keydown.stop @endif>
+                            @if (($user->isTalent() || $user->isCompany()) && $user->isPendingApproval())
                                 <form method="POST" action="{{ route('admin.users.approve', $user) }}">
                                     @csrf
                                     <x-primary-button>{{ __('talenma.admin.users.approve_btn') }}</x-primary-button>
@@ -219,7 +219,7 @@
                 <div class="px-6 py-4 border-t">{{ $users->links() }}</div>
             @endif
 
-            @if (in_array($filter, ['pending', 'talents', 'all'], true))
+            @if (in_array($filter, ['pending', 'talents', 'companies', 'all'], true))
                 <x-admin.pending-registration-drawer />
             @endif
         </section>

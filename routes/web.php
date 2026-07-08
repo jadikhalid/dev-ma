@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountStatusController;
+use App\Http\Controllers\Admin\CompanyProfileDocumentController;
 use App\Http\Controllers\Admin\ProfileDocumentController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -31,14 +32,14 @@ Route::get('/services/{slug}', [ServiceController::class, 'show'])->name('servic
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/account/pending', [AccountStatusController::class, 'pending'])
-        ->middleware('talent.pending')
+        ->middleware('account.pending')
         ->name('account.pending');
     Route::get('/account/rejected', [AccountStatusController::class, 'rejected'])
-        ->middleware('talent.rejected')
+        ->middleware('account.rejected')
         ->name('account.rejected');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->middleware('talent.approved')
+        ->middleware('account.approved')
         ->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -49,6 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
         Route::get('/users/{user}/registration', [UserManagementController::class, 'registration'])->name('users.registration');
         Route::get('/profile-documents/{profileDocument}', [ProfileDocumentController::class, 'show'])->name('profile-documents.show');
+        Route::get('/company-profile-documents/{companyProfileDocument}', [CompanyProfileDocumentController::class, 'show'])->name('company-profile-documents.show');
         Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
         Route::post('/users/{user}/approve', [UserManagementController::class, 'approve'])->name('users.approve');
         Route::post('/users/{user}/reject', [UserManagementController::class, 'reject'])->name('users.reject');
@@ -81,14 +83,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/subscription/activate', [PaymentController::class, 'simulate'])->name('payment.simulate');
     });
 
-    Route::get('/company/profile', [CompanyProfileController::class, 'edit'])->name('company.profile.edit');
-    Route::post('/company/profile', [CompanyProfileController::class, 'update'])->name('company.profile.update');
+    Route::middleware('account.approved')->group(function () {
+        Route::get('/company/profile', [CompanyProfileController::class, 'edit'])->name('company.profile.edit');
+        Route::post('/company/profile', [CompanyProfileController::class, 'update'])->name('company.profile.update');
 
-    Route::get('/talents', [CompanySearchController::class, 'index'])->name('company.search');
-    Route::get('/talents/{talent}', [CompanySearchController::class, 'show'])->name('company.talent.show');
+        Route::get('/talents', [CompanySearchController::class, 'index'])->name('company.search');
+        Route::get('/talents/{talent}', [CompanySearchController::class, 'show'])->name('company.talent.show');
 
-    Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');
-    Route::post('/recruitment/request', [RecruitmentRequestController::class, 'store'])->name('recruitment.store');
+        Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');
+        Route::post('/recruitment/request', [RecruitmentRequestController::class, 'store'])->name('recruitment.store');
+    });
 });
 
 require __DIR__.'/auth.php';

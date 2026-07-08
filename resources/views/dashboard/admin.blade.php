@@ -19,6 +19,7 @@
 
     $alertToneClasses = [
         'amber' => 'bg-amber-50 border-amber-200 text-amber-900',
+        'emerald' => 'bg-emerald-50 border-emerald-200 text-emerald-900',
         'violet' => 'bg-violet-50 border-violet-200 text-violet-900',
     ];
 
@@ -117,6 +118,10 @@
                     </div>
                     <dl class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                         <div class="rounded-xl bg-gray-50 px-3 py-3">
+                            <dt class="text-xs text-gray-500">{{ __('talenma.dashboard.admin.users_companies_pending') }}</dt>
+                            <dd class="mt-1 text-lg font-bold {{ $breakdown['companies_pending'] > 0 ? 'text-amber-700' : 'text-gray-900' }}">{{ $breakdown['companies_pending'] }}</dd>
+                        </div>
+                        <div class="rounded-xl bg-gray-50 px-3 py-3">
                             <dt class="text-xs text-gray-500">{{ __('talenma.dashboard.admin.users_companies') }}</dt>
                             <dd class="mt-1 text-lg font-bold text-gray-900">{{ $breakdown['companies'] }}</dd>
                         </div>
@@ -150,7 +155,12 @@
                             @foreach ($dashboard['recent_pending_talents'] as $talent)
                                 <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                     <div class="min-w-0">
-                                        <p class="font-medium text-gray-900">{{ $talent['name'] }}</p>
+                                        <div class="flex items-center gap-2">
+                                            <p class="font-medium text-gray-900">{{ $talent['name'] }}</p>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold {{ $talent['role'] === 'company' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700' }}">
+                                                {{ $talent['role_label'] }}
+                                            </span>
+                                        </div>
                                         <p class="text-sm text-gray-500 truncate">{{ $talent['email'] }}</p>
                                         <p class="text-xs text-gray-400 mt-1">{{ $talent['sector'] }} · {{ $talent['registered_at'] }}</p>
                                     </div>
