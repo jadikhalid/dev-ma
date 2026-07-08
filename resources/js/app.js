@@ -768,6 +768,7 @@ Alpine.data('registerWizard', (config) => ({
     companyNeed: config.initialCompanyNeed ?? '',
     companyWebsite: config.initialCompanyWebsite ?? '',
     companyCountry: config.initialCompanyCountry ?? config.defaultCompanyCountry ?? '',
+    defaultCompanyCountry: config.defaultCompanyCountry ?? '',
 
     init() {
         this.$watch('role', () => {
@@ -851,8 +852,12 @@ Alpine.data('registerWizard', (config) => ({
         return this.hasRole && this.step > 1;
     },
 
+    get showNext() {
+        return this.hasRole && this.step < this.maxStep;
+    },
+
     get canGoNext() {
-        return this.hasRole && this.step < this.maxStep && this.currentStepValid;
+        return this.showNext && this.currentStepValid;
     },
 
     get showSubmit() {
@@ -877,6 +882,33 @@ Alpine.data('registerWizard', (config) => ({
 
     onDocumentsChange(event) {
         this.documentsCount = event.target.files?.length ?? 0;
+    },
+
+    resetRole() {
+        this.role = '';
+        this.step = 1;
+
+        this.firstName = '';
+        this.lastName = '';
+        this.name = '';
+        this.email = '';
+        this.password = '';
+        this.passwordConfirmation = '';
+        this.sector = '';
+        this.description = '';
+        this.documentsCount = 0;
+        this.representativeName = '';
+        this.representativeEmail = '';
+        this.companyNeed = '';
+        this.companyWebsite = '';
+        this.companyCountry = this.defaultCompanyCountry;
+
+        // Les inputs fichiers ne sont pas liables en x-model : on vide le DOM.
+        this.$root
+            .querySelectorAll('input[type="file"]')
+            .forEach((el) => {
+                el.value = '';
+            });
     },
 
     next() {

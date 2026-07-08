@@ -112,6 +112,24 @@
             </template>
         </div>
 
+        {{-- Profil choisi + lien discret pour revenir au choix (toutes les étapes) --}}
+        <div x-show="hasRole" x-cloak class="shrink-0 mb-3 flex items-center justify-between gap-2">
+            <span
+                class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold"
+                :class="isCompany ? 'text-emerald-700' : 'text-indigo-700'"
+            >
+                <span class="w-1.5 h-1.5 rounded-full" :class="isCompany ? 'bg-emerald-500' : 'bg-indigo-500'"></span>
+                <span x-text="isCompany ? @js(__('talenma.auth.role_company')) : @js(__('talenma.auth.role_talent'))"></span>
+            </span>
+            <button
+                type="button"
+                @click="resetRole()"
+                class="text-[11px] sm:text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2 transition-colors"
+            >
+                {{ __('talenma.auth.register_change_role') }}
+            </button>
+        </div>
+
         {{-- Zone scrollable : champs du formulaire --}}
         <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-1 px-1">
             {{-- Étape 1 : identité + rôle --}}
@@ -126,65 +144,82 @@
                 x-transition:leave-end="opacity-0 -translate-x-4"
                 class="space-y-3"
             >
-                <div x-show="isCompany" x-cloak>
-                    <label for="name" class="block font-medium text-xs sm:text-sm text-gray-700">
-                        {{ __('talenma.auth.company_name') }}
-                    </label>
-                    <x-text-input id="name" name="name" x-model="name" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="255" autocomplete="organization" x-bind:required="isCompany" x-bind:disabled="!isCompany" />
-                    <x-input-error :messages="$errors->get('name')" class="mt-1" />
-                </div>
-
-                <div x-show="!isCompany" class="grid grid-cols-2 gap-3">
-                    <div>
-                        <x-input-label for="first_name" :value="__('talenma.auth.first_name')" class="text-xs sm:text-sm" />
-                        <x-text-input id="first_name" name="first_name" x-model="firstName" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="given-name" x-bind:required="isTalent" x-bind:disabled="isCompany" x-bind:autofocus="!isCompany" />
-                        <x-input-error :messages="$errors->get('first_name')" class="mt-1" />
-                    </div>
-                    <div>
-                        <x-input-label for="last_name" :value="__('talenma.auth.last_name')" class="text-xs sm:text-sm" />
-                        <x-text-input id="last_name" name="last_name" x-model="lastName" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="family-name" x-bind:required="isTalent" x-bind:disabled="isCompany" />
-                        <x-input-error :messages="$errors->get('last_name')" class="mt-1" />
-                    </div>
-                </div>
-                <div>
-                    <x-input-label for="email" :value="__('talenma.auth.email')" class="text-xs sm:text-sm" />
-                    <x-text-input id="email" name="email" type="email" x-model="email" class="mt-1 block w-full text-sm py-2" required maxlength="255" autocomplete="email" inputmode="email" />
-                    <x-input-error :messages="$errors->get('email')" class="mt-1" />
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <x-input-label for="password" :value="__('talenma.auth.password')" class="text-xs sm:text-sm" />
-                        <x-text-input id="password" name="password" type="password" @input="password = $event.target.value" class="mt-1 block w-full text-sm py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
-                        <x-input-error :messages="$errors->get('password')" class="mt-1" />
-                    </div>
-                    <div>
-                        <x-input-label for="password_confirmation" :value="__('talenma.auth.confirm_password')" class="text-xs sm:text-sm" />
-                        <x-text-input id="password_confirmation" name="password_confirmation" type="password" @input="passwordConfirmation = $event.target.value" class="mt-1 block w-full text-sm py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
-                    </div>
-                </div>
-                <div class="pt-1">
+                {{-- Choix du profil : affiché tant qu'aucun rôle n'est sélectionné --}}
+                <div x-show="!hasRole" x-cloak>
                     <x-input-label :value="__('talenma.auth.register_as')" class="text-xs sm:text-sm" />
                     <div class="mt-2 grid grid-cols-2 gap-3">
-                        <label class="flex items-start gap-2 p-2.5 sm:gap-2.5 sm:p-3 border-2 rounded-xl cursor-pointer transition-colors has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
-                            <input type="radio" name="role" value="dev" class="mt-0.5 shrink-0" x-model="role" required>
-                            <div class="min-w-0">
-                                <span class="font-semibold text-xs sm:text-sm">{{ __('talenma.auth.role_talent') }}</span>
-                                @if (__('talenma.auth.role_talent_desc'))
-                                    <p class="text-[10px] sm:text-xs text-gray-500 line-clamp-2">{{ __('talenma.auth.role_talent_desc') }}</p>
-                                @endif
-                            </div>
+                        <label class="group flex flex-col items-center text-center gap-2 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-colors has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50 hover:border-indigo-300">
+                            <input type="radio" name="role" value="dev" class="sr-only" x-model="role" required>
+                            <span class="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-indigo-100 text-indigo-600 group-has-[:checked]:bg-indigo-600 group-has-[:checked]:text-white transition-colors">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            </span>
+                            <span class="font-semibold text-xs sm:text-sm">{{ __('talenma.auth.role_talent') }}</span>
+                            @if (__('talenma.auth.role_talent_desc'))
+                                <p class="text-[10px] sm:text-xs text-gray-500 line-clamp-2">{{ __('talenma.auth.role_talent_desc') }}</p>
+                            @endif
                         </label>
-                        <label class="flex items-start gap-2 p-2.5 sm:gap-2.5 sm:p-3 border-2 rounded-xl cursor-pointer transition-colors has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50">
-                            <input type="radio" name="role" value="company" class="mt-0.5 shrink-0" x-model="role" required>
-                            <div class="min-w-0">
-                                <span class="font-semibold text-xs sm:text-sm">{{ __('talenma.auth.role_company') }}</span>
-                                @if (__('talenma.auth.role_company_desc'))
-                                    <p class="text-[10px] sm:text-xs text-gray-500 line-clamp-2">{{ __('talenma.auth.role_company_desc') }}</p>
-                                @endif
-                            </div>
+                        <label class="group flex flex-col items-center text-center gap-2 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-colors has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50 hover:border-emerald-300">
+                            <input type="radio" name="role" value="company" class="sr-only" x-model="role" required>
+                            <span class="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-100 text-emerald-600 group-has-[:checked]:bg-emerald-600 group-has-[:checked]:text-white transition-colors">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3m6-14h.01M9 11h.01M9 15h.01M15 7h.01M15 11h.01M15 15h.01"/></svg>
+                            </span>
+                            <span class="font-semibold text-xs sm:text-sm">{{ __('talenma.auth.role_company') }}</span>
+                            @if (__('talenma.auth.role_company_desc'))
+                                <p class="text-[10px] sm:text-xs text-gray-500 line-clamp-2">{{ __('talenma.auth.role_company_desc') }}</p>
+                            @endif
                         </label>
                     </div>
                     <x-input-error :messages="$errors->get('role')" class="mt-1" />
+                    <p class="mt-3 text-center text-[11px] sm:text-xs text-gray-500">
+                        {{ __('talenma.auth.register_choose_hint') }}
+                    </p>
+                </div>
+
+                {{-- Champs d'identité : révélés une fois le profil choisi --}}
+                <div
+                    x-show="hasRole"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    class="space-y-3"
+                >
+                    <div x-show="isCompany" x-cloak>
+                        <label for="name" class="block font-medium text-xs sm:text-sm text-gray-700">
+                            {{ __('talenma.auth.company_name') }}
+                        </label>
+                        <x-text-input id="name" name="name" x-model="name" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="255" autocomplete="organization" x-bind:required="isCompany" x-bind:disabled="!isCompany" />
+                        <x-input-error :messages="$errors->get('name')" class="mt-1" />
+                    </div>
+
+                    <div x-show="!isCompany" class="grid grid-cols-2 gap-3">
+                        <div>
+                            <x-input-label for="first_name" :value="__('talenma.auth.first_name')" class="text-xs sm:text-sm" />
+                            <x-text-input id="first_name" name="first_name" x-model="firstName" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="given-name" x-bind:required="isTalent" x-bind:disabled="isCompany" />
+                            <x-input-error :messages="$errors->get('first_name')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="last_name" :value="__('talenma.auth.last_name')" class="text-xs sm:text-sm" />
+                            <x-text-input id="last_name" name="last_name" x-model="lastName" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="family-name" x-bind:required="isTalent" x-bind:disabled="isCompany" />
+                            <x-input-error :messages="$errors->get('last_name')" class="mt-1" />
+                        </div>
+                    </div>
+                    <div>
+                        <x-input-label for="email" :value="__('talenma.auth.email')" class="text-xs sm:text-sm" />
+                        <x-text-input id="email" name="email" type="email" x-model="email" class="mt-1 block w-full text-sm py-2" required maxlength="255" autocomplete="email" inputmode="email" />
+                        <x-input-error :messages="$errors->get('email')" class="mt-1" />
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <x-input-label for="password" :value="__('talenma.auth.password')" class="text-xs sm:text-sm" />
+                            <x-text-input id="password" name="password" type="password" x-model="password" class="mt-1 block w-full text-sm py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
+                            <x-input-error :messages="$errors->get('password')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="password_confirmation" :value="__('talenma.auth.confirm_password')" class="text-xs sm:text-sm" />
+                            <x-text-input id="password_confirmation" name="password_confirmation" type="password" x-model="passwordConfirmation" class="mt-1 block w-full text-sm py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -342,10 +377,10 @@
                 <span class="hidden sm:inline">{{ __('talenma.auth.register_back') }}</span>
             </button>
 
-            <div class="flex-1 flex justify-center min-w-0">
+            <div class="flex-1 flex justify-end min-w-0">
                 <button
                     type="button"
-                    x-show="canGoNext"
+                    x-show="showNext"
                     x-cloak
                     @click="next()"
                     :disabled="!canGoNext"
@@ -358,29 +393,21 @@
                     {{ __('talenma.auth.register_continue') }}
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </button>
+
+                <button
+                    type="submit"
+                    x-show="showSubmit"
+                    x-cloak
+                    :disabled="!canSubmit"
+                    :class="canSubmit
+                        ? (isCompany
+                            ? 'inline-flex items-center justify-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-sm text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition'
+                            : 'inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition')
+                        : 'inline-flex items-center justify-center px-4 py-2 bg-gray-200 border border-transparent rounded-lg font-semibold text-sm text-gray-400 cursor-not-allowed'"
+                >
+                    {{ __('talenma.auth.register_btn') }}
+                </button>
             </div>
-
-            <button
-                type="submit"
-                x-show="showSubmit"
-                x-cloak
-                :disabled="!canSubmit"
-                :class="canSubmit
-                    ? 'inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ml-auto shrink-0'
-                    : 'inline-flex items-center justify-center px-4 py-2 bg-gray-200 border border-transparent rounded-lg font-semibold text-sm text-gray-400 cursor-not-allowed ml-auto shrink-0'"
-            >
-                {{ __('talenma.auth.register_btn') }}
-            </button>
-
-            <button
-                type="button"
-                x-show="!showSubmit"
-                x-cloak
-                disabled
-                class="inline-flex items-center justify-center px-4 py-2 bg-gray-200 border border-transparent rounded-lg font-semibold text-sm text-gray-400 cursor-not-allowed ml-auto shrink-0"
-            >
-                {{ __('talenma.auth.register_btn') }}
-            </button>
         </div>
 
         <p class="shrink-0 mt-2 text-center text-xs sm:text-sm text-gray-600">{{ __('talenma.auth.has_account') }} <a href="{{ route('login') }}" class="text-indigo-600 font-medium">{{ __('talenma.auth.login_btn') }}</a></p>
