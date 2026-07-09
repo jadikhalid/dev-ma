@@ -28,11 +28,55 @@
     }
 @endphp
 
+@php
+    $registerValidationMessages = [
+        'name_required' => __('talenma.auth.validation.name_required'),
+        'first_name_required' => __('talenma.auth.validation.first_name_required'),
+        'last_name_required' => __('talenma.auth.validation.last_name_required'),
+        'first_name_min' => __('talenma.auth.validation.first_name_min'),
+        'last_name_min' => __('talenma.auth.validation.last_name_min'),
+        'first_name_max' => __('talenma.auth.validation.first_name_max'),
+        'last_name_max' => __('talenma.auth.validation.last_name_max'),
+        'first_name_format' => __('talenma.auth.validation.first_name_format'),
+        'last_name_format' => __('talenma.auth.validation.last_name_format'),
+        'name_min' => __('talenma.auth.validation.name_min'),
+        'name_max' => __('talenma.auth.validation.name_max'),
+        'name_format' => __('talenma.auth.validation.name_format'),
+        'email_required' => __('talenma.auth.validation.email_required'),
+        'email_invalid' => __('talenma.auth.validation.email_invalid'),
+        'email_max' => __('talenma.auth.validation.email_max'),
+        'password_required' => __('talenma.auth.validation.password_required'),
+        'password_confirmed' => __('talenma.auth.validation.password_confirmed'),
+        'password_min' => __('talenma.auth.validation.password_min'),
+        'password_max' => __('talenma.auth.validation.password_max'),
+        'password_letters' => __('talenma.auth.validation.password_letters'),
+        'password_numbers' => __('talenma.auth.validation.password_numbers'),
+        'sector_required' => __('talenma.auth.validation.sector_required'),
+        'description_required' => __('talenma.auth.validation.description_required'),
+        'description_min' => __('talenma.auth.validation.description_min'),
+        'description_max' => __('talenma.auth.validation.description_max'),
+        'documents_required' => __('talenma.auth.validation.documents_required'),
+        'documents_max' => __('talenma.auth.validation.documents_max'),
+        'documents_max_company' => __('talenma.auth.validation.documents_max_company'),
+        'representative_name_required' => __('talenma.auth.validation.representative_name_required'),
+        'representative_name_min' => __('talenma.auth.validation.representative_name_min'),
+        'representative_name_max' => __('talenma.auth.validation.representative_name_max'),
+        'representative_name_format' => __('talenma.auth.validation.representative_name_format'),
+        'representative_email_required' => __('talenma.auth.validation.representative_email_required'),
+        'representative_email_invalid' => __('talenma.auth.validation.representative_email_invalid'),
+        'representative_email_max' => __('talenma.auth.validation.representative_email_max'),
+        'company_need_required' => __('talenma.auth.validation.company_need_required'),
+        'company_need_min' => __('talenma.auth.validation.company_need_min'),
+        'company_need_max' => __('talenma.auth.validation.company_need_max'),
+        'company_website_invalid' => __('talenma.auth.validation.company_website_invalid'),
+    ];
+@endphp
+
 <x-guest-layout viewport-fit>
     <x-slot name="title">{{ __('talenma.auth.register_title') }}</x-slot>
     <x-slot name="description">{{ __('talenma.auth.register_desc') }}</x-slot>
 
-    <x-toast-stack />
+    <x-toast-stack persistent />
 
     <form
         method="POST"
@@ -57,6 +101,7 @@
             initialCompanyWebsite: @js(old('company_website', '')),
             initialCompanyCountry: @js(old('company_country', __('talenma.common.france'))),
             defaultCompanyCountry: @js(__('talenma.common.france')),
+            validationMessages: @js($registerValidationMessages),
         })"
     >@csrf
         <div class="hidden" aria-hidden="true">
@@ -124,7 +169,8 @@
             <button
                 type="button"
                 @click="resetRole()"
-                class="text-[11px] sm:text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2 transition-colors"
+                class="text-xs sm:text-sm font-semibold underline underline-offset-2 transition-colors"
+                :class="isCompany ? 'text-emerald-700 hover:text-emerald-900' : 'text-indigo-700 hover:text-indigo-900'"
             >
                 {{ __('talenma.auth.register_change_role') }}
             </button>
@@ -188,36 +234,36 @@
                         <label for="name" class="block font-medium text-xs sm:text-sm text-gray-700">
                             {{ __('talenma.auth.company_name') }}
                         </label>
-                        <x-text-input id="name" name="name" x-model="name" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="255" autocomplete="organization" x-bind:required="isCompany" x-bind:disabled="!isCompany" />
+                        <x-text-input id="name" name="name" x-model="name" @blur="onFieldBlur('name')" @input="onFieldInput('name')" x-bind:class="fieldInvalidClass('name')" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="255" autocomplete="organization" x-bind:required="isCompany" x-bind:disabled="!isCompany" />
                         <x-input-error :messages="$errors->get('name')" class="mt-1" />
                     </div>
 
                     <div x-show="!isCompany" class="grid grid-cols-2 gap-3">
                         <div>
                             <x-input-label for="first_name" :value="__('talenma.auth.first_name')" class="text-xs sm:text-sm" />
-                            <x-text-input id="first_name" name="first_name" x-model="firstName" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="given-name" x-bind:required="isTalent" x-bind:disabled="isCompany" />
+                            <x-text-input id="first_name" name="first_name" x-model="firstName" @blur="onFieldBlur('first_name')" @input="onFieldInput('first_name')" x-bind:class="fieldInvalidClass('first_name')" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="given-name" x-bind:required="isTalent" x-bind:disabled="isCompany" />
                             <x-input-error :messages="$errors->get('first_name')" class="mt-1" />
                         </div>
                         <div>
                             <x-input-label for="last_name" :value="__('talenma.auth.last_name')" class="text-xs sm:text-sm" />
-                            <x-text-input id="last_name" name="last_name" x-model="lastName" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="family-name" x-bind:required="isTalent" x-bind:disabled="isCompany" />
+                            <x-text-input id="last_name" name="last_name" x-model="lastName" @blur="onFieldBlur('last_name')" @input="onFieldInput('last_name')" x-bind:class="fieldInvalidClass('last_name')" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="family-name" x-bind:required="isTalent" x-bind:disabled="isCompany" />
                             <x-input-error :messages="$errors->get('last_name')" class="mt-1" />
                         </div>
                     </div>
                     <div>
                         <x-input-label for="email" :value="__('talenma.auth.email')" class="text-xs sm:text-sm" />
-                        <x-text-input id="email" name="email" type="email" x-model="email" class="mt-1 block w-full text-sm py-2" required maxlength="255" autocomplete="email" inputmode="email" />
+                        <x-text-input id="email" name="email" type="email" x-model="email" @blur="onFieldBlur('email')" @input="onFieldInput('email')" x-bind:class="fieldInvalidClass('email')" class="mt-1 block w-full text-sm py-2" required maxlength="255" autocomplete="email" inputmode="email" />
                         <x-input-error :messages="$errors->get('email')" class="mt-1" />
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <x-input-label for="password" :value="__('talenma.auth.password')" class="text-xs sm:text-sm" />
-                            <x-text-input id="password" name="password" type="password" x-model="password" class="mt-1 block w-full text-sm py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
+                            <x-text-input id="password" name="password" type="password" x-model="password" @blur="onFieldBlur('password')" @input="onFieldInput('password')" x-bind:class="fieldInvalidClass('password')" class="mt-1 block w-full text-sm py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
                             <x-input-error :messages="$errors->get('password')" class="mt-1" />
                         </div>
                         <div>
                             <x-input-label for="password_confirmation" :value="__('talenma.auth.confirm_password')" class="text-xs sm:text-sm" />
-                            <x-text-input id="password_confirmation" name="password_confirmation" type="password" x-model="passwordConfirmation" class="mt-1 block w-full text-sm py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
+                            <x-text-input id="password_confirmation" name="password_confirmation" type="password" x-model="passwordConfirmation" @blur="onFieldBlur('password_confirmation')" @input="onFieldInput('password_confirmation')" x-bind:class="fieldInvalidClass('password_confirmation')" class="mt-1 block w-full text-sm py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
                         </div>
                     </div>
                 </div>
@@ -235,18 +281,18 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <x-input-label for="representative_name" :value="__('talenma.auth.representative_name')" class="text-xs sm:text-sm" />
-                        <x-text-input id="representative_name" name="representative_name" x-model="representativeName" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="255" autocomplete="name" />
+                        <x-text-input id="representative_name" name="representative_name" x-model="representativeName" @blur="onFieldBlur('representative_name')" @input="onFieldInput('representative_name')" x-bind:class="fieldInvalidClass('representative_name')" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="255" autocomplete="name" />
                         <x-input-error :messages="$errors->get('representative_name')" class="mt-1" />
                     </div>
                     <div>
                         <x-input-label for="representative_email" :value="__('talenma.auth.representative_email')" class="text-xs sm:text-sm" />
-                        <x-text-input id="representative_email" name="representative_email" type="email" x-model="representativeEmail" class="mt-1 block w-full text-sm py-2" maxlength="255" autocomplete="work email" inputmode="email" />
+                        <x-text-input id="representative_email" name="representative_email" type="email" x-model="representativeEmail" @blur="onFieldBlur('representative_email')" @input="onFieldInput('representative_email')" x-bind:class="fieldInvalidClass('representative_email')" class="mt-1 block w-full text-sm py-2" maxlength="255" autocomplete="work email" inputmode="email" />
                         <x-input-error :messages="$errors->get('representative_email')" class="mt-1" />
                     </div>
                 </div>
                 <div>
                     <x-input-label for="company_sector" :value="__('talenma.auth.sector')" class="text-xs sm:text-sm" />
-                    <select id="company_sector" name="sector" x-model="sector" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm py-2">
+                    <select id="company_sector" name="sector" x-model="sector" @blur="onFieldBlur('sector')" @change="onFieldInput('sector')" x-bind:class="fieldInvalidClass('sector')" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm py-2">
                         <option value="">{{ __('talenma.auth.sector_placeholder') }}</option>
                         @foreach ($professionSectors as $sectorOption)
                             <option value="{{ $sectorOption['slug'] }}">{{ $sectorOption['name'] }}</option>
@@ -262,6 +308,9 @@
                         rows="3"
                         maxlength="1000"
                         x-model="companyNeed"
+                        @blur="onFieldBlur('company_need')"
+                        @input="onFieldInput('company_need')"
+                        x-bind:class="fieldInvalidClass('company_need')"
                         class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm resize-none"
                         placeholder="{{ __('talenma.auth.company_need_placeholder') }}"
                     >{{ old('company_need') }}</textarea>
@@ -271,7 +320,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <x-input-label for="company_website" :value="__('talenma.auth.company_website')" class="text-xs sm:text-sm" />
-                        <x-text-input id="company_website" name="company_website" type="url" x-model="companyWebsite" class="mt-1 block w-full text-sm py-2" placeholder="https://..." />
+                        <x-text-input id="company_website" name="company_website" type="url" x-model="companyWebsite" @blur="onFieldBlur('company_website')" @input="onFieldInput('company_website')" x-bind:class="fieldInvalidClass('company_website')" class="mt-1 block w-full text-sm py-2" placeholder="https://..." />
                         <x-input-error :messages="$errors->get('company_website')" class="mt-1" />
                     </div>
                     <div>
@@ -298,6 +347,8 @@
                         name="documents[]"
                         type="file"
                         @change="onDocumentsChange($event)"
+                        @blur="onFieldBlur('documents')"
+                        x-bind:class="fieldInvalidClass('documents')"
                         class="mt-1 block w-full text-xs sm:text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
                         accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
                         multiple
@@ -322,7 +373,7 @@
             >
                 <div>
                     <x-input-label for="sector" :value="__('talenma.auth.sector')" class="text-xs sm:text-sm" />
-                    <select id="sector" name="sector" x-model="sector" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm py-2">
+                    <select id="sector" name="sector" x-model="sector" @blur="onFieldBlur('sector')" @change="onFieldInput('sector')" x-bind:class="fieldInvalidClass('sector')" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm py-2">
                         <option value="">{{ __('talenma.auth.sector_placeholder') }}</option>
                         @foreach ($professionSectors as $sectorOption)
                             <option value="{{ $sectorOption['slug'] }}">{{ $sectorOption['name'] }}</option>
@@ -338,6 +389,9 @@
                         rows="3"
                         maxlength="500"
                         x-model="description"
+                        @blur="onFieldBlur('description')"
+                        @input="onFieldInput('description')"
+                        x-bind:class="fieldInvalidClass('description')"
                         class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm resize-none"
                         placeholder="{{ __('talenma.auth.registration_description_placeholder') }}"
                     >{{ old('description') }}</textarea>
@@ -351,6 +405,8 @@
                         name="documents[]"
                         type="file"
                         @change="onDocumentsChange($event)"
+                        @blur="onFieldBlur('documents')"
+                        x-bind:class="fieldInvalidClass('documents')"
                         class="mt-1 block w-full text-xs sm:text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                         accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
                         multiple
@@ -388,7 +444,7 @@
                         ? (isCompany
                             ? 'inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition shadow-sm'
                             : 'inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm')
-                        : 'inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-400 bg-gray-200 rounded-lg cursor-not-allowed'"
+                        : 'inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed bg-gray-50'"
                 >
                     {{ __('talenma.auth.register_continue') }}
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>

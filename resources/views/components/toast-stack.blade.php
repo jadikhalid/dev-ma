@@ -1,3 +1,5 @@
+@props(['persistent' => false])
+
 @php
     $initialToasts = [];
 
@@ -23,11 +25,14 @@
             'message' => session('toast_error'),
         ];
     }
+
+    $shouldRender = count($initialToasts) > 0 || $persistent;
 @endphp
 
-@if (count($initialToasts) > 0)
+@if ($shouldRender)
     <div
         x-data="toastStack(@js($initialToasts))"
+        @toast-push.window="push($event.detail.type ?? 'error', $event.detail.message)"
         class="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:items-start sm:justify-end pointer-events-none"
         aria-live="polite"
         aria-atomic="true"

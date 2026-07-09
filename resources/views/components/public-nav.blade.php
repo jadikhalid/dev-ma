@@ -31,16 +31,31 @@
                                 @unless (Auth::user()->isPendingApproval())
                                     <x-dropdown-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-dropdown-link>
                                 @endunless
-                                <x-dropdown-link :href="route('home')">{{ __('talenma.nav.home') }}</x-dropdown-link>
                                 <form method="POST" action="{{ route('logout') }}">@csrf
                                     <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
                                 </form>
                             </x-slot>
                         </x-dropdown>
-                    @else
-                        <a href="{{ route('dashboard') }}" class="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm hover:shadow transition-colors duration-300 ease-in-out">
-                            {{ __('talenma.nav.my_space') }}
-                        </a>
+                    @elseif (Auth::user()->isCompany())
+                        <x-dropdown align="right" width="48" :open-on-hover="true">
+                            <x-slot name="trigger">
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 bg-white text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
+                                    aria-label="{{ __('talenma.nav.my_space') }}"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                                    </svg>
+                                </button>
+                            </x-slot>
+                            <x-slot name="content">
+                                <x-dropdown-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-dropdown-link>
+                                <form method="POST" action="{{ route('logout') }}">@csrf
+                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
+                                </form>
+                            </x-slot>
+                        </x-dropdown>
                     @endif
                 @else
                     {{-- Mobile : icônes --}}
