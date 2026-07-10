@@ -22,6 +22,12 @@ fi
 echo "→ git pull"
 git pull --ff-only origin main
 
+# Recharger le script après pull (sinon seed/migrate ajoutés ne s'exécutent pas).
+if [ "${DEPLOY_REEXEC:-}" != "1" ]; then
+    export DEPLOY_REEXEC=1
+    exec bash "$0" "$@"
+fi
+
 echo "→ composer install"
 $COMPOSER_BIN install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
