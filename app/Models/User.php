@@ -173,4 +173,23 @@ class User extends Authenticatable implements MustVerifyEmail
 
         return strtoupper(mb_substr($this->name, 0, 2));
     }
+
+    /**
+     * Affichage semi-anonyme : prénom + initiale du nom (ex. « Khalid J. »).
+     */
+    public function publicDisplayName(): string
+    {
+        $first = trim((string) ($this->first_name ?: ''));
+        $last = trim((string) ($this->last_name ?: ''));
+
+        if ($first === '' || $last === '') {
+            $parts = preg_split('/\s+/u', trim($this->name)) ?: [];
+            $first = $first !== '' ? $first : ($parts[0] ?? $this->name);
+            $last = $last !== '' ? $last : (end($parts) ?: '');
+        }
+
+        $initial = $last !== '' ? mb_strtoupper(mb_substr($last, 0, 1)).'.' : '';
+
+        return trim($first.($initial !== '' ? ' '.$initial : ''));
+    }
 }

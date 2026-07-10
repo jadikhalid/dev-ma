@@ -16,6 +16,7 @@ use App\Http\Controllers\ProfileDetailsController;
 use App\Http\Controllers\RecruitmentRequestController;
 use App\Http\Controllers\SkillSuggestionController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\TalentSearchController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/locale/suggest-from-ip', [LocaleController::class, 'suggest'])
@@ -27,6 +28,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/skill-suggestions', SkillSuggestionController::class)
     ->middleware('throttle:60,1')
     ->name('skill-suggestions');
+Route::get('/talent-search', TalentSearchController::class)
+    ->middleware('throttle:30,1')
+    ->name('talent-search');
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
 Route::get('/services/{slug}', [ServiceController::class, 'show'])->name('services.show');
 

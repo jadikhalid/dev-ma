@@ -12,6 +12,7 @@
 </head>
 <body class="font-sans text-gray-900 antialiased bg-white" @if (request()->routeIs('home')) data-mobile-locale-auto="1" data-locale-suggest-url="{{ route('locale.suggest') }}" @endif>
     <x-public-nav :full-width="request()->routeIs('home')" />
+    <x-toast-stack persistent />
     <main>@yield('content')</main>
     <x-public-footer />
 </body>

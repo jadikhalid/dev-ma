@@ -56,14 +56,23 @@ class CompanySearchController extends Controller
         }
 
         if ($request->filled('keyword')) {
-            $keyword = str_replace(['%', '_'], ['\\%', '\\_'], $request->keyword);
-            $query->whereHas('profile', function ($q) use ($keyword) {
-                $q->where(function ($subQ) use ($keyword) {
-                    $subQ->where('specialization', 'like', '%'.$keyword.'%')
-                        ->orWhere('title', 'like', '%'.$keyword.'%')
-                        ->orWhere('bio', 'like', '%'.$keyword.'%');
+            $keywords = array_values(array_filter(array_map(
+                fn (string $keyword) => trim($keyword),
+                explode(',', (string) $request->keyword),
+            )));
+
+            foreach ($keywords as $keyword) {
+                $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $keyword);
+
+                $query->whereHas('profile', function ($q) use ($escaped) {
+                    $q->where(function ($subQ) use ($escaped) {
+                        $subQ->where('specialization', 'like', '%'.$escaped.'%')
+                            ->orWhere('title', 'like', '%'.$escaped.'%')
+                            ->orWhere('bio', 'like', '%'.$escaped.'%')
+                            ->orWhere('skills', 'like', '%'.$escaped.'%');
+                    });
                 });
-            });
+            }
         }
 
         $talents = $query->latest()->paginate(12)->withQueryString();

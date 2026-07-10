@@ -12,6 +12,11 @@ class HomeController extends Controller
 
     public function index()
     {
+        $user = auth()->user();
+        $canViewProfiles = $user
+            && $user->isCompany()
+            && $user->isApproved();
+
         return view('home', [
             'talentsCount' => User::where('role', 'dev')
                 ->where('approval_status', User::APPROVAL_APPROVED)
@@ -19,6 +24,7 @@ class HomeController extends Controller
                 ->count(),
             'socialPosts' => SocialPost::forSlider(),
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
+            'canViewProfiles' => $canViewProfiles,
         ]);
     }
 }

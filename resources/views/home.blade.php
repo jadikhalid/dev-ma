@@ -67,7 +67,7 @@
                 :keyword="request('keyword', '')"
                 :sector="request('sector', '')"
                 :profession="request('profession', '')"
-                :city="request('city', '')"
+                :can-view-profiles="$canViewProfiles ?? false"
             />
         </div>
 

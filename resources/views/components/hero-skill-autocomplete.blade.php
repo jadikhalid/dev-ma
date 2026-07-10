@@ -15,7 +15,7 @@
     })"
     @click.outside="close()"
 >
-    <label for="{{ $id }}" class="sr-only">{{ __('talenma.home.search_tab') }}</label>
+    <label for="{{ $id }}" class="sr-only">{{ __('talenma.home.search_skills') }}</label>
     <input
         id="{{ $id }}"
         type="text"

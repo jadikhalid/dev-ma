@@ -423,8 +423,12 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     sectors: config.sectors ?? [],
     sectorSlug: config.initialSector ?? '',
     professionSlug: config.initialProfession ?? '',
+    city: config.initialCity ?? '',
     query: config.initialKeyword ?? '',
     keywordMode: config.keywordMode ?? false,
+    freeKeywords: config.freeKeywords ?? false,
+    requireCompleteSearch: config.requireCompleteSearch ?? false,
+    minKeywords: config.minKeywords ?? 3,
     selectedKeywords: config.keywordMode
         ? (config.initialKeyword ?? '')
             .split(',')
@@ -436,8 +440,17 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     specializationAllLabel: config.specializationAllLabel ?? '',
     specializationSelectProfessionLabel: config.specializationSelectProfessionLabel ?? '',
     keywordPlaceholder: config.keywordPlaceholder ?? '',
+    keywordEmptyLabel: config.keywordEmptyLabel ?? '',
     keywordHint: config.keywordHint ?? '',
     titleInputId: config.titleInputId ?? null,
+    validationMessages: config.validationMessages ?? {},
+    searchUrl: config.searchUrl ?? '',
+    drawerLabels: config.drawerLabels ?? {},
+    drawerOpen: false,
+    searchLoading: false,
+    searchError: null,
+    results: [],
+    resultsCount: 0,
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
@@ -482,13 +495,43 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     },
 
     get filteredAvailableKeywords() {
+        if (! this.keywordsEnabled) {
+            return [];
+        }
+
         const term = this.keywordInput.trim().toLowerCase();
 
-        return this.unselectedSpecializations.filter((item) => ! term || item.toLowerCase().includes(term));
+        if (! term) {
+            return [];
+        }
+
+        return this.unselectedSpecializations.filter((item) => item.toLowerCase().includes(term));
+    },
+
+    get keywordsEnabled() {
+        return Boolean(this.sectorSlug && this.professionSlug);
     },
 
     get specializationValue() {
         return this.keywordMode ? this.selectedKeywords.join(', ') : this.query;
+    },
+
+    get searchValidationError() {
+        if (! this.requireCompleteSearch) {
+            return null;
+        }
+
+        const validKeywords = this.selectedKeywords.filter((item) => this.filteredSpecializations.includes(item));
+
+        if (
+            ! this.sectorSlug
+            || ! this.professionSlug
+            || validKeywords.length < this.minKeywords
+        ) {
+            return this.validationMessages.incomplete ?? null;
+        }
+
+        return null;
     },
 
     onSectorChange() {
@@ -509,6 +552,14 @@ Alpine.data('heroProgressiveSearch', (config) => ({
 
     resetKeywordIfInvalid() {
         if (this.keywordMode) {
+            if (! this.keywordsEnabled) {
+                this.selectedKeywords = [];
+                this.keywordInput = '';
+                this.keywordSuggestionsOpen = false;
+
+                return;
+            }
+
             this.selectedKeywords = this.selectedKeywords.filter((item) => this.filteredSpecializations.includes(item));
             this.keywordInput = '';
             this.keywordSuggestionsOpen = false;
@@ -526,15 +577,21 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     },
 
     addKeyword(keyword) {
-        if (! keyword || this.selectedKeywords.includes(keyword)) {
+        if (! this.keywordsEnabled) {
             return;
         }
 
-        if (! this.filteredSpecializations.includes(keyword)) {
+        const value = String(keyword ?? '').trim();
+
+        if (! value || this.selectedKeywords.includes(value)) {
             return;
         }
 
-        this.selectedKeywords.push(keyword);
+        if (! this.filteredSpecializations.includes(value)) {
+            return;
+        }
+
+        this.selectedKeywords.push(value);
         this.keywordInput = '';
         this.keywordSuggestionsOpen = false;
         this.suggestTitle();
@@ -545,10 +602,33 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     },
 
     onKeywordInput() {
-        this.keywordSuggestionsOpen = this.keywordInput.trim().length > 0 && this.filteredAvailableKeywords.length > 0;
+        if (! this.keywordsEnabled) {
+            this.keywordInput = '';
+            this.keywordSuggestionsOpen = false;
+
+            return;
+        }
+
+        this.keywordSuggestionsOpen = this.keywordInput.trim().length > 0;
+    },
+
+    onKeywordBlur() {
+        window.setTimeout(() => {
+            this.keywordSuggestionsOpen = false;
+
+            if (this.keywordInput.trim()) {
+                this.keywordInput = '';
+            }
+        }, 150);
     },
 
     onKeywordKeydown(event) {
+        if (! this.keywordsEnabled) {
+            event.preventDefault();
+
+            return;
+        }
+
         if (event.key === 'Enter') {
             event.preventDefault();
 
@@ -556,6 +636,9 @@ Alpine.data('heroProgressiveSearch', (config) => ({
 
             if (first) {
                 this.addKeyword(first);
+            } else if (this.keywordInput.trim()) {
+                // Aucune correspondance : on force à continuer ou à abandonner la saisie.
+                this.keywordSuggestionsOpen = true;
             }
 
             return;
@@ -566,8 +649,87 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         }
 
         if (event.key === 'Escape') {
+            this.keywordInput = '';
             this.keywordSuggestionsOpen = false;
         }
+    },
+
+    onSearchSubmit(event) {
+        event.preventDefault();
+
+        if (! this.requireCompleteSearch) {
+            return;
+        }
+
+        const message = this.searchValidationError;
+
+        if (message) {
+            this.$dispatch('toast-push', { type: 'error', message });
+
+            return;
+        }
+
+        this.searchTalents();
+    },
+
+    async searchTalents() {
+        if (! this.searchUrl) {
+            return;
+        }
+
+        const params = new URLSearchParams({
+            sector: this.sectorSlug,
+            profession: this.professionSlug,
+            keyword: this.specializationValue,
+        });
+
+        this.resetSearchForm();
+
+        this.drawerOpen = true;
+        this.searchLoading = true;
+        this.searchError = null;
+        this.results = [];
+        this.resultsCount = 0;
+        document.body.classList.add('overflow-hidden');
+
+        try {
+            const response = await fetch(`${this.searchUrl}?${params.toString()}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                throw new Error(data.message ?? this.drawerLabels.error ?? 'Error');
+            }
+
+            this.results = data.results ?? [];
+            this.resultsCount = data.count ?? this.results.length;
+        } catch (error) {
+            this.searchError = error?.message || (this.drawerLabels.error ?? 'Error');
+        } finally {
+            this.searchLoading = false;
+        }
+    },
+
+    resetSearchForm() {
+        this.sectorSlug = '';
+        this.professionSlug = '';
+        this.city = '';
+        this.query = '';
+        this.selectedKeywords = [];
+        this.keywordInput = '';
+        this.keywordSuggestionsOpen = false;
+    },
+
+    closeDrawer() {
+        this.drawerOpen = false;
+        this.searchLoading = false;
+        this.searchError = null;
+        document.body.classList.remove('overflow-hidden');
     },
 
     suggestTitle() {
@@ -624,7 +786,20 @@ Alpine.data('heroSkillAutocomplete', (config) => ({
         this.open = true;
 
         try {
-            const response = await fetch(`${this.url}?q=${encodeURIComponent(term)}`, {
+            const params = new URLSearchParams({ q: term });
+            const form = this.$el.closest('form');
+            const sector = form?.querySelector('[name="sector"]')?.value;
+            const profession = form?.querySelector('[name="profession"]')?.value;
+
+            if (sector) {
+                params.set('sector', sector);
+            }
+
+            if (profession) {
+                params.set('profession', profession);
+            }
+
+            const response = await fetch(`${this.url}?${params.toString()}`, {
                 headers: { Accept: 'application/json' },
             });
 

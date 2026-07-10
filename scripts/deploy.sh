@@ -33,6 +33,9 @@ fi
 echo "→ migrations"
 $PHP_BIN artisan migrate --force
 
+echo "→ seed (catalogue métiers, services, talents démo)"
+$PHP_BIN artisan db:seed --force --class=ProductionDataSeeder
+
 echo "→ cache"
 $PHP_BIN artisan config:cache
 $PHP_BIN artisan route:cache

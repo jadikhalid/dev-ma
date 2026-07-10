@@ -17,16 +17,10 @@ class DatabaseSeeder extends Seeder
             SocialFeedSeeder::class,
             SocialPostSeeder::class,
             AdminUserSeeder::class,
+            DevTalentSeeder::class,
         ]);
 
-        User::factory(10)->create([
-            'role' => 'dev',
-            'is_subscribed' => true,
-            'subscription_expires_at' => now()->addYear(),
-        ])->each(function ($user) {
-            $user->profile()->create(Profile::factory()->make()->toArray());
-        });
-
+        // Jeu de données générique complémentaire (hors catalogue métier).
         User::factory(3)->create([
             'role' => 'dev',
             'is_subscribed' => false,
