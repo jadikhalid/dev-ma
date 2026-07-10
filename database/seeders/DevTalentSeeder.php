@@ -157,6 +157,20 @@ class DevTalentSeeder extends Seeder
         ))));
     }
 
+    /** @var list<string> */
+    private array $firstNames = [
+        'Khalid', 'Youssef', 'Sara', 'Amine', 'Fatima', 'Omar', 'Imane', 'Mehdi',
+        'Nour', 'Karim', 'Salma', 'Hassan', 'Aya', 'Rachid', 'Lina', 'Bilal',
+        'Meriem', 'Anas', 'Zineb', 'Hamza', 'Hiba', 'Reda', 'Sofia', 'Tarik',
+    ];
+
+    /** @var list<string> */
+    private array $lastNames = [
+        'Alaoui', 'Benali', 'Idrissi', 'Amrani', 'Tazi', 'Bennani', 'Cherkaoui',
+        'El Fassi', 'Mansouri', 'Ouazzani', 'Zahraoui', 'Kadiri', 'Naciri', 'Saidi',
+        'Bouazza', 'Hajji', 'Lahlou', 'Rami', 'Sefrioui', 'Touil',
+    ];
+
     /**
      * @param  list<string>  $skills
      */
@@ -168,8 +182,8 @@ class DevTalentSeeder extends Seeder
         string $specialization,
         array $skills,
     ): void {
-        $firstName = fake()->firstName();
-        $lastName = fake()->lastName();
+        $firstName = $this->pick($this->firstNames);
+        $lastName = $this->pick($this->lastNames);
         $slug = Str::slug($sector->slug.'-'.$profession->slug.'-'.$index);
 
         $user = User::create([
@@ -199,15 +213,23 @@ class DevTalentSeeder extends Seeder
                 $profession->name_fr,
                 $specialization,
             ),
-            'experience_years' => fake()->numberBetween(2, 12),
-            'daily_rate_eur' => fake()->numberBetween(200, 550),
-            'availability' => fake()->randomElement($this->availabilities),
+            'experience_years' => random_int(2, 12),
+            'daily_rate_eur' => random_int(200, 550),
+            'availability' => $this->pick($this->availabilities),
             'work_modes' => ['full_remote', 'hybrid'],
             'languages' => ['Français', 'Anglais', 'Arabe'],
-            'city' => fake()->randomElement($this->cities),
+            'city' => $this->pick($this->cities),
             'country' => 'Maroc',
             'skills' => array_slice($skills, 0, 6),
             'linkedin_url' => 'https://www.linkedin.com/in/example-'.$slug,
         ]);
+    }
+
+    /**
+     * @param  list<string>  $items
+     */
+    private function pick(array $items): string
+    {
+        return $items[array_rand($items)];
     }
 }
