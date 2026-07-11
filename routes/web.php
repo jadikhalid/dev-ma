@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CompanyProfileDocumentController;
 use App\Http\Controllers\Admin\ProfileDocumentController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\CompanyCatalogSearchController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanySearchController;
 use App\Http\Controllers\DashboardController;
@@ -31,6 +32,9 @@ Route::get('/skill-suggestions', SkillSuggestionController::class)
 Route::get('/talent-search', TalentSearchController::class)
     ->middleware('throttle:30,1')
     ->name('talent-search');
+Route::get('/company-search', CompanyCatalogSearchController::class)
+    ->middleware(['auth', 'verified', 'throttle:30,1'])
+    ->name('company-catalog-search');
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
 Route::get('/services/{slug}', [ServiceController::class, 'show'])->name('services.show');
 
@@ -71,6 +75,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/publications', [PublicationsController::class, 'index'])->name('publications.index');
         Route::post('/publications/news', [PublicationsController::class, 'storeNews'])->name('publications.news.store');
+        Route::put('/publications/news/{newsItem}', [PublicationsController::class, 'updateNews'])->name('publications.news.update');
         Route::delete('/publications/news/{newsItem}', [PublicationsController::class, 'destroyNews'])->name('publications.news.destroy');
         Route::post('/publications/social-posts', [PublicationsController::class, 'storeSocialPost'])->name('publications.social-posts.store');
         Route::delete('/publications/social-posts/{socialPost}', [PublicationsController::class, 'destroySocialPost'])->name('publications.social-posts.destroy');

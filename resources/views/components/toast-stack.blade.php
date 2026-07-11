@@ -41,13 +41,14 @@
             <template x-for="toast in toasts" :key="toast.id">
                 <div
                     x-show="toast.visible"
-                    x-transition:enter="transition ease-out duration-300"
-                    x-transition:enter-start="opacity-0 translate-y-2 sm:translate-y-0 sm:translate-x-4"
-                    x-transition:enter-end="opacity-100 translate-y-0 sm:translate-x-0"
-                    x-transition:leave="transition ease-in duration-200"
-                    x-transition:leave-start="opacity-100 translate-y-0 sm:translate-x-0"
-                    x-transition:leave-end="opacity-0 translate-y-2 sm:translate-y-0 sm:translate-x-4"
-                    class="pointer-events-auto rounded-xl border shadow-lg px-4 py-3 flex items-start gap-3"
+                    x-cloak
+                    x-transition:enter="transform transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 translate-x-full"
+                    x-transition:enter-end="opacity-100 translate-x-0"
+                    x-transition:leave="transform transition ease-in duration-250"
+                    x-transition:leave-start="opacity-100 translate-x-0"
+                    x-transition:leave-end="opacity-0 translate-x-full"
+                    class="pointer-events-auto will-change-transform rounded-xl border shadow-lg px-4 py-3 flex items-start gap-3"
                     x-bind:class="toast.type === 'success'
                         ? 'bg-green-50 border-green-200 text-green-900'
                         : 'bg-red-50 border-red-200 text-red-900'"

@@ -1,9 +1,6 @@
 @props([
     'sectors' => [],
-    'keyword' => '',
-    'sector' => '',
-    'profession' => '',
-    'canViewProfiles' => false,
+    'countries' => [],
 ])
 
 @php
@@ -11,64 +8,49 @@
 @endphp
 
 <div
-    x-data="heroProgressiveSearch({
+    x-data="heroCompanySearch({
         sectors: @js($sectors),
-        initialKeyword: @js($keyword),
-        initialSector: @js($sector),
-        initialProfession: @js($profession),
-        keywordMode: true,
-        freeKeywords: false,
-        requireCompleteSearch: true,
+        countries: @js($countries),
         maxKeywords: 3,
-        searchUrl: @js(route('talent-search')),
-        specializationSelectProfessionLabel: @js(__('talenma.home.search_skills_blocked_placeholder')),
-        keywordPlaceholder: @js(__('talenma.home.search_skills_add_placeholder')),
+        searchUrl: @js(route('company-catalog-search')),
+        keywordBlockedLabel: @js(__('talenma.home.company_search_keywords_blocked')),
+        keywordPlaceholder: @js(__('talenma.home.company_search_keywords_placeholder')),
         keywordEmptyLabel: @js(__('talenma.home.search_skills_no_match')),
         keywordsMaxLabel: @js(__('talenma.home.search_skills_max_reached')),
         validationMessages: @js([
-            'incomplete' => __('talenma.home.search_validation_incomplete'),
+            'incomplete' => __('talenma.home.company_search_validation_incomplete'),
             'keywordsMax' => __('talenma.home.search_validation_keywords_max'),
         ]),
         drawerLabels: @js([
-            'title' => __('talenma.home.search_drawer_title'),
-            'subtitle' => __('talenma.home.search_drawer_subtitle'),
-            'resultsSuffix' => __('talenma.home.search_drawer_results_suffix'),
-            'loading' => __('talenma.home.search_drawer_loading'),
-            'empty' => __('talenma.talents.empty'),
-            'emptyDesc' => __('talenma.talents.empty_desc'),
-            'error' => __('talenma.home.search_drawer_error'),
+            'title' => __('talenma.home.company_search_drawer_title'),
+            'subtitle' => __('talenma.home.company_search_drawer_subtitle'),
+            'resultsSuffix' => __('talenma.home.company_search_drawer_results_suffix'),
+            'loading' => __('talenma.home.company_search_drawer_loading'),
+            'empty' => __('talenma.home.company_search_empty'),
+            'emptyDesc' => __('talenma.home.company_search_empty_desc'),
+            'error' => __('talenma.home.company_search_drawer_error'),
             'close' => __('talenma.common.close'),
-            'anonymousTalent' => __('talenma.home.search_drawer_anonymous'),
-            'lockedTitle' => __('talenma.home.search_drawer_locked_title'),
-            'lockedDesc' => __('talenma.home.search_drawer_locked_desc'),
-            'registerCompany' => __('talenma.home.search_drawer_register_company'),
-            'loginCompany' => __('talenma.home.search_drawer_login_company'),
         ]),
     })"
 >
     <form
-        method="GET"
-        action="{{ route('company.search') }}"
         class="p-3 sm:p-4 space-y-2.5"
         novalidate
         @submit="onSearchSubmit($event)"
     >
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div class="relative">
-                <label for="hero-sector" class="sr-only">{{ __('talenma.home.search_sector') }}</label>
+                <label for="company-search-sector" class="sr-only">{{ __('talenma.home.company_search_sector') }}</label>
                 <select
-                    id="hero-sector"
-                    name="sector"
+                    id="company-search-sector"
                     x-model="sectorSlug"
                     @change="onSectorChange()"
                     class="{{ $selectClass }}"
                     required
                 >
-                    <option value="">{{ __('talenma.home.search_sector_required') }}</option>
+                    <option value="">{{ __('talenma.home.company_search_sector_required') }}</option>
                     @foreach ($sectors as $sectorOption)
-                        <option value="{{ $sectorOption['slug'] }}" @selected($sector === $sectorOption['slug'])>
-                            {{ $sectorOption['name'] }}
-                        </option>
+                        <option value="{{ $sectorOption['slug'] }}">{{ $sectorOption['name'] }}</option>
                     @endforeach
                 </select>
                 <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -77,20 +59,17 @@
             </div>
 
             <div class="relative">
-                <label for="hero-profession" class="sr-only">{{ __('talenma.home.search_profession') }}</label>
+                <label for="company-search-country" class="sr-only">{{ __('talenma.home.company_search_country') }}</label>
                 <select
-                    id="hero-profession"
-                    name="profession"
-                    x-model="professionSlug"
-                    @change="onProfessionChange()"
+                    id="company-search-country"
+                    x-model="country"
                     class="{{ $selectClass }}"
-                    :class="{ 'opacity-60 cursor-not-allowed bg-gray-50': !professionsEnabled }"
-                    :disabled="!professionsEnabled"
-                    required
+                    :class="{ 'opacity-60 cursor-not-allowed bg-gray-50': !sectorSlug }"
+                    :disabled="!sectorSlug"
                 >
-                    <option value="" x-text="professionsEnabled ? @js(__('talenma.home.search_profession_required')) : @js(__('talenma.home.search_profession_blocked'))"></option>
-                    <template x-for="profession in filteredProfessions" :key="profession.slug">
-                        <option :value="profession.slug" x-text="profession.name" :selected="profession.slug === professionSlug"></option>
+                    <option value="" x-text="sectorSlug ? @js(__('talenma.home.company_search_country_all')) : @js(__('talenma.home.company_search_country_blocked'))"></option>
+                    <template x-for="item in countries" :key="item">
+                        <option :value="item" x-text="item"></option>
                     </template>
                 </select>
                 <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -101,8 +80,7 @@
 
         <div class="flex flex-col sm:flex-row gap-2.5 w-full">
             <div class="relative flex-1 min-w-0">
-                <label for="hero-keyword-input" class="sr-only">{{ __('talenma.home.search_skills') }}</label>
-                <input type="hidden" name="keyword" :value="specializationValue">
+                <label for="company-keyword-input" class="sr-only">{{ __('talenma.home.company_search_keywords') }}</label>
 
                 <div class="relative">
                     <div
@@ -126,7 +104,7 @@
                         </template>
 
                         <input
-                            id="hero-keyword-input"
+                            id="company-keyword-input"
                             type="text"
                             x-model="keywordInput"
                             @input="onKeywordInput()"
@@ -134,7 +112,7 @@
                             @focus="onKeywordFocus()"
                             @blur="onKeywordBlur()"
                             class="min-w-[8rem] flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 placeholder:text-gray-400 focus:ring-0 disabled:cursor-not-allowed"
-                            :placeholder="selectedKeywords.length ? '' : (keywordsEnabled ? keywordPlaceholder : specializationSelectProfessionLabel)"
+                            :placeholder="selectedKeywords.length ? '' : (keywordsEnabled ? keywordPlaceholder : keywordBlockedLabel)"
                             :disabled="!keywordsEnabled"
                             autocomplete="off"
                         >
@@ -180,7 +158,7 @@
                 type="submit"
                 class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shrink-0"
             >
-                {{ __('talenma.home.search_submit') }}
+                {{ __('talenma.home.company_search_submit') }}
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
@@ -188,5 +166,5 @@
         </div>
     </form>
 
-    <x-talent-search-drawer />
+    <x-company-search-drawer />
 </div>

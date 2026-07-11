@@ -8,9 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SocialFeedItem extends Model
 {
-    public const MAX_ITEMS = 50;
-
-    public const TICKER_LIMIT = 10;
+    public const MAX_ITEMS = 10;
 
     public const SOURCES = [
         'article',
@@ -69,35 +67,43 @@ class SocialFeedItem extends Model
 
     public static function forNewsTicker(): \Illuminate\Database\Eloquent\Collection
     {
-        return self::query()
-            ->where('source', 'article')
-            ->latest()
-            ->limit(self::TICKER_LIMIT)
-            ->get();
+        return self::newsQuery()->limit(self::MAX_ITEMS)->get();
     }
 
     public static function forFeed(): \Illuminate\Database\Eloquent\Collection
     {
+        return self::forNewsTicker();
+    }
+
+    /**
+     * Plus récentes d’abord ; l’id départage les timestamps identiques.
+     */
+    public static function newsQuery(): \Illuminate\Database\Eloquent\Builder
+    {
         return self::query()
             ->where('source', 'article')
-            ->latest()
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
+    public static function pruneExcess(): void
+    {
+        $idsToKeep = self::newsQuery()
             ->limit(self::MAX_ITEMS)
-            ->get();
+            ->pluck('id');
+
+        self::query()
+            ->where('source', 'article')
+            ->whereNotIn('id', $idsToKeep)
+            ->get()
+            ->each->delete();
     }
 
     public static function pushItem(array $attributes): self
     {
         $item = self::create($attributes);
 
-        $idsToKeep = self::query()
-            ->latest()
-            ->limit(self::MAX_ITEMS)
-            ->pluck('id');
-
-        self::query()
-            ->whereNotIn('id', $idsToKeep)
-            ->get()
-            ->each->delete();
+        self::pruneExcess();
 
         return $item;
     }

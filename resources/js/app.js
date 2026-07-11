@@ -428,7 +428,8 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     keywordMode: config.keywordMode ?? false,
     freeKeywords: config.freeKeywords ?? false,
     requireCompleteSearch: config.requireCompleteSearch ?? false,
-    minKeywords: config.minKeywords ?? 3,
+    minKeywords: config.minKeywords ?? 1,
+    maxKeywords: config.maxKeywords ?? 3,
     selectedKeywords: config.keywordMode
         ? (config.initialKeyword ?? '')
             .split(',')
@@ -441,6 +442,7 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     specializationSelectProfessionLabel: config.specializationSelectProfessionLabel ?? '',
     keywordPlaceholder: config.keywordPlaceholder ?? '',
     keywordEmptyLabel: config.keywordEmptyLabel ?? '',
+    keywordsMaxLabel: config.keywordsMaxLabel ?? '',
     keywordHint: config.keywordHint ?? '',
     titleInputId: config.titleInputId ?? null,
     validationMessages: config.validationMessages ?? {},
@@ -454,12 +456,16 @@ Alpine.data('heroProgressiveSearch', (config) => ({
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
-            return this.sectors.flatMap((sector) => sector.professions ?? []);
+            return [];
         }
 
         const sector = this.sectors.find((item) => item.slug === this.sectorSlug);
 
         return sector?.professions ?? [];
+    },
+
+    get professionsEnabled() {
+        return Boolean(this.sectorSlug);
     },
 
     get selectedProfession() {
@@ -512,6 +518,10 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         return Boolean(this.sectorSlug && this.professionSlug);
     },
 
+    get keywordsAtMax() {
+        return this.selectedKeywords.length >= this.maxKeywords;
+    },
+
     get specializationValue() {
         return this.keywordMode ? this.selectedKeywords.join(', ') : this.query;
     },
@@ -522,12 +532,17 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         }
 
         const validKeywords = this.selectedKeywords.filter((item) => this.filteredSpecializations.includes(item));
+        const count = validKeywords.length;
 
-        if (
-            ! this.sectorSlug
-            || ! this.professionSlug
-            || validKeywords.length < this.minKeywords
-        ) {
+        if (! this.sectorSlug || ! this.professionSlug || count === 0) {
+            return this.validationMessages.incomplete ?? null;
+        }
+
+        if (count > this.maxKeywords) {
+            return this.validationMessages.keywordsMax ?? null;
+        }
+
+        if (count < this.minKeywords) {
             return this.validationMessages.incomplete ?? null;
         }
 
@@ -577,7 +592,7 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     },
 
     addKeyword(keyword) {
-        if (! this.keywordsEnabled) {
+        if (! this.keywordsEnabled || this.keywordsAtMax) {
             return;
         }
 
@@ -601,10 +616,32 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         this.selectedKeywords = this.selectedKeywords.filter((item) => item !== keyword);
     },
 
+    onKeywordFocus() {
+        if (! this.keywordsEnabled) {
+            return;
+        }
+
+        if (this.keywordsAtMax) {
+            this.keywordInput = '';
+            this.keywordSuggestionsOpen = true;
+
+            return;
+        }
+
+        this.onKeywordInput();
+    },
+
     onKeywordInput() {
         if (! this.keywordsEnabled) {
             this.keywordInput = '';
             this.keywordSuggestionsOpen = false;
+
+            return;
+        }
+
+        if (this.keywordsAtMax) {
+            this.keywordInput = '';
+            this.keywordSuggestionsOpen = true;
 
             return;
         }
@@ -629,6 +666,25 @@ Alpine.data('heroProgressiveSearch', (config) => ({
             return;
         }
 
+        if (this.keywordsAtMax) {
+            if (event.key !== 'Backspace' && event.key !== 'Escape' && event.key !== 'Tab') {
+                event.preventDefault();
+                this.keywordSuggestionsOpen = true;
+            }
+
+            if (event.key === 'Backspace' && ! this.keywordInput && this.selectedKeywords.length) {
+                this.selectedKeywords.pop();
+                this.keywordSuggestionsOpen = false;
+            }
+
+            if (event.key === 'Escape') {
+                this.keywordInput = '';
+                this.keywordSuggestionsOpen = false;
+            }
+
+            return;
+        }
+
         if (event.key === 'Enter') {
             event.preventDefault();
 
@@ -637,7 +693,6 @@ Alpine.data('heroProgressiveSearch', (config) => ({
             if (first) {
                 this.addKeyword(first);
             } else if (this.keywordInput.trim()) {
-                // Aucune correspondance : on force à continuer ou à abandonner la saisie.
                 this.keywordSuggestionsOpen = true;
             }
 
@@ -746,6 +801,281 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         }
 
         titleInput.value = keyword;
+    },
+}));
+
+Alpine.data('heroCompanySearch', (config) => ({
+    sectors: config.sectors ?? [],
+    countries: config.countries ?? [],
+    sectorSlug: '',
+    country: '',
+    maxKeywords: config.maxKeywords ?? 3,
+    selectedKeywords: [],
+    keywordInput: '',
+    keywordSuggestionsOpen: false,
+    keywordBlockedLabel: config.keywordBlockedLabel ?? '',
+    keywordPlaceholder: config.keywordPlaceholder ?? '',
+    keywordEmptyLabel: config.keywordEmptyLabel ?? '',
+    keywordsMaxLabel: config.keywordsMaxLabel ?? '',
+    validationMessages: config.validationMessages ?? {},
+    searchUrl: config.searchUrl ?? '',
+    drawerLabels: config.drawerLabels ?? {},
+    drawerOpen: false,
+    searchLoading: false,
+    searchError: null,
+    results: [],
+    resultsCount: 0,
+
+    get selectedSector() {
+        return this.sectors.find((item) => item.slug === this.sectorSlug) ?? null;
+    },
+
+    get sectorKeywords() {
+        if (! this.selectedSector) {
+            return [];
+        }
+
+        return [...new Set(this.selectedSector.company_keywords ?? [])];
+    },
+
+    get keywordsEnabled() {
+        return Boolean(this.sectorSlug);
+    },
+
+    get keywordsAtMax() {
+        return this.selectedKeywords.length >= this.maxKeywords;
+    },
+
+    get unselectedKeywords() {
+        return this.sectorKeywords.filter((item) => ! this.selectedKeywords.includes(item));
+    },
+
+    get filteredAvailableKeywords() {
+        if (! this.keywordsEnabled || this.keywordsAtMax) {
+            return [];
+        }
+
+        const term = this.keywordInput.trim().toLowerCase();
+
+        if (! term) {
+            return [];
+        }
+
+        return this.unselectedKeywords.filter((item) => item.toLowerCase().includes(term));
+    },
+
+    get searchValidationError() {
+        const count = this.selectedKeywords.filter((item) => this.sectorKeywords.includes(item)).length;
+
+        if (! this.sectorSlug || count === 0) {
+            return this.validationMessages.incomplete ?? null;
+        }
+
+        if (count > this.maxKeywords) {
+            return this.validationMessages.keywordsMax ?? null;
+        }
+
+        return null;
+    },
+
+    onSectorChange() {
+        this.selectedKeywords = this.selectedKeywords.filter((item) => this.sectorKeywords.includes(item));
+        this.keywordInput = '';
+        this.keywordSuggestionsOpen = false;
+
+        if (! this.sectorSlug) {
+            this.country = '';
+            this.selectedKeywords = [];
+        }
+    },
+
+    addKeyword(keyword) {
+        if (! this.keywordsEnabled || this.keywordsAtMax) {
+            return;
+        }
+
+        const value = String(keyword ?? '').trim();
+
+        if (! value || this.selectedKeywords.includes(value) || ! this.sectorKeywords.includes(value)) {
+            return;
+        }
+
+        this.selectedKeywords.push(value);
+        this.keywordInput = '';
+        this.keywordSuggestionsOpen = false;
+    },
+
+    removeKeyword(keyword) {
+        this.selectedKeywords = this.selectedKeywords.filter((item) => item !== keyword);
+    },
+
+    onKeywordFocus() {
+        if (! this.keywordsEnabled) {
+            return;
+        }
+
+        if (this.keywordsAtMax) {
+            this.keywordInput = '';
+            this.keywordSuggestionsOpen = true;
+
+            return;
+        }
+
+        this.onKeywordInput();
+    },
+
+    onKeywordInput() {
+        if (! this.keywordsEnabled) {
+            this.keywordInput = '';
+            this.keywordSuggestionsOpen = false;
+
+            return;
+        }
+
+        if (this.keywordsAtMax) {
+            this.keywordInput = '';
+            this.keywordSuggestionsOpen = true;
+
+            return;
+        }
+
+        this.keywordSuggestionsOpen = this.keywordInput.trim().length > 0;
+    },
+
+    onKeywordBlur() {
+        window.setTimeout(() => {
+            this.keywordSuggestionsOpen = false;
+
+            if (this.keywordInput.trim()) {
+                this.keywordInput = '';
+            }
+        }, 150);
+    },
+
+    onKeywordKeydown(event) {
+        if (! this.keywordsEnabled) {
+            event.preventDefault();
+
+            return;
+        }
+
+        if (this.keywordsAtMax) {
+            if (event.key !== 'Backspace' && event.key !== 'Escape' && event.key !== 'Tab') {
+                event.preventDefault();
+                this.keywordSuggestionsOpen = true;
+            }
+
+            if (event.key === 'Backspace' && ! this.keywordInput && this.selectedKeywords.length) {
+                this.selectedKeywords.pop();
+                this.keywordSuggestionsOpen = false;
+            }
+
+            if (event.key === 'Escape') {
+                this.keywordInput = '';
+                this.keywordSuggestionsOpen = false;
+            }
+
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+
+            const first = this.filteredAvailableKeywords[0];
+
+            if (first) {
+                this.addKeyword(first);
+            } else if (this.keywordInput.trim()) {
+                this.keywordSuggestionsOpen = true;
+            }
+
+            return;
+        }
+
+        if (event.key === 'Backspace' && ! this.keywordInput && this.selectedKeywords.length) {
+            this.selectedKeywords.pop();
+        }
+
+        if (event.key === 'Escape') {
+            this.keywordInput = '';
+            this.keywordSuggestionsOpen = false;
+        }
+    },
+
+    onSearchSubmit(event) {
+        event.preventDefault();
+
+        const message = this.searchValidationError;
+
+        if (message) {
+            this.$dispatch('toast-push', { type: 'error', message });
+
+            return;
+        }
+
+        this.searchCompanies();
+    },
+
+    async searchCompanies() {
+        if (! this.searchUrl) {
+            return;
+        }
+
+        const params = new URLSearchParams({
+            sector: this.sectorSlug,
+            keyword: this.selectedKeywords.join(', '),
+        });
+
+        if (this.country) {
+            params.set('country', this.country);
+        }
+
+        this.resetSearchForm();
+
+        this.drawerOpen = true;
+        this.searchLoading = true;
+        this.searchError = null;
+        this.results = [];
+        this.resultsCount = 0;
+        document.body.classList.add('overflow-hidden');
+
+        try {
+            const response = await fetch(`${this.searchUrl}?${params.toString()}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                throw new Error(data.message ?? this.drawerLabels.error ?? 'Error');
+            }
+
+            this.results = data.results ?? [];
+            this.resultsCount = data.count ?? this.results.length;
+        } catch (error) {
+            this.searchError = error?.message || (this.drawerLabels.error ?? 'Error');
+        } finally {
+            this.searchLoading = false;
+        }
+    },
+
+    resetSearchForm() {
+        this.sectorSlug = '';
+        this.country = '';
+        this.selectedKeywords = [];
+        this.keywordInput = '';
+        this.keywordSuggestionsOpen = false;
+    },
+
+    closeDrawer() {
+        this.drawerOpen = false;
+        this.searchLoading = false;
+        this.searchError = null;
+        document.body.classList.remove('overflow-hidden');
     },
 }));
 
@@ -913,14 +1243,26 @@ Alpine.data('toastStack', (initialToasts = []) => ({
                 id,
                 type,
                 message,
-                visible: true,
+                visible: false,
             }];
 
-            window.setTimeout(() => this.dismiss(id), type === 'success' ? 7000 : 9000);
+            // Laisser Alpine monter le nœud caché, puis ouvrir pour déclencher l’entrée.
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    const toast = this.toasts.find((item) => item.id === id);
+
+                    if (! toast) {
+                        return;
+                    }
+
+                    toast.visible = true;
+                    window.setTimeout(() => this.dismiss(id), type === 'success' ? 3500 : 4500);
+                });
+            });
         };
 
         if (hadToasts) {
-            window.setTimeout(show, 300);
+            window.setTimeout(show, 280);
         } else {
             show();
         }
@@ -1103,6 +1445,13 @@ Alpine.data('registerWizard', (config) => ({
             return;
         }
 
+        // Champ laissé vide : pas d’erreur (Continuer reste désactivé tant que la étape n’est pas valide).
+        if (this.isFieldBlank(field)) {
+            delete this.fieldErrors[field];
+
+            return;
+        }
+
         const message = this.validateField(field);
 
         if (message) {
@@ -1113,6 +1462,39 @@ Alpine.data('registerWizard', (config) => ({
         }
 
         delete this.fieldErrors[field];
+    },
+
+    isFieldBlank(field) {
+        switch (field) {
+            case 'first_name':
+                return this.firstName.trim() === '';
+            case 'last_name':
+                return this.lastName.trim() === '';
+            case 'name':
+                return this.name.trim() === '';
+            case 'email':
+                return this.email.trim() === '';
+            case 'password':
+                return this.password === '';
+            case 'password_confirmation':
+                return this.passwordConfirmation === '';
+            case 'sector':
+                return this.sector === '';
+            case 'description':
+                return this.description.trim() === '';
+            case 'documents':
+                return this.documentsCount === 0;
+            case 'representative_name':
+                return this.representativeName.trim() === '';
+            case 'representative_email':
+                return this.representativeEmail.trim() === '';
+            case 'company_need':
+                return this.companyNeed.trim() === '';
+            case 'company_website':
+                return this.companyWebsite.trim() === '';
+            default:
+                return false;
+        }
     },
 
     isFieldApplicable(field) {

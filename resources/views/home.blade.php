@@ -59,16 +59,25 @@
                 <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <span class="text-sm font-semibold text-gray-800">{{ __('talenma.home.search_tab') }}</span>
+                <span class="text-sm font-semibold text-gray-800">
+                    {{ ($showCompanySearch ?? false) ? __('talenma.home.company_search_tab') : __('talenma.home.search_tab') }}
+                </span>
             </div>
 
-            <x-hero-progressive-search
-                :sectors="$professionSectors"
-                :keyword="request('keyword', '')"
-                :sector="request('sector', '')"
-                :profession="request('profession', '')"
-                :can-view-profiles="$canViewProfiles ?? false"
-            />
+            @if ($showCompanySearch ?? false)
+                <x-hero-company-search
+                    :sectors="$professionSectors"
+                    :countries="$companyCountries ?? []"
+                />
+            @else
+                <x-hero-progressive-search
+                    :sectors="$professionSectors"
+                    :keyword="request('keyword', '')"
+                    :sector="request('sector', '')"
+                    :profession="request('profession', '')"
+                    :can-view-profiles="$canViewProfiles ?? false"
+                />
+            @endif
         </div>
 
         @if ($talentsCount > 0)

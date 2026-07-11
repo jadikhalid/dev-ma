@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             SocialPostSeeder::class,
             AdminUserSeeder::class,
             DevTalentSeeder::class,
+            DevCompanySeeder::class,
         ]);
 
         // Jeu de données générique complémentaire (hors catalogue métier).

@@ -15,6 +15,8 @@ class PublicationsController extends Controller
 {
     public function index(): View
     {
+        SocialFeedItem::pruneExcess();
+
         return view('admin.publications', [
             'newsItems' => SocialFeedItem::forNewsTicker(),
             'newsMaxItems' => SocialFeedItem::MAX_ITEMS,
@@ -51,6 +53,34 @@ class PublicationsController extends Controller
         return redirect()
             ->to(route('admin.publications.index').'#actualites')
             ->with('news_saved', true);
+    }
+
+    public function updateNews(Request $request, SocialFeedItem $newsItem): RedirectResponse
+    {
+        abort_unless($newsItem->source === 'article', 404);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'subtitle' => ['required', 'string', 'max:255'],
+            'url' => ['required', 'url', 'max:2048'],
+            'thumbnail' => ['nullable', 'image', 'max:2048'],
+        ]);
+
+        if ($request->hasFile('thumbnail')) {
+            SocialFeedStorage::delete($newsItem->thumbnail);
+            $newsItem->thumbnail = SocialFeedStorage::storeUpload($request->file('thumbnail'));
+        }
+
+        $newsItem->fill([
+            'title' => $validated['title'],
+            'subtitle' => $validated['subtitle'],
+            'url' => $validated['url'],
+            'source' => 'article',
+        ])->save();
+
+        return redirect()
+            ->to(route('admin.publications.index').'#actualites')
+            ->with('news_updated', true);
     }
 
     public function destroyNews(SocialFeedItem $newsItem): RedirectResponse

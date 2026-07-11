@@ -18,6 +18,7 @@ class ProductionDataSeeder extends Seeder
             SocialFeedSeeder::class,
             SocialPostSeeder::class,
             DevTalentSeeder::class,
+            DevCompanySeeder::class,
         ]);
     }
 }

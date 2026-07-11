@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
     'linkedin_url',
     'sector',
     'registration_sector',
+    'profession_sector_id',
     'country',
     'city',
     'description',
@@ -33,6 +34,11 @@ class CompanyProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function professionSector(): BelongsTo
+    {
+        return $this->belongsTo(ProfessionSector::class);
     }
 
     public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany

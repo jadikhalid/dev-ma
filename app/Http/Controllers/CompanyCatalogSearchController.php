@@ -2,20 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\TalentSearchService;
+use App\Services\CompanyCatalogSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class TalentSearchController extends Controller
+class CompanyCatalogSearchController extends Controller
 {
-    public function __construct(private TalentSearchService $talentSearch) {}
+    public function __construct(private CompanyCatalogSearchService $companySearch) {}
 
     public function __invoke(Request $request): JsonResponse
     {
+        $user = $request->user();
+
+        if (! $user || ! $user->isTalent() || ! $user->isApproved()) {
+            return response()->json([
+                'message' => __('talenma.home.company_search_forbidden'),
+                'count' => 0,
+                'results' => [],
+            ], 403);
+        }
+
         $validated = $request->validate([
             'sector' => ['required', 'string', 'max:64'],
-            'profession' => ['required', 'string', 'max:64'],
             'keyword' => ['required', 'string', 'max:500'],
+            'country' => ['nullable', 'string', 'max:100'],
         ]);
 
         $keywords = array_values(array_filter(array_map(
@@ -41,11 +51,11 @@ class TalentSearchController extends Controller
             ], 422);
         }
 
-        $preview = $this->talentSearch->preview(
+        $preview = $this->companySearch->preview(
             $validated['sector'],
-            $validated['profession'],
             $keywords,
-            2,
+            $validated['country'] ?? null,
+            8,
         );
 
         return response()->json($preview);

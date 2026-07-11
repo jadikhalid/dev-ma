@@ -20,6 +20,12 @@
                 </div>
             @endif
 
+            @if (session('news_updated'))
+                <div class="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm">
+                    {{ __('talenma.admin.news.updated') }}
+                </div>
+            @endif
+
             @if (session('news_deleted'))
                 <div class="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-sm">
                     {{ __('talenma.admin.news.deleted') }}
@@ -73,25 +79,73 @@
                 @if ($newsItems->isEmpty())
                     <p class="p-6 text-sm text-gray-500">{{ __('talenma.admin.news.empty') }}</p>
                 @else
-                    <ul class="divide-y divide-gray-100">
+                    <ul class="divide-y divide-gray-100" x-data="{ editingId: null }">
                         @foreach ($newsItems as $item)
-                            <li class="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-center">
-                                <div class="shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-indigo-400 to-indigo-600 ring-1 ring-gray-200">
-                                    @if ($item->thumbnailUrl())
-                                        <img src="{{ $item->thumbnailUrl() }}" alt="" class="w-full h-full object-cover">
-                                    @endif
+                            <li class="p-4 sm:p-5" x-data="{ itemId: {{ $item->id }} }">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:items-center" x-show="editingId !== itemId">
+                                    <div class="shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-indigo-400 to-indigo-600 ring-1 ring-gray-200">
+                                        @if ($item->thumbnailUrl())
+                                            <img src="{{ $item->thumbnailUrl() }}" alt="" class="w-full h-full object-cover">
+                                        @endif
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs text-gray-400">{{ $item->created_at->translatedFormat('d M Y H:i') }}</p>
+                                        <p class="mt-1 font-semibold text-gray-900 truncate">{{ $item->title }}</p>
+                                        <p class="text-sm text-gray-600 truncate">{{ $item->subtitle }}</p>
+                                        <a href="{{ $item->url }}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:text-indigo-800 truncate block mt-1">{{ $item->url }}</a>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 shrink-0">
+                                        <x-secondary-button type="button" @click="editingId = itemId">
+                                            {{ __('talenma.admin.news.edit') }}
+                                        </x-secondary-button>
+                                        <form method="POST" action="{{ route('admin.publications.news.destroy', $item) }}" onsubmit="return confirm(@js(__('talenma.admin.news.delete_confirm')))">
+                                            @csrf
+                                            @method('DELETE')
+                                            <x-danger-button type="submit">{{ __('talenma.admin.news.delete') }}</x-danger-button>
+                                        </form>
+                                    </div>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-xs text-gray-400">{{ $item->created_at->translatedFormat('d M Y H:i') }}</p>
-                                    <p class="mt-1 font-semibold text-gray-900 truncate">{{ $item->title }}</p>
-                                    <p class="text-sm text-gray-600 truncate">{{ $item->subtitle }}</p>
-                                    <a href="{{ $item->url }}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:text-indigo-800 truncate block mt-1">{{ $item->url }}</a>
+
+                                <div x-show="editingId === itemId" x-cloak class="space-y-4">
+                                    <h5 class="font-semibold text-gray-900">{{ __('talenma.admin.news.edit_title') }}</h5>
+                                    <form method="POST" action="{{ route('admin.publications.news.update', $item) }}" enctype="multipart/form-data" class="space-y-4">
+                                        @csrf
+                                        @method('PUT')
+
+                                        <div>
+                                            <x-input-label for="edit_title_{{ $item->id }}" :value="__('talenma.admin.news.field_title')" />
+                                            <x-text-input id="edit_title_{{ $item->id }}" name="title" class="mt-1 block w-full" :value="old('title', $item->title)" required />
+                                            <x-input-error :messages="$errors->get('title')" class="mt-2" />
+                                        </div>
+
+                                        <div>
+                                            <x-input-label for="edit_subtitle_{{ $item->id }}" :value="__('talenma.admin.news.field_subtitle')" />
+                                            <x-text-input id="edit_subtitle_{{ $item->id }}" name="subtitle" class="mt-1 block w-full" :value="old('subtitle', $item->subtitle)" required />
+                                            <x-input-error :messages="$errors->get('subtitle')" class="mt-2" />
+                                        </div>
+
+                                        <div>
+                                            <x-input-label for="edit_url_{{ $item->id }}" :value="__('talenma.admin.news.field_url')" />
+                                            <x-text-input id="edit_url_{{ $item->id }}" name="url" type="url" class="mt-1 block w-full" :value="old('url', $item->url)" required />
+                                            <x-input-error :messages="$errors->get('url')" class="mt-2" />
+                                        </div>
+
+                                        <div>
+                                            <x-input-label for="edit_thumbnail_{{ $item->id }}" :value="__('talenma.admin.news.field_thumbnail')" />
+                                            <input id="edit_thumbnail_{{ $item->id }}" name="thumbnail" type="file" accept="image/*"
+                                                   class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-semibold hover:file:bg-indigo-100">
+                                            <p class="mt-1 text-xs text-gray-500">{{ __('talenma.admin.news.thumbnail_keep') }}</p>
+                                            <x-input-error :messages="$errors->get('thumbnail')" class="mt-2" />
+                                        </div>
+
+                                        <div class="flex flex-wrap gap-2">
+                                            <x-primary-button type="submit">{{ __('talenma.admin.news.update') }}</x-primary-button>
+                                            <x-secondary-button type="button" @click="editingId = null">
+                                                {{ __('talenma.admin.news.cancel') }}
+                                            </x-secondary-button>
+                                        </div>
+                                    </form>
                                 </div>
-                                <form method="POST" action="{{ route('admin.publications.news.destroy', $item) }}" onsubmit="return confirm(@js(__('talenma.admin.news.delete_confirm')))">
-                                    @csrf
-                                    @method('DELETE')
-                                    <x-danger-button type="submit">{{ __('talenma.admin.news.delete') }}</x-danger-button>
-                                </form>
                             </li>
                         @endforeach
                     </ul>

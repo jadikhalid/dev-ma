@@ -13,7 +13,12 @@ class ProfessionSeeder extends Seeder
     {
         $catalog = require __DIR__.'/data/profession_catalog.php';
 
+        $activeSectorSlugs = [];
+        $activeProfessionSlugs = [];
+
         foreach ($catalog as $sectorIndex => $sectorData) {
+            $activeSectorSlugs[] = $sectorData['slug'];
+
             $sector = ProfessionSector::updateOrCreate(
                 ['slug' => $sectorData['slug']],
                 [
@@ -25,6 +30,8 @@ class ProfessionSeeder extends Seeder
             );
 
             foreach ($sectorData['professions'] as $professionIndex => $professionData) {
+                $activeProfessionSlugs[] = $professionData['slug'];
+
                 $profession = Profession::updateOrCreate(
                     ['slug' => $professionData['slug']],
                     [
@@ -36,7 +43,11 @@ class ProfessionSeeder extends Seeder
                     ]
                 );
 
+                $activeSuggestionKeys = [];
+
                 foreach ($professionData['suggestions'] as $suggestionIndex => $suggestion) {
+                    $activeSuggestionKeys[] = $suggestion['label_fr'];
+
                     ProfessionSuggestion::updateOrCreate(
                         [
                             'profession_id' => $profession->id,
@@ -50,7 +61,45 @@ class ProfessionSeeder extends Seeder
                         ]
                     );
                 }
+
+                ProfessionSuggestion::query()
+                    ->where('profession_id', $profession->id)
+                    ->whereNotIn('label_fr', $activeSuggestionKeys)
+                    ->update(['is_active' => false]);
             }
         }
+
+        ProfessionSector::query()
+            ->whereNotIn('slug', $activeSectorSlugs)
+            ->update(['is_active' => false]);
+
+        Profession::query()
+            ->whereNotIn('slug', $activeProfessionSlugs)
+            ->update(['is_active' => false]);
+
+        // Alias historique : « Corps soignant » → Santé & médico-social
+        $legacyHealthcare = ProfessionSector::query()->where('slug', 'healthcare')->first();
+        $healthSocial = ProfessionSector::query()->where('slug', 'health-social')->first();
+
+        if ($legacyHealthcare && $healthSocial) {
+            Profession::query()
+                ->where('profession_sector_id', $legacyHealthcare->id)
+                ->update(['profession_sector_id' => $healthSocial->id]);
+
+            \App\Models\CompanyProfile::query()
+                ->where('profession_sector_id', $legacyHealthcare->id)
+                ->update(['profession_sector_id' => $healthSocial->id]);
+
+            \App\Models\Profile::query()
+                ->where('profession_sector_id', $legacyHealthcare->id)
+                ->update(['profession_sector_id' => $healthSocial->id]);
+
+            $legacyHealthcare->update(['is_active' => false]);
+        }
+
+        // Alias historique : « Techniciens & BTP » désactivé (métiers redistribués)
+        ProfessionSector::query()
+            ->where('slug', 'technicians')
+            ->update(['is_active' => false]);
     }
 }

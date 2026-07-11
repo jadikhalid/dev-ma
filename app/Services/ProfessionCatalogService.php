@@ -12,6 +12,7 @@ class ProfessionCatalogService
     public function sectorsForLocale(?string $locale = null): Collection
     {
         $locale = $locale ?? app()->getLocale();
+        $companyKeywordsBySector = $this->companyKeywordsCatalog();
 
         return ProfessionSector::query()
             ->where('is_active', true)
@@ -26,6 +27,13 @@ class ProfessionCatalogService
             ->map(fn (ProfessionSector $sector) => [
                 'slug' => $sector->slug,
                 'name' => $sector->localizedName($locale),
+                'company_keywords' => collect($companyKeywordsBySector[$sector->slug] ?? [])
+                    ->map(fn (array $item) => $locale === 'en'
+                        ? ($item['label_en'] ?? $item['label_fr'])
+                        : ($item['label_fr'] ?? $item['label_en']))
+                    ->filter()
+                    ->values()
+                    ->all(),
                 'professions' => $sector->professions->map(fn (Profession $profession) => [
                     'slug' => $profession->slug,
                     'name' => $profession->localizedName($locale),
@@ -35,6 +43,39 @@ class ProfessionCatalogService
                 ])->values(),
             ])
             ->values();
+    }
+
+    /**
+     * @return array<string, list<array{label_fr: string, label_en: string}>>
+     */
+    public function companyKeywordsCatalog(): array
+    {
+        $path = database_path('seeders/data/company_sector_keywords.php');
+
+        if (! is_file($path)) {
+            return [];
+        }
+
+        /** @var array<string, list<array{label_fr: string, label_en: string}>> $catalog */
+        $catalog = require $path;
+
+        return $catalog;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function companyKeywordsForSector(string $sectorSlug, ?string $locale = null): array
+    {
+        $locale = $locale ?? app()->getLocale();
+
+        return collect($this->companyKeywordsCatalog()[$sectorSlug] ?? [])
+            ->map(fn (array $item) => $locale === 'en'
+                ? ($item['label_en'] ?? $item['label_fr'])
+                : ($item['label_fr'] ?? $item['label_en']))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**

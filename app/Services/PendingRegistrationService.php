@@ -149,6 +149,7 @@ class PendingRegistrationService
                     'representative_email' => $payload['representative_email'],
                     'sector' => $sectorLabel,
                     'registration_sector' => $sectorLabel,
+                    'profession_sector_id' => $sector->id,
                     'hiring_needs' => $payload['company_need'],
                     'registration_hiring_needs' => $payload['company_need'],
                     'website' => $payload['company_website'] ?? null,
