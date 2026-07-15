@@ -158,6 +158,8 @@
     </div>
 </section>
 
+<x-companies-marquee :companies="$featuredCompanies" />
+
 <x-social-posts-slider :items="$socialPosts" />
 
 <section class="py-20 bg-indigo-600 text-white">

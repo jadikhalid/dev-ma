@@ -7,6 +7,7 @@
     </x-slot>
 
     <div class="py-10">
+        <x-toast-stack />
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
                 @include('profile.partials.update-profile-information-form')

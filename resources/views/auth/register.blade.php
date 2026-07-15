@@ -58,6 +58,8 @@
         'documents_required' => __('talenma.auth.validation.documents_required'),
         'documents_max' => __('talenma.auth.validation.documents_max'),
         'documents_max_company' => __('talenma.auth.validation.documents_max_company'),
+        'documents_size' => __('talenma.auth.validation.documents_size'),
+        'documents_type' => __('talenma.auth.validation.documents_type'),
         'representative_name_required' => __('talenma.auth.validation.representative_name_required'),
         'representative_name_min' => __('talenma.auth.validation.representative_name_min'),
         'representative_name_max' => __('talenma.auth.validation.representative_name_max'),
@@ -344,8 +346,10 @@
                     <x-input-label for="company_documents" :value="__('talenma.auth.company_registration_documents')" class="text-xs sm:text-sm" />
                     <input
                         id="company_documents"
+                        x-ref="companyDocuments"
                         name="documents[]"
                         type="file"
+                        x-bind:disabled="!isCompany"
                         @change="onDocumentsChange($event)"
                         @blur="onFieldBlur('documents')"
                         x-bind:class="fieldInvalidClass('documents')"
@@ -353,6 +357,19 @@
                         accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
                         multiple
                     >
+                    <ul x-show="documentFiles.length > 0" class="mt-2 space-y-1.5" x-cloak>
+                        <template x-for="(file, index) in documentFiles" :key="documentFileKey(file)">
+                            <li class="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-700">
+                                <span class="min-w-0 truncate" x-text="file.name"></span>
+                                <button
+                                    type="button"
+                                    class="shrink-0 font-semibold text-red-600 hover:text-red-700"
+                                    @click="removeDocument(index)"
+                                    :aria-label="@js(__('talenma.auth.registration_documents_remove'))"
+                                >{{ __('talenma.auth.registration_documents_remove') }}</button>
+                            </li>
+                        </template>
+                    </ul>
                     <p class="mt-0.5 text-[11px] sm:text-xs text-gray-500">{{ __('talenma.auth.company_registration_documents_hint') }}</p>
                     <x-input-error :messages="$errors->get('documents')" class="mt-1" />
                     <x-input-error :messages="$errors->get('documents.*')" class="mt-1" />
@@ -402,8 +419,10 @@
                     <x-input-label for="documents" :value="__('talenma.auth.registration_documents')" class="text-xs sm:text-sm" />
                     <input
                         id="documents"
+                        x-ref="talentDocuments"
                         name="documents[]"
                         type="file"
+                        x-bind:disabled="!isTalent"
                         @change="onDocumentsChange($event)"
                         @blur="onFieldBlur('documents')"
                         x-bind:class="fieldInvalidClass('documents')"
@@ -411,6 +430,19 @@
                         accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
                         multiple
                     >
+                    <ul x-show="documentFiles.length > 0" class="mt-2 space-y-1.5" x-cloak>
+                        <template x-for="(file, index) in documentFiles" :key="documentFileKey(file)">
+                            <li class="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-700">
+                                <span class="min-w-0 truncate" x-text="file.name"></span>
+                                <button
+                                    type="button"
+                                    class="shrink-0 font-semibold text-red-600 hover:text-red-700"
+                                    @click="removeDocument(index)"
+                                    :aria-label="@js(__('talenma.auth.registration_documents_remove'))"
+                                >{{ __('talenma.auth.registration_documents_remove') }}</button>
+                            </li>
+                        </template>
+                    </ul>
                     <p class="mt-0.5 text-[11px] sm:text-xs text-gray-500">{{ __('talenma.auth.registration_documents_hint') }}</p>
                     <x-input-error :messages="$errors->get('documents')" class="mt-1" />
                     <x-input-error :messages="$errors->get('documents.*')" class="mt-1" />

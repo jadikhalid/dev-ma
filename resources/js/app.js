@@ -4,7 +4,8 @@ import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
 
-Alpine.data('magazineTicker', () => ({
+Alpine.data('magazineTicker', (config = {}) => ({
+    inline: Boolean(config.inline),
     opacity: 1,
     translateY: 0,
     pointerEvents: 'auto',
@@ -41,7 +42,9 @@ Alpine.data('magazineTicker', () => ({
 
         this.$nextTick(() => {
             this.setupMarquee();
-            this.update();
+            if (! this.inline) {
+                this.update();
+            }
             this.startAutoScroll();
         });
     },
@@ -299,6 +302,10 @@ Alpine.data('magazineTicker', () => ({
     },
 
     update() {
+        if (this.inline) {
+            return;
+        }
+
         const banner = this.$refs.banner;
         if (! banner) {
             return;
@@ -1295,6 +1302,7 @@ Alpine.data('registerWizard', (config) => ({
     sector: config.initialSector ?? '',
     description: config.initialDescription ?? '',
     documentsCount: config.initialDocumentsCount ?? 0,
+    documentFiles: [],
     representativeName: config.initialRepresentativeName ?? '',
     representativeEmail: config.initialRepresentativeEmail ?? '',
     companyNeed: config.initialCompanyNeed ?? '',
@@ -1308,6 +1316,8 @@ Alpine.data('registerWizard', (config) => ({
     init() {
         this.$watch('role', () => {
             this.step = 1;
+            this.documentFiles = [];
+            this.documentsCount = 0;
             this.clearFieldErrors();
         });
 
@@ -1366,6 +1376,14 @@ Alpine.data('registerWizard', (config) => ({
 
     get companyStep3Valid() {
         return this.documentsCount <= 2;
+    },
+
+    get documentsMax() {
+        if (this.isCompany) {
+            return 2;
+        }
+
+        return 3;
     },
 
     get currentStepValid() {
@@ -1778,7 +1796,125 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     onDocumentsChange(event) {
-        this.documentsCount = event.target.files?.length ?? 0;
+        const input = event.target;
+        const incoming = Array.from(input.files ?? []);
+
+        if (! incoming.length) {
+            this.syncDocumentsInput(input);
+
+            return;
+        }
+
+        const max = this.documentsMax;
+        const merged = [...this.documentFiles];
+        let overflow = false;
+        let rejectedTypeOrSize = null;
+
+        for (const file of incoming) {
+            const key = this.documentFileKey(file);
+
+            if (merged.some((existing) => this.documentFileKey(existing) === key)) {
+                continue;
+            }
+
+            if (merged.length >= max) {
+                overflow = true;
+                break;
+            }
+
+            const rejection = this.validateDocumentFile(file);
+
+            if (rejection) {
+                rejectedTypeOrSize = rejection;
+                continue;
+            }
+
+            merged.push(file);
+        }
+
+        this.documentFiles = merged;
+        this.documentsCount = merged.length;
+        this.syncDocumentsInput(input);
+
+        if (overflow) {
+            this.fieldErrors.documents = true;
+            this.$dispatch('toast-push', {
+                type: 'error',
+                message: this.isCompany
+                    ? (this.validationMessages.documents_max_company ?? '')
+                    : (this.validationMessages.documents_max ?? ''),
+            });
+        } else if (rejectedTypeOrSize) {
+            this.fieldErrors.documents = true;
+            this.$dispatch('toast-push', {
+                type: 'error',
+                message: rejectedTypeOrSize,
+            });
+        } else {
+            this.onFieldInput('documents');
+        }
+    },
+
+    validateDocumentFile(file) {
+        const messages = this.validationMessages;
+        const maxBytes = 1024 * 1024;
+        const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+        const allowedMimes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+        ];
+
+        if (file.size > maxBytes) {
+            return messages.documents_size ?? null;
+        }
+
+        const extension = String(file.name.split('.').pop() ?? '').toLowerCase();
+        const mimeOk = ! file.type || allowedMimes.includes(file.type);
+        const extensionOk = allowedExtensions.includes(extension);
+
+        if (! mimeOk && ! extensionOk) {
+            return messages.documents_type ?? null;
+        }
+
+        if (! extensionOk) {
+            return messages.documents_type ?? null;
+        }
+
+        return null;
+    },
+
+    documentFileKey(file) {
+        return `${file.name}:${file.size}:${file.lastModified}`;
+    },
+
+    syncDocumentsInput(input) {
+        if (! input) {
+            return;
+        }
+
+        const transfer = new DataTransfer();
+
+        this.documentFiles.forEach((file) => {
+            transfer.items.add(file);
+        });
+
+        input.files = transfer.files;
+    },
+
+    syncActiveDocumentsInput() {
+        const input = this.isCompany
+            ? this.$refs.companyDocuments
+            : this.$refs.talentDocuments;
+
+        this.syncDocumentsInput(input);
+    },
+
+    removeDocument(index) {
+        this.documentFiles = this.documentFiles.filter((_, i) => i !== index);
+        this.documentsCount = this.documentFiles.length;
+        this.syncActiveDocumentsInput();
         this.onFieldInput('documents');
     },
 
@@ -1795,6 +1931,7 @@ Alpine.data('registerWizard', (config) => ({
         this.sector = '';
         this.description = '';
         this.documentsCount = 0;
+        this.documentFiles = [];
         this.representativeName = '';
         this.representativeEmail = '';
         this.companyNeed = '';
@@ -1826,6 +1963,178 @@ Alpine.data('registerWizard', (config) => ({
         if (! this.canSubmit) {
             event.preventDefault();
         }
+    },
+}));
+
+Alpine.data('avatarPreview', (config = {}) => ({
+    previewUrl: config.initialUrl ?? null,
+    initials: config.initials ?? '',
+    originalUrl: config.initialUrl ?? null,
+    objectUrl: null,
+    maxBytes: config.maxBytes ?? (2 * 1024 * 1024),
+    maxSize: config.maxSize ?? 400,
+    allowedMimes: config.allowedMimes ?? ['image/jpeg', 'image/png', 'image/webp'],
+    messages: config.messages ?? {},
+    processing: false,
+
+    init() {
+        this.$el.addEventListener('alpine:destroy', () => this.revokeObjectUrl(), { once: true });
+    },
+
+    revokeObjectUrl() {
+        if (this.objectUrl) {
+            URL.revokeObjectURL(this.objectUrl);
+            this.objectUrl = null;
+        }
+    },
+
+    setPreview(url) {
+        this.revokeObjectUrl();
+        this.objectUrl = url && url.startsWith('blob:') ? url : null;
+        this.previewUrl = url;
+    },
+
+    resetToOriginal() {
+        this.revokeObjectUrl();
+        this.previewUrl = this.originalUrl;
+    },
+
+    async onFileChange(event) {
+        const input = event.target;
+        const file = input.files?.[0] ?? null;
+
+        if (! file) {
+            this.resetToOriginal();
+
+            return;
+        }
+
+        if (! this.allowedMimes.includes(file.type)) {
+            this.rejectSelection(input, this.messages.invalidType);
+
+            return;
+        }
+
+        if (file.size > this.maxBytes) {
+            this.rejectSelection(input, this.messages.tooLarge);
+
+            return;
+        }
+
+        this.processing = true;
+
+        try {
+            const processed = await this.processToSquareJpeg(file);
+            const preview = URL.createObjectURL(processed);
+            this.setPreview(preview);
+
+            const transfer = new DataTransfer();
+            transfer.items.add(processed);
+            input.files = transfer.files;
+
+            const removeCheckbox = this.$refs.removeAvatar;
+
+            if (removeCheckbox) {
+                removeCheckbox.checked = false;
+            }
+        } catch {
+            this.rejectSelection(input, this.messages.invalidType);
+        } finally {
+            this.processing = false;
+        }
+    },
+
+    rejectSelection(input, message) {
+        input.value = '';
+        this.resetToOriginal();
+
+        if (message) {
+            this.$dispatch('toast-push', { type: 'error', message });
+        }
+    },
+
+    onRemoveToggle(event) {
+        if (event.target.checked) {
+            this.revokeObjectUrl();
+            this.previewUrl = null;
+
+            if (this.$refs.input) {
+                this.$refs.input.value = '';
+            }
+
+            return;
+        }
+
+        this.previewUrl = this.objectUrl || this.originalUrl;
+    },
+
+    processToSquareJpeg(file) {
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+            const sourceUrl = URL.createObjectURL(file);
+
+            image.onload = () => {
+                URL.revokeObjectURL(sourceUrl);
+
+                const width = image.naturalWidth;
+                const height = image.naturalHeight;
+
+                if (width < 1 || height < 1) {
+                    reject(new Error('invalid'));
+
+                    return;
+                }
+
+                const cropSide = Math.min(width, height);
+                const srcX = Math.floor((width - cropSide) / 2);
+                const srcY = Math.floor((height - cropSide) / 2);
+                const outputSize = Math.min(this.maxSize, cropSide);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = outputSize;
+                canvas.height = outputSize;
+
+                const context = canvas.getContext('2d');
+
+                if (! context) {
+                    reject(new Error('canvas'));
+
+                    return;
+                }
+
+                context.drawImage(
+                    image,
+                    srcX,
+                    srcY,
+                    cropSide,
+                    cropSide,
+                    0,
+                    0,
+                    outputSize,
+                    outputSize,
+                );
+
+                canvas.toBlob((blob) => {
+                    if (! blob) {
+                        reject(new Error('blob'));
+
+                        return;
+                    }
+
+                    resolve(new File([blob], 'avatar.jpg', {
+                        type: 'image/jpeg',
+                        lastModified: Date.now(),
+                    }));
+                }, 'image/jpeg', 0.85);
+            };
+
+            image.onerror = () => {
+                URL.revokeObjectURL(sourceUrl);
+                reject(new Error('load'));
+            };
+
+            image.src = sourceUrl;
+        });
     },
 }));
 

@@ -78,6 +78,7 @@ class RegistrationTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect(route('login'));
         $response->assertSessionHas('toast_success');
+        $response->assertSessionHas('pending_registration_email', 'test@example.com');
         $this->assertDatabaseMissing('users', ['email' => 'test@example.com']);
         $this->assertDatabaseHas('pending_registrations', ['email' => 'test@example.com']);
 
@@ -85,6 +86,15 @@ class RegistrationTest extends TestCase
             return $mail->hasTo('test@example.com')
                 && str_contains($mail->verificationUrl, '/register/verify/');
         });
+
+        $this->withSession([
+            'pending_registration_email' => 'test@example.com',
+        ])->get(route('login'))
+            ->assertOk()
+            ->assertSee(__('talenma.auth.verify_email_pending_title'))
+            ->assertSee(__('talenma.auth.verify_email_pending_no_login'))
+            ->assertDontSee('name="password"', false)
+            ->assertDontSee('type="password"', false);
     }
 
     public function test_email_verification_creates_user_and_profile(): void
@@ -275,6 +285,38 @@ class RegistrationTest extends TestCase
 
         $response->assertRedirect('/register');
         $response->assertSessionHasErrors(['sector', 'description', 'documents']);
+    }
+
+    public function test_talent_registration_rejects_more_than_three_documents(): void
+    {
+        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
+            'documents' => [
+                UploadedFile::fake()->create('diploma-1.pdf', 100, 'application/pdf'),
+                UploadedFile::fake()->create('diploma-2.pdf', 100, 'application/pdf'),
+                UploadedFile::fake()->create('diploma-3.pdf', 100, 'application/pdf'),
+                UploadedFile::fake()->create('diploma-4.pdf', 100, 'application/pdf'),
+            ],
+        ]));
+
+        $response->assertRedirect('/register');
+        $response->assertSessionHasErrors('documents');
+        $this->assertGuest();
+    }
+
+    public function test_talent_registration_accepts_three_documents(): void
+    {
+        Mail::fake();
+
+        $response = $this->post('/register', $this->validTalentPayload([
+            'documents' => [
+                UploadedFile::fake()->create('diploma-1.pdf', 100, 'application/pdf'),
+                UploadedFile::fake()->create('diploma-2.pdf', 100, 'application/pdf'),
+                UploadedFile::fake()->create('certification.pdf', 100, 'application/pdf'),
+            ],
+        ]));
+
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'test@example.com']);
     }
 
     public function test_verified_pending_talent_cannot_access_dashboard(): void

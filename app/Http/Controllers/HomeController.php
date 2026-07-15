@@ -30,13 +30,14 @@ class HomeController extends Controller
                 ->where('approval_status', User::APPROVAL_APPROVED)
                 ->where('is_subscribed', true)
                 ->count(),
-            'socialPosts' => SocialPost::forSlider(),
+            'socialPosts' => SocialPost::forHomeSlider(),
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'canViewProfiles' => $canViewProfiles,
             'showCompanySearch' => $showCompanySearch,
             'companyCountries' => $showCompanySearch
                 ? $this->companyCatalogSearch->availableCountries()
                 : [],
+            'featuredCompanies' => $this->companyCatalogSearch->featuredForHome(),
         ]);
     }
 }

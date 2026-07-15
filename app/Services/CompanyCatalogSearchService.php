@@ -95,6 +95,51 @@ class CompanyCatalogSearchService
     }
 
     /**
+     * Échantillon d'entreprises approuvées pour le bandeau de la page d'accueil.
+     *
+     * @return Collection<int, array{name: string, initials: string, logo_url: ?string, sector: ?string, country: ?string}>
+     */
+    public function featuredForHome(int $limit = 10): Collection
+    {
+        $companies = User::query()
+            ->where('role', 'company')
+            ->where('approval_status', User::APPROVAL_APPROVED)
+            ->with(['companyProfile.professionSector'])
+            ->whereHas('companyProfile', fn ($q) => $q->whereNotNull('company_name'))
+            ->inRandomOrder()
+            ->limit($limit)
+            ->get()
+            ->map(fn (User $company) => $this->presentForMarquee($company));
+
+        if ($companies->isNotEmpty()) {
+            return $companies;
+        }
+
+        return collect($this->sampleFeaturedCompanies())->take($limit);
+    }
+
+    /**
+     * @return list<array{name: string, initials: string, logo_url: null, sector: string, country: string}>
+     */
+    private function sampleFeaturedCompanies(): array
+    {
+        return [
+            ['name' => 'Atlas Tech Maroc', 'initials' => 'AT', 'logo_url' => null, 'sector' => 'Technologie', 'country' => 'Maroc'],
+            ['name' => 'Méditerranée Pharma', 'initials' => 'MP', 'logo_url' => null, 'sector' => 'Santé', 'country' => 'Maroc'],
+            ['name' => 'Casablanca Finance Group', 'initials' => 'CF', 'logo_url' => null, 'sector' => 'Finance', 'country' => 'Maroc'],
+            ['name' => 'AgriSouss Export', 'initials' => 'AE', 'logo_url' => null, 'sector' => 'Agroalimentaire', 'country' => 'Maroc'],
+            ['name' => 'Rif Energies', 'initials' => 'RE', 'logo_url' => null, 'sector' => 'Énergie', 'country' => 'Maroc'],
+            ['name' => 'EuroBuild Partners', 'initials' => 'EB', 'logo_url' => null, 'sector' => 'BTP', 'country' => 'France'],
+            ['name' => 'Nova Consulting', 'initials' => 'NC', 'logo_url' => null, 'sector' => 'Conseil', 'country' => 'Belgique'],
+            ['name' => 'Horizon Logistics', 'initials' => 'HL', 'logo_url' => null, 'sector' => 'Transport', 'country' => 'Espagne'],
+            ['name' => 'Digital Maghreb', 'initials' => 'DM', 'logo_url' => null, 'sector' => 'Numérique', 'country' => 'Maroc'],
+            ['name' => 'Blue Ocean Hotels', 'initials' => 'BO', 'logo_url' => null, 'sector' => 'Tourisme', 'country' => 'Maroc'],
+            ['name' => 'InnoLab Rabat', 'initials' => 'IR', 'logo_url' => null, 'sector' => 'Recherche', 'country' => 'Maroc'],
+            ['name' => 'Green Valley Foods', 'initials' => 'GV', 'logo_url' => null, 'sector' => 'Agroalimentaire', 'country' => 'Maroc'],
+        ];
+    }
+
+    /**
      * Pays distincts des entreprises approuvées (pour le filtre).
      *
      * @return list<string>
@@ -112,6 +157,24 @@ class CompanyCatalogSearchService
             ->pluck('country')
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array{name: string, initials: string, logo_url: ?string, sector: ?string, country: ?string}
+     */
+    private function presentForMarquee(User $company): array
+    {
+        $profile = $company->companyProfile;
+
+        return [
+            'name' => $profile?->company_name ?: $company->name,
+            'initials' => $profile?->initials() ?: '—',
+            'logo_url' => $profile?->logoUrl(),
+            'sector' => $profile?->professionSector
+                ? $profile->professionSector->localizedName()
+                : ($profile?->sector ?: null),
+            'country' => $profile?->country,
+        ];
     }
 
     /**

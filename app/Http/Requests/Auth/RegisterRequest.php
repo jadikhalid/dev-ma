@@ -212,7 +212,9 @@ class RegisterRequest extends FormRequest
             'description.max' => __('talenma.auth.validation.description_max'),
             'documents.required' => __('talenma.auth.validation.documents_required'),
             'documents.min' => __('talenma.auth.validation.documents_min'),
-            'documents.max' => __('talenma.auth.validation.documents_max'),
+            'documents.max' => $this->input('role') === 'company'
+                ? __('talenma.auth.validation.documents_max_company')
+                : __('talenma.auth.validation.documents_max'),
             'documents.*.max' => __('talenma.auth.validation.documents_size'),
             'documents.*.mimes' => __('talenma.auth.validation.documents_type'),
             'representative_name.required' => __('talenma.auth.validation.representative_name_required'),

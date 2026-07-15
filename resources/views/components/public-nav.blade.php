@@ -28,9 +28,7 @@
                                 </button>
                             </x-slot>
                             <x-slot name="content">
-                                @unless (Auth::user()->isPendingApproval())
-                                    <x-dropdown-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-dropdown-link>
-                                @endunless
+                                <x-dropdown-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-dropdown-link>
                                 <form method="POST" action="{{ route('logout') }}">@csrf
                                     <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
                                 </form>

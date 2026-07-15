@@ -9,10 +9,6 @@ class SocialPostSeeder extends Seeder
 {
     public function run(): void
     {
-        if (SocialPost::query()->exists()) {
-            return;
-        }
-
         $defaults = [
             [
                 'title' => 'Talents du Maroc — la plateforme qui connecte',
@@ -23,13 +19,29 @@ class SocialPostSeeder extends Seeder
             [
                 'title' => 'Recruter des talents marocains à distance',
                 'subtitle' => 'Nos conseils pour les entreprises européennes',
-                'url' => 'https://x.com',
+                'url' => 'https://x.com/talentsdumaroc',
                 'network' => 'x',
+            ],
+            [
+                'title' => 'Coulisses d’un entretien avec un talent tech',
+                'subtitle' => 'Retour d’expérience sur Instagram',
+                'url' => 'https://www.instagram.com/talentsdumaroc',
+                'network' => 'instagram',
+            ],
+            [
+                'title' => 'Pourquoi les recruteurs misent sur le Maroc',
+                'subtitle' => 'Tendances RH et mobilité internationale',
+                'url' => 'https://www.linkedin.com/pulse/talents-du-maroc-recrutement',
+                'network' => 'linkedin',
             ],
         ];
 
         foreach ($defaults as $item) {
-            SocialPost::pushPost($item);
+            if (SocialPost::query()->where('url', $item['url'])->exists()) {
+                continue;
+            }
+
+            SocialPost::create($item);
         }
     }
 }
