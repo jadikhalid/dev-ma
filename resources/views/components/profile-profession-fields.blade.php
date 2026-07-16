@@ -3,7 +3,6 @@
     'sector' => '',
     'profession' => '',
     'specialization' => '',
-    'titleInputId' => 'title',
 ])
 
 @php
@@ -19,7 +18,6 @@
         keywordMode: true,
         specializationSelectProfessionLabel: @js(__('talenma.talent.specialization_select_sector')),
         keywordPlaceholder: @js(__('talenma.talent.specialization_keyword_placeholder')),
-        titleInputId: @js($titleInputId),
     })"
     class="space-y-4"
 >

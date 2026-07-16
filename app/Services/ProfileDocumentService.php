@@ -18,37 +18,79 @@ class ProfileDocumentService
         'image/webp',
     ];
 
-    public const MAX_FILES = 3;
+    public const MAX_OTHER = 3;
 
     public const MAX_FILE_SIZE = 1024;
 
     /**
      * @param  list<UploadedFile>  $files
      */
-    public function storeMany(Profile $profile, array $files): void
+    public function storeMany(Profile $profile, array $files, string $type = ProfileDocument::TYPE_REGISTRATION): void
     {
-        if (count($files) > self::MAX_FILES) {
+        if ($type === ProfileDocument::TYPE_OTHER && count($files) > self::MAX_OTHER) {
+            throw ValidationException::withMessages([
+                'other_documents' => __('talenma.talent.documents_other_max'),
+            ]);
+        }
+
+        if ($type === ProfileDocument::TYPE_REGISTRATION && count($files) > self::MAX_OTHER) {
             throw ValidationException::withMessages([
                 'documents' => __('talenma.auth.validation.documents_max'),
             ]);
         }
 
-        foreach ($files as $index => $file) {
-            $this->storeOne($profile, $file, $index + 1);
+        $nextSort = ((int) $profile->documents()->ofType($type)->max('sort_order')) + 1;
+        $errorKey = $type === ProfileDocument::TYPE_OTHER ? 'other_documents' : 'documents';
+
+        foreach ($files as $file) {
+            $this->storeOne($profile, $file, $nextSort++, $type, $errorKey);
         }
     }
 
-    public function storeOne(Profile $profile, UploadedFile $file, int $sortOrder): ProfileDocument
+    public function storeCv(Profile $profile, UploadedFile $file): ProfileDocument
     {
+        $existing = $profile->documents()->ofType(ProfileDocument::TYPE_CV)->get();
+
+        foreach ($existing as $document) {
+            $this->delete($document);
+        }
+
+        return $this->storeOne($profile, $file, 1, ProfileDocument::TYPE_CV, 'cv');
+    }
+
+    /**
+     * @param  list<UploadedFile>  $files
+     */
+    public function storeOthers(Profile $profile, array $files): void
+    {
+        $files = array_values(array_filter($files));
+        $currentCount = $profile->documents()->ofType(ProfileDocument::TYPE_OTHER)->count();
+
+        if ($currentCount + count($files) > self::MAX_OTHER) {
+            throw ValidationException::withMessages([
+                'other_documents' => __('talenma.talent.documents_other_max'),
+            ]);
+        }
+
+        $this->storeMany($profile, $files, ProfileDocument::TYPE_OTHER);
+    }
+
+    public function storeOne(
+        Profile $profile,
+        UploadedFile $file,
+        int $sortOrder,
+        string $type = ProfileDocument::TYPE_REGISTRATION,
+        string $errorKey = 'documents',
+    ): ProfileDocument {
         if (! in_array($file->getMimeType(), self::ALLOWED_MIMES, true)) {
             throw ValidationException::withMessages([
-                'documents' => __('talenma.auth.validation.documents_type'),
+                $errorKey => __('talenma.auth.validation.documents_type'),
             ]);
         }
 
         if ($file->getSize() > self::MAX_FILE_SIZE * 1024) {
             throw ValidationException::withMessages([
-                'documents' => __('talenma.auth.validation.documents_size'),
+                $errorKey => __('talenma.auth.validation.documents_size'),
             ]);
         }
 
@@ -60,11 +102,18 @@ class ProfileDocumentService
         );
 
         return $profile->documents()->create([
+            'document_type' => $type,
             'path' => $path,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
             'size' => (int) $file->getSize(),
             'sort_order' => $sortOrder,
         ]);
+    }
+
+    public function delete(ProfileDocument $document): void
+    {
+        Storage::disk('public')->delete($document->path);
+        $document->delete();
     }
 }

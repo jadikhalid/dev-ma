@@ -42,9 +42,19 @@
                             <span class="text-[10px] uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.talent.progress_label') }}</span>
                         </div>
                     </div>
-                    <a href="{{ route('profile.details.edit') }}" class="inline-flex items-center justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
-                        {{ ($completion['status'] === 'complete' || $completion['percent'] >= 100) ? __('talenma.dashboard.talent.edit_profile') : __('talenma.dashboard.talent.complete_profile') }}
-                    </a>
+                    <div class="flex flex-col items-start gap-2">
+                        @if (($completion['total_count'] ?? 0) > 0)
+                            <p class="text-sm text-gray-500">
+                                {{ __('talenma.dashboard.talent.progress_detail', [
+                                    'done' => $completion['done_count'],
+                                    'total' => $completion['total_count'],
+                                ]) }}
+                            </p>
+                        @endif
+                        <a href="{{ route('profile.details.edit') }}" class="inline-flex items-center justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
+                            {{ ($completion['status'] === 'complete' || $completion['percent'] >= 100) ? __('talenma.dashboard.talent.edit_profile') : __('talenma.dashboard.talent.complete_profile') }}
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -53,17 +63,37 @@
             <div class="bg-white rounded-2xl border p-6 sm:p-8">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-indigo-600">{{ __('talenma.dashboard.talent.profile_snapshot') }}</p>
-                        <h3 class="mt-2 text-xl font-bold text-gray-900">{{ $profile->title ?: $profile->specialization }}</h3>
-                        <p class="mt-2 text-sm text-gray-600">
-                            {{ $profile->sectorLabel() }}
-                            @if ($profile->professionLabel())
-                                · {{ $profile->professionLabel() }}
-                            @endif
-                            @if ($profile->specialization)
-                                · <span class="text-indigo-700 font-medium">{{ $profile->specialization }}</span>
-                            @endif
-                        </p>
+                        <p class="text-lg font-bold uppercase tracking-wide text-indigo-600">{{ __('talenma.dashboard.talent.profile_snapshot') }}</p>
+                        @if ($profile->professionLabel())
+                            <h3 class="mt-2 text-base font-semibold text-gray-900">
+                                {{ $profile->professionLabel() }}
+                            </h3>
+                        @endif
+                        @if ($profile->sectorLabel())
+                            <p class="mt-1 text-sm font-medium text-indigo-600">
+                                {{ $profile->sectorLabel() }}
+                            </p>
+                        @endif
+
+                        @php
+                            $specialtyItems = collect(explode(',', (string) $profile->specialization))
+                                ->map(fn ($item) => trim($item))
+                                ->filter()
+                                ->merge(is_array($profile->skills) ? $profile->skills : [])
+                                ->unique()
+                                ->values();
+                        @endphp
+
+                        @if ($specialtyItems->isNotEmpty())
+                            <div class="mt-4">
+                                <p class="text-sm font-semibold text-gray-700">{{ __('talenma.dashboard.talent.specialty_skills') }}</p>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    @foreach ($specialtyItems as $item)
+                                        <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">{{ $item }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     </div>
                     @if ($profile->daily_rate_eur)
                         <span class="px-3 py-1.5 bg-emerald-50 text-emerald-800 text-sm font-semibold rounded-full whitespace-nowrap">
@@ -92,9 +122,21 @@
                     </div>
                 @endif
 
-                @if ($profile->bio)
-                    <p class="mt-5 text-sm text-gray-600 line-clamp-3">{{ $profile->bio }}</p>
+                @php $cvDocument = $profile->cvDocument(); @endphp
+                @if ($cvDocument)
+                    <div class="mt-5 border-t border-gray-100 pt-4">
+                        <p class="text-sm font-semibold text-gray-700">{{ __('talenma.talent.cv') }}</p>
+                        <a
+                            href="{{ route('profile.documents.show', $cvDocument) }}"
+                            target="_blank"
+                            class="mt-2 inline-flex items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50/70 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+                        >
+                            <span class="truncate max-w-xs">{{ $cvDocument->original_name }}</span>
+                            <span class="text-xs font-medium text-indigo-500">{{ $cvDocument->formattedSize() }}</span>
+                        </a>
+                    </div>
                 @endif
+
             </div>
         @endif
     </div>

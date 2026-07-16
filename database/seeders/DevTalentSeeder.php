@@ -67,14 +67,13 @@ class DevTalentSeeder extends Seeder
                     $specializationLabels = $this->pickSpecializationSet($labels, $suggestionIndex, $suggestion->label_fr);
                     $skills = $this->skillsFromSuggestion($suggestion->keywords, $suggestion->label_fr);
 
-                    $this->createTalent(
-                        index: ++$index,
-                        sector: $sector,
-                        profession: $profession,
-                        title: $suggestion->label_fr,
-                        specialization: implode(', ', $specializationLabels),
-                        skills: $skills,
-                    );
+                $this->createTalent(
+                    index: ++$index,
+                    sector: $sector,
+                    profession: $profession,
+                    specialization: implode(', ', $specializationLabels),
+                    skills: $skills,
+                );
 
                     $created++;
                 }
@@ -95,7 +94,6 @@ class DevTalentSeeder extends Seeder
                     index: ++$index,
                     sector: $sector,
                     profession: $profession,
-                    title: $profession->name_fr,
                     specialization: implode(', ', array_slice($bundle, 0, max(3, count($bundle)))),
                     skills: array_values(array_unique(array_merge(
                         array_slice($bundle, 0, 3),
@@ -178,7 +176,6 @@ class DevTalentSeeder extends Seeder
         int $index,
         ProfessionSector $sector,
         Profession $profession,
-        string $title,
         string $specialization,
         array $skills,
     ): void {
@@ -206,11 +203,10 @@ class DevTalentSeeder extends Seeder
             'profession_id' => $profession->id,
             'specialization' => $specialization,
             'registration_description' => 'Profil de démonstration pour tests — '.$sector->name_fr.' / '.$profession->name_fr.'.',
-            'title' => $title,
             'bio' => sprintf(
                 'Talent marocain spécialisé en %s (%s). Profil généré pour le développement et les tests de recherche sur Talents du Maroc. Compétences : %s.',
-                $title,
                 $profession->name_fr,
+                $sector->name_fr,
                 $specialization,
             ),
             'experience_years' => random_int(2, 12),

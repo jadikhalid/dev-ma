@@ -11,7 +11,9 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-xl font-bold">{{ $talent->name }}</h2>
-                <p class="text-sm text-indigo-600 font-medium">{{ $talent->profile->title }}</p>
+                <p class="text-sm text-indigo-600 font-medium">
+                    {{ collect([$talent->profile->professionLabel(), $talent->profile->sectorLabel()])->filter()->implode(' - ') }}
+                </p>
             </div>
             <span class="px-4 py-1.5 bg-emerald-100 text-emerald-800 font-semibold rounded-full text-sm">{{ $talent->profile->daily_rate_eur }} {{ __('talenma.talents.per_day') }}</span>
         </div>
@@ -25,12 +27,23 @@
                 <span>⏱ {{ __('talenma.talent.'.($availabilityLabels[$talent->profile->availability] ?? 'available')) }}</span>
             </div>
 
-            @if ($talent->profile->specialization)
-                <p class="mb-4 text-sm text-gray-600">
-                    <span class="font-medium text-gray-900">{{ $talent->profile->sectorLabel() }}</span>
-                    · {{ $talent->profile->professionLabel() }}
-                    · <span class="text-indigo-700">{{ $talent->profile->specialization }}</span>
-                </p>
+            @if ($talent->profile->specialization || $talent->profile->skills)
+                <div class="mb-4">
+                    <p class="text-sm font-semibold text-gray-700">{{ __('talenma.dashboard.talent.specialty_skills') }}</p>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @foreach (
+                            collect(explode(',', (string) $talent->profile->specialization))
+                                ->map(fn ($item) => trim($item))
+                                ->filter()
+                                ->merge(is_array($talent->profile->skills) ? $talent->profile->skills : [])
+                                ->unique()
+                                ->values()
+                            as $item
+                        )
+                            <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-sm rounded-full font-medium">{{ $item }}</span>
+                        @endforeach
+                    </div>
+                </div>
             @endif
 
             @if ($talent->profile->work_modes)
@@ -53,14 +66,6 @@
                     {{ __('talenma.talent.languages') }} :
                     {{ collect($talent->profile->languages)->map(fn ($code) => __('talenma.talent.lang_'.$code))->join(', ') }}
                 </p>
-            @endif
-
-            @if ($talent->profile->skills)
-                <div class="flex flex-wrap gap-2 mb-6">
-                    @foreach ($talent->profile->skills as $skill)
-                        <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-sm rounded-full font-medium">{{ $skill }}</span>
-                    @endforeach
-                </div>
             @endif
 
             <div class="prose max-w-none text-gray-700">

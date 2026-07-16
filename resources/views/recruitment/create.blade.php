@@ -12,7 +12,9 @@
                 @if ($talent)
                     <input type="hidden" name="developer_user_id" value="{{ $talent->id }}">
                     <div class="p-4 bg-indigo-50 rounded-xl text-sm">
-                        <strong>{{ __('talenma.talents.target') }}</strong> {{ $talent->name }} — {{ $talent->profile->title ?? '' }}
+                        <strong>{{ __('talenma.talents.target') }}</strong>
+                        {{ $talent->name }}
+                        — {{ collect([$talent->profile?->professionLabel(), $talent->profile?->sectorLabel()])->filter()->implode(' - ') }}
                     </div>
                 @endif
 

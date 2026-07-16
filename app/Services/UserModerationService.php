@@ -146,7 +146,6 @@ class UserModerationService
 
         if (! $user->profile) {
             $user->profile()->create([
-                'title' => null,
                 'bio' => null,
                 'experience_years' => 0,
                 'country' => 'Maroc',
@@ -247,7 +246,6 @@ class UserModerationService
 
         if ($role === 'dev' && $user->approval_status === 'approved') {
             $user->profile()->create([
-                'title' => null,
                 'bio' => null,
                 'experience_years' => 0,
                 'country' => 'Maroc',

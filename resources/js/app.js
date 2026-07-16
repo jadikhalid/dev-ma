@@ -451,7 +451,6 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     keywordEmptyLabel: config.keywordEmptyLabel ?? '',
     keywordsMaxLabel: config.keywordsMaxLabel ?? '',
     keywordHint: config.keywordHint ?? '',
-    titleInputId: config.titleInputId ?? null,
     validationMessages: config.validationMessages ?? {},
     searchUrl: config.searchUrl ?? '',
     drawerLabels: config.drawerLabels ?? {},
@@ -616,7 +615,6 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         this.selectedKeywords.push(value);
         this.keywordInput = '';
         this.keywordSuggestionsOpen = false;
-        this.suggestTitle();
     },
 
     removeKeyword(keyword) {
@@ -792,22 +790,6 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         this.searchLoading = false;
         this.searchError = null;
         document.body.classList.remove('overflow-hidden');
-    },
-
-    suggestTitle() {
-        const keyword = this.keywordMode ? this.selectedKeywords[0] : this.query;
-
-        if (! this.titleInputId || ! keyword) {
-            return;
-        }
-
-        const titleInput = document.getElementById(this.titleInputId);
-
-        if (! titleInput || titleInput.value.trim()) {
-            return;
-        }
-
-        titleInput.value = keyword;
     },
 }));
 
@@ -2178,6 +2160,177 @@ Alpine.data('adminPendingDrawer', (config) => ({
         this.error = null;
         this.user = null;
         document.body.classList.remove('overflow-hidden');
+    },
+}));
+
+Alpine.data('talentDocumentsPicker', (config = {}) => ({
+    savedOtherCount: config.savedOtherCount ?? 0,
+    maxOther: config.maxOther ?? 3,
+    maxBytes: config.maxBytes ?? (1024 * 1024),
+    allowedMimes: config.allowedMimes ?? [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+    ],
+    messages: config.messages ?? {},
+    pendingCv: null,
+    pendingOthers: [],
+
+    get otherSlotsLeft() {
+        return Math.max(0, this.maxOther - this.savedOtherCount - this.pendingOthers.length);
+    },
+
+    get otherTotalCount() {
+        return this.savedOtherCount + this.pendingOthers.length;
+    },
+
+    get canAddOthers() {
+        return this.otherSlotsLeft > 0;
+    },
+
+    fileKey(file) {
+        return `${file.name}:${file.size}:${file.lastModified}`;
+    },
+
+    formatSize(bytes) {
+        if (bytes >= 1024 * 1024) {
+            return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+        }
+
+        return `${Math.round(bytes / 1024)} Ko`;
+    },
+
+    validateFile(file) {
+        if (! this.allowedMimes.includes(file.type)) {
+            return this.messages.invalidType ?? null;
+        }
+
+        if (file.size > this.maxBytes) {
+            return this.messages.tooLarge ?? null;
+        }
+
+        return null;
+    },
+
+    toastError(message) {
+        if (message) {
+            this.$dispatch('toast-push', { type: 'error', message });
+        }
+    },
+
+    onCvChange(event) {
+        const input = event.target;
+        const file = input.files?.[0] ?? null;
+
+        if (! file) {
+            this.clearCv();
+
+            return;
+        }
+
+        const rejection = this.validateFile(file);
+
+        if (rejection) {
+            this.toastError(rejection);
+            this.clearCv();
+
+            return;
+        }
+
+        this.pendingCv = file;
+        this.syncCvInput();
+    },
+
+    clearCv() {
+        this.pendingCv = null;
+
+        if (this.$refs.cvInput) {
+            this.$refs.cvInput.value = '';
+        }
+    },
+
+    syncCvInput() {
+        const input = this.$refs.cvInput;
+
+        if (! input) {
+            return;
+        }
+
+        const transfer = new DataTransfer();
+
+        if (this.pendingCv) {
+            transfer.items.add(this.pendingCv);
+        }
+
+        input.files = transfer.files;
+    },
+
+    onOthersChange(event) {
+        const input = event.target;
+        const incoming = Array.from(input.files ?? []);
+
+        if (! incoming.length) {
+            this.syncOthersInput();
+
+            return;
+        }
+
+        const merged = [...this.pendingOthers];
+        let overflow = false;
+        let rejection = null;
+
+        for (const file of incoming) {
+            const key = this.fileKey(file);
+
+            if (merged.some((existing) => this.fileKey(existing) === key)) {
+                continue;
+            }
+
+            if (this.savedOtherCount + merged.length >= this.maxOther) {
+                overflow = true;
+                break;
+            }
+
+            const error = this.validateFile(file);
+
+            if (error) {
+                rejection = error;
+                continue;
+            }
+
+            merged.push(file);
+        }
+
+        this.pendingOthers = merged;
+        this.syncOthersInput();
+
+        if (overflow) {
+            this.toastError(this.messages.otherMax ?? null);
+        } else if (rejection) {
+            this.toastError(rejection);
+        }
+    },
+
+    removePendingOther(index) {
+        this.pendingOthers = this.pendingOthers.filter((_, i) => i !== index);
+        this.syncOthersInput();
+    },
+
+    syncOthersInput() {
+        const input = this.$refs.othersInput;
+
+        if (! input) {
+            return;
+        }
+
+        const transfer = new DataTransfer();
+
+        this.pendingOthers.forEach((file) => {
+            transfer.items.add(file);
+        });
+
+        input.files = transfer.files;
     },
 }));
 

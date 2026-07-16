@@ -284,6 +284,7 @@ class PendingRegistrationService
             $this->copyDocumentToProfile($document, function (array $attrs) use ($profile) {
                 ProfileDocument::query()->create(array_merge($attrs, [
                     'profile_id' => $profile->id,
+                    'document_type' => ProfileDocument::TYPE_REGISTRATION,
                 ]));
             }, 'profile-documents/'.$profile->id);
         }

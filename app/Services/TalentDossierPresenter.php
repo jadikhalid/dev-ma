@@ -116,7 +116,6 @@ class TalentDossierPresenter
         }
 
         return array_filter([
-            'title' => $this->text($profile->title),
             'profession' => $profile->professionLabel(),
             'specialization' => $this->text($profile->specialization),
             'bio' => $this->text($profile->bio),

@@ -12,7 +12,8 @@
                 {{ __('talenma.auth.register_resend_hint', ['email' => session('pending_registration_email')]) }}
             </p>
             <p class="mt-2 text-indigo-800/90">{{ __('talenma.auth.verify_email_pending_no_login') }}</p>
-            <form method="POST" action="{{ route('register.resend-verification') }}" class="mt-4">
+            <p class="mt-4 text-indigo-900 font-medium">{{ __('talenma.auth.register_resend_if_nothing') }}</p>
+            <form method="POST" action="{{ route('register.resend-verification') }}" class="mt-2">
                 @csrf
                 <input type="hidden" name="email" value="{{ session('pending_registration_email') }}">
                 <x-primary-button type="submit" class="text-sm">

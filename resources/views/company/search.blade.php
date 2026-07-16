@@ -48,11 +48,11 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <h3 class="font-bold text-lg">{{ $talent->name }}</h3>
-                                <p class="text-indigo-600 text-sm font-medium">{{ $talent->profile->title }}</p>
+                                <p class="text-indigo-600 text-sm font-medium">
+                                    {{ collect([$talent->profile->professionLabel(), $talent->profile->sectorLabel()])->filter()->implode(' - ') }}
+                                </p>
                                 @if ($talent->profile->specialization)
-                                    <p class="text-xs text-gray-500 mt-1">
-                                        {{ $talent->profile->sectorLabel() }} · {{ $talent->profile->professionLabel() }} · {{ $talent->profile->specialization }}
-                                    </p>
+                                    <p class="text-xs text-gray-500 mt-1">{{ $talent->profile->specialization }}</p>
                                 @endif
                             </div>
                             <span class="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full">{{ $talent->profile->daily_rate_eur }} {{ __('talenma.talents.per_day') }}</span>

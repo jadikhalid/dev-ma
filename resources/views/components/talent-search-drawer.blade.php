@@ -89,12 +89,12 @@
 
                             <div class="min-w-0 flex-1">
                                 <p class="text-sm font-semibold text-gray-900" x-text="talent.display_name"></p>
-                                <p class="mt-0.5 truncate text-sm font-medium text-indigo-600" x-text="talent.title"></p>
-                                <p class="mt-1 text-xs text-gray-500">
-                                    <span x-text="talent.sector"></span>
-                                    <span x-show="talent.profession"> · </span>
+                                <p class="mt-0.5 truncate text-sm font-medium text-indigo-600">
                                     <span x-text="talent.profession"></span>
+                                    <span x-show="talent.profession && talent.sector"> - </span>
+                                    <span x-text="talent.sector"></span>
                                 </p>
+                                <p class="mt-1 truncate text-xs text-gray-500" x-show="talent.specialization" x-text="talent.specialization"></p>
 
                                 <div class="mt-2 flex flex-wrap gap-1" x-show="talent.matched_keywords?.length">
                                     <template x-for="keyword in talent.matched_keywords" :key="`${talent.id}-${keyword}`">

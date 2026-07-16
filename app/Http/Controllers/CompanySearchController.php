@@ -30,7 +30,7 @@ class CompanySearchController extends Controller
             ->where('is_subscribed', true)
             ->where('subscription_expires_at', '>', now())
             ->with(['profile.profession', 'profile.professionSector'])
-            ->whereHas('profile', fn ($q) => $q->whereNotNull('title')->whereNotNull('bio'));
+            ->whereHas('profile', fn ($q) => $q->whereNotNull('profession_id')->whereNotNull('bio'));
 
         if ($request->filled('city')) {
             $query->whereHas('profile', fn ($q) => $q->where('city', $request->city));
@@ -67,7 +67,6 @@ class CompanySearchController extends Controller
                 $query->whereHas('profile', function ($q) use ($escaped) {
                     $q->where(function ($subQ) use ($escaped) {
                         $subQ->where('specialization', 'like', '%'.$escaped.'%')
-                            ->orWhere('title', 'like', '%'.$escaped.'%')
                             ->orWhere('bio', 'like', '%'.$escaped.'%')
                             ->orWhere('skills', 'like', '%'.$escaped.'%');
                     });

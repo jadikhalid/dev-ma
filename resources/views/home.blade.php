@@ -162,6 +162,7 @@
 
 <x-social-posts-slider :items="$socialPosts" />
 
+@guest
 <section class="py-20 bg-indigo-600 text-white">
     <div class="max-w-3xl mx-auto px-4 text-center">
         <h2 class="text-3xl font-bold">{{ __('talenma.home.cta_title') }}</h2>
@@ -172,4 +173,5 @@
         </div>
     </div>
 </section>
+@endguest
 @endsection

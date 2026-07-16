@@ -2,14 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileDocument extends Model
 {
+    public const TYPE_REGISTRATION = 'registration';
+
+    public const TYPE_CV = 'cv';
+
+    public const TYPE_OTHER = 'other';
+
     protected $fillable = [
         'profile_id',
+        'document_type',
         'path',
         'original_name',
         'mime_type',
@@ -22,9 +30,29 @@ class ProfileDocument extends Model
         return $this->belongsTo(Profile::class);
     }
 
+    public function scopeOfType(Builder $query, string $type): Builder
+    {
+        return $query->where('document_type', $type);
+    }
+
+    public function isCv(): bool
+    {
+        return $this->document_type === self::TYPE_CV;
+    }
+
+    public function isOther(): bool
+    {
+        return $this->document_type === self::TYPE_OTHER;
+    }
+
     public function url(): string
     {
         return route('admin.profile-documents.show', $this);
+    }
+
+    public function talentUrl(): string
+    {
+        return route('profile.documents.show', $this);
     }
 
     public function publicUrl(): string

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ProfileDocumentService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,9 +12,12 @@ use Illuminate\View\View;
 
 class ProfileDetailsController extends Controller
 {
-    private const SECTIONS = ['profession', 'presentation', 'availability', 'links'];
+    private const SECTIONS = ['profession', 'presentation', 'availability', 'links', 'documents'];
 
-    public function __construct(private ProfessionCatalogService $professionCatalog) {}
+    public function __construct(
+        private ProfessionCatalogService $professionCatalog,
+        private ProfileDocumentService $profileDocuments,
+    ) {}
 
     public function edit(): View|RedirectResponse
     {
@@ -38,6 +42,8 @@ class ProfileDetailsController extends Controller
             'sectorSlug' => old('sector', $slugs['sector']),
             'professionSlug' => old('profession', $slugs['profession']),
             'specialization' => old('specialization', $profile->specialization ?? ''),
+            'cvDocument' => $profile->cvDocument(),
+            'otherDocuments' => $profile->otherDocuments(),
             'cities' => ['Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Agadir', 'Fès', 'Meknès', 'Oujda'],
             'workModeOptions' => $this->workModeOptions(),
             'languageOptions' => $this->languageOptions(),
@@ -57,6 +63,17 @@ class ProfileDetailsController extends Controller
             'section' => ['required', 'string', Rule::in(self::SECTIONS)],
         ])['section'];
 
+        $profile = $user->profile ?: $user->profile()->create();
+
+        if ($section === 'documents') {
+            $this->updateDocuments($request, $profile);
+
+            return redirect()
+                ->route('profile.details.edit')
+                ->with('status', 'profile-updated')
+                ->with('updated_section', $section);
+        }
+
         $data = $request->validate($this->rulesForSection($section));
         $payload = $this->payloadForSection($section, $data);
 
@@ -66,6 +83,29 @@ class ProfileDetailsController extends Controller
             ->route('profile.details.edit')
             ->with('status', 'profile-updated')
             ->with('updated_section', $section);
+    }
+
+    private function updateDocuments(Request $request, $profile): void
+    {
+        $request->validate([
+            'cv' => ['nullable', 'file', 'max:'.ProfileDocumentService::MAX_FILE_SIZE, 'mimes:pdf,jpg,jpeg,png,webp'],
+            'other_documents' => ['nullable', 'array', 'max:'.ProfileDocumentService::MAX_OTHER],
+            'other_documents.*' => ['file', 'max:'.ProfileDocumentService::MAX_FILE_SIZE, 'mimes:pdf,jpg,jpeg,png,webp'],
+        ], [
+            'cv.max' => __('talenma.auth.validation.documents_size'),
+            'cv.mimes' => __('talenma.auth.validation.documents_type'),
+            'other_documents.max' => __('talenma.talent.documents_other_max'),
+            'other_documents.*.max' => __('talenma.auth.validation.documents_size'),
+            'other_documents.*.mimes' => __('talenma.auth.validation.documents_type'),
+        ]);
+
+        if ($request->hasFile('cv')) {
+            $this->profileDocuments->storeCv($profile, $request->file('cv'));
+        }
+
+        if ($request->hasFile('other_documents')) {
+            $this->profileDocuments->storeOthers($profile, $request->file('other_documents'));
+        }
     }
 
     /**
@@ -78,7 +118,6 @@ class ProfileDetailsController extends Controller
                 'sector' => ['required', 'string', 'max:64'],
                 'profession' => ['required', 'string', 'max:64'],
                 'specialization' => ['required', 'string', 'max:500'],
-                'title' => ['required', 'string', 'max:255'],
             ],
             'presentation' => [
                 'bio' => ['required', 'string', 'min:30', 'max:5000'],
@@ -114,13 +153,10 @@ class ProfileDetailsController extends Controller
     private function payloadForSection(string $section, array $data): array
     {
         return match ($section) {
-            'profession' => array_merge(
-                $this->professionCatalog->resolveSelection(
-                    $data['sector'],
-                    $data['profession'],
-                    $data['specialization'],
-                ),
-                ['title' => $data['title']],
+            'profession' => $this->professionCatalog->resolveSelection(
+                $data['sector'],
+                $data['profession'],
+                $data['specialization'],
             ),
             'presentation' => [
                 'bio' => $data['bio'],

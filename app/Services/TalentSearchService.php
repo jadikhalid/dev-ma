@@ -24,7 +24,7 @@ class TalentSearchService
             ->where('is_subscribed', true)
             ->where('subscription_expires_at', '>', now())
             ->with(['profile.profession', 'profile.professionSector'])
-            ->whereHas('profile', fn ($q) => $q->whereNotNull('title')->whereNotNull('bio'));
+            ->whereHas('profile', fn ($q) => $q->whereNotNull('profession_id')->whereNotNull('bio'));
 
         if ($sectorSlug) {
             $query->whereHas('profile.professionSector', fn ($q) => $q->where('slug', $sectorSlug));
@@ -49,7 +49,6 @@ class TalentSearchService
 
                         $outer->orWhere(function ($subQ) use ($escaped) {
                             $subQ->where('specialization', 'like', '%'.$escaped.'%')
-                                ->orWhere('title', 'like', '%'.$escaped.'%')
                                 ->orWhere('bio', 'like', '%'.$escaped.'%')
                                 ->orWhere('skills', 'like', '%'.$escaped.'%');
                         });
@@ -82,7 +81,7 @@ class TalentSearchService
                 'id' => $talent['id'],
                 'initials' => $talent['initials'],
                 'display_name' => $talent['display_name'],
-                'title' => $talent['title'],
+                'specialization' => $talent['specialization'],
                 'sector' => $talent['sector'],
                 'profession' => $talent['profession'],
                 'matched_keywords' => $talent['matched_keywords'],
@@ -106,9 +105,10 @@ class TalentSearchService
         $profile = $talent->profile;
         $haystack = mb_strtolower(implode(' ', array_filter([
             $profile?->specialization,
-            $profile?->title,
             $profile?->bio,
             is_array($profile?->skills) ? implode(' ', $profile->skills) : '',
+            $profile?->professionLabel(),
+            $profile?->sectorLabel(),
         ])));
 
         $matchedKeywords = [];
@@ -152,7 +152,6 @@ class TalentSearchService
             'display_name' => $talent->publicDisplayName(),
             'initials' => $talent->initials(),
             'avatar_url' => $talent->avatarUrl(),
-            'title' => $profile?->title,
             'specialization' => $profile?->specialization,
             'skills' => $profile?->skills ?? [],
             'city' => $profile?->city,

@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'profession_id',
     'specialization',
     'registration_description',
-    'title',
     'bio',
     'experience_years',
     'education_level',
@@ -62,6 +61,21 @@ class Profile extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(ProfileDocument::class)->orderBy('sort_order');
+    }
+
+    public function cvDocument(): ?ProfileDocument
+    {
+        return $this->documents->firstWhere('document_type', ProfileDocument::TYPE_CV);
+    }
+
+    public function otherDocuments()
+    {
+        return $this->documents->where('document_type', ProfileDocument::TYPE_OTHER)->values();
+    }
+
+    public function registrationDocuments()
+    {
+        return $this->documents->where('document_type', ProfileDocument::TYPE_REGISTRATION)->values();
     }
 
     public function professionLabel(?string $locale = null): ?string

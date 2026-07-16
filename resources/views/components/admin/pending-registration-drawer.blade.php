@@ -214,10 +214,6 @@
                             x-show="user.current_profile && Object.keys(user.current_profile).length > 0"
                             class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"
                         >
-                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.title">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.title') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.title"></dd>
-                            </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.profession">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_profession') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.profession"></dd>

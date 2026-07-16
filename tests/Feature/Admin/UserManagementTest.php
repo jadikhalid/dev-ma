@@ -6,6 +6,7 @@ use App\Mail\TalentApprovedMail;
 use App\Mail\TalentRejectedMail;
 use App\Models\ModerationRequest;
 use App\Models\PendingRegistration;
+use App\Models\Profession;
 use App\Models\ProfessionSector;
 use App\Models\ProfileDocument;
 use App\Models\User;
@@ -156,8 +157,9 @@ class UserManagementTest extends TestCase
         ]);
         $talent->profile()->create([
             'profession_sector_id' => $sector->id,
+            'profession_id' => Profession::query()->where('profession_sector_id', $sector->id)->value('id'),
             'registration_description' => 'Description à l\'inscription.',
-            'title' => 'Développeur Laravel',
+            'specialization' => 'Laravel, API REST',
             'bio' => 'Bio actuelle du talent.',
             'experience_years' => 5,
             'country' => 'Maroc',
@@ -170,7 +172,7 @@ class UserManagementTest extends TestCase
             ->assertJsonPath('last_name', 'Benali')
             ->assertJsonPath('description', 'Description à l\'inscription.')
             ->assertJsonPath('is_pending', false)
-            ->assertJsonPath('current_profile.title', 'Développeur Laravel')
+            ->assertJsonPath('current_profile.specialization', 'Laravel, API REST')
             ->assertJsonPath('current_profile.bio', 'Bio actuelle du talent.');
     }
 
