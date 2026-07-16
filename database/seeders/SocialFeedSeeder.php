@@ -17,19 +17,19 @@ class SocialFeedSeeder extends Seeder
             [
                 'title' => 'Le pool de talents tech au Maroc en 2026',
                 'subtitle' => 'État des lieux et tendances du marché',
-                'url' => 'https://www.linkedin.com/company/talents-du-maroc',
-                'source' => 'linkedin',
+                'url' => 'https://www.talentsdumaroc.com/actualites/pool-talents-tech-2026',
+                'source' => 'article',
             ],
             [
                 'title' => 'Remote France-Maroc : les bonnes pratiques',
                 'subtitle' => 'Fuseaux horaires, outils et communication',
-                'url' => 'https://www.linkedin.com/company/talents-du-maroc',
-                'source' => 'linkedin',
+                'url' => 'https://www.talentsdumaroc.com/actualites/remote-france-maroc',
+                'source' => 'article',
             ],
             [
                 'title' => 'Pourquoi recruter des talents marocains ?',
                 'subtitle' => 'Qualité, coût et proximité culturelle',
-                'url' => 'https://www.linkedin.com/company/talents-du-maroc',
+                'url' => 'https://www.talentsdumaroc.com/actualites/recruter-talents-marocains',
                 'source' => 'article',
             ],
         ];

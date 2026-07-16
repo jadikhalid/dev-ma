@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'user_id',
@@ -52,7 +51,8 @@ class CompanyProfile extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->logo_path);
+        // Relative path so the image works regardless of APP_URL host/port.
+        return '/storage/'.ltrim($this->logo_path, '/');
     }
 
     public function initials(): string

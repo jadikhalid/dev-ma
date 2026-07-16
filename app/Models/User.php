@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'name',
@@ -160,7 +159,9 @@ class User extends Authenticatable implements MustVerifyEmail
             return null;
         }
 
-        return Storage::disk('public')->url($this->avatar_path);
+        // Relative path so the image works regardless of APP_URL host/port
+        // (e.g. browsing via 127.0.0.1:8000 while APP_URL is http://localhost).
+        return '/storage/'.ltrim($this->avatar_path, '/');
     }
 
     public function initials(): string
