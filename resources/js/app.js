@@ -454,11 +454,50 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     validationMessages: config.validationMessages ?? {},
     searchUrl: config.searchUrl ?? '',
     drawerLabels: config.drawerLabels ?? {},
+    canViewProfiles: Boolean(config.canViewProfiles),
     drawerOpen: false,
     searchLoading: false,
     searchError: null,
     results: [],
     resultsCount: 0,
+    filterExperience: 'all',
+    filterStatus: 'all',
+
+    get displayedResults() {
+        return this.results.filter((talent) => {
+            if (this.filterStatus !== 'all' && talent.availability !== this.filterStatus) {
+                return false;
+            }
+
+            if (this.filterExperience === 'all') {
+                return true;
+            }
+
+            const years = Number(talent.experience_years ?? 0);
+
+            if (this.filterExperience === '0-1') {
+                return years >= 0 && years <= 1;
+            }
+
+            if (this.filterExperience === '1-5') {
+                return years > 1 && years <= 5;
+            }
+
+            if (this.filterExperience === '5-10') {
+                return years > 5 && years <= 10;
+            }
+
+            if (this.filterExperience === '10+') {
+                return years > 10;
+            }
+
+            return true;
+        });
+    },
+
+    get displayedResultsCount() {
+        return this.displayedResults.length;
+    },
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
@@ -750,6 +789,8 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         this.searchError = null;
         this.results = [];
         this.resultsCount = 0;
+        this.filterExperience = 'all';
+        this.filterStatus = 'all';
         document.body.classList.add('overflow-hidden');
 
         try {
@@ -2331,6 +2372,592 @@ Alpine.data('talentDocumentsPicker', (config = {}) => ({
         });
 
         input.files = transfer.files;
+    },
+}));
+
+Alpine.data('companyTalentCatalog', (config) => ({
+    sectors: config.sectors ?? [],
+    searchUrl: config.searchUrl ?? '',
+    labels: config.labels ?? {},
+    sectorSlug: config.initialSector ?? '',
+    professionSlug: config.initialProfession ?? '',
+    experience: config.initialExperience || 'all',
+    status: config.initialStatus || 'all',
+    selectedKeywords: (config.initialKeyword ?? '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+    keywordInput: '',
+    keywordSuggestionsOpen: false,
+    keywordHideTimer: null,
+    maxKeywords: 3,
+    talents: config.initialTalents ?? [],
+    meta: config.initialMeta ?? {
+        total: 0,
+        current_page: 1,
+        last_page: 1,
+        per_page: 12,
+        from: null,
+        to: null,
+    },
+    loading: false,
+    error: null,
+    requestToken: 0,
+    profileDrawerOpen: false,
+    profileLoading: false,
+    profileError: null,
+    selectedProfile: null,
+    profileRequestToken: 0,
+    composeUrl: config.composeUrl ?? '',
+    csrf: config.csrf ?? '',
+    composeSubject: '',
+    composeBody: '',
+    composeFiles: [],
+    composeSending: false,
+    composeError: null,
+    composeSuccessUrl: null,
+
+    get filteredProfessions() {
+        if (! this.sectorSlug) {
+            return [];
+        }
+
+        const sector = this.sectors.find((item) => item.slug === this.sectorSlug);
+
+        return sector?.professions ?? [];
+    },
+
+    get professionsEnabled() {
+        return Boolean(this.sectorSlug);
+    },
+
+    get professionPlaceholder() {
+        return this.professionsEnabled
+            ? (this.labels.professionAll ?? '')
+            : (this.labels.professionBlocked ?? '');
+    },
+
+    get selectedProfession() {
+        return this.filteredProfessions.find((item) => item.slug === this.professionSlug) ?? null;
+    },
+
+    get filteredSpecializations() {
+        if (! this.professionSlug) {
+            if (! this.sectorSlug) {
+                return [];
+            }
+
+            return [...new Set(this.filteredProfessions.flatMap((profession) => profession.specializations ?? []))];
+        }
+
+        return this.selectedProfession?.specializations ?? [];
+    },
+
+    get keywordsEnabled() {
+        return Boolean(this.sectorSlug && this.professionSlug);
+    },
+
+    get keywordsAtMax() {
+        return this.selectedKeywords.length >= this.maxKeywords;
+    },
+
+    get unselectedSpecializations() {
+        return this.filteredSpecializations.filter((item) => ! this.selectedKeywords.includes(item));
+    },
+
+    get filteredAvailableKeywords() {
+        if (! this.keywordsEnabled) {
+            return [];
+        }
+
+        const term = this.keywordInput.trim().toLowerCase();
+
+        if (! term) {
+            return [];
+        }
+
+        return this.unselectedSpecializations.filter((item) => item.toLowerCase().includes(term));
+    },
+
+    get foundLabel() {
+        const template = this.labels.found ?? ':count';
+
+        return template.replace(':count', String(this.meta.total ?? this.talents.length));
+    },
+
+    onSectorChange() {
+        const isValidProfession = this.filteredProfessions.some(
+            (profession) => profession.slug === this.professionSlug,
+        );
+
+        if (! isValidProfession) {
+            this.professionSlug = '';
+        }
+
+        this.resetKeywordIfInvalid();
+        this.refreshResults();
+    },
+
+    onProfessionChange() {
+        this.resetKeywordIfInvalid();
+        this.refreshResults();
+    },
+
+    resetKeywordIfInvalid() {
+        if (! this.keywordsEnabled) {
+            this.selectedKeywords = [];
+            this.keywordInput = '';
+            this.keywordSuggestionsOpen = false;
+
+            return;
+        }
+
+        this.selectedKeywords = this.selectedKeywords.filter((item) => this.filteredSpecializations.includes(item));
+        this.keywordInput = '';
+        this.keywordSuggestionsOpen = false;
+    },
+
+    addKeyword(keyword) {
+        const value = String(keyword ?? '').trim();
+
+        if (! value || ! this.keywordsEnabled || this.keywordsAtMax) {
+            return;
+        }
+
+        if (! this.filteredSpecializations.includes(value)) {
+            return;
+        }
+
+        if (this.selectedKeywords.includes(value)) {
+            return;
+        }
+
+        this.selectedKeywords = [...this.selectedKeywords, value];
+        this.keywordInput = '';
+        this.keywordSuggestionsOpen = false;
+        this.refreshResults();
+    },
+
+    addFirstKeywordSuggestion() {
+        const first = this.filteredAvailableKeywords[0];
+
+        if (first) {
+            this.addKeyword(first);
+        }
+    },
+
+    removeKeyword(index) {
+        this.selectedKeywords = this.selectedKeywords.filter((_, i) => i !== index);
+        this.refreshResults();
+    },
+
+    hideKeywordSuggestionsSoon() {
+        clearTimeout(this.keywordHideTimer);
+        this.keywordHideTimer = setTimeout(() => {
+            this.keywordSuggestionsOpen = false;
+        }, 150);
+    },
+
+    roleLine(talent) {
+        return [talent.profession_label, talent.sector_label].filter(Boolean).join(' - ');
+    },
+
+    locationLine(talent) {
+        return [talent.city, talent.country].filter(Boolean).join(', ');
+    },
+
+    keySkills(talent) {
+        const fromSpecialization = String(talent.specialization ?? '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+        if (fromSpecialization.length) {
+            return fromSpecialization;
+        }
+
+        return Array.isArray(talent.skills) ? talent.skills.filter(Boolean) : [];
+    },
+
+    buildQuery(page = 1) {
+        const params = new URLSearchParams();
+
+        if (this.sectorSlug) {
+            params.set('sector', this.sectorSlug);
+        }
+
+        if (this.professionSlug) {
+            params.set('profession', this.professionSlug);
+        }
+
+        if (this.experience && this.experience !== 'all') {
+            params.set('experience', this.experience);
+        }
+
+        if (this.status && this.status !== 'all') {
+            params.set('status', this.status);
+        }
+
+        if (this.selectedKeywords.length) {
+            params.set('keyword', this.selectedKeywords.join(', '));
+        }
+
+        if (page > 1) {
+            params.set('page', String(page));
+        }
+
+        return params;
+    },
+
+    syncUrl(page = 1) {
+        const params = this.buildQuery(page);
+        const query = params.toString();
+        const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+
+        window.history.replaceState({}, '', url);
+    },
+
+    async refreshResults(page = 1) {
+        if (! this.searchUrl) {
+            return;
+        }
+
+        const token = ++this.requestToken;
+        const params = this.buildQuery(page);
+
+        this.loading = true;
+        this.error = null;
+        this.syncUrl(page);
+
+        try {
+            const response = await fetch(`${this.searchUrl}?${params.toString()}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                throw new Error('request_failed');
+            }
+
+            const payload = await response.json();
+
+            if (token !== this.requestToken) {
+                return;
+            }
+
+            this.talents = payload.talents ?? [];
+            this.meta = payload.meta ?? this.meta;
+        } catch (error) {
+            if (token !== this.requestToken) {
+                return;
+            }
+
+            this.error = this.labels.error ?? 'Une erreur est survenue.';
+        } finally {
+            if (token === this.requestToken) {
+                this.loading = false;
+            }
+        }
+    },
+
+    async openProfile(url) {
+        if (! url) {
+            return;
+        }
+
+        const token = ++this.profileRequestToken;
+
+        this.profileDrawerOpen = true;
+        this.profileLoading = true;
+        this.profileError = null;
+        this.selectedProfile = null;
+        this.resetCompose();
+        document.body.classList.add('overflow-hidden');
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                throw new Error('profile_load_failed');
+            }
+
+            const profile = await response.json();
+
+            if (token !== this.profileRequestToken) {
+                return;
+            }
+
+            this.selectedProfile = profile;
+        } catch (error) {
+            if (token !== this.profileRequestToken) {
+                return;
+            }
+
+            this.profileError = this.labels.profileError ?? this.labels.error;
+        } finally {
+            if (token === this.profileRequestToken) {
+                this.profileLoading = false;
+            }
+        }
+    },
+
+    closeProfile() {
+        this.profileRequestToken += 1;
+        this.profileDrawerOpen = false;
+        this.profileLoading = false;
+        this.profileError = null;
+        this.selectedProfile = null;
+        this.resetCompose();
+        document.body.classList.remove('overflow-hidden');
+    },
+
+    resetCompose() {
+        this.composeSubject = '';
+        this.composeBody = '';
+        this.composeFiles = [];
+        this.composeSending = false;
+        this.composeError = null;
+        this.composeSuccessUrl = null;
+    },
+
+    onComposeFiles(event) {
+        const incoming = Array.from(event.target.files ?? []);
+        const merged = [...this.composeFiles];
+
+        for (const file of incoming) {
+            if (merged.length >= 3) {
+                break;
+            }
+
+            if (! merged.some((existing) => existing.name === file.name && existing.size === file.size)) {
+                merged.push(file);
+            }
+        }
+
+        this.composeFiles = merged;
+        event.target.value = '';
+    },
+
+    removeComposeFile(index) {
+        this.composeFiles = this.composeFiles.filter((_, i) => i !== index);
+    },
+
+    async sendCompose() {
+        if (! this.selectedProfile?.talent_id || ! this.composeUrl) {
+            return;
+        }
+
+        const body = this.composeBody.trim();
+        const subject = this.composeSubject.trim();
+
+        if (body.length < 20) {
+            this.composeError = this.labels.composeMinBody ?? this.labels.composeError;
+
+            return;
+        }
+
+        this.composeSending = true;
+        this.composeError = null;
+
+        const formData = new FormData();
+        formData.append('talent_id', String(this.selectedProfile.talent_id));
+        formData.append('subject', subject);
+        formData.append('body', body);
+        formData.append('_token', this.csrf);
+
+        this.composeFiles.forEach((file) => {
+            formData.append('attachments[]', file);
+        });
+
+        try {
+            const response = await fetch(this.composeUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                const firstError = payload?.errors
+                    ? Object.values(payload.errors).flat()[0]
+                    : null;
+                throw new Error(firstError || payload?.message || 'compose_failed');
+            }
+
+            this.composeSuccessUrl = payload.show_url ?? null;
+            this.composeFiles = [];
+        } catch (error) {
+            this.composeError = error?.message || this.labels.composeError || this.labels.error;
+        } finally {
+            this.composeSending = false;
+        }
+    },
+
+    profileStatusClass(tone) {
+        if (tone === 'busy') {
+            return 'bg-gray-200 text-gray-700';
+        }
+
+        if (tone === 'listening') {
+            return 'bg-amber-100 text-amber-800';
+        }
+
+        return 'bg-emerald-100 text-emerald-800';
+    },
+
+    goToPage(page) {
+        const target = Number(page);
+
+        if (! Number.isFinite(target) || target < 1 || target > this.meta.last_page || target === this.meta.current_page) {
+            return;
+        }
+
+        this.refreshResults(target);
+    },
+}));
+
+Alpine.data('inboxThread', (config) => ({
+    conversationId: config.conversationId,
+    pollUrl: config.pollUrl ?? '',
+    replyUrl: config.replyUrl ?? '',
+    csrf: config.csrf ?? '',
+    labels: config.labels ?? {},
+    messages: config.initialMessages ?? [],
+    body: '',
+    files: [],
+    sending: false,
+    error: null,
+    pollTimer: null,
+
+    init() {
+        this.$nextTick(() => this.scrollToBottom());
+        this.pollTimer = setInterval(() => this.poll(), 9000);
+    },
+
+    destroy() {
+        if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+        }
+    },
+
+    scrollToBottom() {
+        const thread = this.$refs.thread;
+
+        if (thread) {
+            thread.scrollTop = thread.scrollHeight;
+        }
+    },
+
+    onFiles(event) {
+        const incoming = Array.from(event.target.files ?? []);
+        const merged = [...this.files];
+
+        for (const file of incoming) {
+            if (merged.length >= 3) {
+                break;
+            }
+
+            if (! merged.some((existing) => existing.name === file.name && existing.size === file.size)) {
+                merged.push(file);
+            }
+        }
+
+        this.files = merged;
+        event.target.value = '';
+    },
+
+    removeFile(index) {
+        this.files = this.files.filter((_, i) => i !== index);
+    },
+
+    async poll() {
+        if (! this.pollUrl || document.hidden) {
+            return;
+        }
+
+        try {
+            const response = await fetch(this.pollUrl, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                return;
+            }
+
+            const payload = await response.json();
+            const nextMessages = payload.messages ?? [];
+            const previousCount = this.messages.length;
+
+            this.messages = nextMessages;
+
+            if (nextMessages.length > previousCount) {
+                this.$nextTick(() => this.scrollToBottom());
+            }
+        } catch (error) {
+            // Silent polling failures.
+        }
+    },
+
+    async sendReply() {
+        if (! this.replyUrl || ! this.body.trim()) {
+            return;
+        }
+
+        this.sending = true;
+        this.error = null;
+
+        const formData = new FormData();
+        formData.append('body', this.body.trim());
+        formData.append('_token', this.csrf);
+        this.files.forEach((file) => formData.append('attachments[]', file));
+
+        try {
+            const response = await fetch(this.replyUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                const firstError = payload?.errors
+                    ? Object.values(payload.errors).flat()[0]
+                    : null;
+                throw new Error(firstError || payload?.message || 'reply_failed');
+            }
+
+            this.messages = payload.conversation?.messages ?? this.messages;
+            this.body = '';
+            this.files = [];
+            this.$nextTick(() => this.scrollToBottom());
+        } catch (error) {
+            this.error = error?.message || this.labels.error;
+        } finally {
+            this.sending = false;
+        }
     },
 }));
 

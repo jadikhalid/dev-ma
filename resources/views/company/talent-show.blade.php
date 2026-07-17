@@ -1,21 +1,22 @@
 @php
-    $availabilityLabels = [
-        'disponible' => 'available',
-        'sous 2 semaines' => 'two_weeks',
-        'mission en cours' => 'on_mission',
-    ];
+    $statusTone = $talent->profile->statusTone();
+    $statusClasses = match ($statusTone) {
+        'busy' => 'bg-gray-200 text-gray-700',
+        'listening' => 'bg-amber-100 text-amber-800',
+        default => 'bg-emerald-100 text-emerald-800',
+    };
 @endphp
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-4">
             <div>
                 <h2 class="text-xl font-bold">{{ $talent->name }}</h2>
                 <p class="text-sm text-indigo-600 font-medium">
                     {{ collect([$talent->profile->professionLabel(), $talent->profile->sectorLabel()])->filter()->implode(' - ') }}
                 </p>
             </div>
-            <span class="px-4 py-1.5 bg-emerald-100 text-emerald-800 font-semibold rounded-full text-sm">{{ $talent->profile->daily_rate_eur }} {{ __('talenma.talents.per_day') }}</span>
+            <span class="px-4 py-1.5 font-semibold rounded-full text-sm {{ $statusClasses }}">{{ $talent->profile->statusLabel() }}</span>
         </div>
     </x-slot>
 
@@ -24,7 +25,7 @@
             <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-6">
                 <span>📍 {{ $talent->profile->city }}, {{ $talent->profile->country }}</span>
                 <span>💼 {{ __('talenma.talents.experience', ['years' => $talent->profile->experience_years]) }}</span>
-                <span>⏱ {{ __('talenma.talent.'.($availabilityLabels[$talent->profile->availability] ?? 'available')) }}</span>
+                <span>⏱ {{ $talent->profile->statusLabel() }}</span>
             </div>
 
             @if ($talent->profile->specialization || $talent->profile->skills)
@@ -46,25 +47,18 @@
                 </div>
             @endif
 
-            @if ($talent->profile->work_modes)
-                @php
-                    $workModeLabels = [
-                        'remote' => 'work_mode_remote',
-                        'visa_sponsorship' => 'work_mode_visa',
-                        'local' => 'work_mode_local',
-                    ];
-                @endphp
+            @if ($talent->profile->workModeLabels())
                 <div class="flex flex-wrap gap-2 mb-4">
-                    @foreach ($talent->profile->work_modes as $mode)
-                        <span class="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ __('talenma.talent.'.($workModeLabels[$mode] ?? $mode)) }}</span>
+                    @foreach ($talent->profile->workModeLabels() as $mode)
+                        <span class="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ $mode }}</span>
                     @endforeach
                 </div>
             @endif
 
-            @if ($talent->profile->languages)
+            @if ($talent->profile->languageLabels())
                 <p class="mb-4 text-sm text-gray-600">
                     {{ __('talenma.talent.languages') }} :
-                    {{ collect($talent->profile->languages)->map(fn ($code) => __('talenma.talent.lang_'.$code))->join(', ') }}
+                    {{ implode(', ', $talent->profile->languageLabels()) }}
                 </p>
             @endif
 
@@ -87,9 +81,26 @@
 
             <div class="mt-10 p-6 bg-gray-50 rounded-xl border grid sm:grid-cols-2 gap-4">
                 <div>
-                    <h4 class="font-semibold text-gray-900">{{ __('talenma.talents.direct_title') }}</h4>
-                    <p class="mt-1 text-sm text-gray-600">{{ __('talenma.talents.direct_desc') }}</p>
-                    <a href="mailto:{{ $talent->email }}" class="mt-3 inline-block px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800">{{ __('talenma.talents.direct_btn') }}</a>
+                    <h4 class="font-semibold text-gray-900">{{ __('talenma.inbox.compose_title') }}</h4>
+                    <p class="mt-1 text-sm text-gray-600">{{ __('talenma.inbox.compose_desc') }}</p>
+                    <form method="POST" action="{{ route('inbox.store') }}" enctype="multipart/form-data" class="mt-3 space-y-3">
+                        @csrf
+                        <input type="hidden" name="talent_id" value="{{ $talent->id }}">
+                        <div>
+                            <x-input-label for="message-subject" :value="__('talenma.inbox.compose_subject')" />
+                            <x-text-input id="message-subject" name="subject" class="mt-1 block w-full" required maxlength="255" :placeholder="__('talenma.inbox.compose_subject_placeholder')" />
+                        </div>
+                        <div>
+                            <x-input-label for="message-body" :value="__('talenma.inbox.compose_body')" />
+                            <textarea id="message-body" name="body" rows="4" required minlength="20" maxlength="5000" class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="{{ __('talenma.inbox.compose_body_placeholder') }}"></textarea>
+                        </div>
+                        <div>
+                            <x-input-label for="message-attachments" :value="__('talenma.inbox.attach')" />
+                            <input id="message-attachments" type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*" class="mt-1 block w-full text-sm text-gray-600">
+                            <p class="mt-1 text-xs text-gray-400">{{ __('talenma.inbox.attachments_hint') }}</p>
+                        </div>
+                        <x-primary-button>{{ __('talenma.inbox.compose_send') }}</x-primary-button>
+                    </form>
                 </div>
                 <div>
                     <h4 class="font-semibold text-gray-900">{{ __('talenma.talents.inter_title') }}</h4>

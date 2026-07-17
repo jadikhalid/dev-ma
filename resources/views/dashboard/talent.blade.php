@@ -1,15 +1,5 @@
 @php
     $user = Auth::user();
-    $availabilityLabels = [
-        'disponible' => 'available',
-        'sous 2 semaines' => 'two_weeks',
-        'mission en cours' => 'on_mission',
-    ];
-    $workModeLabels = [
-        'remote' => 'work_mode_remote',
-        'visa_sponsorship' => 'work_mode_visa',
-        'local' => 'work_mode_local',
-    ];
 @endphp
 
 <x-app-layout>
@@ -95,9 +85,17 @@
                             </div>
                         @endif
                     </div>
-                    @if ($profile->daily_rate_eur)
-                        <span class="px-3 py-1.5 bg-emerald-50 text-emerald-800 text-sm font-semibold rounded-full whitespace-nowrap">
-                            {{ $profile->daily_rate_eur }} {{ __('talenma.talents.per_day') }}
+                    @if ($profile->availability)
+                        @php
+                            $tone = $profile->statusTone();
+                            $toneClass = match ($tone) {
+                                'busy' => 'bg-gray-200 text-gray-700',
+                                'listening' => 'bg-amber-100 text-amber-800',
+                                default => 'bg-emerald-100 text-emerald-800',
+                            };
+                        @endphp
+                        <span class="px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap {{ $toneClass }}">
+                            {{ $profile->statusLabel() }}
                         </span>
                     @endif
                 </div>
@@ -109,15 +107,12 @@
                     @if ($profile->experience_years !== null)
                         <span>💼 {{ __('talenma.talents.experience', ['years' => $profile->experience_years]) }}</span>
                     @endif
-                    @if ($profile->availability)
-                        <span>⏱ {{ __('talenma.talent.'.($availabilityLabels[$profile->availability] ?? 'available')) }}</span>
-                    @endif
                 </div>
 
-                @if (is_array($profile->work_modes) && count($profile->work_modes))
+                @if ($profile->workModeLabels())
                     <div class="mt-4 flex flex-wrap gap-2">
-                        @foreach ($profile->work_modes as $mode)
-                            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ __('talenma.talent.'.($workModeLabels[$mode] ?? $mode)) }}</span>
+                        @foreach ($profile->workModeLabels() as $mode)
+                            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ $mode }}</span>
                         @endforeach
                     </div>
                 @endif

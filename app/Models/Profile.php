@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'experience_years',
     'education_level',
     'certifications',
-    'daily_rate_eur',
     'availability',
     'work_modes',
     'languages',
@@ -33,6 +32,93 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Profile extends Model
 {
     use HasFactory;
+
+    public const STATUS_AVAILABLE = 'disponible';
+
+    public const STATUS_BUSY = 'occupé';
+
+    public const STATUS_LISTENING = 'à l\'écoute';
+
+    /**
+     * @return array<string, string>
+     */
+    public static function statusOptions(): array
+    {
+        return [
+            self::STATUS_AVAILABLE => 'available',
+            self::STATUS_BUSY => 'busy',
+            self::STATUS_LISTENING => 'listening',
+        ];
+    }
+
+    public function statusLabel(): string
+    {
+        $key = self::statusOptions()[$this->availability] ?? 'available';
+
+        return __('talenma.talent.'.$key);
+    }
+
+    public function statusTone(): string
+    {
+        return match ($this->availability) {
+            self::STATUS_BUSY => 'busy',
+            self::STATUS_LISTENING => 'listening',
+            default => 'available',
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function workModeLabels(): array
+    {
+        return collect($this->work_modes ?? [])
+            ->map(fn (string $mode) => self::labelForWorkMode($mode))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function languageLabels(): array
+    {
+        return collect($this->languages ?? [])
+            ->map(fn (string $code) => self::labelForLanguage($code))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    public static function labelForWorkMode(string $mode): string
+    {
+        $key = match (strtolower(trim($mode))) {
+            'remote', 'full_remote', 'full remote' => 'work_mode_remote',
+            'hybrid' => 'work_mode_hybrid',
+            'visa_sponsorship', 'visa' => 'work_mode_visa',
+            'local', 'onsite', 'on_site' => 'work_mode_local',
+            default => null,
+        };
+
+        return $key ? __('talenma.talent.'.$key) : $mode;
+    }
+
+    public static function labelForLanguage(string $code): string
+    {
+        $normalized = mb_strtolower(trim($code));
+
+        $key = match ($normalized) {
+            'fr', 'français', 'francais', 'french' => 'lang_fr',
+            'en', 'anglais', 'english' => 'lang_en',
+            'ar', 'arabe', 'arabic' => 'lang_ar',
+            'es', 'espagnol', 'spanish' => 'lang_es',
+            'de', 'allemand', 'german' => 'lang_de',
+            default => null,
+        };
+
+        return $key ? __('talenma.talent.'.$key) : $code;
+    }
 
     protected function casts(): array
     {

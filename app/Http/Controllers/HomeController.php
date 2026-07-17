@@ -28,7 +28,6 @@ class HomeController extends Controller
         return view('home', [
             'talentsCount' => User::where('role', 'dev')
                 ->where('approval_status', User::APPROVAL_APPROVED)
-                ->where('is_subscribed', true)
                 ->count(),
             'socialPosts' => SocialPost::forHomeSlider(),
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),

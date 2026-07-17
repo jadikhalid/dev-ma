@@ -10,6 +10,7 @@ use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanySearchController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
@@ -96,15 +97,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('account.approved')->group(function () {
+        Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+        Route::post('/inbox/conversations', [InboxController::class, 'store'])->name('inbox.store');
+        Route::get('/inbox/attachments/{attachment}', [InboxController::class, 'showAttachment'])->name('inbox.attachments.show');
+        Route::get('/inbox/{conversation}', [InboxController::class, 'show'])->name('inbox.show');
+        Route::post('/inbox/{conversation}/messages', [InboxController::class, 'storeMessage'])->name('inbox.messages.store');
+
         Route::get('/company/profile', [CompanyProfileController::class, 'edit'])->name('company.profile.edit');
         Route::post('/company/profile', [CompanyProfileController::class, 'update'])->name('company.profile.update');
 
         Route::get('/talents', [CompanySearchController::class, 'index'])->name('company.search');
         Route::get('/talents/{talent}', [CompanySearchController::class, 'show'])->name('company.talent.show');
+        Route::get('/talents/{talent}/cv', [CompanySearchController::class, 'showCv'])->name('company.talent.cv');
 
         Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');
         Route::post('/recruitment/request', [RecruitmentRequestController::class, 'store'])->name('recruitment.store');
     });
 });
-
 require __DIR__.'/auth.php';

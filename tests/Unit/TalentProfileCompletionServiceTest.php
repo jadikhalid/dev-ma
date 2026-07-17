@@ -27,7 +27,6 @@ class TalentProfileCompletionServiceTest extends TestCase
             'skills' => ['Laravel'],
             'city' => 'Casablanca',
             'country' => 'Maroc',
-            'daily_rate_eur' => 300,
             'availability' => 'disponible',
             'work_modes' => ['remote'],
             'languages' => ['fr'],
@@ -39,10 +38,10 @@ class TalentProfileCompletionServiceTest extends TestCase
 
         $assessment = app(TalentProfileCompletionService::class)->assess($profile->fresh('documents'));
 
-        // 3 presentation required + skills + 5 availability = 9 done out of 17
-        $this->assertSame(17, $assessment['total_count']);
-        $this->assertSame(9, $assessment['done_count']);
-        $this->assertSame(53, $assessment['percent']);
+        // 3 presentation required + skills + 4 availability = 8 done out of 16
+        $this->assertSame(16, $assessment['total_count']);
+        $this->assertSame(8, $assessment['done_count']);
+        $this->assertSame(50, $assessment['percent']);
         $this->assertFalse($assessment['is_catalog_ready']);
     }
 
@@ -76,7 +75,6 @@ class TalentProfileCompletionServiceTest extends TestCase
             'skills' => [],
             'city' => 'Rabat',
             'country' => 'Maroc',
-            'daily_rate_eur' => 250,
             'availability' => 'disponible',
             'work_modes' => ['remote'],
             'languages' => ['fr'],
@@ -89,8 +87,8 @@ class TalentProfileCompletionServiceTest extends TestCase
         $assessment = app(TalentProfileCompletionService::class)->assess($profile->fresh('documents'));
 
         $this->assertTrue($assessment['is_catalog_ready']);
-        $this->assertSame(11, $assessment['done_count']);
-        $this->assertSame(65, $assessment['percent']); // 11/17
+        $this->assertSame(10, $assessment['done_count']);
+        $this->assertSame(63, $assessment['percent']); // 10/16
     }
 
     public function test_cv_counts_toward_percent(): void
@@ -118,6 +116,6 @@ class TalentProfileCompletionServiceTest extends TestCase
         $after = app(TalentProfileCompletionService::class)->assess($profile->fresh('documents'));
 
         $this->assertSame($before['done_count'] + 1, $after['done_count']);
-        $this->assertSame(17, $after['total_count']);
+        $this->assertSame(16, $after['total_count']);
     }
 }

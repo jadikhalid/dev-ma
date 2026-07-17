@@ -178,6 +178,11 @@ class RegistrationTest extends TestCase
         $this->assertDatabaseHas('pending_registrations', ['email' => 'company@example.com']);
         $this->assertDatabaseMissing('users', ['email' => 'company@example.com']);
 
+        Mail::assertSent(VerifyRegistrationMail::class, function (VerifyRegistrationMail $mail) {
+            return $mail->hasTo('company@example.com')
+                && $mail->pending->greetingName() === 'Jean Dupont';
+        });
+
         $pending = PendingRegistration::query()->where('email', 'company@example.com')->firstOrFail();
         $this->get(route('register.verify', ['token' => $pending->token]));
 
@@ -185,6 +190,20 @@ class RegistrationTest extends TestCase
         $this->assertNull($user?->profile);
         $this->assertSame('Acme SAS', $user?->companyProfile?->company_name);
         $this->assertSame(User::APPROVAL_PENDING, $user?->approval_status);
+    }
+
+    public function test_talent_verification_email_uses_full_name(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', $this->validTalentPayload([
+            'email' => 'talent-greeting@example.com',
+        ]));
+
+        Mail::assertSent(VerifyRegistrationMail::class, function (VerifyRegistrationMail $mail) {
+            return $mail->hasTo('talent-greeting@example.com')
+                && $mail->pending->greetingName() === 'Test User';
+        });
     }
 
     public function test_verified_pending_company_cannot_access_dashboard(): void

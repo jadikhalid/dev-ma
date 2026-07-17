@@ -115,7 +115,6 @@ class TalentProfileCompletionService
     {
         return $this->buildSection(__('talenma.dashboard.talent.section_availability'), [
             ['label' => __('talenma.dashboard.talent.check_location'), 'done' => filled($profile->city) && filled($profile->country), 'required' => true],
-            ['label' => __('talenma.dashboard.talent.check_rate'), 'done' => filled($profile->daily_rate_eur), 'required' => true],
             ['label' => __('talenma.dashboard.talent.check_availability'), 'done' => filled($profile->availability), 'required' => true],
             ['label' => __('talenma.dashboard.talent.check_work_modes'), 'done' => is_array($profile->work_modes) && count($profile->work_modes) > 0, 'required' => true],
             ['label' => __('talenma.dashboard.talent.check_languages'), 'done' => is_array($profile->languages) && count($profile->languages) > 0, 'required' => true],

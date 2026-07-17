@@ -34,4 +34,15 @@ class PendingRegistration extends Model
     {
         return $this->expires_at->isPast();
     }
+
+    public function greetingName(): string
+    {
+        $payload = $this->payload ?? [];
+
+        if (($payload['role'] ?? '') === 'company') {
+            return (string) ($payload['representative_name'] ?? $payload['name'] ?? '');
+        }
+
+        return (string) ($payload['name'] ?? '');
+    }
 }

@@ -266,4 +266,54 @@ class UserManagementTest extends TestCase
         $this->assertFalse(\Illuminate\Support\Facades\Storage::disk('public')->exists($documentPath));
         $this->assertFalse(\Illuminate\Support\Facades\Storage::disk('public')->exists('avatars/99.jpg'));
     }
+
+    public function test_admin_can_search_users_by_name_within_filter(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        User::factory()->create([
+            'role' => 'dev',
+            'name' => 'Khalid Benali',
+            'first_name' => 'Khalid',
+            'last_name' => 'Benali',
+            'email' => 'khalid.benali@example.com',
+            'approval_status' => User::APPROVAL_APPROVED,
+            'approved_at' => now(),
+        ]);
+
+        User::factory()->create([
+            'role' => 'dev',
+            'name' => 'Sara Amrani',
+            'first_name' => 'Sara',
+            'last_name' => 'Amrani',
+            'email' => 'sara.amrani@example.com',
+            'approval_status' => User::APPROVAL_APPROVED,
+            'approved_at' => now(),
+        ]);
+
+        $company = User::factory()->create([
+            'role' => 'company',
+            'name' => 'Acme Europe',
+            'email' => 'contact@acme-europe.test',
+            'approval_status' => User::APPROVAL_APPROVED,
+            'approved_at' => now(),
+        ]);
+        $company->companyProfile()->create([
+            'company_name' => 'Acme Europe SAS',
+            'representative_name' => 'Jean Dupont',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index', ['filter' => 'talents', 'q' => 'Benali']))
+            ->assertOk()
+            ->assertSee('Khalid Benali')
+            ->assertDontSee('Sara Amrani')
+            ->assertDontSee('Acme Europe SAS');
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index', ['filter' => 'companies', 'q' => 'Acme']))
+            ->assertOk()
+            ->assertSee('Acme Europe')
+            ->assertDontSee('Khalid Benali');
+    }
 }

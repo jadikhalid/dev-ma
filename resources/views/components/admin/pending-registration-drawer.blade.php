@@ -242,12 +242,8 @@
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.country') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.country"></dd>
                             </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.daily_rate_eur">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.rate') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.daily_rate_eur"></dd>
-                            </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.availability">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.availability') }}</dt>
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.status') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.availability"></dd>
                             </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.work_modes?.length">

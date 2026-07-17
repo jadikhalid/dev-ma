@@ -132,18 +132,13 @@
 
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
-                    <x-input-label for="availability" :value="__('talenma.talent.availability')" />
+                    <x-input-label for="availability" :value="__('talenma.talent.status')" />
                     <select id="availability" name="availability" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm" required>
-                        @foreach (['disponible' => 'available', 'sous 2 semaines' => 'two_weeks', 'mission en cours' => 'on_mission'] as $value => $key)
-                            <option value="{{ $value }}" @selected(old('availability', $profile->availability) === $value)>{{ __('talenma.talent.'.$key) }}</option>
+                        @foreach (\App\Models\Profile::statusOptions() as $value => $key)
+                            <option value="{{ $value }}" @selected(old('availability', $profile->availability ?? \App\Models\Profile::STATUS_AVAILABLE) === $value)>{{ __('talenma.talent.'.$key) }}</option>
                         @endforeach
                     </select>
                     <x-input-error :messages="$errors->get('availability')" class="mt-2" />
-                </div>
-                <div>
-                    <x-input-label for="daily_rate_eur" :value="__('talenma.talent.rate')" />
-                    <x-text-input id="daily_rate_eur" name="daily_rate_eur" type="number" class="mt-1 block w-full" :value="old('daily_rate_eur', $profile->daily_rate_eur)" min="10" max="5000" required />
-                    <x-input-error :messages="$errors->get('daily_rate_eur')" class="mt-2" />
                 </div>
             </div>
 

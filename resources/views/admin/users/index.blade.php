@@ -107,16 +107,42 @@
                 })"
             @endif
         >
-            <div class="px-6 py-4 border-b flex flex-wrap gap-2">
-                @foreach (['pending' => __('talenma.admin.users.filter_pending'), 'talents' => __('talenma.admin.users.filter_talents'), 'companies' => __('talenma.admin.users.filter_companies'), 'moderators' => __('talenma.admin.users.filter_moderators'), 'all' => __('talenma.admin.users.filter_all')] as $key => $label)
-                    <a href="{{ route('admin.users.index', ['filter' => $key]) }}"
-                       class="px-3 py-1.5 rounded-lg text-sm font-medium {{ $filter === $key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                        {{ $label }}
-                        @if ($key === 'pending' && $pendingCount > 0)
-                            <span class="ml-1">({{ $pendingCount }})</span>
+            <div class="px-6 py-4 border-b space-y-3">
+                <form method="GET" action="{{ route('admin.users.index') }}" class="flex flex-col sm:flex-row gap-2">
+                    <input type="hidden" name="filter" value="{{ $filter }}">
+                    <div class="relative flex-1">
+                        <label for="admin-users-search" class="sr-only">{{ __('talenma.admin.users.search_label') }}</label>
+                        <input
+                            id="admin-users-search"
+                            type="search"
+                            name="q"
+                            value="{{ $search }}"
+                            placeholder="{{ __('talenma.admin.users.search_placeholder') }}"
+                            class="block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            autocomplete="off"
+                        >
+                    </div>
+                    <div class="flex gap-2">
+                        <x-primary-button type="submit">{{ __('talenma.admin.users.search_btn') }}</x-primary-button>
+                        @if ($search !== '')
+                            <a href="{{ route('admin.users.index', ['filter' => $filter]) }}" class="inline-flex items-center px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">
+                                {{ __('talenma.admin.users.search_clear') }}
+                            </a>
                         @endif
-                    </a>
-                @endforeach
+                    </div>
+                </form>
+
+                <div class="flex flex-wrap gap-2">
+                    @foreach (['pending' => __('talenma.admin.users.filter_pending'), 'talents' => __('talenma.admin.users.filter_talents'), 'companies' => __('talenma.admin.users.filter_companies'), 'moderators' => __('talenma.admin.users.filter_moderators'), 'all' => __('talenma.admin.users.filter_all')] as $key => $label)
+                        <a href="{{ route('admin.users.index', array_filter(['filter' => $key, 'q' => $search !== '' ? $search : null])) }}"
+                           class="px-3 py-1.5 rounded-lg text-sm font-medium {{ $filter === $key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                            {{ $label }}
+                            @if ($key === 'pending' && $pendingCount > 0)
+                                <span class="ml-1">({{ $pendingCount }})</span>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
             </div>
 
             <div class="divide-y">

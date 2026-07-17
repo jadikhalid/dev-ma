@@ -22,6 +22,7 @@ class UserManagementController extends Controller
     public function index(Request $request): View
     {
         $filter = $request->string('filter')->toString() ?: 'pending';
+        $search = trim($request->string('q')->toString());
 
         $usersQuery = User::query()
             ->with('approvedBy')
@@ -50,6 +51,21 @@ class UserManagementController extends Controller
             $usersQuery->with(['profile.professionSector', 'profile.profession', 'profile.documents', 'approvedBy']);
         }
 
+        if ($search !== '') {
+            $like = '%'.$search.'%';
+
+            $usersQuery->where(function ($query) use ($like) {
+                $query->where('name', 'like', $like)
+                    ->orWhere('first_name', 'like', $like)
+                    ->orWhere('last_name', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhereHas('companyProfile', function ($companyQuery) use ($like) {
+                        $companyQuery->where('company_name', 'like', $like)
+                            ->orWhere('representative_name', 'like', $like);
+                    });
+            });
+        }
+
         $pendingRequests = $request->user()->isAdmin()
             ? ModerationRequest::query()
                 ->with(['requester', 'targetUser'])
@@ -61,6 +77,7 @@ class UserManagementController extends Controller
         return view('admin.users.index', [
             'users' => $usersQuery->paginate(20)->withQueryString(),
             'filter' => $filter,
+            'search' => $search,
             'pendingRequests' => $pendingRequests,
             'pendingCount' => User::query()
                 ->whereIn('role', ['dev', 'company'])

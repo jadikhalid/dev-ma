@@ -125,16 +125,13 @@ class TalentDossierPresenter
             'education_level' => $this->text($profile->education_level),
             'city' => $this->text($profile->city),
             'country' => $this->text($profile->country),
-            'daily_rate_eur' => $profile->daily_rate_eur
-                ? $profile->daily_rate_eur.' €'
-                : null,
-            'availability' => $this->text($profile->availability),
-            'work_modes' => $this->workModeLabels($profile->work_modes),
+            'availability' => $profile->availability ? $profile->statusLabel() : null,
+            'work_modes' => $profile->workModeLabels(),
             'skills' => is_array($profile->skills) && $profile->skills !== []
                 ? implode(', ', $profile->skills)
                 : null,
-            'languages' => is_array($profile->languages) && $profile->languages !== []
-                ? implode(', ', $profile->languages)
+            'languages' => $profile->languageLabels() !== []
+                ? implode(', ', $profile->languageLabels())
                 : null,
             'linkedin_url' => $profile->linkedin_url,
             'portfolio_url' => $profile->portfolio_url,
@@ -191,25 +188,4 @@ class TalentDossierPresenter
         return filled($value) ? $value : null;
     }
 
-    /**
-     * @param  array<int, string>|null  $modes
-     * @return list<string>
-     */
-    private function workModeLabels(?array $modes): array
-    {
-        if (! is_array($modes) || $modes === []) {
-            return [];
-        }
-
-        $labels = [
-            'remote' => __('talenma.talent.work_mode_remote'),
-            'visa_sponsorship' => __('talenma.talent.work_mode_visa'),
-            'local' => __('talenma.talent.work_mode_local'),
-        ];
-
-        return array_values(array_map(
-            fn (string $mode) => $labels[$mode] ?? $mode,
-            $modes,
-        ));
-    }
 }

@@ -129,8 +129,7 @@ class ProfileDetailsController extends Controller
             'availability' => [
                 'city' => ['required', 'string', 'max:100'],
                 'country' => ['required', 'string', 'max:100'],
-                'availability' => ['required', 'string', Rule::in(['disponible', 'sous 2 semaines', 'mission en cours'])],
-                'daily_rate_eur' => ['required', 'integer', 'min:10', 'max:5000'],
+                'availability' => ['required', 'string', Rule::in(array_keys(\App\Models\Profile::statusOptions()))],
                 'work_modes' => ['required', 'array', 'min:1'],
                 'work_modes.*' => ['string', Rule::in(array_keys($this->workModeOptions()))],
                 'languages' => ['required', 'array', 'min:1'],
@@ -171,7 +170,6 @@ class ProfileDetailsController extends Controller
                 'city' => $data['city'],
                 'country' => $data['country'],
                 'availability' => $data['availability'],
-                'daily_rate_eur' => $data['daily_rate_eur'],
                 'work_modes' => $data['work_modes'],
                 'languages' => $data['languages'],
             ],

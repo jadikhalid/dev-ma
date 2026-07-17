@@ -3,6 +3,9 @@
     $catalogBlocked = Auth::user()->isCompany()
         && ! app(\App\Services\CompanyProfileCompletionService::class)
             ->assess(Auth::user()->companyProfile)['is_catalog_ready'];
+    $inboxUnread = (! $pendingAccount && (Auth::user()->isCompany() || Auth::user()->isTalent()))
+        ? app(\App\Services\MessagingService::class)->unreadCountFor(Auth::user())
+        : 0;
 @endphp
 
 <nav x-data="{ open: false }" class="relative bg-white border-b border-gray-100 sticky top-0 z-40">
@@ -19,9 +22,21 @@
                         @endif
                         <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @elseif (Auth::user()->isTalent())
+                        <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount">
+                            {{ __('talenma.nav.messages') }}
+                            @if ($inboxUnread > 0)
+                                <span class="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                            @endif
+                        </x-nav-link>
                         <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')" :disabled="$pendingAccount">{{ __('talenma.nav.my_profile') }}</x-nav-link>
                         <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')" :disabled="$pendingAccount">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @elseif (Auth::user()->isCompany())
+                        <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount || $catalogBlocked">
+                            {{ __('talenma.nav.messages') }}
+                            @if ($inboxUnread > 0)
+                                <span class="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                            @endif
+                        </x-nav-link>
                         <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.search') || request()->routeIs('company.talent.*')" :disabled="$pendingAccount || $catalogBlocked">{{ __('talenma.nav.talents') }}</x-nav-link>
                         <x-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')" :disabled="$pendingAccount">{{ __('talenma.nav.my_company') }}</x-nav-link>
                         <x-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')" :disabled="$pendingAccount">{{ __('talenma.nav.morocco_setup') }}</x-nav-link>
@@ -100,9 +115,21 @@
                         @endif
                         <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-responsive-nav-link>
                     @elseif (Auth::user()->isTalent())
+                        <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
+                            {{ __('talenma.nav.messages') }}
+                            @if ($inboxUnread > 0)
+                                <span class="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                            @endif
+                        </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')">{{ __('talenma.nav.my_profile') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-responsive-nav-link>
                     @elseif (Auth::user()->isCompany())
+                        <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$catalogBlocked">
+                            {{ __('talenma.nav.messages') }}
+                            @if ($inboxUnread > 0)
+                                <span class="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                            @endif
+                        </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.search')" :active="request()->routeIs('company.search') || request()->routeIs('company.talent.*')" :disabled="$catalogBlocked">{{ __('talenma.nav.talents') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')">{{ __('talenma.nav.my_company') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')">{{ __('talenma.nav.morocco_setup') }}</x-responsive-nav-link>

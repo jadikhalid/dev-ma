@@ -21,9 +21,7 @@ class TalentSearchService
         $query = User::query()
             ->where('role', 'dev')
             ->where('approval_status', User::APPROVAL_APPROVED)
-            ->where('is_subscribed', true)
-            ->where('subscription_expires_at', '>', now())
-            ->with(['profile.profession', 'profile.professionSector'])
+            ->with(['profile.profession', 'profile.professionSector', 'profile.documents'])
             ->whereHas('profile', fn ($q) => $q->whereNotNull('profession_id')->whereNotNull('bio'));
 
         if ($sectorSlug) {
@@ -84,7 +82,12 @@ class TalentSearchService
                 'specialization' => $talent['specialization'],
                 'sector' => $talent['sector'],
                 'profession' => $talent['profession'],
-                'matched_keywords' => $talent['matched_keywords'],
+                'experience_years' => $talent['experience_years'],
+                'experience_label' => $talent['experience_label'],
+                'availability' => $talent['availability'],
+                'availability_label' => $talent['availability_label'],
+                'availability_tone' => $talent['availability_tone'],
+                'status_rank' => $talent['status_rank'],
                 'match_score' => $talent['match_score'],
             ])
             ->values()
@@ -146,6 +149,10 @@ class TalentSearchService
             }
         }
 
+        $experienceYears = $profile?->experience_years;
+        $cv = $profile?->cvDocument();
+        $availability = $profile?->availability;
+
         return [
             'id' => $talent->id,
             'name' => $talent->name,
@@ -156,13 +163,24 @@ class TalentSearchService
             'skills' => $profile?->skills ?? [],
             'city' => $profile?->city,
             'country' => $profile?->country,
-            'availability' => $profile?->availability,
-            'daily_rate_eur' => $profile?->daily_rate_eur,
+            'experience_years' => $experienceYears,
+            'experience_label' => $experienceYears !== null
+                ? __('talenma.talents.experience', ['years' => $experienceYears])
+                : null,
+            'availability' => $availability,
+            'availability_label' => $profile?->statusLabel(),
+            'availability_tone' => $profile?->statusTone(),
+            'status_rank' => match ($availability) {
+                \App\Models\Profile::STATUS_AVAILABLE => 0,
+                \App\Models\Profile::STATUS_LISTENING => 1,
+                \App\Models\Profile::STATUS_BUSY => 2,
+                default => 3,
+            },
             'sector' => $profile?->sectorLabel(),
             'profession' => $profile?->professionLabel(),
-            'bio' => $profile?->bio ? \Illuminate\Support\Str::limit(strip_tags($profile->bio), 160) : null,
             'match_score' => $score,
             'matched_keywords' => $matchedKeywords,
+            'cv_url' => $cv ? route('company.talent.cv', $talent) : null,
             'profile_url' => route('company.talent.show', $talent),
         ];
     }

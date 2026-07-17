@@ -26,7 +26,7 @@ class DevTalentSeeder extends Seeder
     private array $cities = ['Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Agadir'];
 
     /** @var list<string> */
-    private array $availabilities = ['disponible', 'sous 2 semaines', 'mission en cours'];
+    private array $availabilities = ['disponible', 'occupé', 'à l\'écoute'];
 
     public function run(): void
     {
@@ -210,10 +210,9 @@ class DevTalentSeeder extends Seeder
                 $specialization,
             ),
             'experience_years' => random_int(2, 12),
-            'daily_rate_eur' => random_int(200, 550),
             'availability' => $this->pick($this->availabilities),
-            'work_modes' => ['full_remote', 'hybrid'],
-            'languages' => ['Français', 'Anglais', 'Arabe'],
+            'work_modes' => ['remote', 'local'],
+            'languages' => ['fr', 'en', 'ar'],
             'city' => $this->pick($this->cities),
             'country' => 'Maroc',
             'skills' => array_slice($skills, 0, 6),

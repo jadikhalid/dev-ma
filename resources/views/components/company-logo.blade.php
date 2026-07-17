@@ -15,11 +15,11 @@
     <img
         src="{{ $profile->logoUrl() }}"
         alt="{{ $label }}"
-        {{ $attributes->merge(['class' => 'rounded-2xl object-cover shrink-0 '.$sizeClass]) }}
+        {{ $attributes->class(['object-cover shrink-0 rounded-2xl', $sizeClass]) }}
     >
 @else
     <span
-        {{ $attributes->merge(['class' => 'inline-flex items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 font-bold shrink-0 '.$sizeClass]) }}
+        {{ $attributes->class(['inline-flex items-center justify-center bg-emerald-100 text-emerald-700 font-bold shrink-0 rounded-2xl', $sizeClass]) }}
         aria-hidden="true"
     >
         {{ $profile?->initials() ?? '—' }}
