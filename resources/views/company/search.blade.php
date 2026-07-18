@@ -11,16 +11,19 @@
         $initialTalents = $talents->getCollection()->map(function ($talent) {
             $profile = $talent->profile;
             $experienceYears = $profile?->experience_years;
+            $isPublic = $profile?->isPublic() ?? false;
 
             return [
                 'id' => $talent->id,
-                'name' => $talent->name,
-                'avatar_url' => $talent->avatarUrl(),
+                'name' => $profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
+                'avatar_url' => $profile?->visibleAvatarUrl($talent),
                 'initials' => $talent->initials(),
+                'is_public' => $isPublic,
+                'employer_label' => $profile?->employerLabel(),
                 'profession_label' => $profile?->professionLabel(),
                 'sector_label' => $profile?->sectorLabel(),
                 'specialization' => $profile?->specialization,
-                'city' => $profile?->city,
+                'city' => $isPublic ? $profile?->city : null,
                 'country' => $profile?->country,
                 'skills' => $profile?->skills ?? [],
                 'experience_years' => $experienceYears,
@@ -230,6 +233,11 @@
                                     <span x-show="talent.profession_label && talent.sector_label"> - </span>
                                     <span x-text="talent.sector_label"></span>
                                 </p>
+                                <p
+                                    class="mt-1 text-xs text-gray-500"
+                                    x-show="talent.employer_label"
+                                    x-text="'{{ __('talenma.talent.employer') }} : ' + talent.employer_label"
+                                ></p>
                             </div>
                             <template x-if="talent.avatar_url">
                                 <img
@@ -367,6 +375,11 @@
                                         <span x-show="selectedProfile.profession_label && selectedProfile.sector_label"> - </span>
                                         <span x-text="selectedProfile.sector_label"></span>
                                     </p>
+                                    <p
+                                        class="mt-1 text-sm text-gray-500"
+                                        x-show="selectedProfile.employer_label"
+                                        x-text="'{{ __('talenma.talent.employer') }} : ' + selectedProfile.employer_label"
+                                    ></p>
                                 </div>
                                 <div class="flex shrink-0 flex-col items-end gap-2">
                                     <template x-if="selectedProfile.avatar_url">

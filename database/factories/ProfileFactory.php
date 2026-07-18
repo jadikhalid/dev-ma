@@ -25,6 +25,7 @@ class ProfileFactory extends Factory
             'bio' => "Passionné par le développement web depuis plusieurs années. Spécialisé dans les architectures modernes, j'accompagne les entreprises françaises et européennes dans la création d'applications scalables et performantes. Rigoureux, autonome et habitué au travail en full-remote.",
             'experience_years' => $this->faker->numberBetween(2, 15),
             'availability' => $this->faker->randomElement(array_keys(Profile::statusOptions())),
+            'is_public' => true,
             'city' => $this->faker->randomElement($villes),
             'country' => 'Maroc',
             'skills' => $this->faker->randomElements($skills, 4),

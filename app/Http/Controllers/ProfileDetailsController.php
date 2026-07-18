@@ -12,7 +12,7 @@ use Illuminate\View\View;
 
 class ProfileDetailsController extends Controller
 {
-    private const SECTIONS = ['profession', 'presentation', 'availability', 'links', 'documents'];
+    private const SECTIONS = ['profession', 'presentation', 'availability', 'links', 'documents', 'visibility'];
 
     public function __construct(
         private ProfessionCatalogService $professionCatalog,
@@ -135,6 +135,9 @@ class ProfileDetailsController extends Controller
                 'languages' => ['required', 'array', 'min:1'],
                 'languages.*' => ['string', Rule::in(array_keys($this->languageOptions()))],
             ],
+            'visibility' => [
+                'is_public' => ['nullable', 'boolean'],
+            ],
             'links' => [
                 'phone' => ['nullable', 'string', 'max:30'],
                 'github_url' => ['nullable', 'url', 'max:255'],
@@ -172,6 +175,9 @@ class ProfileDetailsController extends Controller
                 'availability' => $data['availability'],
                 'work_modes' => $data['work_modes'],
                 'languages' => $data['languages'],
+            ],
+            'visibility' => [
+                'is_public' => (bool) ($data['is_public'] ?? false),
             ],
             'links' => [
                 'phone' => $data['phone'] ?? null,

@@ -25,6 +25,45 @@
 
         <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
             @csrf
+            <input type="hidden" name="section" value="visibility">
+
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">{{ __('talenma.talent.section_visibility') }}</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ __('talenma.talent.section_visibility_desc') }}</p>
+            </div>
+
+            @php $isPublic = (bool) old('is_public', $profile->is_public ?? true); @endphp
+            <div
+                class="flex items-start justify-between gap-4 rounded-xl border border-gray-200 p-4"
+                x-data="{ isPublic: @js($isPublic) }"
+            >
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-900" x-text="isPublic ? @js(__('talenma.talent.visibility_public')) : @js(__('talenma.talent.visibility_private'))"></p>
+                    <p
+                        class="mt-1 text-sm text-gray-500"
+                        x-show="isPublic ? @js(__('talenma.talent.visibility_public_hint')) : @js(__('talenma.talent.visibility_private_hint'))"
+                        x-text="isPublic ? @js(__('talenma.talent.visibility_public_hint')) : @js(__('talenma.talent.visibility_private_hint'))"
+                    ></p>
+                </div>
+                <label class="relative inline-flex cursor-pointer items-center shrink-0">
+                    <input type="hidden" name="is_public" value="0">
+                    <input
+                        type="checkbox"
+                        name="is_public"
+                        value="1"
+                        class="peer sr-only"
+                        :checked="isPublic"
+                        @change="isPublic = $event.target.checked; $el.form.requestSubmit()"
+                    >
+                    <span class="h-7 w-12 rounded-full bg-gray-300 transition peer-checked:bg-indigo-600 peer-focus:ring-2 peer-focus:ring-indigo-500 peer-focus:ring-offset-2 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition after:content-[''] peer-checked:after:translate-x-5"></span>
+                    <span class="sr-only">{{ __('talenma.talent.section_visibility') }}</span>
+                </label>
+            </div>
+            <x-input-error :messages="$errors->get('is_public')" class="mt-2" />
+        </form>
+
+        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
+            @csrf
             <input type="hidden" name="section" value="profession">
 
             <div>

@@ -2,7 +2,9 @@
     <x-slot name="header">
         <div>
             <h2 class="text-xl font-bold">{{ __('talenma.inbox.title') }}</h2>
-            <p class="text-sm text-gray-500">{{ __('talenma.inbox.subtitle') }}</p>
+            @if (__('talenma.inbox.subtitle') !== '')
+                <p class="text-sm text-gray-500">{{ __('talenma.inbox.subtitle') }}</p>
+            @endif
         </div>
     </x-slot>
 

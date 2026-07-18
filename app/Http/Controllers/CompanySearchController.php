@@ -201,17 +201,20 @@ class CompanySearchController extends Controller
     {
         $profile = $talent->profile;
         $experienceYears = $profile?->experience_years;
+        $isPublic = $profile?->isPublic() ?? false;
 
         return [
             'id' => $talent->id,
-            'name' => $talent->name,
-            'avatar_url' => $talent->avatarUrl(),
+            'name' => $profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
+            'avatar_url' => $profile?->visibleAvatarUrl($talent),
             'initials' => $talent->initials(),
+            'is_public' => $isPublic,
+            'employer_label' => $profile?->employerLabel(),
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
             'specialization' => $profile?->specialization,
-            'city' => $profile?->city,
-            'country' => $profile?->country,
+            'city' => $isPublic ? $profile?->city : null,
+            'country' => $isPublic ? $profile?->country : ($profile?->country),
             'skills' => $profile?->skills ?? [],
             'experience_years' => $experienceYears,
             'experience_label' => $experienceYears !== null
@@ -228,6 +231,7 @@ class CompanySearchController extends Controller
     private function presentTalentProfile(User $talent): array
     {
         $profile = $talent->profile;
+        $isPublic = $profile?->isPublic() ?? false;
         $keywords = collect(explode(',', (string) $profile?->specialization))
             ->map(fn (string $item) => trim($item))
             ->filter()
@@ -237,12 +241,14 @@ class CompanySearchController extends Controller
         $cv = $profile?->cvDocument();
 
         return [
-            'name' => $talent->name,
-            'avatar_url' => $talent->avatarUrl(),
+            'name' => $profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
+            'avatar_url' => $profile?->visibleAvatarUrl($talent),
             'initials' => $talent->initials(),
+            'is_public' => $isPublic,
+            'employer_label' => $profile?->employerLabel(),
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
-            'city' => $profile?->city,
+            'city' => $isPublic ? $profile?->city : null,
             'country' => $profile?->country,
             'experience_label' => $profile?->experience_years !== null
                 ? __('talenma.talents.experience', ['years' => $profile->experience_years])
@@ -256,11 +262,11 @@ class CompanySearchController extends Controller
             'education_label' => $profile?->education_level
                 ? __('talenma.talent.education_'.$profile->education_level)
                 : null,
-            'certifications' => $profile?->certifications,
-            'linkedin_url' => $profile?->linkedin_url,
-            'github_url' => $profile?->github_url,
-            'portfolio_url' => $profile?->portfolio_url,
-            'cv_url' => $cv ? route('company.talent.cv', $talent) : null,
+            'certifications' => $isPublic ? $profile?->certifications : null,
+            'linkedin_url' => $isPublic ? $profile?->linkedin_url : null,
+            'github_url' => $isPublic ? $profile?->github_url : null,
+            'portfolio_url' => $isPublic ? $profile?->portfolio_url : null,
+            'cv_url' => ($isPublic && $cv) ? route('company.talent.cv', $talent) : null,
             'talent_id' => $talent->id,
             'compose_url' => route('inbox.store'),
         ];

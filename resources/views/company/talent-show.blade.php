@@ -1,5 +1,9 @@
 @php
-    $statusTone = $talent->profile->statusTone();
+    $profile = $talent->profile;
+    $isPublic = $profile->isPublic();
+    $displayName = $profile->visibleDisplayName($talent);
+    $avatarUrl = $profile->visibleAvatarUrl($talent);
+    $statusTone = $profile->statusTone();
     $statusClasses = match ($statusTone) {
         'busy' => 'bg-gray-200 text-gray-700',
         'listening' => 'bg-amber-100 text-amber-800',
@@ -10,33 +14,47 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
-            <div>
-                <h2 class="text-xl font-bold">{{ $talent->name }}</h2>
-                <p class="text-sm text-indigo-600 font-medium">
-                    {{ collect([$talent->profile->professionLabel(), $talent->profile->sectorLabel()])->filter()->implode(' - ') }}
-                </p>
+            <div class="flex items-center gap-4 min-w-0">
+                @if ($avatarUrl)
+                    <img src="{{ $avatarUrl }}" alt="{{ $displayName }}" class="h-16 w-16 rounded-full object-cover ring-1 ring-gray-200 shrink-0">
+                @else
+                    <span class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-lg font-bold text-indigo-700 shrink-0">{{ $talent->initials() }}</span>
+                @endif
+                <div class="min-w-0">
+                    <h2 class="text-xl font-bold">{{ $displayName }}</h2>
+                    <p class="text-sm text-indigo-600 font-medium">
+                        {{ collect([$profile->professionLabel(), $profile->sectorLabel()])->filter()->implode(' - ') }}
+                    </p>
+                    @if ($profile->employerLabel())
+                        <p class="mt-1 text-xs text-gray-500">{{ __('talenma.talent.employer') }} : {{ $profile->employerLabel() }}</p>
+                    @endif
+                </div>
             </div>
-            <span class="px-4 py-1.5 font-semibold rounded-full text-sm {{ $statusClasses }}">{{ $talent->profile->statusLabel() }}</span>
+            <span class="px-4 py-1.5 font-semibold rounded-full text-sm {{ $statusClasses }}">{{ $profile->statusLabel() }}</span>
         </div>
     </x-slot>
 
     <div class="py-10 max-w-4xl mx-auto px-4 sm:px-6">
         <div class="bg-white rounded-2xl border p-6 sm:p-8">
             <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-6">
-                <span>📍 {{ $talent->profile->city }}, {{ $talent->profile->country }}</span>
-                <span>💼 {{ __('talenma.talents.experience', ['years' => $talent->profile->experience_years]) }}</span>
-                <span>⏱ {{ $talent->profile->statusLabel() }}</span>
+                @if ($isPublic && $profile->city)
+                    <span>📍 {{ $profile->city }}, {{ $profile->country }}</span>
+                @elseif ($profile->country)
+                    <span>📍 {{ $profile->country }}</span>
+                @endif
+                <span>💼 {{ __('talenma.talents.experience', ['years' => $profile->experience_years]) }}</span>
+                <span>⏱ {{ $profile->statusLabel() }}</span>
             </div>
 
-            @if ($talent->profile->specialization || $talent->profile->skills)
+            @if ($profile->specialization || $profile->skills)
                 <div class="mb-4">
                     <p class="text-sm font-semibold text-gray-700">{{ __('talenma.dashboard.talent.specialty_skills') }}</p>
                     <div class="mt-2 flex flex-wrap gap-2">
                         @foreach (
-                            collect(explode(',', (string) $talent->profile->specialization))
+                            collect(explode(',', (string) $profile->specialization))
                                 ->map(fn ($item) => trim($item))
                                 ->filter()
-                                ->merge(is_array($talent->profile->skills) ? $talent->profile->skills : [])
+                                ->merge(is_array($profile->skills) ? $profile->skills : [])
                                 ->unique()
                                 ->values()
                             as $item
@@ -47,37 +65,39 @@
                 </div>
             @endif
 
-            @if ($talent->profile->workModeLabels())
+            @if ($profile->workModeLabels())
                 <div class="flex flex-wrap gap-2 mb-4">
-                    @foreach ($talent->profile->workModeLabels() as $mode)
+                    @foreach ($profile->workModeLabels() as $mode)
                         <span class="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ $mode }}</span>
                     @endforeach
                 </div>
             @endif
 
-            @if ($talent->profile->languageLabels())
+            @if ($profile->languageLabels())
                 <p class="mb-4 text-sm text-gray-600">
                     {{ __('talenma.talent.languages') }} :
-                    {{ implode(', ', $talent->profile->languageLabels()) }}
+                    {{ implode(', ', $profile->languageLabels()) }}
                 </p>
             @endif
 
             <div class="prose max-w-none text-gray-700">
                 <h3 class="text-lg font-semibold text-gray-900">{{ __('talenma.talents.presentation') }}</h3>
-                <p>{{ $talent->profile->bio }}</p>
+                <p>{{ $profile->bio }}</p>
             </div>
 
-            <div class="mt-8 flex flex-wrap gap-3">
-                @if ($talent->profile->linkedin_url)
-                    <a href="{{ $talent->profile->linkedin_url }}" target="_blank" class="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">LinkedIn</a>
-                @endif
-                @if ($talent->profile->github_url)
-                    <a href="{{ $talent->profile->github_url }}" target="_blank" class="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">GitHub</a>
-                @endif
-                @if ($talent->profile->portfolio_url)
-                    <a href="{{ $talent->profile->portfolio_url }}" target="_blank" class="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">Portfolio</a>
-                @endif
-            </div>
+            @if ($isPublic)
+                <div class="mt-8 flex flex-wrap gap-3">
+                    @if ($profile->linkedin_url)
+                        <a href="{{ $profile->linkedin_url }}" target="_blank" class="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">LinkedIn</a>
+                    @endif
+                    @if ($profile->github_url)
+                        <a href="{{ $profile->github_url }}" target="_blank" class="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">GitHub</a>
+                    @endif
+                    @if ($profile->portfolio_url)
+                        <a href="{{ $profile->portfolio_url }}" target="_blank" class="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">Portfolio</a>
+                    @endif
+                </div>
+            @endif
 
             <div class="mt-10 p-6 bg-gray-50 rounded-xl border grid sm:grid-cols-2 gap-4">
                 <div>

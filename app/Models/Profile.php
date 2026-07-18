@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'education_level',
     'certifications',
     'availability',
+    'is_public',
     'work_modes',
     'languages',
     'city',
@@ -65,6 +66,49 @@ class Profile extends Model
             self::STATUS_LISTENING => 'listening',
             default => 'available',
         };
+    }
+
+    public function isPublic(): bool
+    {
+        return (bool) $this->is_public;
+    }
+
+    public function isPrivate(): bool
+    {
+        return ! $this->isPublic();
+    }
+
+    public function visibleDisplayName(?User $user = null): string
+    {
+        $user ??= $this->user;
+
+        if (! $user) {
+            return __('talenma.talent.anonymous');
+        }
+
+        return $this->isPublic()
+            ? $user->name
+            : $user->publicDisplayName();
+    }
+
+    public function visibleAvatarUrl(?User $user = null): ?string
+    {
+        $user ??= $this->user;
+
+        if (! $user || $this->isPrivate()) {
+            return null;
+        }
+
+        return $user->avatarUrl();
+    }
+
+    public function employerLabel(): ?string
+    {
+        if ($this->isPrivate()) {
+            return __('talenma.talent.employer_confidential');
+        }
+
+        return null;
     }
 
     /**
@@ -126,6 +170,7 @@ class Profile extends Model
             'skills' => 'array',
             'work_modes' => 'array',
             'languages' => 'array',
+            'is_public' => 'boolean',
         ];
     }
 

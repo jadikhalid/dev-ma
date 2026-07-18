@@ -162,7 +162,7 @@ class MessagingService
             'counterpart' => [
                 'id' => $counterpart?->id,
                 'name' => $viewer->isCompany()
-                    ? ($counterpart?->name)
+                    ? ($counterpart?->profile?->visibleDisplayName($counterpart) ?? $counterpart?->publicDisplayName())
                     : ($counterpart?->companyProfile?->company_name ?: $counterpart?->name),
                 'role_label' => $viewer->isCompany()
                     ? collect([
@@ -201,7 +201,7 @@ class MessagingService
             'counterpart' => [
                 'id' => $counterpart?->id,
                 'name' => $viewer->isCompany()
-                    ? ($counterpart?->name)
+                    ? ($counterpart?->profile?->visibleDisplayName($counterpart) ?? $counterpart?->publicDisplayName())
                     : ($counterpart?->companyProfile?->company_name ?: $counterpart?->name),
             ],
             'show_url' => route('inbox.show', $conversation),

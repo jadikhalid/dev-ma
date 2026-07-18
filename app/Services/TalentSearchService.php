@@ -75,21 +75,36 @@ class TalentSearchService
 
         $results = $ranked
             ->take($limit)
-            ->map(fn (array $talent) => [
-                'id' => $talent['id'],
-                'initials' => $talent['initials'],
-                'display_name' => $talent['display_name'],
-                'specialization' => $talent['specialization'],
-                'sector' => $talent['sector'],
-                'profession' => $talent['profession'],
-                'experience_years' => $talent['experience_years'],
-                'experience_label' => $talent['experience_label'],
-                'availability' => $talent['availability'],
-                'availability_label' => $talent['availability_label'],
-                'availability_tone' => $talent['availability_tone'],
-                'status_rank' => $talent['status_rank'],
-                'match_score' => $talent['match_score'],
-            ])
+            ->map(function (array $talent) {
+                $base = [
+                    'id' => $talent['id'],
+                    'initials' => $talent['initials'],
+                    'display_name' => $talent['display_name'],
+                    'specialization' => $talent['specialization'],
+                    'sector' => $talent['sector'],
+                    'profession' => $talent['profession'],
+                    'experience_years' => $talent['experience_years'],
+                    'experience_label' => $talent['experience_label'],
+                    'availability' => $talent['availability'],
+                    'availability_label' => $talent['availability_label'],
+                    'availability_tone' => $talent['availability_tone'],
+                    'status_rank' => $talent['status_rank'],
+                    'match_score' => $talent['match_score'],
+                    'is_public' => $talent['is_public'] ?? false,
+                    'employer_label' => $talent['employer_label'] ?? null,
+                ];
+
+                if (! empty($talent['is_public'])) {
+                    $base['name'] = $talent['name'];
+                    $base['avatar_url'] = $talent['avatar_url'];
+                    $base['city'] = $talent['city'] ?? null;
+                    $base['country'] = $talent['country'] ?? null;
+                    $base['profile_url'] = $talent['profile_url'] ?? null;
+                    $base['cv_url'] = $talent['cv_url'] ?? null;
+                }
+
+                return $base;
+            })
             ->values()
             ->all();
 
@@ -155,13 +170,15 @@ class TalentSearchService
 
         return [
             'id' => $talent->id,
-            'name' => $talent->name,
+            'name' => $profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
             'display_name' => $talent->publicDisplayName(),
             'initials' => $talent->initials(),
-            'avatar_url' => $talent->avatarUrl(),
+            'avatar_url' => $profile?->visibleAvatarUrl($talent),
+            'is_public' => $profile?->isPublic() ?? false,
+            'employer_label' => $profile?->employerLabel(),
             'specialization' => $profile?->specialization,
             'skills' => $profile?->skills ?? [],
-            'city' => $profile?->city,
+            'city' => ($profile?->isPublic() ?? false) ? $profile?->city : null,
             'country' => $profile?->country,
             'experience_years' => $experienceYears,
             'experience_label' => $experienceYears !== null
@@ -180,7 +197,7 @@ class TalentSearchService
             'profession' => $profile?->professionLabel(),
             'match_score' => $score,
             'matched_keywords' => $matchedKeywords,
-            'cv_url' => $cv ? route('company.talent.cv', $talent) : null,
+            'cv_url' => (($profile?->isPublic() ?? false) && $cv) ? route('company.talent.cv', $talent) : null,
             'profile_url' => route('company.talent.show', $talent),
         ];
     }
