@@ -403,8 +403,9 @@
                     <textarea
                         id="description"
                         name="description"
-                        rows="3"
-                        maxlength="500"
+                        rows="5"
+                        minlength="255"
+                        maxlength="2550"
                         x-model="description"
                         @blur="onFieldBlur('description')"
                         @input="onFieldInput('description')"
@@ -412,7 +413,7 @@
                         class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm resize-none"
                         placeholder="{{ __('talenma.auth.registration_description_placeholder') }}"
                     >{{ old('description') }}</textarea>
-                    <p class="mt-0.5 text-[11px] text-gray-500 text-right"><span x-text="description.length"></span>/500</p>
+                    <p class="mt-0.5 text-[11px] text-gray-500 text-right"><span x-text="description.length"></span>/2550</p>
                     <x-input-error :messages="$errors->get('description')" class="mt-1" />
                 </div>
                 <div>

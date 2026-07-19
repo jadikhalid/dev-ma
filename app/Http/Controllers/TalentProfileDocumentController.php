@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\ProfileDocument;
 use App\Services\ProfileDocumentService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -31,7 +33,7 @@ class TalentProfileDocumentController extends Controller
         );
     }
 
-    public function destroy(ProfileDocument $profileDocument): RedirectResponse
+    public function destroy(Request $request, ProfileDocument $profileDocument): RedirectResponse|JsonResponse
     {
         $this->authorizeDocument($profileDocument);
 
@@ -41,10 +43,15 @@ class TalentProfileDocumentController extends Controller
 
         $this->documents->delete($profileDocument);
 
+        $message = __('talenma.talent.section_updated.documents');
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message]);
+        }
+
         return redirect()
             ->route('profile.details.edit')
-            ->with('status', 'profile-updated')
-            ->with('updated_section', 'documents');
+            ->with('toast_success', $message);
     }
 
     private function authorizeDocument(ProfileDocument $profileDocument): void

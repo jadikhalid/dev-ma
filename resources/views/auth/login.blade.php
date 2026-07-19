@@ -27,12 +27,10 @@
             <div>
                 <x-input-label for="email" :value="__('talenma.auth.email')" />
                 <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email')" required autofocus />
-                <x-input-error :messages="$errors->get('email')" class="mt-2" />
             </div>
             <div class="mt-4">
                 <x-input-label for="password" :value="__('talenma.auth.password')" />
                 <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" required />
-                <x-input-error :messages="$errors->get('password')" class="mt-2" />
             </div>
             <label class="flex items-center mt-4">
                 <input type="checkbox" name="remember" class="rounded text-indigo-600">

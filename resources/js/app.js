@@ -432,6 +432,9 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     professionSlug: config.initialProfession ?? '',
     city: config.initialCity ?? '',
     query: config.initialKeyword ?? '',
+    initialSectorSlug: config.initialSector ?? '',
+    initialProfessionSlug: config.initialProfession ?? '',
+    initialKeyword: config.initialKeyword ?? '',
     keywordMode: config.keywordMode ?? false,
     freeKeywords: config.freeKeywords ?? false,
     requireCompleteSearch: config.requireCompleteSearch ?? false,
@@ -462,6 +465,23 @@ Alpine.data('heroProgressiveSearch', (config) => ({
     resultsCount: 0,
     filterExperience: 'all',
     filterStatus: 'all',
+
+    resetToInitial() {
+        this.sectorSlug = this.initialSectorSlug;
+        this.professionSlug = this.initialProfessionSlug;
+        this.query = this.initialKeyword;
+        this.selectedKeywords = this.keywordMode
+            ? this.initialKeyword.split(',').map((item) => item.trim()).filter(Boolean)
+            : [];
+        this.keywordInput = '';
+        this.keywordSuggestionsOpen = false;
+    },
+
+    commitInitial() {
+        this.initialSectorSlug = this.sectorSlug;
+        this.initialProfessionSlug = this.professionSlug;
+        this.initialKeyword = this.specializationValue;
+    },
 
     get displayedResults() {
         return this.results.filter((talent) => {
@@ -1392,9 +1412,9 @@ Alpine.data('registerWizard', (config) => ({
 
     get talentStep2Valid() {
         return this.sector !== ''
-            && this.description.trim().length >= 20
+            && this.description.trim().length >= 255
             && this.documentsCount >= 1
-            && this.documentsCount <= 3;
+            && this.documentsCount <= 5;
     },
 
     get companyStep3Valid() {
@@ -1406,7 +1426,7 @@ Alpine.data('registerWizard', (config) => ({
             return 2;
         }
 
-        return 3;
+        return 5;
     },
 
     get currentStepValid() {
@@ -1724,11 +1744,11 @@ Alpine.data('registerWizard', (config) => ({
                     return messages.description_required ?? null;
                 }
 
-                if (value.length < 20) {
+                if (value.length < 255) {
                     return messages.description_min ?? null;
                 }
 
-                if (value.length > 500) {
+                if (value.length > 2550) {
                     return messages.description_max ?? null;
                 }
 
@@ -1740,7 +1760,7 @@ Alpine.data('registerWizard', (config) => ({
                         return messages.documents_required ?? null;
                     }
 
-                    if (this.documentsCount > 3) {
+                    if (this.documentsCount > 5) {
                         return messages.documents_max ?? null;
                     }
                 }
@@ -2288,6 +2308,15 @@ Alpine.data('talentDocumentsPicker', (config = {}) => ({
 
         if (this.$refs.cvInput) {
             this.$refs.cvInput.value = '';
+        }
+    },
+
+    resetToInitial() {
+        this.clearCv();
+        this.pendingOthers = [];
+
+        if (this.$refs.othersInput) {
+            this.$refs.othersInput.value = '';
         }
     },
 
@@ -2960,5 +2989,189 @@ Alpine.data('inboxThread', (config) => ({
         }
     },
 }));
+
+function pushToast(type, message) {
+    if (! message) {
+        return;
+    }
+
+    window.dispatchEvent(new CustomEvent('toast-push', {
+        detail: { type, message },
+    }));
+}
+
+async function refreshDocumentsCard() {
+    try {
+        const response = await fetch(window.location.href, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+        });
+
+        if (! response.ok) {
+            return;
+        }
+
+        const html = await response.text();
+        const parsed = new DOMParser().parseFromString(html, 'text/html');
+        const fresh = parsed.getElementById('talent-documents-card');
+        const current = document.getElementById('talent-documents-card');
+
+        if (fresh && current) {
+            current.innerHTML = fresh.innerHTML;
+        }
+    } catch (_) {
+        // Silent : la carte reste dans son état précédent.
+    }
+}
+
+// Après un enregistrement réussi : fige les valeurs courantes comme nouvelles valeurs initiales
+function commitFormDefaults(form) {
+    form.querySelectorAll('input, textarea, select').forEach((element) => {
+        if (element instanceof HTMLInputElement) {
+            if (element.type === 'checkbox' || element.type === 'radio') {
+                element.defaultChecked = element.checked;
+            } else if (element.type !== 'file') {
+                element.defaultValue = element.value;
+            }
+        } else if (element instanceof HTMLTextAreaElement) {
+            element.defaultValue = element.value;
+        } else if (element instanceof HTMLSelectElement) {
+            Array.from(element.options).forEach((option) => {
+                option.defaultSelected = option.selected;
+            });
+        }
+    });
+
+    form.querySelectorAll('[x-data]').forEach((element) => {
+        const data = window.Alpine?.$data(element);
+
+        if (data && typeof data.commitInitial === 'function') {
+            data.commitInitial();
+        }
+    });
+}
+
+// Bouton « Annuler » : restaure localement les valeurs initiales, sans rechargement serveur
+document.addEventListener('click', (event) => {
+    const resetButton = event.target.closest('[data-reset]');
+
+    if (! resetButton) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const form = resetButton.closest('form');
+
+    if (! form) {
+        return;
+    }
+
+    form.reset();
+
+    form.querySelectorAll('[x-data]').forEach((element) => {
+        const data = window.Alpine?.$data(element);
+
+        if (data && typeof data.resetToInitial === 'function') {
+            data.resetToInitial();
+        }
+    });
+});
+
+document.addEventListener('submit', async (event) => {
+    const form = event.target;
+
+    if (! (form instanceof HTMLFormElement) || ! form.hasAttribute('data-ajax')) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (form.dataset.confirm && ! window.confirm(form.dataset.confirm)) {
+        return;
+    }
+
+    // Validation locale : champs marqués [data-required] (feedback instantané, sans serveur)
+    const requiredErrors = [];
+    form.querySelectorAll('[data-required]').forEach((field) => {
+        if (String(field.value ?? '').trim() === '') {
+            requiredErrors.push(field.dataset.requiredMessage || form.dataset.errorMessage || 'Error');
+        }
+    });
+
+    if (requiredErrors.length > 0) {
+        requiredErrors.forEach((message) => pushToast('error', message));
+
+        return;
+    }
+
+    if (form.dataset.submitting === '1') {
+        return;
+    }
+
+    form.dataset.submitting = '1';
+    const submitButtons = form.querySelectorAll('button[type="submit"]');
+    submitButtons.forEach((button) => { button.disabled = true; });
+
+    const genericError = form.dataset.errorMessage || 'Error';
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: new FormData(form),
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+            pushToast('success', payload.message);
+            commitFormDefaults(form);
+
+            if (payload.profession_label !== undefined) {
+                const professionEl = document.getElementById('profile-header-profession');
+                if (professionEl) {
+                    professionEl.textContent = payload.profession_label || '—';
+                }
+            }
+
+            if (payload.sector_label !== undefined) {
+                const sectorEl = document.getElementById('profile-header-sector');
+                if (sectorEl) {
+                    sectorEl.textContent = payload.sector_label || '—';
+                }
+            }
+
+            if (form.dataset.refresh === 'documents') {
+                await refreshDocumentsCard();
+            }
+        } else if (response.status === 422) {
+            const messages = payload.errors
+                ? Object.values(payload.errors).flat()
+                : [];
+
+            if (messages.length === 0 && payload.message) {
+                messages.push(payload.message);
+            }
+
+            if (messages.length === 0) {
+                messages.push(genericError);
+            }
+
+            messages.forEach((message) => pushToast('error', message));
+        } else {
+            pushToast('error', payload.message || genericError);
+        }
+    } catch (_) {
+        pushToast('error', genericError);
+    } finally {
+        form.dataset.submitting = '0';
+        submitButtons.forEach((button) => { button.disabled = false; });
+    }
+});
 
 Alpine.start();

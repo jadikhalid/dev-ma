@@ -97,15 +97,15 @@ class RegisterRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->input('role') === 'dev'),
                 'nullable',
                 'string',
-                'min:20',
-                'max:500',
+                'min:255',
+                'max:2550',
             ],
             'documents' => [
                 Rule::requiredIf(fn () => $this->input('role') === 'dev'),
                 'nullable',
                 'array',
                 Rule::when($this->input('role') === 'dev', 'min:1'),
-                Rule::when($this->input('role') === 'dev', 'max:3'),
+                Rule::when($this->input('role') === 'dev', 'max:5'),
                 Rule::when($this->input('role') === 'company', 'max:2'),
             ],
             'documents.*' => [

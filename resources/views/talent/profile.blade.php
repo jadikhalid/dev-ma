@@ -4,71 +4,49 @@
             <x-user-avatar :user="$user" size="md" />
             <div>
                 <h2 class="text-xl font-bold">{{ trim($user->first_name.' '.$user->last_name) ?: $user->name }}</h2>
-                <p class="text-sm text-gray-500">{{ $profile->professionLabel() ?? '—' }}</p>
-                <p class="mt-1 text-xs font-medium text-indigo-600">{{ $profile->sectorLabel() ?? '—' }}</p>
+                <p id="profile-header-profession" class="text-sm text-gray-500">{{ $profile->professionLabel() ?? '—' }}</p>
+                <p id="profile-header-sector" class="mt-1 text-xs font-medium text-indigo-600">{{ $profile->sectorLabel() ?? '—' }}</p>
             </div>
         </div>
     </x-slot>
 
     <div class="py-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <x-toast-stack />
+        <x-toast-stack persistent />
 
-        @if (session('status') === 'profile-updated' && session('updated_section'))
-            <div class="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm">
-                {{ __('talenma.talent.section_updated.'.session('updated_section')) }}
-            </div>
-        @endif
-
-        <div class="p-4 bg-indigo-50 border border-indigo-100 text-indigo-900 rounded-xl text-sm">
-            {{ __('talenma.talent.tip') }}
-        </div>
-
-        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
+        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-3 space-y-3" data-ajax novalidate data-error-message="{{ __('talenma.talent.save_error') }}">
             @csrf
             <input type="hidden" name="section" value="visibility">
 
-            <div>
-                <h3 class="text-lg font-bold text-gray-900">{{ __('talenma.talent.section_visibility') }}</h3>
-                <p class="mt-1 text-sm text-gray-500">{{ __('talenma.talent.section_visibility_desc') }}</p>
-            </div>
-
-            @php $isPublic = (bool) old('is_public', $profile->is_public ?? true); @endphp
+            @php $isPrivate = ! (bool) old('is_public', $profile->is_public ?? true); @endphp
             <div
-                class="flex items-start justify-between gap-4 rounded-xl border border-gray-200 p-4"
-                x-data="{ isPublic: @js($isPublic) }"
+                class="flex items-start justify-between gap-4 rounded-xl border border-gray-200 p-3"
+                x-data="{ isPrivate: @js($isPrivate) }"
             >
                 <div class="min-w-0">
-                    <p class="text-sm font-semibold text-gray-900" x-text="isPublic ? @js(__('talenma.talent.visibility_public')) : @js(__('talenma.talent.visibility_private'))"></p>
-                    <p
-                        class="mt-1 text-sm text-gray-500"
-                        x-show="isPublic ? @js(__('talenma.talent.visibility_public_hint')) : @js(__('talenma.talent.visibility_private_hint'))"
-                        x-text="isPublic ? @js(__('talenma.talent.visibility_public_hint')) : @js(__('talenma.talent.visibility_private_hint'))"
-                    ></p>
+                    <p class="text-sm font-semibold text-gray-900">{{ __('talenma.talent.visibility_private') }}</p>
+                    <p class="mt-1 text-sm text-gray-500">{{ __('talenma.talent.visibility_private_hint') }}</p>
                 </div>
                 <label class="relative inline-flex cursor-pointer items-center shrink-0">
-                    <input type="hidden" name="is_public" value="0">
+                    <input type="hidden" name="is_public" :value="isPrivate ? '0' : '1'">
                     <input
                         type="checkbox"
-                        name="is_public"
-                        value="1"
                         class="peer sr-only"
-                        :checked="isPublic"
-                        @change="isPublic = $event.target.checked; $el.form.requestSubmit()"
+                        :checked="isPrivate"
+                        @change="isPrivate = $event.target.checked; $nextTick(() => $el.form.requestSubmit())"
                     >
                     <span class="h-7 w-12 rounded-full bg-gray-300 transition peer-checked:bg-indigo-600 peer-focus:ring-2 peer-focus:ring-indigo-500 peer-focus:ring-offset-2 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition after:content-[''] peer-checked:after:translate-x-5"></span>
-                    <span class="sr-only">{{ __('talenma.talent.section_visibility') }}</span>
+                    <span class="sr-only">{{ __('talenma.talent.visibility_private') }}</span>
                 </label>
             </div>
             <x-input-error :messages="$errors->get('is_public')" class="mt-2" />
         </form>
 
-        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
+        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6" data-ajax novalidate data-error-message="{{ __('talenma.talent.save_error') }}">
             @csrf
             <input type="hidden" name="section" value="profession">
 
             <div>
                 <h3 class="text-lg font-bold text-gray-900">{{ __('talenma.talent.section_profession') }}</h3>
-                <p class="mt-1 text-sm text-gray-500">{{ __('talenma.talent.section_profession_desc') }}</p>
             </div>
 
             <x-profile-profession-fields
@@ -85,12 +63,12 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
-                <a href="{{ route('profile.details.edit') }}" class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</a>
+                <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</button>
                 <x-primary-button class="justify-center">{{ __('talenma.talent.save_section') }}</x-primary-button>
             </div>
         </form>
 
-        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
+        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6" data-ajax novalidate data-error-message="{{ __('talenma.talent.save_error') }}">
             @csrf
             <input type="hidden" name="section" value="presentation">
 
@@ -137,12 +115,12 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
-                <a href="{{ route('profile.details.edit') }}" class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</a>
+                <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</button>
                 <x-primary-button class="justify-center">{{ __('talenma.talent.save_section') }}</x-primary-button>
             </div>
         </form>
 
-        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
+        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6" data-ajax novalidate data-error-message="{{ __('talenma.talent.save_error') }}">
             @csrf
             <input type="hidden" name="section" value="availability">
 
@@ -210,12 +188,12 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
-                <a href="{{ route('profile.details.edit') }}" class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</a>
+                <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</button>
                 <x-primary-button class="justify-center">{{ __('talenma.talent.save_section') }}</x-primary-button>
             </div>
         </form>
 
-        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
+        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6" data-ajax novalidate data-error-message="{{ __('talenma.talent.save_error') }}">
             @csrf
             <input type="hidden" name="section" value="links">
 
@@ -249,12 +227,12 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
-                <a href="{{ route('profile.details.edit') }}" class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</a>
+                <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</button>
                 <x-primary-button class="justify-center">{{ __('talenma.talent.save_section') }}</x-primary-button>
             </div>
         </form>
 
-        <div class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
+        <div id="talent-documents-card" class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
             <div>
                 <h3 class="text-lg font-bold text-gray-900">{{ __('talenma.talent.section_documents') }}</h3>
                 <p class="mt-1 text-sm text-gray-500">{{ __('talenma.talent.section_documents_desc') }}</p>
@@ -270,7 +248,7 @@
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <a href="{{ route('profile.documents.show', $cvDocument) }}" target="_blank" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.talent.document_view') }}</a>
-                            <form method="POST" action="{{ route('profile.documents.destroy', $cvDocument) }}" onsubmit="return confirm(@js(__('talenma.talent.document_delete_confirm')))">
+                            <form method="POST" action="{{ route('profile.documents.destroy', $cvDocument) }}" data-ajax data-refresh="documents" data-confirm="{{ __('talenma.talent.document_delete_confirm') }}" data-error-message="{{ __('talenma.talent.save_error') }}">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-sm font-semibold text-red-600 hover:text-red-700">{{ __('talenma.talent.document_remove') }}</button>
@@ -294,7 +272,7 @@
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
                                     <a href="{{ route('profile.documents.show', $document) }}" target="_blank" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.talent.document_view') }}</a>
-                                    <form method="POST" action="{{ route('profile.documents.destroy', $document) }}" onsubmit="return confirm(@js(__('talenma.talent.document_delete_confirm')))">
+                                    <form method="POST" action="{{ route('profile.documents.destroy', $document) }}" data-ajax data-refresh="documents" data-confirm="{{ __('talenma.talent.document_delete_confirm') }}" data-error-message="{{ __('talenma.talent.save_error') }}">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-sm font-semibold text-red-600 hover:text-red-700">{{ __('talenma.talent.document_remove') }}</button>
@@ -312,6 +290,9 @@
                 method="POST"
                 action="{{ route('profile.details.update') }}"
                 enctype="multipart/form-data"
+                data-ajax
+                data-refresh="documents"
+                data-error-message="{{ __('talenma.talent.save_error') }}"
                 class="space-y-5 border-t border-gray-100 pt-5"
                 x-data="talentDocumentsPicker({
                     savedOtherCount: {{ $otherDocuments->count() }},
@@ -392,7 +373,7 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
-                    <a href="{{ route('profile.details.edit') }}" class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</a>
+                    <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</button>
                     <x-primary-button class="justify-center">{{ __('talenma.talent.save_section') }}</x-primary-button>
                 </div>
             </form>

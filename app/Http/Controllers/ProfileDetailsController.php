@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ProfileDocumentService;
 use App\Services\ProfessionCatalogService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -51,7 +52,7 @@ class ProfileDetailsController extends Controller
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
 
@@ -68,10 +69,7 @@ class ProfileDetailsController extends Controller
         if ($section === 'documents') {
             $this->updateDocuments($request, $profile);
 
-            return redirect()
-                ->route('profile.details.edit')
-                ->with('status', 'profile-updated')
-                ->with('updated_section', $section);
+            return $this->sectionResponse($request, $section);
         }
 
         $data = $request->validate($this->rulesForSection($section));
@@ -79,10 +77,34 @@ class ProfileDetailsController extends Controller
 
         $user->profile()->updateOrCreate(['user_id' => $user->id], $payload);
 
+        $extra = [];
+
+        if ($section === 'profession') {
+            $profile->refresh()->load(['profession', 'professionSector']);
+
+            $extra = [
+                'profession_label' => $profile->professionLabel() ?? '—',
+                'sector_label' => $profile->sectorLabel() ?? '—',
+            ];
+        }
+
+        return $this->sectionResponse($request, $section, $extra);
+    }
+
+    /**
+     * @param  array<string, mixed>  $extra
+     */
+    private function sectionResponse(Request $request, string $section, array $extra = []): RedirectResponse|JsonResponse
+    {
+        $message = __('talenma.talent.section_updated.'.$section);
+
+        if ($request->wantsJson()) {
+            return response()->json(array_merge(['message' => $message], $extra));
+        }
+
         return redirect()
             ->route('profile.details.edit')
-            ->with('status', 'profile-updated')
-            ->with('updated_section', $section);
+            ->with('toast_success', $message);
     }
 
     private function updateDocuments(Request $request, $profile): void
