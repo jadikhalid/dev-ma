@@ -168,12 +168,6 @@
                                     x-show="talent.experience_label"
                                     x-text="talent.experience_label"
                                 ></p>
-                                <p
-                                    class="mt-1 text-xs text-gray-500"
-                                    x-show="canViewProfiles && (talent.city || talent.country)"
-                                >
-                                    <span x-text="[talent.city, talent.country].filter(Boolean).join(', ')"></span>
-                                </p>
 
                                 <div class="mt-3 flex w-full items-center justify-between gap-2" x-show="canViewProfiles">
                                     <div>

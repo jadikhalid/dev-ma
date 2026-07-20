@@ -24,9 +24,6 @@ class TalentProfileCompletionServiceTest extends TestCase
             'bio' => str_repeat('a', 40),
             'experience_years' => 5,
             'education_level' => 'bac+5',
-            'skills' => ['Laravel'],
-            'city' => 'Casablanca',
-            'country' => 'Maroc',
             'availability' => 'disponible',
             'work_modes' => ['remote'],
             'languages' => ['fr'],
@@ -38,10 +35,10 @@ class TalentProfileCompletionServiceTest extends TestCase
 
         $assessment = app(TalentProfileCompletionService::class)->assess($profile->fresh('documents'));
 
-        // 3 presentation required + skills + 4 availability = 8 done out of 16
+        // 4 presentation + 2 availability = 6 done out of 16
         $this->assertSame(16, $assessment['total_count']);
-        $this->assertSame(8, $assessment['done_count']);
-        $this->assertSame(50, $assessment['percent']);
+        $this->assertSame(6, $assessment['done_count']);
+        $this->assertSame(38, $assessment['percent']);
         $this->assertFalse($assessment['is_catalog_ready']);
     }
 
@@ -72,9 +69,6 @@ class TalentProfileCompletionServiceTest extends TestCase
             'bio' => str_repeat('b', 40),
             'experience_years' => 3,
             'education_level' => 'bac+5',
-            'skills' => [],
-            'city' => 'Rabat',
-            'country' => 'Maroc',
             'availability' => 'disponible',
             'work_modes' => ['remote'],
             'languages' => ['fr'],
@@ -87,8 +81,8 @@ class TalentProfileCompletionServiceTest extends TestCase
         $assessment = app(TalentProfileCompletionService::class)->assess($profile->fresh('documents'));
 
         $this->assertTrue($assessment['is_catalog_ready']);
-        $this->assertSame(10, $assessment['done_count']);
-        $this->assertSame(63, $assessment['percent']); // 10/16
+        $this->assertSame(9, $assessment['done_count']);
+        $this->assertSame(56, $assessment['percent']); // 9/16
     }
 
     public function test_cv_counts_toward_percent(): void

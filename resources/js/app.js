@@ -2224,8 +2224,48 @@ Alpine.data('adminPendingDrawer', (config) => ({
     },
 }));
 
+Alpine.data('talentLocationSelect', (config = {}) => ({
+    country: config.country ?? '',
+    city: config.city ?? '',
+    citiesByCountry: config.citiesByCountry ?? {},
+    initialCountry: config.country ?? '',
+    initialCity: config.city ?? '',
+
+    get cities() {
+        return this.citiesByCountry[this.country] ?? [];
+    },
+
+    init() {
+        const savedCity = this.city;
+
+        this.$nextTick(() => {
+            if (savedCity && this.cities.includes(savedCity)) {
+                this.city = savedCity;
+            }
+        });
+    },
+
+    onCountryChange() {
+        if (! this.cities.includes(this.city)) {
+            this.city = '';
+        }
+    },
+
+    commitInitial() {
+        this.initialCountry = this.country;
+        this.initialCity = this.city;
+    },
+
+    resetToInitial() {
+        this.country = this.initialCountry;
+        this.city = this.initialCity;
+    },
+}));
+
 Alpine.data('talentDocumentsPicker', (config = {}) => ({
     savedOtherCount: config.savedOtherCount ?? 0,
+    savedFileNames: (config.savedFileNames ?? []).map((name) => String(name).trim().toLowerCase()),
+    existingCvs: Array.isArray(config.existingCvs) ? config.existingCvs : [],
     maxOther: config.maxOther ?? 3,
     maxBytes: config.maxBytes ?? (1024 * 1024),
     allowedMimes: config.allowedMimes ?? [
@@ -2254,6 +2294,45 @@ Alpine.data('talentDocumentsPicker', (config = {}) => ({
         return `${file.name}:${file.size}:${file.lastModified}`;
     },
 
+    fileNameKey(file) {
+        return String(file?.name ?? '').trim().toLowerCase();
+    },
+
+    isDuplicateFileName(file, pendingList = this.pendingOthers) {
+        const nameKey = this.fileNameKey(file);
+
+        if (! nameKey) {
+            return false;
+        }
+
+        if (this.savedFileNames.includes(nameKey)) {
+            return true;
+        }
+
+        return pendingList.some((existing) => this.fileNameKey(existing) === nameKey);
+    },
+
+    selectedCvLanguage() {
+        return String(this.$refs.cvLanguage?.value ?? '').trim();
+    },
+
+    isDuplicateCvName(file) {
+        const nameKey = this.fileNameKey(file);
+        const language = this.selectedCvLanguage();
+
+        if (! nameKey || ! language) {
+            return false;
+        }
+
+        return this.existingCvs.some((cv) => {
+            if (String(cv.language ?? '') === language) {
+                return false;
+            }
+
+            return String(cv.name ?? '').trim().toLowerCase() === nameKey;
+        });
+    },
+
     formatSize(bytes) {
         if (bytes >= 1024 * 1024) {
             return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
@@ -2280,6 +2359,29 @@ Alpine.data('talentDocumentsPicker', (config = {}) => ({
         }
     },
 
+    acceptPendingCv(file) {
+        const rejection = this.validateFile(file);
+
+        if (rejection) {
+            this.toastError(rejection);
+            this.clearCv();
+
+            return false;
+        }
+
+        if (this.isDuplicateCvName(file)) {
+            this.toastError(this.messages.duplicateName ?? null);
+            this.clearCv();
+
+            return false;
+        }
+
+        this.pendingCv = file;
+        this.syncCvInput();
+
+        return true;
+    },
+
     onCvChange(event) {
         const input = event.target;
         const file = input.files?.[0] ?? null;
@@ -2290,17 +2392,18 @@ Alpine.data('talentDocumentsPicker', (config = {}) => ({
             return;
         }
 
-        const rejection = this.validateFile(file);
+        this.acceptPendingCv(file);
+    },
 
-        if (rejection) {
-            this.toastError(rejection);
-            this.clearCv();
-
+    onCvLanguageChange() {
+        if (! this.pendingCv) {
             return;
         }
 
-        this.pendingCv = file;
-        this.syncCvInput();
+        if (this.isDuplicateCvName(this.pendingCv)) {
+            this.toastError(this.messages.duplicateName ?? null);
+            this.clearCv();
+        }
     },
 
     clearCv() {
@@ -2349,11 +2452,17 @@ Alpine.data('talentDocumentsPicker', (config = {}) => ({
         const merged = [...this.pendingOthers];
         let overflow = false;
         let rejection = null;
+        let duplicate = false;
 
         for (const file of incoming) {
             const key = this.fileKey(file);
 
             if (merged.some((existing) => this.fileKey(existing) === key)) {
+                continue;
+            }
+
+            if (this.isDuplicateFileName(file, merged)) {
+                duplicate = true;
                 continue;
             }
 
@@ -2375,7 +2484,9 @@ Alpine.data('talentDocumentsPicker', (config = {}) => ({
         this.pendingOthers = merged;
         this.syncOthersInput();
 
-        if (overflow) {
+        if (duplicate) {
+            this.toastError(this.messages.duplicateName ?? null);
+        } else if (overflow) {
             this.toastError(this.messages.otherMax ?? null);
         } else if (rejection) {
             this.toastError(rejection);
@@ -2591,21 +2702,11 @@ Alpine.data('companyTalentCatalog', (config) => ({
         return [talent.profession_label, talent.sector_label].filter(Boolean).join(' - ');
     },
 
-    locationLine(talent) {
-        return [talent.city, talent.country].filter(Boolean).join(', ');
-    },
-
     keySkills(talent) {
-        const fromSpecialization = String(talent.specialization ?? '')
+        return String(talent.specialization ?? '')
             .split(',')
             .map((item) => item.trim())
             .filter(Boolean);
-
-        if (fromSpecialization.length) {
-            return fromSpecialization;
-        }
-
-        return Array.isArray(talent.skills) ? talent.skills.filter(Boolean) : [];
     },
 
     buildQuery(page = 1) {
@@ -3000,7 +3101,7 @@ function pushToast(type, message) {
     }));
 }
 
-async function refreshDocumentsCard() {
+async function refreshProfilePartial(elementId) {
     try {
         const response = await fetch(window.location.href, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -3013,15 +3114,115 @@ async function refreshDocumentsCard() {
 
         const html = await response.text();
         const parsed = new DOMParser().parseFromString(html, 'text/html');
-        const fresh = parsed.getElementById('talent-documents-card');
-        const current = document.getElementById('talent-documents-card');
+        const fresh = parsed.getElementById(elementId);
+        const current = document.getElementById(elementId);
 
         if (fresh && current) {
             current.innerHTML = fresh.innerHTML;
+
+            if (window.Alpine?.initTree) {
+                window.Alpine.initTree(current);
+            }
         }
     } catch (_) {
         // Silent : la carte reste dans son état précédent.
     }
+}
+
+function isValidPhoneNumber(value) {
+    const trimmed = String(value ?? '').trim();
+
+    if (trimmed === '' || trimmed.length > 30) {
+        return trimmed === '';
+    }
+
+    if (! /^\+?[0-9\s().\/-]+$/.test(trimmed)) {
+        return false;
+    }
+
+    const digits = trimmed.replace(/\D/g, '');
+
+    return digits.length >= 8 && digits.length <= 15;
+}
+
+function isValidHttpUrl(value) {
+    try {
+        const url = new URL(String(value).trim());
+
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
+function urlHostMatches(value, hosts) {
+    try {
+        const hostname = new URL(String(value).trim()).hostname.replace(/^www\./i, '').toLowerCase();
+
+        return hosts.some((host) => hostname === host || hostname.endsWith(`.${host}`));
+    } catch {
+        return false;
+    }
+}
+
+function setPartialLoading(elementId, loading) {
+    const element = document.getElementById(elementId);
+
+    if (! element) {
+        return;
+    }
+
+    element.querySelector('[data-partial-loading]')?.remove();
+
+    if (! loading) {
+        element.removeAttribute('aria-busy');
+
+        return;
+    }
+
+    element.setAttribute('aria-busy', 'true');
+    element.classList.add('relative');
+
+    const overlay = document.createElement('div');
+    overlay.dataset.partialLoading = '1';
+    overlay.className = 'absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/70 backdrop-blur-[1px]';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.innerHTML = `
+        <div class="flex flex-col items-center gap-3 rounded-xl bg-white/90 px-5 py-4 shadow-sm ring-1 ring-gray-200">
+            <svg class="h-7 w-7 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+    `;
+
+    element.appendChild(overlay);
+}
+
+async function refreshDocumentsCard() {
+    await refreshProfilePartial('talent-documents-card');
+}
+
+async function refreshPresentationCard() {
+    await refreshProfilePartial('talent-presentation-card');
+}
+
+async function refreshCertificationsCard() {
+    await refreshPresentationCard();
+}
+
+function alpineRootsInForm(form) {
+    const roots = [];
+
+    if (form.hasAttribute('x-data')) {
+        roots.push(form);
+    }
+
+    form.querySelectorAll('[x-data]').forEach((element) => {
+        roots.push(element);
+    });
+
+    return roots;
 }
 
 // Après un enregistrement réussi : fige les valeurs courantes comme nouvelles valeurs initiales
@@ -3042,7 +3243,7 @@ function commitFormDefaults(form) {
         }
     });
 
-    form.querySelectorAll('[x-data]').forEach((element) => {
+    alpineRootsInForm(form).forEach((element) => {
         const data = window.Alpine?.$data(element);
 
         if (data && typeof data.commitInitial === 'function') {
@@ -3069,7 +3270,7 @@ document.addEventListener('click', (event) => {
 
     form.reset();
 
-    form.querySelectorAll('[x-data]').forEach((element) => {
+    alpineRootsInForm(form).forEach((element) => {
         const data = window.Alpine?.$data(element);
 
         if (data && typeof data.resetToInitial === 'function') {
@@ -3091,16 +3292,66 @@ document.addEventListener('submit', async (event) => {
         return;
     }
 
-    // Validation locale : champs marqués [data-required] (feedback instantané, sans serveur)
+    // Validation locale : champs marqués [data-required] / [data-min-length] (feedback instantané, sans serveur)
     const requiredErrors = [];
+
     form.querySelectorAll('[data-required]').forEach((field) => {
         if (String(field.value ?? '').trim() === '') {
             requiredErrors.push(field.dataset.requiredMessage || form.dataset.errorMessage || 'Error');
         }
     });
 
+    form.querySelectorAll('[data-min-length]').forEach((field) => {
+        const minLength = Number(field.dataset.minLength || 0);
+        const length = String(field.value ?? '').trim().length;
+
+        if (length > 0 && length < minLength) {
+            requiredErrors.push(field.dataset.minLengthMessage || form.dataset.errorMessage || 'Error');
+        }
+    });
+
+    form.querySelectorAll('[data-required-group]').forEach((group) => {
+        const checkboxes = group.querySelectorAll('input[type="checkbox"]');
+        const anyChecked = [...checkboxes].some((checkbox) => checkbox.checked);
+
+        if (! anyChecked) {
+            requiredErrors.push(group.dataset.requiredMessage || form.dataset.errorMessage || 'Error');
+        }
+    });
+
+    form.querySelectorAll('[data-phone]').forEach((field) => {
+        const value = String(field.value ?? '').trim();
+
+        if (value !== '' && ! isValidPhoneNumber(value)) {
+            requiredErrors.push(field.dataset.phoneMessage || form.dataset.errorMessage || 'Error');
+        }
+    });
+
+    form.querySelectorAll('[data-url]').forEach((field) => {
+        const value = String(field.value ?? '').trim();
+
+        if (value === '') {
+            return;
+        }
+
+        if (! isValidHttpUrl(value)) {
+            requiredErrors.push(field.dataset.urlMessage || form.dataset.errorMessage || 'Error');
+
+            return;
+        }
+
+        const hosts = String(field.dataset.urlHost ?? '')
+            .split(',')
+            .map((host) => host.trim().toLowerCase())
+            .filter(Boolean);
+
+        if (hosts.length > 0 && ! urlHostMatches(value, hosts)) {
+            requiredErrors.push(field.dataset.urlHostMessage || field.dataset.urlMessage || form.dataset.errorMessage || 'Error');
+        }
+    });
+
     if (requiredErrors.length > 0) {
-        requiredErrors.forEach((message) => pushToast('error', message));
+        [...new Set(requiredErrors)].forEach((message) => pushToast('error', message));
 
         return;
     }
@@ -3114,6 +3365,24 @@ document.addEventListener('submit', async (event) => {
     submitButtons.forEach((button) => { button.disabled = true; });
 
     const genericError = form.dataset.errorMessage || 'Error';
+    const pageMessages = form.closest('[data-ajax-network-error]');
+    const networkError = form.dataset.networkErrorMessage
+        || pageMessages?.dataset.ajaxNetworkError
+        || genericError;
+    const timeoutError = form.dataset.timeoutErrorMessage
+        || pageMessages?.dataset.ajaxTimeoutError
+        || networkError;
+    const formData = new FormData(form);
+    const hasUploadFiles = [...formData.values()].some((value) => value instanceof File && value.size > 0);
+    const isDelete = String(formData.get('_method') || '').toUpperCase() === 'DELETE';
+    const loadingTargetId = form.dataset.loadingTarget || null;
+    const controller = new AbortController();
+    const timeoutMs = hasUploadFiles ? 60000 : 30000;
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    if (loadingTargetId) {
+        setPartialLoading(loadingTargetId, true);
+    }
 
     try {
         const response = await fetch(form.action, {
@@ -3123,7 +3392,8 @@ document.addEventListener('submit', async (event) => {
                 'X-Requested-With': 'XMLHttpRequest',
             },
             credentials: 'same-origin',
-            body: new FormData(form),
+            body: formData,
+            signal: controller.signal,
         });
 
         const payload = await response.json().catch(() => ({}));
@@ -3131,6 +3401,12 @@ document.addEventListener('submit', async (event) => {
         if (response.ok) {
             pushToast('success', payload.message);
             commitFormDefaults(form);
+
+            const pickerData = window.Alpine?.$data(form);
+
+            if (pickerData && typeof pickerData.resetToInitial === 'function' && ! hasUploadFiles) {
+                pickerData.resetToInitial();
+            }
 
             if (payload.profession_label !== undefined) {
                 const professionEl = document.getElementById('profile-header-profession');
@@ -3148,6 +3424,12 @@ document.addEventListener('submit', async (event) => {
 
             if (form.dataset.refresh === 'documents') {
                 await refreshDocumentsCard();
+            } else if (form.dataset.refresh === 'presentation') {
+                if (hasUploadFiles || isDelete) {
+                    await refreshPresentationCard();
+                }
+            } else if (form.dataset.refresh === 'certifications') {
+                await refreshPresentationCard();
             }
         } else if (response.status === 422) {
             const messages = payload.errors
@@ -3166,9 +3448,19 @@ document.addEventListener('submit', async (event) => {
         } else {
             pushToast('error', payload.message || genericError);
         }
-    } catch (_) {
-        pushToast('error', genericError);
+    } catch (error) {
+        if (error?.name === 'AbortError') {
+            pushToast('error', timeoutError);
+        } else {
+            pushToast('error', networkError);
+        }
     } finally {
+        window.clearTimeout(timeoutId);
+
+        if (loadingTargetId) {
+            setPartialLoading(loadingTargetId, false);
+        }
+
         form.dataset.submitting = '0';
         submitButtons.forEach((button) => { button.disabled = false; });
     }

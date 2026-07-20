@@ -23,9 +23,6 @@
                 'profession_label' => $profile?->professionLabel(),
                 'sector_label' => $profile?->sectorLabel(),
                 'specialization' => $profile?->specialization,
-                'city' => $isPublic ? $profile?->city : null,
-                'country' => $profile?->country,
-                'skills' => $profile?->skills ?? [],
                 'experience_years' => $experienceYears,
                 'experience_label' => $experienceYears !== null
                     ? __('talenma.talents.experience', ['years' => $experienceYears])
@@ -255,11 +252,6 @@
                             </template>
                         </div>
                         <p
-                            class="mt-2 text-xs text-gray-500"
-                            x-show="talent.city || talent.country"
-                            x-text="locationLine(talent)"
-                        ></p>
-                        <p
                             class="mt-2 inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700"
                             x-show="talent.experience_label"
                             x-text="talent.experience_label"
@@ -406,11 +398,6 @@
                             </div>
 
                             <div class="mt-5 flex flex-wrap gap-2 text-sm">
-                                <span
-                                    x-show="selectedProfile.city || selectedProfile.country"
-                                    class="rounded-lg bg-gray-100 px-3 py-1.5 text-gray-700"
-                                    x-text="'📍 ' + locationLine(selectedProfile)"
-                                ></span>
                                 <span
                                     x-show="selectedProfile.experience_label"
                                     class="rounded-lg bg-emerald-50 px-3 py-1.5 font-bold text-emerald-700"

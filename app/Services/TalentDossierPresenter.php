@@ -124,12 +124,9 @@ class TalentDossierPresenter
                 : null,
             'education_level' => $this->text($profile->education_level),
             'city' => $this->text($profile->city),
-            'country' => $this->text($profile->country),
+            'country' => $this->text($profile->countryLabel()),
             'availability' => $profile->availability ? $profile->statusLabel() : null,
             'work_modes' => $profile->workModeLabels(),
-            'skills' => is_array($profile->skills) && $profile->skills !== []
-                ? implode(', ', $profile->skills)
-                : null,
             'languages' => $profile->languageLabels() !== []
                 ? implode(', ', $profile->languageLabels())
                 : null,
@@ -137,6 +134,7 @@ class TalentDossierPresenter
             'portfolio_url' => $profile->portfolio_url,
             'github_url' => $profile->github_url,
             'phone' => $this->text($profile->phone),
+            'whatsapp' => $this->text($profile->whatsapp),
         ], fn ($value) => filled($value));
     }
 

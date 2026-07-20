@@ -109,7 +109,10 @@ class CompanySearchController extends Controller
 
         $talent->loadMissing('profile.documents');
 
-        $cv = $talent->profile?->cvDocument();
+        $lang = $request->query('lang');
+        $cv = $talent->profile?->cvDocument(
+            filled($lang) && in_array($lang, ProfileDocument::CV_LANGUAGES, true) ? $lang : null
+        );
 
         abort_unless($cv instanceof ProfileDocument, 404);
 
@@ -184,8 +187,7 @@ class CompanySearchController extends Controller
                 $query->whereHas('profile', function ($q) use ($escaped) {
                     $q->where(function ($subQ) use ($escaped) {
                         $subQ->where('specialization', 'like', '%'.$escaped.'%')
-                            ->orWhere('bio', 'like', '%'.$escaped.'%')
-                            ->orWhere('skills', 'like', '%'.$escaped.'%');
+                            ->orWhere('bio', 'like', '%'.$escaped.'%');
                     });
                 });
             }
@@ -213,9 +215,6 @@ class CompanySearchController extends Controller
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
             'specialization' => $profile?->specialization,
-            'city' => $isPublic ? $profile?->city : null,
-            'country' => $isPublic ? $profile?->country : ($profile?->country),
-            'skills' => $profile?->skills ?? [],
             'experience_years' => $experienceYears,
             'experience_label' => $experienceYears !== null
                 ? __('talenma.talents.experience', ['years' => $experienceYears])
@@ -235,7 +234,6 @@ class CompanySearchController extends Controller
         $keywords = collect(explode(',', (string) $profile?->specialization))
             ->map(fn (string $item) => trim($item))
             ->filter()
-            ->merge(is_array($profile?->skills) ? $profile->skills : [])
             ->unique()
             ->values();
         $cv = $profile?->cvDocument();
@@ -248,8 +246,6 @@ class CompanySearchController extends Controller
             'employer_label' => $profile?->employerLabel(),
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
-            'city' => $isPublic ? $profile?->city : null,
-            'country' => $profile?->country,
             'experience_label' => $profile?->experience_years !== null
                 ? __('talenma.talents.experience', ['years' => $profile->experience_years])
                 : null,

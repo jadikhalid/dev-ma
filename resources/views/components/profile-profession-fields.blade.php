@@ -96,37 +96,17 @@
                     </template>
                 </div>
 
-                <div class="relative mt-1">
+                <div class="relative mt-1" x-show="!selectedKeywords.length">
                     <input
                         id="profile-specialization-input"
                         type="text"
-                        x-model="keywordInput"
-                        @input="onKeywordInput()"
-                        @keydown="onKeywordKeydown($event)"
-                        @focus="onKeywordInput()"
-                        @blur="setTimeout(() => keywordSuggestionsOpen = false, 150)"
-                        class="block w-full border-0 p-0 text-sm text-gray-900 placeholder:text-gray-400 focus:ring-0 disabled:cursor-not-allowed"
+                        readonly
+                        tabindex="0"
+                        class="block w-full border-0 p-0 text-sm text-gray-900 placeholder:text-gray-400 focus:ring-0 disabled:cursor-not-allowed cursor-default"
                         :placeholder="(sectorSlug && professionSlug) ? keywordPlaceholder : specializationSelectProfessionLabel"
                         :disabled="!sectorSlug || !professionSlug"
                         autocomplete="off"
                     >
-
-                    <ul
-                        x-show="keywordSuggestionsOpen && filteredAvailableKeywords.length"
-                        x-cloak
-                        class="absolute left-0 right-0 z-20 mt-2 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
-                    >
-                        <template x-for="item in filteredAvailableKeywords" :key="item">
-                            <li>
-                                <button
-                                    type="button"
-                                    class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-800"
-                                    @mousedown.prevent="addKeyword(item)"
-                                    x-text="item"
-                                ></button>
-                            </li>
-                        </template>
-                    </ul>
                 </div>
             </div>
         </div>

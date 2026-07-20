@@ -69,7 +69,6 @@
                             $specialtyItems = collect(explode(',', (string) $profile->specialization))
                                 ->map(fn ($item) => trim($item))
                                 ->filter()
-                                ->merge(is_array($profile->skills) ? $profile->skills : [])
                                 ->unique()
                                 ->values();
                         @endphp
@@ -101,9 +100,6 @@
                 </div>
 
                 <div class="mt-5 flex flex-wrap gap-3 text-sm text-gray-600">
-                    @if ($profile->city)
-                        <span>📍 {{ $profile->city }}{{ $profile->country ? ', '.$profile->country : '' }}</span>
-                    @endif
                     @if ($profile->experience_years !== null)
                         <span>💼 {{ __('talenma.talents.experience', ['years' => $profile->experience_years]) }}</span>
                     @endif
@@ -117,18 +113,20 @@
                     </div>
                 @endif
 
-                @php $cvDocument = $profile->cvDocument(); @endphp
-                @if ($cvDocument)
-                    <div class="mt-5 border-t border-gray-100 pt-4">
+                @php $cvDocuments = $profile->cvDocuments(); @endphp
+                @if ($cvDocuments->isNotEmpty())
+                    <div class="mt-5 border-t border-gray-100 pt-4 space-y-2">
                         <p class="text-sm font-semibold text-gray-700">{{ __('talenma.talent.cv') }}</p>
-                        <a
-                            href="{{ route('profile.documents.show', $cvDocument) }}"
-                            target="_blank"
-                            class="mt-2 inline-flex items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50/70 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
-                        >
-                            <span class="truncate max-w-xs">{{ $cvDocument->original_name }}</span>
-                            <span class="text-xs font-medium text-indigo-500">{{ $cvDocument->formattedSize() }}</span>
-                        </a>
+                        @foreach ($cvDocuments as $cvDocument)
+                            <a
+                                href="{{ route('profile.documents.show', $cvDocument) }}"
+                                target="_blank"
+                                class="inline-flex items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50/70 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+                            >
+                                <span class="truncate max-w-xs">{{ $cvDocument->original_name }}</span>
+                                <span class="text-xs font-medium text-indigo-500">{{ $cvDocument->languageLabel() }} · {{ $cvDocument->formattedSize() }}</span>
+                            </a>
+                        @endforeach
                     </div>
                 @endif
 

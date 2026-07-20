@@ -22,13 +22,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'is_public',
     'work_modes',
     'languages',
-    'city',
     'country',
-    'skills',
+    'city',
     'github_url',
     'linkedin_url',
     'portfolio_url',
     'phone',
+    'whatsapp',
 ])]
 class Profile extends Model
 {
@@ -39,6 +39,77 @@ class Profile extends Model
     public const STATUS_BUSY = 'occupé';
 
     public const STATUS_LISTENING = 'à l\'écoute';
+
+    public const COUNTRY_MA = 'ma';
+
+    public const COUNTRY_FR = 'fr';
+
+    public const COUNTRY_ES = 'es';
+
+    public const COUNTRY_BE = 'be';
+
+    public const COUNTRY_DE = 'de';
+
+    public const COUNTRY_US = 'us';
+
+    public const COUNTRY_CA = 'ca';
+
+    public const COUNTRY_OTHER = 'other';
+
+    /**
+     * @return array<string, string>
+     */
+    public static function countryOptions(): array
+    {
+        return [
+            self::COUNTRY_MA => __('talenma.talent.country_ma'),
+            self::COUNTRY_FR => __('talenma.talent.country_fr'),
+            self::COUNTRY_ES => __('talenma.talent.country_es'),
+            self::COUNTRY_BE => __('talenma.talent.country_be'),
+            self::COUNTRY_DE => __('talenma.talent.country_de'),
+            self::COUNTRY_US => __('talenma.talent.country_us'),
+            self::COUNTRY_CA => __('talenma.talent.country_ca'),
+            self::COUNTRY_OTHER => __('talenma.talent.country_other'),
+        ];
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    public static function citiesByCountry(): array
+    {
+        return [
+            self::COUNTRY_MA => ['Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Agadir'],
+            self::COUNTRY_FR => ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Lille'],
+            self::COUNTRY_ES => ['Madrid', 'Barcelone', 'Valence', 'Séville', 'Bilbao'],
+            self::COUNTRY_BE => ['Bruxelles', 'Anvers', 'Gand', 'Liège', 'Charleroi'],
+            self::COUNTRY_DE => ['Berlin', 'Munich', 'Hambourg', 'Francfort', 'Cologne'],
+            self::COUNTRY_US => ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Miami'],
+            self::COUNTRY_CA => ['Toronto', 'Montréal', 'Vancouver', 'Calgary', 'Ottawa'],
+            self::COUNTRY_OTHER => ['Londres', 'Dubaï', 'Genève', 'Amsterdam', 'Autre'],
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function citiesForCountry(?string $country): array
+    {
+        if (! filled($country)) {
+            return [];
+        }
+
+        return self::citiesByCountry()[$country] ?? [];
+    }
+
+    public function countryLabel(): ?string
+    {
+        if (! filled($this->country)) {
+            return null;
+        }
+
+        return self::countryOptions()[$this->country] ?? $this->country;
+    }
 
     /**
      * @return array<string, string>
@@ -167,7 +238,6 @@ class Profile extends Model
     protected function casts(): array
     {
         return [
-            'skills' => 'array',
             'work_modes' => 'array',
             'languages' => 'array',
             'is_public' => 'boolean',
@@ -194,14 +264,38 @@ class Profile extends Model
         return $this->hasMany(ProfileDocument::class)->orderBy('sort_order');
     }
 
-    public function cvDocument(): ?ProfileDocument
+    public function cvDocument(?string $language = null): ?ProfileDocument
     {
-        return $this->documents->firstWhere('document_type', ProfileDocument::TYPE_CV);
+        $cvs = $this->documents->where('document_type', ProfileDocument::TYPE_CV);
+
+        if (filled($language)) {
+            return $cvs->firstWhere('language', $language);
+        }
+
+        foreach (ProfileDocument::CV_LANGUAGES as $preferred) {
+            $match = $cvs->firstWhere('language', $preferred);
+
+            if ($match) {
+                return $match;
+            }
+        }
+
+        return $cvs->first();
     }
 
-    public function otherDocuments()
+    /**
+     * @return \Illuminate\Support\Collection<int, ProfileDocument>
+     */
+    public function cvDocuments()
     {
-        return $this->documents->where('document_type', ProfileDocument::TYPE_OTHER)->values();
+        return $this->documents
+            ->where('document_type', ProfileDocument::TYPE_CV)
+            ->sortBy(function (ProfileDocument $document) {
+                $index = array_search($document->language, ProfileDocument::CV_LANGUAGES, true);
+
+                return $index === false ? 99 : $index;
+            })
+            ->values();
     }
 
     public function registrationDocuments()

@@ -169,7 +169,6 @@ class PendingRegistrationService
                     'profession_sector_id' => $sector->id,
                     'registration_description' => $payload['description'],
                     'experience_years' => 0,
-                    'country' => 'Maroc',
                 ]);
 
                 $this->attachDocuments($profile, $pending);

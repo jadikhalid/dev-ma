@@ -13,11 +13,16 @@ class ProfileDocument extends Model
 
     public const TYPE_CV = 'cv';
 
+    /** @deprecated Kept for legacy reads; other documents are no longer used. */
     public const TYPE_OTHER = 'other';
+
+    /** @var list<string> */
+    public const CV_LANGUAGES = ['fr', 'en', 'ar', 'es'];
 
     protected $fillable = [
         'profile_id',
         'document_type',
+        'language',
         'path',
         'original_name',
         'mime_type',
@@ -43,6 +48,15 @@ class ProfileDocument extends Model
     public function isOther(): bool
     {
         return $this->document_type === self::TYPE_OTHER;
+    }
+
+    public function languageLabel(): ?string
+    {
+        if (! filled($this->language)) {
+            return null;
+        }
+
+        return __('talenma.talent.lang_'.$this->language);
     }
 
     public function url(): string

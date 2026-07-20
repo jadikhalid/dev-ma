@@ -107,17 +107,15 @@ class TalentProfileCompletionService
             ['label' => __('talenma.dashboard.talent.check_bio'), 'done' => filled($profile->bio) && strlen(trim((string) $profile->bio)) >= 30, 'required' => true],
             ['label' => __('talenma.dashboard.talent.check_experience'), 'done' => $profile->experience_years !== null, 'required' => true],
             ['label' => __('talenma.dashboard.talent.check_education'), 'done' => filled($profile->education_level), 'required' => true],
-            ['label' => __('talenma.dashboard.talent.check_skills'), 'done' => is_array($profile->skills) && count($profile->skills) > 0, 'required' => false],
+            ['label' => __('talenma.dashboard.talent.check_languages'), 'done' => is_array($profile->languages) && count($profile->languages) > 0, 'required' => true],
         ]);
     }
 
     private function availabilitySection(Profile $profile): array
     {
         return $this->buildSection(__('talenma.dashboard.talent.section_availability'), [
-            ['label' => __('talenma.dashboard.talent.check_location'), 'done' => filled($profile->city) && filled($profile->country), 'required' => true],
             ['label' => __('talenma.dashboard.talent.check_availability'), 'done' => filled($profile->availability), 'required' => true],
             ['label' => __('talenma.dashboard.talent.check_work_modes'), 'done' => is_array($profile->work_modes) && count($profile->work_modes) > 0, 'required' => true],
-            ['label' => __('talenma.dashboard.talent.check_languages'), 'done' => is_array($profile->languages) && count($profile->languages) > 0, 'required' => true],
         ]);
     }
 
@@ -137,10 +135,12 @@ class TalentProfileCompletionService
     private function linksSection(Profile $profile): array
     {
         return $this->buildSection(__('talenma.dashboard.talent.section_links'), [
+            ['label' => __('talenma.dashboard.talent.check_location'), 'done' => filled($profile->city) && filled($profile->country), 'required' => false],
             ['label' => 'LinkedIn', 'done' => filled($profile->linkedin_url), 'required' => false],
             ['label' => 'GitHub', 'done' => filled($profile->github_url), 'required' => false],
             ['label' => __('talenma.talent.portfolio'), 'done' => filled($profile->portfolio_url), 'required' => false],
             ['label' => __('talenma.talent.phone'), 'done' => filled($profile->phone), 'required' => false],
+            ['label' => __('talenma.talent.whatsapp'), 'done' => filled($profile->whatsapp), 'required' => false],
         ]);
     }
 

@@ -37,16 +37,11 @@
     <div class="py-10 max-w-4xl mx-auto px-4 sm:px-6">
         <div class="bg-white rounded-2xl border p-6 sm:p-8">
             <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-6">
-                @if ($isPublic && $profile->city)
-                    <span>📍 {{ $profile->city }}, {{ $profile->country }}</span>
-                @elseif ($profile->country)
-                    <span>📍 {{ $profile->country }}</span>
-                @endif
                 <span>💼 {{ __('talenma.talents.experience', ['years' => $profile->experience_years]) }}</span>
                 <span>⏱ {{ $profile->statusLabel() }}</span>
             </div>
 
-            @if ($profile->specialization || $profile->skills)
+            @if ($profile->specialization)
                 <div class="mb-4">
                     <p class="text-sm font-semibold text-gray-700">{{ __('talenma.dashboard.talent.specialty_skills') }}</p>
                     <div class="mt-2 flex flex-wrap gap-2">
@@ -54,7 +49,6 @@
                             collect(explode(',', (string) $profile->specialization))
                                 ->map(fn ($item) => trim($item))
                                 ->filter()
-                                ->merge(is_array($profile->skills) ? $profile->skills : [])
                                 ->unique()
                                 ->values()
                             as $item

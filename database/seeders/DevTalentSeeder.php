@@ -23,9 +23,6 @@ class DevTalentSeeder extends Seeder
     private const PASSWORD = 'password';
 
     /** @var list<string> */
-    private array $cities = ['Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Agadir'];
-
-    /** @var list<string> */
     private array $availabilities = ['disponible', 'occupé', 'à l\'écoute'];
 
     public function run(): void
@@ -65,14 +62,12 @@ class DevTalentSeeder extends Seeder
                 // Un talent par suggestion (couverture des mots-clés).
                 foreach ($profession->suggestions as $suggestionIndex => $suggestion) {
                     $specializationLabels = $this->pickSpecializationSet($labels, $suggestionIndex, $suggestion->label_fr);
-                    $skills = $this->skillsFromSuggestion($suggestion->keywords, $suggestion->label_fr);
 
                 $this->createTalent(
                     index: ++$index,
                     sector: $sector,
                     profession: $profession,
                     specialization: implode(', ', $specializationLabels),
-                    skills: $skills,
                 );
 
                     $created++;
@@ -95,10 +90,6 @@ class DevTalentSeeder extends Seeder
                     sector: $sector,
                     profession: $profession,
                     specialization: implode(', ', array_slice($bundle, 0, max(3, count($bundle)))),
-                    skills: array_values(array_unique(array_merge(
-                        array_slice($bundle, 0, 3),
-                        [$sector->name_fr, $profession->name_fr],
-                    ))),
                 );
 
                 $created++;
@@ -141,20 +132,6 @@ class DevTalentSeeder extends Seeder
         return array_values(array_unique($set));
     }
 
-    /**
-     * @return list<string>
-     */
-    private function skillsFromSuggestion(?string $keywords, string $label): array
-    {
-        $parts = preg_split('/[\s,]+/u', trim((string) $keywords)) ?: [];
-        $parts = array_values(array_filter(array_map('trim', $parts)));
-
-        return array_values(array_unique(array_filter(array_merge(
-            [$label],
-            $parts,
-        ))));
-    }
-
     /** @var list<string> */
     private array $firstNames = [
         'Khalid', 'Youssef', 'Sara', 'Amine', 'Fatima', 'Omar', 'Imane', 'Mehdi',
@@ -169,15 +146,11 @@ class DevTalentSeeder extends Seeder
         'Bouazza', 'Hajji', 'Lahlou', 'Rami', 'Sefrioui', 'Touil',
     ];
 
-    /**
-     * @param  list<string>  $skills
-     */
     private function createTalent(
         int $index,
         ProfessionSector $sector,
         Profession $profession,
         string $specialization,
-        array $skills,
     ): void {
         $firstName = $this->pick($this->firstNames);
         $lastName = $this->pick($this->lastNames);
@@ -213,9 +186,6 @@ class DevTalentSeeder extends Seeder
             'availability' => $this->pick($this->availabilities),
             'work_modes' => ['remote', 'local'],
             'languages' => ['fr', 'en', 'ar'],
-            'city' => $this->pick($this->cities),
-            'country' => 'Maroc',
-            'skills' => array_slice($skills, 0, 6),
             'linkedin_url' => 'https://www.linkedin.com/in/example-'.$slug,
         ]);
     }

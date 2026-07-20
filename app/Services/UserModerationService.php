@@ -148,7 +148,6 @@ class UserModerationService
             $user->profile()->create([
                 'bio' => null,
                 'experience_years' => 0,
-                'country' => 'Maroc',
             ]);
         }
 
@@ -248,7 +247,6 @@ class UserModerationService
             $user->profile()->create([
                 'bio' => null,
                 'experience_years' => 0,
-                'country' => 'Maroc',
             ]);
         }
 

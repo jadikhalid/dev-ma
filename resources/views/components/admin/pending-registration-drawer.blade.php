@@ -234,14 +234,6 @@
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.education') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.education_level"></dd>
                             </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.city">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.city') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.city"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.country">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.country') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.country"></dd>
-                            </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.availability">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.status') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.availability"></dd>
@@ -250,17 +242,25 @@
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.work_modes') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.work_modes?.join(', ')"></dd>
                             </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.skills">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.skills') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.skills"></dd>
-                            </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.languages">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.languages') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.languages"></dd>
                             </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.city">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.city') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.city"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.country">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.country') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.country"></dd>
+                            </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.phone">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_phone') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.phone"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.whatsapp">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_whatsapp') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.whatsapp"></dd>
                             </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.linkedin_url">
                                 <dt class="text-xs text-gray-500">LinkedIn</dt>

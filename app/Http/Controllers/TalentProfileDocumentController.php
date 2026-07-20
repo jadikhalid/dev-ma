@@ -37,13 +37,20 @@ class TalentProfileDocumentController extends Controller
     {
         $this->authorizeDocument($profileDocument);
 
-        if (! in_array($profileDocument->document_type, [ProfileDocument::TYPE_CV, ProfileDocument::TYPE_OTHER], true)) {
+        if (! in_array($profileDocument->document_type, [
+            ProfileDocument::TYPE_CV,
+            ProfileDocument::TYPE_REGISTRATION,
+        ], true)) {
             abort(403);
         }
 
+        $documentType = $profileDocument->document_type;
+
         $this->documents->delete($profileDocument);
 
-        $message = __('talenma.talent.section_updated.documents');
+        $message = $documentType === ProfileDocument::TYPE_REGISTRATION
+            ? __('talenma.talent.section_updated.certifications')
+            : __('talenma.talent.section_updated.documents');
 
         if ($request->wantsJson()) {
             return response()->json(['message' => $message]);

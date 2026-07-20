@@ -47,8 +47,7 @@ class TalentSearchService
 
                         $outer->orWhere(function ($subQ) use ($escaped) {
                             $subQ->where('specialization', 'like', '%'.$escaped.'%')
-                                ->orWhere('bio', 'like', '%'.$escaped.'%')
-                                ->orWhere('skills', 'like', '%'.$escaped.'%');
+                                ->orWhere('bio', 'like', '%'.$escaped.'%');
                         });
                     }
                 });
@@ -97,8 +96,6 @@ class TalentSearchService
                 if (! empty($talent['is_public'])) {
                     $base['name'] = $talent['name'];
                     $base['avatar_url'] = $talent['avatar_url'];
-                    $base['city'] = $talent['city'] ?? null;
-                    $base['country'] = $talent['country'] ?? null;
                     $base['profile_url'] = $talent['profile_url'] ?? null;
                     $base['cv_url'] = $talent['cv_url'] ?? null;
                 }
@@ -124,7 +121,6 @@ class TalentSearchService
         $haystack = mb_strtolower(implode(' ', array_filter([
             $profile?->specialization,
             $profile?->bio,
-            is_array($profile?->skills) ? implode(' ', $profile->skills) : '',
             $profile?->professionLabel(),
             $profile?->sectorLabel(),
         ])));
@@ -153,15 +149,6 @@ class TalentSearchService
             if ($profile?->specialization && str_contains(mb_strtolower($profile->specialization), $needle)) {
                 $score += 10;
             }
-
-            if (is_array($profile?->skills)) {
-                foreach ($profile->skills as $skill) {
-                    if (str_contains(mb_strtolower((string) $skill), $needle)) {
-                        $score += 8;
-                        break;
-                    }
-                }
-            }
         }
 
         $experienceYears = $profile?->experience_years;
@@ -177,9 +164,6 @@ class TalentSearchService
             'is_public' => $profile?->isPublic() ?? false,
             'employer_label' => $profile?->employerLabel(),
             'specialization' => $profile?->specialization,
-            'skills' => $profile?->skills ?? [],
-            'city' => ($profile?->isPublic() ?? false) ? $profile?->city : null,
-            'country' => $profile?->country,
             'experience_years' => $experienceYears,
             'experience_label' => $experienceYears !== null
                 ? __('talenma.talents.experience', ['years' => $experienceYears])
