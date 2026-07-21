@@ -11,6 +11,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased">
+    <x-toast-stack persistent />
     <div class="min-h-screen bg-gray-50">
         @include('layouts.navigation')
         @isset($header)

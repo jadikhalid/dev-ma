@@ -19,6 +19,7 @@ use App\Http\Controllers\RecruitmentRequestController;
 use App\Http\Controllers\SkillSuggestionController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\TalentProfileDocumentController;
+use App\Http\Controllers\TalentPresentationVideoController;
 use App\Http\Controllers\TalentSearchController;
 use Illuminate\Support\Facades\Route;
 
@@ -93,6 +94,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/talent/profile', [ProfileDetailsController::class, 'update'])->name('profile.details.update');
         Route::get('/talent/profile/documents/{profileDocument}', [TalentProfileDocumentController::class, 'show'])->name('profile.documents.show');
         Route::delete('/talent/profile/documents/{profileDocument}', [TalentProfileDocumentController::class, 'destroy'])->name('profile.documents.destroy');
+        Route::post('/talent/presentation-video', [TalentPresentationVideoController::class, 'store'])->name('talent.presentation-video.store');
+        Route::delete('/talent/presentation-video', [TalentPresentationVideoController::class, 'destroy'])->name('talent.presentation-video.destroy');
         Route::post('/subscription/activate', [PaymentController::class, 'simulate'])->name('payment.simulate');
     });
 

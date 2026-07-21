@@ -2224,6 +2224,70 @@ Alpine.data('adminPendingDrawer', (config) => ({
     },
 }));
 
+Alpine.data('talentPresentationVideo', (config = {}) => ({
+    videoUrl: config.videoUrl ?? null,
+    maxBytes: config.maxBytes ?? (40 * 1024 * 1024),
+    allowedTypes: config.allowedTypes ?? ['video/mp4', 'video/quicktime'],
+    messages: config.messages ?? {},
+    pendingName: '',
+    pendingSizeLabel: '',
+    playing: false,
+
+    applyVideoUrl(url) {
+        this.videoUrl = url || null;
+        this.playing = false;
+        this.clearPendingFile();
+    },
+
+    clearPendingFile() {
+        this.pendingName = '';
+        this.pendingSizeLabel = '';
+
+        if (this.$refs.fileInput) {
+            this.$refs.fileInput.value = '';
+        }
+    },
+
+    formatSize(bytes) {
+        if (bytes >= 1024 * 1024) {
+            return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+        }
+
+        return `${Math.round(bytes / 1024)} Ko`;
+    },
+
+    onFileChange(event) {
+        const file = event.target.files?.[0] ?? null;
+
+        if (! file) {
+            this.clearPendingFile();
+
+            return;
+        }
+
+        const typeOk = this.allowedTypes.includes(file.type)
+            || /\.(mp4|mov)$/i.test(file.name);
+
+        if (! typeOk) {
+            this.$dispatch('toast-push', { type: 'error', message: this.messages.invalidType });
+            this.clearPendingFile();
+
+            return;
+        }
+
+        if (file.size > this.maxBytes) {
+            this.$dispatch('toast-push', { type: 'error', message: this.messages.tooLarge });
+            this.clearPendingFile();
+
+            return;
+        }
+
+        this.pendingName = file.name;
+        this.pendingSizeLabel = this.formatSize(file.size);
+        this.playing = false;
+    },
+}));
+
 Alpine.data('talentLocationSelect', (config = {}) => ({
     country: config.country ?? '',
     city: config.city ?? '',
@@ -3377,7 +3441,10 @@ document.addEventListener('submit', async (event) => {
     const isDelete = String(formData.get('_method') || '').toUpperCase() === 'DELETE';
     const loadingTargetId = form.dataset.loadingTarget || null;
     const controller = new AbortController();
-    const timeoutMs = hasUploadFiles ? 60000 : 30000;
+    const customTimeout = Number(form.dataset.ajaxTimeout || 0);
+    const timeoutMs = customTimeout > 0
+        ? customTimeout
+        : (hasUploadFiles ? 60000 : 30000);
     const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
     if (loadingTargetId) {
@@ -3396,7 +3463,13 @@ document.addEventListener('submit', async (event) => {
             signal: controller.signal,
         });
 
-        const payload = await response.json().catch(() => ({}));
+        const payload = await response.json().catch(() => null);
+
+        if (payload === null) {
+            pushToast('error', genericError);
+
+            return;
+        }
 
         if (response.ok) {
             pushToast('success', payload.message);
@@ -3406,6 +3479,24 @@ document.addEventListener('submit', async (event) => {
 
             if (pickerData && typeof pickerData.resetToInitial === 'function' && ! hasUploadFiles) {
                 pickerData.resetToInitial();
+            }
+
+            if (payload.presentation_video_url !== undefined) {
+                const videoCard = document.getElementById('talent-presentation-video-card');
+                const videoData = videoCard ? window.Alpine?.$data(videoCard) : null;
+
+                if (videoData && typeof videoData.applyVideoUrl === 'function') {
+                    videoData.applyVideoUrl(payload.presentation_video_url);
+                }
+            }
+
+            if (isDelete && form.action.includes('presentation-video')) {
+                const videoCard = document.getElementById('talent-presentation-video-card');
+                const videoData = videoCard ? window.Alpine?.$data(videoCard) : null;
+
+                if (videoData && typeof videoData.applyVideoUrl === 'function') {
+                    videoData.applyVideoUrl(null);
+                }
             }
 
             if (payload.profession_label !== undefined) {

@@ -79,6 +79,12 @@
                 <p>{{ $profile->bio }}</p>
             </div>
 
+            @if ($isPublic && filled($profile->presentation_video_url))
+                <div class="mt-8">
+                    <x-talent-video-snapshot :video-url="$profile->presentation_video_url" />
+                </div>
+            @endif
+
             @if ($isPublic)
                 <div class="mt-8 flex flex-wrap gap-3">
                     @if ($profile->linkedin_url)

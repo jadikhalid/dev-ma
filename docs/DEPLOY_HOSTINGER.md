@@ -153,7 +153,31 @@ MAIL_FROM_NAME="${APP_NAME}"
 
 ADMIN_EMAIL=admin@talentsdumaroc.com
 ADMIN_PASSWORD=…      # utilisé par ProductionDataSeeder (updateOrCreate)
+
+# Cloudinary — vidéos de présentation talent (dashboard → carte Présentation vidéo)
+# Compte free OK pour le MVP. Ne jamais committer les secrets.
+CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+# Alternatives si pas de CLOUDINARY_URL :
+# CLOUDINARY_CLOUD_NAME=
+# CLOUDINARY_API_KEY=
+# CLOUDINARY_API_SECRET=
+CLOUDINARY_FOLDER=talents/presentation-videos
+CLOUDINARY_VIDEO_MAX_KB=40960
 ```
+
+Sur Hostinger (hPanel → PHP Configuration), monter aussi :
+
+- `upload_max_filesize` ≥ `40M`
+- `post_max_size` ≥ `40M`
+- `max_execution_time` ≥ `180` (upload synchrone vers Cloudinary)
+
+Après modification du `.env` prod : `php artisan config:cache`.
+
+Local : mêmes variables dans `.env` (voir `.env.example`). Test manuel MVP :
+
+1. Talent approuvé → `/dashboard` → carte Présentation vidéo → MP4/MOV ≤ 40 Mo → Enregistrer (spinner ~jusqu’à 3 min).
+2. Remplacer puis supprimer ; vérifier l’asset côté Cloudinary Media Library.
+3. Compte entreprise → fiche talent **public** → lecture avec vignette standard (`preload=none`).
 
 Local : Mailpit (`MAIL_HOST=127.0.0.1`, `MAIL_PORT=1025`) — voir `.env.example`.
 
@@ -180,5 +204,6 @@ git push origin main
 | `PHP introuvable` | Définir `PHP_BIN` dans le shell serveur ou dans `deploy.sh` via env |
 | CSS/JS cassés | Relancer `npm run build` en local, committer `public/build/`, push |
 | Photos 404 | `php artisan storage:link` + document root = `public` |
+| Upload vidéo échoue / timeout | Cloudinary dans `.env` + `config:cache` ; PHP `upload_max_filesize` / `post_max_size` / `max_execution_time` (voir section Cloudinary) |
 | Mails | SMTP Hostinger réel dans `.env` prod, pas Mailpit |
 | Seed démo en prod | Utiliser uniquement `ProductionDataSeeder` (déjà le cas dans `deploy.sh`) |

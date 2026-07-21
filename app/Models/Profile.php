@@ -29,6 +29,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'portfolio_url',
     'phone',
     'whatsapp',
+    'presentation_video_url',
+    'presentation_video_public_id',
 ])]
 class Profile extends Model
 {
