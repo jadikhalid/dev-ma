@@ -24,7 +24,7 @@
                                     class="rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                     aria-label="{{ Auth::user()->name }}"
                                 >
-                                    <x-user-avatar :user="Auth::user()" size="sm" initials-only />
+                                    <x-user-avatar :user="Auth::user()" size="sm" />
                                 </button>
                             </x-slot>
                             <x-slot name="content">

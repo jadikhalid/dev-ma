@@ -2,6 +2,7 @@
     'videoUrl' => null,
     'editable' => false,
     'maxBytes' => null,
+    'personName' => null,
 ])
 
 @php
@@ -32,7 +33,7 @@
             <template x-if="videoUrl">
                 <div class="space-y-3">
                     <div class="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-900">
-                        <x-talent-video-thumbnail class="absolute inset-0 h-full w-full" x-show="!playing" />
+                        <x-talent-video-thumbnail :person-name="$personName" class="absolute inset-0 h-full w-full" x-show="!playing" />
                         <button
                             type="button"
                             class="absolute inset-0 z-10 flex items-center justify-center bg-black/20 hover:bg-black/30 transition"
@@ -55,6 +56,7 @@
                             :src="videoUrl"
                             x-ref="player"
                             @play="playing = true"
+                            @ended="playing = false; $refs.player.currentTime = 0"
                         ></video>
                     </div>
                     <p class="text-xs text-gray-500">{{ __('talenma.dashboard.talent.video_ready_hint') }}</p>
@@ -63,7 +65,7 @@
 
             <template x-if="!videoUrl">
                 <div class="relative aspect-video w-full overflow-hidden rounded-xl border border-dashed border-gray-200 bg-slate-50">
-                    <x-talent-video-thumbnail class="absolute inset-0 h-full w-full opacity-80" />
+                    <x-talent-video-thumbnail :branded="false" class="absolute inset-0 h-full w-full opacity-80" />
                     <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/55 px-4 text-center">
                         <span class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/10 text-indigo-600">
                             <svg class="ml-0.5 h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -138,7 +140,7 @@
                     class="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-900"
                     x-data="{ playing: false }"
                 >
-                    <x-talent-video-thumbnail class="absolute inset-0 h-full w-full" x-show="!playing" />
+                    <x-talent-video-thumbnail :person-name="$personName" class="absolute inset-0 h-full w-full" x-show="!playing" />
                     <button
                         type="button"
                         class="absolute inset-0 z-10 flex items-center justify-center bg-black/20 hover:bg-black/30 transition"
@@ -160,11 +162,12 @@
                         src="{{ $videoUrl }}"
                         x-show="playing"
                         x-cloak
+                        @ended="playing = false; $refs.player.currentTime = 0"
                     ></video>
                 </div>
             @else
                 <div class="relative aspect-video w-full overflow-hidden rounded-xl border border-dashed border-gray-200 bg-slate-50">
-                    <x-talent-video-thumbnail class="absolute inset-0 h-full w-full opacity-80" />
+                    <x-talent-video-thumbnail :branded="false" class="absolute inset-0 h-full w-full opacity-80" />
                     <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/55 px-4 text-center">
                         <p class="text-sm font-medium text-gray-800">{{ __('talenma.dashboard.talent.video_empty_title') }}</p>
                     </div>

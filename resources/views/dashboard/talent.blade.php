@@ -46,6 +46,60 @@
             </div>
         </div>
 
+        {{-- Statistiques d'activité --}}
+        <div class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
+            <p class="text-lg font-bold uppercase tracking-wide text-indigo-600">{{ __('talenma.dashboard.talent.stats.title') }}</p>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="rounded-xl bg-slate-50 px-4 py-4">
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.talent.stats.views') }}</p>
+                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($stats['profile_views_7d']) }}</p>
+                    <p class="mt-1 text-xs text-gray-500">{{ __('talenma.dashboard.talent.stats.views_7d') }}</p>
+                    <p class="text-xs text-gray-400">{{ __('talenma.dashboard.talent.stats.views_total', ['count' => number_format($stats['profile_views_total'])]) }}</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 px-4 py-4">
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.talent.stats.cv_downloads') }}</p>
+                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($stats['cv_downloads_7d']) }}</p>
+                    <p class="mt-1 text-xs text-gray-500">{{ __('talenma.dashboard.talent.stats.views_7d') }}</p>
+                </div>
+                <a href="{{ route('inbox.index') }}" class="rounded-xl bg-slate-50 px-4 py-4 hover:bg-indigo-50 transition block">
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.talent.stats.unread_messages') }}</p>
+                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($stats['unread_messages']) }}</p>
+                    <p class="mt-1 text-xs font-medium text-indigo-600">{{ __('talenma.dashboard.talent.stats.open_inbox') }}</p>
+                </a>
+                <div class="rounded-xl bg-slate-50 px-4 py-4">
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.talent.stats.recruitment') }}</p>
+                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($stats['recruitment_requests_total']) }}</p>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-sm font-semibold text-gray-900">{{ __('talenma.dashboard.talent.stats.recent_title') }}</p>
+                @if (count($stats['recent_activity']) === 0)
+                    <p class="mt-3 text-sm text-gray-500">{{ __('talenma.dashboard.talent.stats.recent_empty') }}</p>
+                @else
+                    <ul class="mt-3 divide-y divide-gray-100">
+                        @foreach ($stats['recent_activity'] as $item)
+                            <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 py-3 text-sm">
+                                <span class="text-gray-800">
+                                    @if ($item['type'] === 'cv_download')
+                                        @if (filled($item['detail']))
+                                            {{ __('talenma.dashboard.talent.stats.activity_cv_lang', ['actor' => $item['actor'], 'lang' => $item['detail']]) }}
+                                        @else
+                                            {{ __('talenma.dashboard.talent.stats.activity_cv', ['actor' => $item['actor']]) }}
+                                        @endif
+                                    @else
+                                        {{ __('talenma.dashboard.talent.stats.activity_view', ['actor' => $item['actor']]) }}
+                                    @endif
+                                </span>
+                                <span class="text-xs text-gray-400 shrink-0">{{ $item['at']?->diffForHumans() }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+
         @if ($profile?->profession_id)
             <div class="grid lg:grid-cols-3 gap-6 items-start">
                 <div class="bg-white rounded-2xl border p-6 sm:p-8 h-full">
@@ -137,6 +191,7 @@
                 <x-talent-video-snapshot
                     :editable="true"
                     :video-url="$profile->presentation_video_url ?? null"
+                    :person-name="trim($user->first_name.' '.$user->last_name) ?: $user->name"
                 />
 
                 @php

@@ -60,7 +60,7 @@
                 <x-dropdown align="right" width="48" :open-on-hover="true">
                     <x-slot name="trigger">
                         <button type="button" class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
-                            <span class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-xs">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
+                            <x-user-avatar :user="Auth::user()" size="xs" class="ring-1 ring-gray-200" />
                             <span class="hidden xl:inline">{{ Auth::user()->name }}</span>
                         </button>
                     </x-slot>

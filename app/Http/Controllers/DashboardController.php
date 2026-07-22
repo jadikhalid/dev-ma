@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AdminDashboardService;
 use App\Services\CompanyProfileCompletionService;
+use App\Services\TalentDashboardStatsService;
 use App\Services\TalentProfileCompletionService;
 use Illuminate\Http\Request;
 
@@ -13,6 +14,7 @@ class DashboardController extends Controller
         private TalentProfileCompletionService $profileCompletion,
         private CompanyProfileCompletionService $companyProfileCompletion,
         private AdminDashboardService $adminDashboard,
+        private TalentDashboardStatsService $talentStats,
     ) {}
 
     public function index(Request $request)
@@ -37,7 +39,8 @@ class DashboardController extends Controller
         $user->load(['profile.profession', 'profile.professionSector', 'profile.documents']);
         $profile = $user->profile;
         $completion = $this->profileCompletion->assess($profile);
+        $stats = $this->talentStats->build($user);
 
-        return view('dashboard.talent', compact('profile', 'completion'));
+        return view('dashboard.talent', compact('profile', 'completion', 'stats'));
     }
 }

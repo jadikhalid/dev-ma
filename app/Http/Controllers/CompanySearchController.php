@@ -8,6 +8,7 @@ use App\Models\ProfileDocument;
 use App\Models\User;
 use App\Services\CompanyProfileCompletionService;
 use App\Services\ProfessionCatalogService;
+use App\Services\TalentActivityTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class CompanySearchController extends Controller
     public function __construct(
         private CompanyProfileCompletionService $profileCompletion,
         private ProfessionCatalogService $professionCatalog,
+        private TalentActivityTracker $activityTracker,
     ) {}
 
     public function index(Request $request): View|JsonResponse|RedirectResponse
@@ -90,6 +92,8 @@ class CompanySearchController extends Controller
 
         $talent->load(['profile.profession', 'profile.professionSector', 'profile.documents']);
 
+        $this->activityTracker->recordProfileView($talent, $request->user());
+
         if ($request->wantsJson()) {
             return response()->json($this->presentTalentProfile($talent));
         }
@@ -119,6 +123,8 @@ class CompanySearchController extends Controller
         $disk = Storage::disk('public');
 
         abort_unless($disk->exists($cv->path), 404);
+
+        $this->activityTracker->recordCvDownload($talent, $user, $cv);
 
         return $disk->response(
             $cv->path,

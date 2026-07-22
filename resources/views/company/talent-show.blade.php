@@ -81,7 +81,10 @@
 
             @if ($isPublic && filled($profile->presentation_video_url))
                 <div class="mt-8">
-                    <x-talent-video-snapshot :video-url="$profile->presentation_video_url" />
+                    <x-talent-video-snapshot
+                        :video-url="$profile->presentation_video_url"
+                        :person-name="$displayName"
+                    />
                 </div>
             @endif
 
