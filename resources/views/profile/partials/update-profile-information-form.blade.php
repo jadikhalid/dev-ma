@@ -1,7 +1,15 @@
 <section>
     <header>
-        <h2 class="text-lg font-semibold text-gray-900">{{ __('talenma.account.personal_info_title') }}</h2>
-        <p class="mt-1 text-sm text-gray-600">{{ __('talenma.account.personal_info_desc') }}</p>
+        <h2 class="text-lg font-semibold text-gray-900">
+            {{ $user->isCompany()
+                ? __('talenma.account.personal_info_title_company')
+                : __('talenma.account.personal_info_title') }}
+        </h2>
+        <p class="mt-1 text-sm text-gray-600">
+            {{ $user->isCompany()
+                ? __('talenma.account.personal_info_desc_company')
+                : __('talenma.account.personal_info_desc') }}
+        </p>
     </header>
 
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
@@ -51,7 +59,10 @@
             </div>
             <div class="flex-1 space-y-3">
                 <div>
-                    <x-input-label for="avatar" :value="__('talenma.account.avatar')" />
+                    <x-input-label
+                        for="avatar"
+                        :value="$user->isCompany() ? __('talenma.account.avatar_company') : __('talenma.account.avatar')"
+                    />
                     <input
                         id="avatar"
                         name="avatar"
@@ -61,7 +72,9 @@
                         @change="onFileChange($event)"
                         class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                     >
-                    <p class="mt-1 text-xs text-gray-500">{{ __('talenma.account.avatar_hint') }}</p>
+                    <p class="mt-1 text-xs text-gray-500">
+                        {{ $user->isCompany() ? __('talenma.account.avatar_hint_company') : __('talenma.account.avatar_hint') }}
+                    </p>
                     <x-input-error class="mt-2" :messages="$errors->get('avatar')" />
                 </div>
                 @if ($user->avatar_path)
@@ -74,14 +87,17 @@
                             @change="onRemoveToggle($event)"
                             class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         >
-                        {{ __('talenma.account.avatar_remove') }}
+                        {{ $user->isCompany() ? __('talenma.account.avatar_remove_company') : __('talenma.account.avatar_remove') }}
                     </label>
                 @endif
             </div>
         </div>
 
         <div>
-            <x-input-label for="name" :value="__('talenma.account.name')" />
+            <x-input-label
+                for="name"
+                :value="$user->isCompany() ? __('talenma.account.name_company') : __('talenma.account.name')"
+            />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>

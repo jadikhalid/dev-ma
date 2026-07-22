@@ -39,7 +39,7 @@
                         </x-nav-link>
                         <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.search') || request()->routeIs('company.talent.*')" :disabled="$pendingAccount || $catalogBlocked">{{ __('talenma.nav.talents') }}</x-nav-link>
                         <x-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')" :disabled="$pendingAccount">{{ __('talenma.nav.my_company') }}</x-nav-link>
-                        <x-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')" :disabled="$pendingAccount">{{ __('talenma.nav.morocco_setup') }}</x-nav-link>
+                        <x-nav-link :href="route('services.index')" :active="request()->routeIs('services.index')" :disabled="$pendingAccount">{{ __('talenma.nav.morocco_setup') }}</x-nav-link>
                         <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')" :disabled="$pendingAccount">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @endif
                 </div>
@@ -132,7 +132,7 @@
                         </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.search')" :active="request()->routeIs('company.search') || request()->routeIs('company.talent.*')" :disabled="$catalogBlocked">{{ __('talenma.nav.talents') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.profile.edit')" :active="request()->routeIs('company.profile.*')">{{ __('talenma.nav.my_company') }}</x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('services.index')" :active="request()->routeIs('services.*')">{{ __('talenma.nav.morocco_setup') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('services.index')" :active="request()->routeIs('services.index')">{{ __('talenma.nav.morocco_setup') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-responsive-nav-link>
                     @endif
                 </div>

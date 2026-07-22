@@ -2,7 +2,11 @@
     <x-slot name="header">
         <div>
             <h2 class="text-xl font-bold text-gray-900">{{ __('talenma.account.title') }}</h2>
-            <p class="text-sm text-gray-500 mt-0.5">{{ __('talenma.account.subtitle') }}</p>
+            <p class="text-sm text-gray-500 mt-0.5">
+                {{ Auth::user()->isCompany()
+                    ? __('talenma.account.subtitle_company')
+                    : __('talenma.account.subtitle') }}
+            </p>
         </div>
     </x-slot>
 
