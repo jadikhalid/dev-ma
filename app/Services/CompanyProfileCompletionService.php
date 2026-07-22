@@ -21,6 +21,8 @@ class CompanyProfileCompletionService
             return $this->emptyAssessment();
         }
 
+        $profile->loadMissing('user');
+
         $sections = [
             'identity' => $this->identitySection($profile),
             'presentation' => $this->presentationSection($profile),
@@ -49,7 +51,7 @@ class CompanyProfileCompletionService
             default => 'starter',
         };
 
-        $isCatalogReady = filled($profile->company_name)
+        $isCatalogReady = filled($profile->user?->name)
             && filled($profile->sector)
             && filled($profile->employee_count)
             && filled($profile->country)
@@ -87,8 +89,7 @@ class CompanyProfileCompletionService
     private function identitySection(CompanyProfile $profile): array
     {
         $items = [
-            ['label' => __('talenma.company.check_name'), 'done' => filled($profile->company_name)],
-            ['label' => __('talenma.company.check_logo'), 'done' => filled($profile->logo_path)],
+            ['label' => __('talenma.company.check_logo'), 'done' => filled($profile->user?->avatar_path) || filled($profile->logo_path)],
             ['label' => __('talenma.company.check_sector'), 'done' => filled($profile->sector)],
             ['label' => __('talenma.company.check_employees'), 'done' => filled($profile->employee_count)],
             ['label' => __('talenma.company.check_location'), 'done' => filled($profile->country) && filled($profile->city)],

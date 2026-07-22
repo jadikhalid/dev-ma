@@ -299,7 +299,6 @@ class UserManagementTest extends TestCase
             'approved_at' => now(),
         ]);
         $company->companyProfile()->create([
-            'company_name' => 'Acme Europe SAS',
             'representative_name' => 'Jean Dupont',
         ]);
 

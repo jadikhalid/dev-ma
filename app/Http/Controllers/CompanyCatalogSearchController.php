@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\CompanyCatalogSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CompanyCatalogSearchController extends Controller
 {
@@ -25,7 +26,7 @@ class CompanyCatalogSearchController extends Controller
         $validated = $request->validate([
             'sector' => ['required', 'string', 'max:64'],
             'keyword' => ['required', 'string', 'max:500'],
-            'country' => ['nullable', 'string', 'max:100'],
+            'country' => ['nullable', 'string', 'max:2', Rule::in(\App\Models\CompanyProfile::COUNTRY_CODES)],
         ]);
 
         $keywords = array_values(array_filter(array_map(

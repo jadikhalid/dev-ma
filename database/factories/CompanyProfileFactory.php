@@ -11,13 +11,12 @@ class CompanyProfileFactory extends Factory
     public function definition(): array
     {
         $sectors = ['SaaS', 'E-commerce', 'Fintech', 'Agence digitale', 'Industrie', 'EdTech'];
-        $cities = ['Paris', 'Lyon', 'Bordeaux', 'Nantes', 'Bruxelles', 'Genève'];
+        $country = $this->faker->randomElement(CompanyProfile::COUNTRY_CODES);
 
         return [
-            'company_name' => $this->faker->company(),
             'sector' => $this->faker->randomElement($sectors),
-            'country' => $this->faker->randomElement(['France', 'Belgique', 'Suisse']),
-            'city' => $this->faker->randomElement($cities),
+            'country' => $country,
+            'city' => $this->faker->randomElement(CompanyProfile::citiesForCountry($country) ?: ['Paris']),
             'description' => 'Entreprise européenne en recherche de talents tech marocains pour des projets en remote et du renfort ponctuel.',
             'website' => $this->faker->url(),
             'employee_count' => $this->faker->randomElement(['1-10', '11-50', '51-200', '200+']),

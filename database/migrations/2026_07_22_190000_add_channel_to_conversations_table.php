@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('company_profiles', function (Blueprint $table) {
-            $table->string('logo_path')->nullable()->after('user_id');
+        Schema::table('conversations', function (Blueprint $table) {
+            $table->string('channel', 16)->default('talent')->after('id')->index();
         });
     }
 
     public function down(): void
     {
-        Schema::table('company_profiles', function (Blueprint $table) {
-            $table->dropColumn('logo_path');
+        Schema::table('conversations', function (Blueprint $table) {
+            $table->dropColumn('channel');
         });
     }
 };

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\CompanyLogoService;
 use App\Services\ProfessionCatalogService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +16,6 @@ class CompanyProfileController extends Controller
 
     public function __construct(
         private ProfessionCatalogService $professionCatalog,
-        private CompanyLogoService $logos,
     ) {}
 
     public function edit(): View|RedirectResponse
@@ -35,11 +34,12 @@ class CompanyProfileController extends Controller
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'sectorSlug' => old('sector', $this->professionCatalog->sectorSlugFromLabel($profile->sector) ?? ''),
             'employeeCountOptions' => $this->employeeCountOptions(),
-            'europeanCities' => ['Paris', 'Lyon', 'Bordeaux', 'Nantes', 'Bruxelles', 'Genève', 'Madrid', 'Berlin', 'Amsterdam'],
+            'countryOptions' => \App\Models\CompanyProfile::countryOptions(),
+            'citiesByCountry' => \App\Models\CompanyProfile::citiesByCountry(),
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
 
@@ -56,17 +56,24 @@ class CompanyProfileController extends Controller
 
         $profile = $user->companyProfile()->firstOrCreate(['user_id' => $user->id]);
 
-        if ($section === 'identity') {
-            if ($request->boolean('remove_logo')) {
-                $this->logos->delete($profile);
-            }
-
-            if ($request->hasFile('logo')) {
-                $this->logos->store($profile, $request->file('logo'));
-            }
-        }
-
         $profile->update($payload);
+
+        $message = __('talenma.company.section_updated.'.$section);
+
+        if ($request->wantsJson()) {
+            $extra = [];
+
+            if ($section === 'identity') {
+                $profile->refresh();
+
+                $extra = [
+                    'sector_label' => $profile->sector ?: '—',
+                    'location_label' => collect([$profile->city, $profile->countryLabel()])->filter()->implode(', '),
+                ];
+            }
+
+            return response()->json(array_merge(['message' => $message], $extra));
+        }
 
         return redirect()
             ->route('company.profile.edit')
@@ -81,7 +88,6 @@ class CompanyProfileController extends Controller
     {
         return match ($section) {
             'identity' => [
-                'company_name' => ['required', 'string', 'max:255'],
                 'sector' => [
                     'required',
                     'string',
@@ -89,11 +95,21 @@ class CompanyProfileController extends Controller
                     Rule::exists('profession_sectors', 'slug')->where(fn ($query) => $query->where('is_active', true)),
                 ],
                 'employee_count' => ['nullable', 'string', Rule::in(array_keys($this->employeeCountOptions()))],
-                'country' => ['required', 'string', 'max:100'],
-                'city' => ['required', 'string', 'max:100'],
+                'country' => ['required', 'string', Rule::in(\App\Models\CompanyProfile::COUNTRY_CODES)],
+                'city' => [
+                    'required',
+                    'string',
+                    'max:100',
+                    function (string $attribute, mixed $value, \Closure $fail): void {
+                        $country = request()->input('country');
+                        $allowed = \App\Models\CompanyProfile::citiesForCountry(is_string($country) ? $country : null);
+
+                        if ($allowed === [] || ! in_array($value, $allowed, true)) {
+                            $fail(__('talenma.company.city_invalid'));
+                        }
+                    },
+                ],
                 'website' => ['nullable', 'url', 'max:255'],
-                'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-                'remove_logo' => ['nullable', 'boolean'],
             ],
             'presentation' => [
                 'description' => ['required', 'string', 'min:50', 'max:5000'],
@@ -119,7 +135,6 @@ class CompanyProfileController extends Controller
     {
         return match ($section) {
             'identity' => [
-                'company_name' => $data['company_name'],
                 'sector' => $this->professionCatalog->sectorLabelFromSlug($data['sector']) ?? $data['sector'],
                 'employee_count' => $data['employee_count'] ?? null,
                 'country' => $data['country'],

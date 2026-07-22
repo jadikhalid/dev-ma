@@ -40,7 +40,9 @@ class RegisterRequest extends FormRequest
                 : $this->representative_email,
             'company_need' => is_string($this->company_need) ? trim($this->company_need) : $this->company_need,
             'company_website' => is_string($this->company_website) ? trim($this->company_website) : $this->company_website,
-            'company_country' => is_string($this->company_country) ? trim($this->company_country) : $this->company_country,
+            'company_country' => is_string($this->company_country)
+                ? (trim($this->company_country) !== '' ? trim($this->company_country) : null)
+                : $this->company_country,
         ]);
     }
 
@@ -145,7 +147,7 @@ class RegisterRequest extends FormRequest
             'company_country' => [
                 'nullable',
                 'string',
-                'max:100',
+                Rule::in(\App\Models\CompanyProfile::COUNTRY_CODES),
             ],
         ];
     }

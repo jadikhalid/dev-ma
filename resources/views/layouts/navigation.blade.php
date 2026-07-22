@@ -3,7 +3,7 @@
     $catalogBlocked = Auth::user()->isCompany()
         && ! app(\App\Services\CompanyProfileCompletionService::class)
             ->assess(Auth::user()->companyProfile)['is_catalog_ready'];
-    $inboxUnread = (! $pendingAccount && (Auth::user()->isCompany() || Auth::user()->isTalent()))
+    $inboxUnread = (! $pendingAccount && (Auth::user()->isCompany() || Auth::user()->isTalent() || Auth::user()->isStaff()))
         ? app(\App\Services\MessagingService::class)->unreadCountFor(Auth::user())
         : 0;
 @endphp
@@ -20,6 +20,12 @@
                         @if (Auth::user()->isAdmin())
                             <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
                         @endif
+                        <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
+                            {{ __('talenma.nav.messages') }}
+                            @if ($inboxUnread > 0)
+                                <span class="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                            @endif
+                        </x-nav-link>
                         <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-nav-link>
                     @elseif (Auth::user()->isTalent())
                         <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount">
@@ -60,7 +66,11 @@
                 <x-dropdown align="right" width="48" :open-on-hover="true">
                     <x-slot name="trigger">
                         <button type="button" class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
-                            <x-user-avatar :user="Auth::user()" size="xs" class="ring-1 ring-gray-200" />
+                            @if (Auth::user()->isCompany())
+                                <x-company-logo :profile="Auth::user()->companyProfile" size="xs" class="ring-1 ring-gray-200" />
+                            @else
+                                <x-user-avatar :user="Auth::user()" size="xs" class="ring-1 ring-gray-200" />
+                            @endif
                             <span class="hidden xl:inline">{{ Auth::user()->name }}</span>
                         </button>
                     </x-slot>
@@ -113,6 +123,12 @@
                         @if (Auth::user()->isAdmin())
                             <x-responsive-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
                         @endif
+                        <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
+                            {{ __('talenma.nav.messages') }}
+                            @if ($inboxUnread > 0)
+                                <span class="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                            @endif
+                        </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.edit')">{{ __('talenma.nav.my_account') }}</x-responsive-nav-link>
                     @elseif (Auth::user()->isTalent())
                         <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">

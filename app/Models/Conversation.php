@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
+    'channel',
     'company_user_id',
     'talent_user_id',
     'subject',
@@ -18,6 +19,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 ])]
 class Conversation extends Model
 {
+    public const CHANNEL_TALENT = 'talent';
+
+    public const CHANNEL_STAFF = 'staff';
+
     protected function casts(): array
     {
         return [
@@ -37,6 +42,12 @@ class Conversation extends Model
         return $this->belongsTo(User::class, 'talent_user_id');
     }
 
+    /** Staff participant is stored in talent_user_id when channel=staff. */
+    public function staff(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'talent_user_id');
+    }
+
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class)->orderBy('created_at');
@@ -47,16 +58,28 @@ class Conversation extends Model
         return $this->hasOne(Message::class)->latestOfMany();
     }
 
+    public function isStaffChannel(): bool
+    {
+        return $this->channel === self::CHANNEL_STAFF;
+    }
+
     public function isParticipant(User $user): bool
     {
-        return (int) $this->company_user_id === (int) $user->id
-            || (int) $this->talent_user_id === (int) $user->id;
+        if ((int) $this->company_user_id === (int) $user->id) {
+            return true;
+        }
+
+        if ($this->isStaffChannel() && $user->isStaff()) {
+            return true;
+        }
+
+        return (int) $this->talent_user_id === (int) $user->id;
     }
 
     public function counterpartFor(User $user): ?User
     {
         if ((int) $this->company_user_id === (int) $user->id) {
-            return $this->talent;
+            return $this->isStaffChannel() ? $this->staff : $this->talent;
         }
 
         if ((int) $this->talent_user_id === (int) $user->id) {

@@ -50,7 +50,7 @@ class NewInboxMessageMail extends Mailable
         if ($this->sender->isCompany()) {
             $this->sender->loadMissing('companyProfile');
 
-            return $this->sender->companyProfile?->company_name ?: $this->sender->name;
+            return $this->sender->name;
         }
 
         return $this->sender->name;

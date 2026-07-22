@@ -40,12 +40,12 @@
                                 <button
                                     type="button"
                                     class="rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                                    aria-label="{{ Auth::user()->companyProfile?->company_name ?? Auth::user()->name }}"
+                                    aria-label="{{ Auth::user()->name }}"
                                 >
                                     <x-company-logo
                                         :profile="Auth::user()->companyProfile"
                                         size="sm"
-                                        class="!rounded-full ring-1 ring-gray-200"
+                                        class="ring-1 ring-gray-200"
                                     />
                                 </button>
                             </x-slot>

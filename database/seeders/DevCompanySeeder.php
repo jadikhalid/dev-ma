@@ -25,16 +25,7 @@ class DevCompanySeeder extends Seeder
     private const PASSWORD = 'password';
 
     /** @var list<string> */
-    private array $countries = ['France', 'Maroc', 'Belgique', 'Suisse', 'Allemagne'];
-
-    /** @var array<string, list<string>> */
-    private array $citiesByCountry = [
-        'France' => ['Paris', 'Lyon', 'Marseille', 'Nantes'],
-        'Maroc' => ['Casablanca', 'Rabat', 'Tanger', 'Marrakech'],
-        'Belgique' => ['Bruxelles', 'Liège'],
-        'Suisse' => ['Genève', 'Lausanne'],
-        'Allemagne' => ['Berlin', 'Munich'],
-    ];
+    private array $countries = ['fr', 'be', 'de', 'es', 'it', 'ca', 'us', 'ma', 'ae', 'sa'];
 
     /** @var list<string> */
     private array $companyPrefixes = [
@@ -145,8 +136,8 @@ class DevCompanySeeder extends Seeder
         array $keywords,
     ): void {
         $country = $this->countries[($index - 1) % count($this->countries)];
-        $cities = $this->citiesByCountry[$country] ?? ['Casablanca'];
-        $city = $cities[($index - 1) % count($cities)];
+        $cities = CompanyProfile::citiesForCountry($country);
+        $city = $cities[($index - 1) % max(count($cities), 1)] ?? 'Paris';
 
         $prefix = $this->companyPrefixes[($index - 1) % count($this->companyPrefixes)];
         $suffix = $this->companySuffixes[($index - 1) % count($this->companySuffixes)];
@@ -172,7 +163,6 @@ class DevCompanySeeder extends Seeder
 
         CompanyProfile::create([
             'user_id' => $user->id,
-            'company_name' => $companyName,
             'representative_name' => trim($firstName.' '.$lastName),
             'representative_email' => 'contact-'.$slug.'@'.self::EMAIL_DOMAIN,
             'sector' => $sector->name_fr,

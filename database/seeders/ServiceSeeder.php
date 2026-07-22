@@ -13,12 +13,12 @@ class ServiceSeeder extends Seeder
             [
                 'slug' => 'conseil-juridique',
                 'icon' => '⚖️',
-                'title' => 'Conseil juridique',
+                'title' => 'Accompagnement juridique',
                 'summary' => 'Création de société, contrats, conformité et accompagnement réglementaire pour s\'installer au Maroc.',
                 'content' => '<p>Nous accompagnons les entreprises françaises et européennes dans leurs démarches juridiques au Maroc.</p>',
                 'sort_order' => 1,
                 'translations' => [
-                    'en' => ['title' => 'Legal advisory', 'summary' => 'Company formation, contracts, compliance and regulatory support for setting up in Morocco.', 'content' => '<p>We support French and European companies with legal procedures in Morocco.</p>'],
+                    'en' => ['title' => 'Legal support', 'summary' => 'Company formation, contracts, compliance and regulatory support for setting up in Morocco.', 'content' => '<p>We support French and European companies with legal procedures in Morocco.</p>'],
                 ],
             ],
             [
@@ -57,12 +57,12 @@ class ServiceSeeder extends Seeder
             [
                 'slug' => 'accompagnement-implantation',
                 'icon' => '🏢',
-                'title' => 'Accompagnement implantation',
-                'summary' => 'Bureau, coworking, réseau local et mise en relation avec l\'écosystème tech marocain.',
+                'title' => 'Installation',
+                'summary' => 'Locaux, Equipement, etc...',
                 'content' => '<p>De la recherche de locaux à l\'intégration dans les hubs tech.</p>',
                 'sort_order' => 5,
                 'translations' => [
-                    'en' => ['title' => 'Setup support', 'summary' => 'Office, coworking, local network and connection to the Moroccan tech ecosystem.', 'content' => '<p>From finding premises to integrating into tech hubs.</p>'],
+                    'en' => ['title' => 'Setup', 'summary' => 'Premises, equipment, etc...', 'content' => '<p>From finding premises to integrating into tech hubs.</p>'],
                 ],
             ],
         ];

@@ -103,8 +103,7 @@ class TalentDashboardStatsService
 
         $user->loadMissing('companyProfile');
 
-        return $user->companyProfile?->company_name
-            ?: $user->name
+        return $user->name
             ?: __('talenma.dashboard.talent.stats.unknown_actor');
     }
 }

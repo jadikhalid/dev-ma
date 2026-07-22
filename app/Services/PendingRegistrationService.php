@@ -144,7 +144,6 @@ class PendingRegistrationService
                 $sectorLabel = $sector->localizedName($pending->locale);
 
                 $companyProfile = $user->companyProfile()->create([
-                    'company_name' => $payload['name'],
                     'representative_name' => $payload['representative_name'],
                     'representative_email' => $payload['representative_email'],
                     'sector' => $sectorLabel,
@@ -153,7 +152,7 @@ class PendingRegistrationService
                     'hiring_needs' => $payload['company_need'],
                     'registration_hiring_needs' => $payload['company_need'],
                     'website' => $payload['company_website'] ?? null,
-                    'country' => $payload['company_country'] ?? 'France',
+                    'country' => $payload['company_country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY,
                 ]);
 
                 $this->attachCompanyDocuments($companyProfile, $pending);
@@ -241,7 +240,7 @@ class PendingRegistrationService
             $payload['sector'] = $validated['sector'];
             $payload['company_need'] = $validated['company_need'];
             $payload['company_website'] = $validated['company_website'] ?? null;
-            $payload['company_country'] = $validated['company_country'] ?? 'France';
+            $payload['company_country'] = $validated['company_country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY;
         }
 
         return $payload;

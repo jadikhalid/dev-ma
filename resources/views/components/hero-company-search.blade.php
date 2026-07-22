@@ -68,8 +68,8 @@
                     :disabled="!sectorSlug"
                 >
                     <option value="" x-text="sectorSlug ? @js(__('talenma.home.company_search_country_all')) : @js(__('talenma.home.company_search_country_blocked'))"></option>
-                    <template x-for="item in countries" :key="item">
-                        <option :value="item" x-text="item"></option>
+                    <template x-for="item in countries" :key="item.value">
+                        <option :value="item.value" x-text="item.label"></option>
                     </template>
                 </select>
                 <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

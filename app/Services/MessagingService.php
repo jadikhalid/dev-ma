@@ -48,7 +48,10 @@ class MessagingService
         if ($user->isCompany()) {
             $query->where('company_user_id', $user->id);
         } elseif ($user->isTalent()) {
-            $query->where('talent_user_id', $user->id);
+            $query->where('channel', Conversation::CHANNEL_TALENT)
+                ->where('talent_user_id', $user->id);
+        } elseif ($user->isStaff()) {
+            $query->where('channel', Conversation::CHANNEL_STAFF);
         } else {
             return collect();
         }
@@ -71,7 +74,19 @@ class MessagingService
 
         if ($user->isTalent()) {
             return Conversation::query()
+                ->where('channel', Conversation::CHANNEL_TALENT)
                 ->where('talent_user_id', $user->id)
+                ->whereNotNull('last_message_at')
+                ->where(function ($q) {
+                    $q->whereNull('talent_last_read_at')
+                        ->orWhereColumn('last_message_at', '>', 'talent_last_read_at');
+                })
+                ->count();
+        }
+
+        if ($user->isStaff()) {
+            return Conversation::query()
+                ->where('channel', Conversation::CHANNEL_STAFF)
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
                     $q->whereNull('talent_last_read_at')
@@ -106,6 +121,7 @@ class MessagingService
                 [
                     'company_user_id' => $company->id,
                     'talent_user_id' => $talent->id,
+                    'channel' => Conversation::CHANNEL_TALENT,
                 ],
                 [
                     'subject' => $subject,
@@ -123,6 +139,59 @@ class MessagingService
     }
 
     /**
+     * Company → admin InMail (implantation / accompagnement).
+     *
+     * @param  list<UploadedFile>  $files
+     */
+    public function startStaffConversation(
+        User $company,
+        string $subject,
+        string $body,
+        array $files = [],
+    ): Conversation {
+        abort_unless($company->isCompany() && $company->isApproved(), 403);
+
+        $admin = $this->resolveAdminRecipient();
+
+        return DB::transaction(function () use ($company, $admin, $subject, $body, $files) {
+            $conversation = Conversation::query()->firstOrCreate(
+                [
+                    'company_user_id' => $company->id,
+                    'talent_user_id' => $admin->id,
+                    'channel' => Conversation::CHANNEL_STAFF,
+                ],
+                [
+                    'subject' => $subject,
+                ],
+            );
+
+            if (blank($conversation->subject) || $conversation->wasRecentlyCreated) {
+                $conversation->forceFill(['subject' => $subject])->save();
+            }
+
+            $this->postMessage($conversation, $company, $body, $files);
+
+            return $conversation->fresh(['messages.attachments', 'talent', 'company']);
+        });
+    }
+
+    public function resolveAdminRecipient(): User
+    {
+        $admin = User::query()
+            ->where('role', 'admin')
+            ->orderBy('id')
+            ->first();
+
+        if (! $admin) {
+            throw ValidationException::withMessages([
+                'body' => __('talenma.services.accompagnement_no_admin'),
+            ]);
+        }
+
+        return $admin;
+    }
+
+    /**
      * @param  list<UploadedFile>  $files
      */
     public function reply(
@@ -134,7 +203,13 @@ class MessagingService
         $this->assertCanAccess($sender, $conversation);
 
         if ($sender->isCompany()) {
-            $this->assertCompanyCanMessage($sender);
+            if ($conversation->isStaffChannel()) {
+                abort_unless($sender->isApproved(), 403);
+            } else {
+                $this->assertCompanyCanMessage($sender);
+            }
+        } elseif ($sender->isStaff()) {
+            abort_unless($conversation->isStaffChannel(), 403);
         }
 
         return $this->postMessage($conversation, $sender, $body, $files);
@@ -153,23 +228,25 @@ class MessagingService
         ]);
 
         $counterpart = $conversation->counterpartFor($viewer);
+        $counterpartName = $this->counterpartDisplayName($conversation, $viewer, $counterpart);
 
         return [
             'id' => $conversation->id,
             'subject' => $conversation->subject,
+            'channel' => $conversation->channel,
             'unread' => $conversation->unreadFor($viewer),
             'last_message_at' => optional($conversation->last_message_at)?->toIso8601String(),
             'counterpart' => [
                 'id' => $counterpart?->id,
-                'name' => $viewer->isCompany()
-                    ? ($counterpart?->profile?->visibleDisplayName($counterpart) ?? $counterpart?->publicDisplayName())
-                    : ($counterpart?->companyProfile?->company_name ?: $counterpart?->name),
-                'role_label' => $viewer->isCompany()
+                'name' => $counterpartName,
+                'role_label' => $viewer->isCompany() && ! $conversation->isStaffChannel()
                     ? collect([
                         $counterpart?->profile?->professionLabel(),
                         $counterpart?->profile?->sectorLabel(),
                     ])->filter()->implode(' - ')
-                    : null,
+                    : ($conversation->isStaffChannel() && $viewer->isCompany()
+                        ? __('talenma.inbox.staff_role_label')
+                        : null),
             ],
             'messages' => $conversation->messages->map(fn (Message $message) => $this->presentMessage($message, $viewer))->values(),
             'show_url' => route('inbox.show', $conversation),
@@ -193,6 +270,7 @@ class MessagingService
         return [
             'id' => $conversation->id,
             'subject' => $conversation->subject,
+            'channel' => $conversation->channel,
             'unread' => $conversation->unreadFor($viewer),
             'last_message_at' => optional($conversation->last_message_at)?->toIso8601String(),
             'last_message_preview' => $latest
@@ -200,9 +278,7 @@ class MessagingService
                 : null,
             'counterpart' => [
                 'id' => $counterpart?->id,
-                'name' => $viewer->isCompany()
-                    ? ($counterpart?->profile?->visibleDisplayName($counterpart) ?? $counterpart?->publicDisplayName())
-                    : ($counterpart?->companyProfile?->company_name ?: $counterpart?->name),
+                'name' => $this->counterpartDisplayName($conversation, $viewer, $counterpart),
             ],
             'show_url' => route('inbox.show', $conversation),
         ];
@@ -229,6 +305,22 @@ class MessagingService
                 'url' => route('inbox.attachments.show', $attachment),
             ])->values(),
         ];
+    }
+
+    private function counterpartDisplayName(Conversation $conversation, User $viewer, ?User $counterpart): string
+    {
+        if ($conversation->isStaffChannel() && $viewer->isCompany()) {
+            return __('talenma.inbox.staff_counterpart');
+        }
+
+        if ($viewer->isCompany()) {
+            return $counterpart?->profile?->visibleDisplayName($counterpart)
+                ?? $counterpart?->publicDisplayName()
+                ?? __('talenma.inbox.unknown_counterpart');
+        }
+
+        return $counterpart?->name
+            ?: __('talenma.inbox.unknown_counterpart');
     }
 
     private function assertCompanyCanMessage(User $company): void

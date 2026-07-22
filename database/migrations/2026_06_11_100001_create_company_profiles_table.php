@@ -11,9 +11,8 @@ return new class extends Migration
         Schema::create('company_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('company_name')->nullable();
             $table->string('sector')->nullable();
-            $table->string('country')->default('France');
+            $table->string('country', 2)->default('fr');
             $table->string('city')->nullable();
             $table->text('description')->nullable();
             $table->string('website')->nullable();

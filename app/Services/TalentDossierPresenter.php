@@ -67,7 +67,7 @@ class TalentDossierPresenter
         return [
             'id' => $user->id,
             'role' => $user->role,
-            'name' => $company?->company_name ?? $user->name,
+            'name' => $user->name,
             'first_name' => null,
             'last_name' => null,
             'email' => $user->email,
@@ -92,11 +92,11 @@ class TalentDossierPresenter
                 ->all() ?? [],
             'current_profile' => $this->currentCompanyProfile($company),
             'company' => $company ? array_filter([
-                'company_name' => $this->text($company->company_name),
+                'company_name' => $this->text($user->name),
                 'representative_name' => $this->text($company->representative_name),
                 'representative_email' => $this->text($company->representative_email),
                 'website' => $this->text($company->website),
-                'country' => $this->text($company->country),
+                'country' => $this->text($company->countryLabel()),
                 'city' => $this->text($company->city),
                 'employee_count' => $this->text($company->employee_count),
                 'hiring_needs' => $this->text($company->registration_hiring_needs ?? $company->hiring_needs),
@@ -147,13 +147,15 @@ class TalentDossierPresenter
             return [];
         }
 
+        $profile->loadMissing('user');
+
         return array_filter([
-            'company_name' => $this->text($profile->company_name),
+            'company_name' => $this->text($profile->user?->name),
             'sector' => $this->text($profile->sector),
             'logo_url' => $profile->logoUrl(),
             'employee_count' => $this->text($profile->employee_count),
             'city' => $this->text($profile->city),
-            'country' => $this->text($profile->country),
+            'country' => $this->text($profile->countryLabel()),
             'website' => $profile->website,
             'description' => $this->text($profile->description),
             'hiring_needs' => $this->text($profile->hiring_needs),

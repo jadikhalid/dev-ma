@@ -3511,6 +3511,20 @@ document.addEventListener('submit', async (event) => {
                 if (sectorEl) {
                     sectorEl.textContent = payload.sector_label || '—';
                 }
+
+                const companySectorEl = document.getElementById('company-header-sector');
+                if (companySectorEl) {
+                    companySectorEl.textContent = payload.sector_label || '—';
+                }
+            }
+
+            if (payload.location_label !== undefined) {
+                const locationEl = document.getElementById('company-header-location');
+                if (locationEl) {
+                    const label = String(payload.location_label || '').trim();
+                    locationEl.textContent = label;
+                    locationEl.classList.toggle('hidden', label === '');
+                }
             }
 
             if (form.dataset.refresh === 'documents') {

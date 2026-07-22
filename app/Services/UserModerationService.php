@@ -189,8 +189,7 @@ class UserModerationService
 
         if (! $user->companyProfile) {
             $user->companyProfile()->create([
-                'company_name' => $user->name,
-                'country' => 'France',
+                'country' => \App\Models\CompanyProfile::DEFAULT_COUNTRY,
             ]);
         }
 
@@ -252,8 +251,7 @@ class UserModerationService
 
         if ($role === 'company') {
             $user->companyProfile()->create([
-                'company_name' => $payload['name'] ?? $user->name,
-                'country' => $payload['country'] ?? 'France',
+                'country' => $payload['country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY,
             ]);
         }
 

@@ -60,8 +60,7 @@ class UserManagementController extends Controller
                     ->orWhere('last_name', 'like', $like)
                     ->orWhere('email', 'like', $like)
                     ->orWhereHas('companyProfile', function ($companyQuery) use ($like) {
-                        $companyQuery->where('company_name', 'like', $like)
-                            ->orWhere('representative_name', 'like', $like);
+                        $companyQuery->where('representative_name', 'like', $like);
                     });
             });
         }

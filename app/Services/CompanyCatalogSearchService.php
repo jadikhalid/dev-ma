@@ -25,8 +25,6 @@ class CompanyCatalogSearchService
             ->where('approval_status', User::APPROVAL_APPROVED)
             ->with(['companyProfile.professionSector'])
             ->whereHas('companyProfile', function ($q) use ($sectorSlug, $country) {
-                $q->whereNotNull('company_name');
-
                 if ($sectorSlug) {
                     $q->whereHas('professionSector', fn ($sq) => $sq->where('slug', $sectorSlug));
                 }
@@ -34,23 +32,26 @@ class CompanyCatalogSearchService
                 if ($country) {
                     $q->where('country', $country);
                 }
+            })
+            ->where(function ($q) {
+                $q->whereNotNull('name')->where('name', '!=', '');
             });
 
         if ($keywords !== []) {
-            $query->whereHas('companyProfile', function ($q) use ($keywords) {
-                $q->where(function ($outer) use ($keywords) {
-                    foreach ($keywords as $keyword) {
-                        $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $keyword);
+            $query->where(function ($outer) use ($keywords) {
+                foreach ($keywords as $keyword) {
+                    $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $keyword);
 
-                        $outer->orWhere(function ($subQ) use ($escaped) {
-                            $subQ->where('company_name', 'like', '%'.$escaped.'%')
-                                ->orWhere('hiring_needs', 'like', '%'.$escaped.'%')
-                                ->orWhere('registration_hiring_needs', 'like', '%'.$escaped.'%')
-                                ->orWhere('description', 'like', '%'.$escaped.'%')
-                                ->orWhere('sector', 'like', '%'.$escaped.'%');
-                        });
-                    }
-                });
+                    $outer->orWhere(function ($subQ) use ($escaped) {
+                        $subQ->where('name', 'like', '%'.$escaped.'%')
+                            ->orWhereHas('companyProfile', function ($profileQ) use ($escaped) {
+                                $profileQ->where('hiring_needs', 'like', '%'.$escaped.'%')
+                                    ->orWhere('registration_hiring_needs', 'like', '%'.$escaped.'%')
+                                    ->orWhere('description', 'like', '%'.$escaped.'%')
+                                    ->orWhere('sector', 'like', '%'.$escaped.'%');
+                            });
+                    });
+                }
             });
         }
 
@@ -105,7 +106,8 @@ class CompanyCatalogSearchService
             ->where('role', 'company')
             ->where('approval_status', User::APPROVAL_APPROVED)
             ->with(['companyProfile.professionSector'])
-            ->whereHas('companyProfile', fn ($q) => $q->whereNotNull('company_name'))
+            ->whereHas('companyProfile')
+            ->where(fn ($q) => $q->whereNotNull('name')->where('name', '!=', ''))
             ->inRandomOrder()
             ->limit($limit)
             ->get()
@@ -142,7 +144,7 @@ class CompanyCatalogSearchService
     /**
      * Pays distincts des entreprises approuvées (pour le filtre).
      *
-     * @return list<string>
+     * @return list<array{value: string, label: string}>
      */
     public function availableCountries(): array
     {
@@ -155,6 +157,11 @@ class CompanyCatalogSearchService
             ->distinct()
             ->orderBy('country')
             ->pluck('country')
+            ->map(fn (string $code) => [
+                'value' => $code,
+                'label' => CompanyProfile::countryLabelFor($code) ?? $code,
+            ])
+            ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
     }
@@ -167,13 +174,13 @@ class CompanyCatalogSearchService
         $profile = $company->companyProfile;
 
         return [
-            'name' => $profile?->company_name ?: $company->name,
+            'name' => $company->name,
             'initials' => $profile?->initials() ?: '—',
             'logo_url' => $profile?->logoUrl(),
             'sector' => $profile?->professionSector
                 ? $profile->professionSector->localizedName()
                 : ($profile?->sector ?: null),
-            'country' => $profile?->country,
+            'country' => $profile?->countryLabel(),
         ];
     }
 
@@ -185,11 +192,12 @@ class CompanyCatalogSearchService
     {
         $profile = $company->companyProfile;
         $haystack = mb_strtolower(implode(' ', array_filter([
-            $profile?->company_name,
+            $company->name,
             $profile?->sector,
             $profile?->hiring_needs,
             $profile?->registration_hiring_needs,
             $profile?->description,
+            $profile?->countryLabel(),
         ])));
 
         $matched = [];
@@ -210,13 +218,13 @@ class CompanyCatalogSearchService
 
         return [
             'id' => $company->id,
-            'name' => $profile?->company_name ?: $company->name,
+            'name' => $company->name,
             'initials' => $profile?->initials() ?: '—',
             'logo_url' => $profile?->logoUrl(),
             'sector' => $profile?->professionSector
                 ? $profile->professionSector->localizedName()
                 : ($profile?->sector ?: null),
-            'country' => $profile?->country,
+            'country' => $profile?->countryLabel(),
             'city' => $profile?->city,
             'excerpt' => $needs !== '' ? Str::limit(strip_tags($needs), 140) : null,
             'matched_keywords' => $matched,

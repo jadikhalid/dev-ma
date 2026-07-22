@@ -101,8 +101,8 @@
             initialRepresentativeEmail: @js(old('representative_email', '')),
             initialCompanyNeed: @js(old('company_need', '')),
             initialCompanyWebsite: @js(old('company_website', '')),
-            initialCompanyCountry: @js(old('company_country', __('talenma.common.france'))),
-            defaultCompanyCountry: @js(__('talenma.common.france')),
+            initialCompanyCountry: @js(old('company_country', \App\Models\CompanyProfile::DEFAULT_COUNTRY)),
+            defaultCompanyCountry: @js(\App\Models\CompanyProfile::DEFAULT_COUNTRY),
             validationMessages: @js($registerValidationMessages),
         })"
     >@csrf
@@ -327,7 +327,17 @@
                     </div>
                     <div>
                         <x-input-label for="company_country" :value="__('talenma.auth.company_country')" class="text-xs sm:text-sm" />
-                        <x-text-input id="company_country" name="company_country" x-model="companyCountry" class="mt-1 block w-full text-sm py-2" />
+                        <select
+                            id="company_country"
+                            name="company_country"
+                            x-model="companyCountry"
+                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm py-2"
+                        >
+                            <option value="">{{ __('talenma.talent.country_placeholder') }}</option>
+                            @foreach ($companyCountryOptions as $code => $label)
+                                <option value="{{ $code }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
                         <x-input-error :messages="$errors->get('company_country')" class="mt-1" />
                     </div>
                 </div>

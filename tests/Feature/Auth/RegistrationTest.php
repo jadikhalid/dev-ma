@@ -58,7 +58,7 @@ class RegistrationTest extends TestCase
             'representative_email' => 'jean.dupont@acme.com',
             'sector' => 'it-digital',
             'company_need' => 'Nous recherchons un développeur Laravel senior pour une mission de 6 mois en télétravail.',
-            'company_country' => 'France',
+            'company_country' => 'fr',
         ], $overrides);
     }
 
@@ -188,7 +188,8 @@ class RegistrationTest extends TestCase
 
         $user = User::query()->where('email', 'company@example.com')->first();
         $this->assertNull($user?->profile);
-        $this->assertSame('Acme SAS', $user?->companyProfile?->company_name);
+        $this->assertSame('Acme SAS', $user?->name);
+        $this->assertNotNull($user?->companyProfile);
         $this->assertSame(User::APPROVAL_PENDING, $user?->approval_status);
     }
 
@@ -213,8 +214,7 @@ class RegistrationTest extends TestCase
             'approval_status' => User::APPROVAL_PENDING,
         ]);
         $user->companyProfile()->create([
-            'company_name' => 'Acme SAS',
-            'country' => 'France',
+            'country' => 'fr',
         ]);
         $user->markEmailAsVerified();
 
@@ -248,8 +248,7 @@ class RegistrationTest extends TestCase
             'approval_status' => User::APPROVAL_PENDING,
         ]);
         $company->companyProfile()->create([
-            'company_name' => 'Acme SAS',
-            'country' => 'France',
+            'country' => 'fr',
         ]);
 
         $response = $this->actingAs($admin)->post(route('admin.users.approve', $company));

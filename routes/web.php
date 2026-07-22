@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CompanyProfileDocumentController;
 use App\Http\Controllers\Admin\ProfileDocumentController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\CompanyAccompanimentController;
 use App\Http\Controllers\CompanyCatalogSearchController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanySearchController;
@@ -115,6 +116,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');
         Route::post('/recruitment/request', [RecruitmentRequestController::class, 'store'])->name('recruitment.store');
+
+        Route::post('/services/accompagnement', [CompanyAccompanimentController::class, 'store'])
+            ->name('company.accompagnement.store');
     });
 });
 require __DIR__.'/auth.php';

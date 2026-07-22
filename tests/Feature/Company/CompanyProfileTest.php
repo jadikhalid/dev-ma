@@ -20,17 +20,17 @@ class CompanyProfileTest extends TestCase
         $this->seed(ProfessionSeeder::class);
     }
 
-    private function approvedCompany(array $profileOverrides = []): User
+    private function approvedCompany(array $profileOverrides = [], array $userOverrides = []): User
     {
-        $user = User::factory()->create([
+        $user = User::factory()->create(array_merge([
             'role' => 'company',
+            'name' => 'Acme SAS',
             'approval_status' => User::APPROVAL_APPROVED,
             'approved_at' => now(),
-        ]);
+        ], $userOverrides));
 
         $user->companyProfile()->create(array_merge([
-            'company_name' => 'Acme SAS',
-            'country' => 'France',
+            'country' => 'fr',
         ], $profileOverrides));
 
         return $user->fresh(['companyProfile']);
@@ -42,10 +42,9 @@ class CompanyProfileTest extends TestCase
     private function catalogReadyAttributes(): array
     {
         return [
-            'company_name' => 'Acme SAS',
             'sector' => 'Informatique & digital',
             'employee_count' => '11-50',
-            'country' => 'France',
+            'country' => 'fr',
             'city' => 'Paris',
             'website' => 'https://acme.example',
             'hiring_needs' => 'Nous recherchons des développeurs Laravel seniors pour une mission longue durée.',
@@ -79,10 +78,9 @@ class CompanyProfileTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('company.profile.update'), [
             'section' => 'identity',
-            'company_name' => 'Acme International',
             'sector' => 'it-digital',
             'employee_count' => '51-200',
-            'country' => 'France',
+            'country' => 'fr',
             'city' => 'Lyon',
             'website' => 'https://acme.example',
         ]);
@@ -91,12 +89,47 @@ class CompanyProfileTest extends TestCase
         $response->assertSessionHas('updated_section', 'identity');
 
         $profile = $user->fresh()->companyProfile;
-        $this->assertSame('Acme International', $profile->company_name);
+        $this->assertSame('Acme SAS', $user->fresh()->name);
         $this->assertSame('Informatique & digital', $profile->sector);
         $this->assertSame('Lyon', $profile->city);
+        $this->assertSame('fr', $profile->country);
     }
 
-    public function test_company_can_upload_logo(): void
+    public function test_company_can_update_identity_section_via_ajax(): void
+    {
+        $user = $this->approvedCompany();
+
+        $response = $this->actingAs($user)
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->post(route('company.profile.update'), [
+                'section' => 'identity',
+                'sector' => 'it-digital',
+                'employee_count' => '11-50',
+                'country' => 'fr',
+                'city' => 'Marseille',
+                'website' => 'https://acme.example',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('message', __('talenma.company.section_updated.identity'))
+            ->assertJsonPath('sector_label', 'Informatique & digital')
+            ->assertJsonPath('location_label', 'Marseille, France');
+
+        $this->assertSame('Marseille', $user->fresh()->companyProfile->city);
+    }
+
+    public function test_company_logo_url_prefers_account_avatar(): void
+    {
+        $user = $this->approvedCompany(['logo_path' => 'company-logos/old.jpg']);
+        $user->update(['avatar_path' => 'avatars/'.$user->id.'.jpg']);
+
+        $this->assertSame('/storage/avatars/'.$user->id.'.jpg', $user->fresh()->companyProfile->logoUrl());
+    }
+
+    public function test_company_profile_identity_update_ignores_logo_upload(): void
     {
         Storage::fake('public');
 
@@ -104,10 +137,9 @@ class CompanyProfileTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('company.profile.update'), [
             'section' => 'identity',
-            'company_name' => 'Acme SAS',
             'sector' => 'it-digital',
             'employee_count' => '11-50',
-            'country' => 'France',
+            'country' => 'fr',
             'city' => 'Paris',
             'website' => 'https://acme.example',
             'logo' => UploadedFile::fake()->image('logo.jpg', 300, 300),
@@ -116,8 +148,30 @@ class CompanyProfileTest extends TestCase
         $response->assertRedirect(route('company.profile.edit'));
 
         $profile = $user->fresh()->companyProfile;
-        $this->assertNotNull($profile->logo_path);
-        Storage::disk('public')->assertExists($profile->logo_path);
+        $this->assertNull($profile->logo_path);
+    }
+
+    public function test_company_can_update_hiring_section_via_ajax(): void
+    {
+        $user = $this->approvedCompany();
+
+        $response = $this->actingAs($user)
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->post(route('company.profile.update'), [
+                'section' => 'hiring',
+                'hiring_needs' => 'Recherche urgente de profils data engineers et DevOps pour renfort équipe produit.',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('message', __('talenma.company.section_updated.hiring'));
+
+        $this->assertStringContainsString(
+            'data engineers',
+            $user->fresh()->companyProfile->hiring_needs,
+        );
     }
 
     public function test_company_can_update_hiring_section(): void

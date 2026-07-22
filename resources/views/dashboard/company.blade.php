@@ -1,6 +1,6 @@
 @php
     $user = Auth::user();
-    $companyName = $profile?->company_name ?? $user->name;
+    $companyName = $user->name;
 @endphp
 
 <x-app-layout>
@@ -83,7 +83,7 @@
                             <p class="mt-2 text-sm text-gray-600">{{ $profile->sector }}</p>
                         @endif
                         @if ($profile->city || $profile->country)
-                            <p class="text-sm text-gray-500">{{ collect([$profile->city, $profile->country])->filter()->implode(', ') }}</p>
+                            <p class="text-sm text-gray-500">{{ collect([$profile->city, $profile->countryLabel()])->filter()->implode(', ') }}</p>
                         @endif
                         @if ($profile->hiring_needs)
                             <p class="mt-3 text-sm text-gray-700 line-clamp-3">{{ Str::limit($profile->hiring_needs, 120) }}</p>

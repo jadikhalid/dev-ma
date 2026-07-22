@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\CompanyProfile;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class StoreManagedUserRequest extends FormRequest
@@ -25,7 +27,7 @@ class StoreManagedUserRequest extends FormRequest
             'role' => ['required', 'string', 'in:dev,company'],
             'approve_immediately' => ['sometimes', 'boolean'],
             'email_verified' => ['sometimes', 'boolean'],
-            'country' => ['nullable', 'string', 'max:100'],
+            'country' => ['nullable', 'string', Rule::in(CompanyProfile::COUNTRY_CODES)],
         ];
     }
 
@@ -43,7 +45,7 @@ class StoreManagedUserRequest extends FormRequest
             'role' => $validated['role'],
             'approve_immediately' => (bool) ($validated['approve_immediately'] ?? false),
             'email_verified' => (bool) ($validated['email_verified'] ?? true),
-            'country' => $validated['country'] ?? 'France',
+            'country' => $validated['country'] ?? CompanyProfile::DEFAULT_COUNTRY,
         ];
     }
 }

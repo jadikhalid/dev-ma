@@ -21,7 +21,7 @@ class InboxController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isCompany() && ! $user->isTalent()) {
+        if (! $user->isCompany() && ! $user->isTalent() && ! $user->isStaff()) {
             return redirect()->route('dashboard');
         }
 
@@ -38,7 +38,7 @@ class InboxController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isCompany() && ! $user->isTalent()) {
+        if (! $user->isCompany() && ! $user->isTalent() && ! $user->isStaff()) {
             return redirect()->route('dashboard');
         }
 
@@ -107,7 +107,7 @@ class InboxController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isCompany() && ! $user->isTalent()) {
+        if (! $user->isCompany() && ! $user->isTalent() && ! $user->isStaff()) {
             abort(403);
         }
 
