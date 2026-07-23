@@ -134,9 +134,9 @@
                                 <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_representative') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.company?.representative_name"></dd>
                             </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.company?.representative_email">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_representative_email') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900 break-all" x-text="user.company?.representative_email"></dd>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.company?.email">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_email') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900 break-all" x-text="user.company?.email"></dd>
                             </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.company?.city">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.city') }}</dt>
@@ -323,6 +323,10 @@
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.representative_name">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_representative') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.representative_name"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.email">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_email') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900 break-all" x-text="user.current_profile.email"></dd>
                             </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.phone">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_phone') }}</dt>

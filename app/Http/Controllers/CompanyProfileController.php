@@ -8,42 +8,31 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
 
 class CompanyProfileController extends Controller
 {
-    private const SECTIONS = ['identity', 'presentation', 'hiring', 'contact'];
+    private const SECTIONS = ['identity', 'presentation', 'hiring'];
 
     public function __construct(
         private ProfessionCatalogService $professionCatalog,
     ) {}
 
-    public function edit(): View|RedirectResponse
+    public function edit(): RedirectResponse
     {
         $user = Auth::user();
 
-        if (! $user->isCompany()) {
+        if (! $user->canManageCompanyProfile()) {
             return redirect()->route('dashboard');
         }
 
-        $profile = $user->companyProfile ?: $user->companyProfile()->create();
-
-        return view('company.profile', [
-            'user' => $user,
-            'profile' => $profile,
-            'professionSectors' => $this->professionCatalog->sectorsForLocale(),
-            'sectorSlug' => old('sector', $this->professionCatalog->sectorSlugFromLabel($profile->sector) ?? ''),
-            'employeeCountOptions' => $this->employeeCountOptions(),
-            'countryOptions' => \App\Models\CompanyProfile::countryOptions(),
-            'citiesByCountry' => \App\Models\CompanyProfile::citiesByCountry(),
-        ]);
+        return redirect()->route('profile.edit', ['panel' => 'company']);
     }
 
     public function update(Request $request): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
 
-        if (! $user->isCompany()) {
+        if (! $user->canManageCompanyProfile()) {
             return redirect()->route('dashboard');
         }
 
@@ -76,7 +65,7 @@ class CompanyProfileController extends Controller
         }
 
         return redirect()
-            ->route('company.profile.edit')
+            ->route('profile.edit', ['panel' => 'company'])
             ->with('status', 'company-profile-updated')
             ->with('updated_section', $section);
     }
@@ -117,12 +106,6 @@ class CompanyProfileController extends Controller
             'hiring' => [
                 'hiring_needs' => ['required', 'string', 'min:20', 'max:5000'],
             ],
-            'contact' => [
-                'representative_name' => ['required', 'string', 'min:2', 'max:255'],
-                'representative_email' => ['required', 'email', 'max:255'],
-                'phone' => ['nullable', 'string', 'max:30'],
-                'linkedin_url' => ['nullable', 'url', 'max:255'],
-            ],
             default => [],
         };
     }
@@ -146,12 +129,6 @@ class CompanyProfileController extends Controller
             ],
             'hiring' => [
                 'hiring_needs' => $data['hiring_needs'],
-            ],
-            'contact' => [
-                'representative_name' => $data['representative_name'],
-                'representative_email' => $data['representative_email'],
-                'phone' => $data['phone'] ?? null,
-                'linkedin_url' => $data['linkedin_url'] ?? null,
             ],
             default => [],
         };

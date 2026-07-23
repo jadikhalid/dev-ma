@@ -21,11 +21,13 @@ use Illuminate\Notifications\Notifiable;
     'avatar_path',
     'password',
     'role',
+    'company_seat',
     'email_verified_at',
     'approval_status',
     'approved_at',
     'approved_by',
     'rejection_reason',
+    'disabled_at',
     'is_subscribed',
     'subscription_expires_at',
 ])]
@@ -38,6 +40,10 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public const APPROVAL_REJECTED = 'rejected';
 
+    public const SEAT_OWNER = 'owner';
+
+    public const SEAT_MEMBER = 'member';
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -46,6 +52,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'approved_at' => 'datetime',
+            'disabled_at' => 'datetime',
             'password' => 'hashed',
             'is_subscribed' => 'boolean',
             'subscription_expires_at' => 'datetime',
@@ -60,6 +67,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function companyProfile(): HasOne
     {
         return $this->hasOne(CompanyProfile::class);
+    }
+
+    public function companyMembership(): HasOne
+    {
+        return $this->hasOne(CompanyMembership::class);
     }
 
     public function recruitmentRequests(): HasMany
@@ -82,6 +94,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ModerationRequest::class, 'requested_by');
     }
 
+    public function jobPostingsCreated(): HasMany
+    {
+        return $this->hasMany(JobPosting::class, 'created_by');
+    }
+
+    public function jobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class, 'talent_user_id');
+    }
+
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
@@ -101,6 +123,56 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isCompany(): bool
     {
         return $this->role === 'company';
+    }
+
+    public function isCompanyOwner(): bool
+    {
+        return $this->isCompany() && $this->company_seat === self::SEAT_OWNER;
+    }
+
+    public function isCompanyMember(): bool
+    {
+        return $this->isCompany() && $this->company_seat === self::SEAT_MEMBER;
+    }
+
+    public function isDisabled(): bool
+    {
+        return $this->disabled_at !== null;
+    }
+
+    public function companyOrganization(): ?CompanyProfile
+    {
+        if (! $this->isCompany()) {
+            return null;
+        }
+
+        if ($this->isCompanyOwner()) {
+            return $this->companyProfile;
+        }
+
+        $this->loadMissing('companyMembership.companyProfile.user');
+
+        return $this->companyMembership?->companyProfile;
+    }
+
+    public function canManageCompanyProfile(): bool
+    {
+        return $this->isCompanyOwner() && $this->isApproved() && ! $this->isDisabled();
+    }
+
+    public function canManageCompanyUsers(): bool
+    {
+        return $this->canManageCompanyProfile();
+    }
+
+    public function canAccessTalentPool(): bool
+    {
+        return $this->isCompany() && $this->isApproved() && ! $this->isDisabled();
+    }
+
+    public function canManageJobs(): bool
+    {
+        return $this->canAccessTalentPool();
     }
 
     public function isAdmin(): bool
@@ -202,5 +274,28 @@ class User extends Authenticatable implements MustVerifyEmail
         $initial = $last !== '' ? mb_strtoupper(mb_substr($last, 0, 1)).'.' : '';
 
         return trim($first.($initial !== '' ? ' '.$initial : ''));
+    }
+
+    /**
+     * Affichage entreprise : raison sociale pour owner, « Entreprise / Prénom Nom » pour membre.
+     */
+    public function companyDisplayName(): string
+    {
+        if (! $this->isCompany()) {
+            return $this->name;
+        }
+
+        if ($this->isCompanyOwner()) {
+            return $this->name;
+        }
+
+        $orgName = $this->companyOrganization()?->displayName() ?: $this->name;
+        $person = trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
+
+        if ($person === '') {
+            return $orgName;
+        }
+
+        return $orgName.' / '.$person;
     }
 }

@@ -94,7 +94,7 @@ class TalentDossierPresenter
             'company' => $company ? array_filter([
                 'company_name' => $this->text($user->name),
                 'representative_name' => $this->text($company->representative_name),
-                'representative_email' => $this->text($company->representative_email),
+                'email' => $this->text($user->email),
                 'website' => $this->text($company->website),
                 'country' => $this->text($company->countryLabel()),
                 'city' => $this->text($company->city),
@@ -160,7 +160,7 @@ class TalentDossierPresenter
             'description' => $this->text($profile->description),
             'hiring_needs' => $this->text($profile->hiring_needs),
             'representative_name' => $this->text($profile->representative_name),
-            'representative_email' => $this->text($profile->representative_email),
+            'email' => $this->text($profile->user?->email),
             'phone' => $this->text($profile->phone),
             'linkedin_url' => $profile->linkedin_url,
         ], fn ($value) => filled($value));

@@ -7,8 +7,10 @@ use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\CompanyAccompanimentController;
 use App\Http\Controllers\CompanyCatalogSearchController;
+use App\Http\Controllers\CompanyJobController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanySearchController;
+use App\Http\Controllers\CompanyUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\ProfileDetailsController;
 use App\Http\Controllers\RecruitmentRequestController;
 use App\Http\Controllers\SkillSuggestionController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\TalentJobController;
 use App\Http\Controllers\TalentProfileDocumentController;
 use App\Http\Controllers\TalentPresentationVideoController;
 use App\Http\Controllers\TalentSearchController;
@@ -56,6 +59,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/contact', [ProfileController::class, 'updateContact'])->name('profile.contact.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::middleware('staff')->prefix('admin')->name('admin.')->group(function () {
@@ -98,6 +102,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/talent/presentation-video', [TalentPresentationVideoController::class, 'store'])->name('talent.presentation-video.store');
         Route::delete('/talent/presentation-video', [TalentPresentationVideoController::class, 'destroy'])->name('talent.presentation-video.destroy');
         Route::post('/subscription/activate', [PaymentController::class, 'simulate'])->name('payment.simulate');
+
+        Route::get('/jobs', [TalentJobController::class, 'index'])->name('talent.jobs.index');
+        Route::get('/jobs/{job}', [TalentJobController::class, 'show'])->name('talent.jobs.show');
+        Route::post('/jobs/{job}/apply', [TalentJobController::class, 'apply'])->name('talent.jobs.apply');
     });
 
     Route::middleware('account.approved')->group(function () {
@@ -107,8 +115,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/inbox/{conversation}', [InboxController::class, 'show'])->name('inbox.show');
         Route::post('/inbox/{conversation}/messages', [InboxController::class, 'storeMessage'])->name('inbox.messages.store');
 
-        Route::get('/company/profile', [CompanyProfileController::class, 'edit'])->name('company.profile.edit');
-        Route::post('/company/profile', [CompanyProfileController::class, 'update'])->name('company.profile.update');
+        Route::middleware('company.owner')->group(function () {
+            Route::get('/company/profile', [CompanyProfileController::class, 'edit'])->name('company.profile.edit');
+            Route::post('/company/profile', [CompanyProfileController::class, 'update'])->name('company.profile.update');
+            Route::post('/company/users', [CompanyUserController::class, 'store'])->name('company.users.store');
+            Route::delete('/company/users/{member}', [CompanyUserController::class, 'destroy'])->name('company.users.destroy');
+            Route::post('/services/accompagnement', [CompanyAccompanimentController::class, 'store'])
+                ->name('company.accompagnement.store');
+        });
 
         Route::get('/talents', [CompanySearchController::class, 'index'])->name('company.search');
         Route::get('/talents/{talent}', [CompanySearchController::class, 'show'])->name('company.talent.show');
@@ -117,8 +131,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');
         Route::post('/recruitment/request', [RecruitmentRequestController::class, 'store'])->name('recruitment.store');
 
-        Route::post('/services/accompagnement', [CompanyAccompanimentController::class, 'store'])
-            ->name('company.accompagnement.store');
+        Route::middleware('company.jobs')->prefix('company/jobs')->name('company.jobs.')->group(function () {
+            Route::get('/', [CompanyJobController::class, 'index'])->name('index');
+            Route::get('/create', [CompanyJobController::class, 'create'])->name('create');
+            Route::post('/', [CompanyJobController::class, 'store'])->name('store');
+            Route::get('/{job}', [CompanyJobController::class, 'show'])->name('show');
+            Route::get('/{job}/edit', [CompanyJobController::class, 'edit'])->name('edit');
+            Route::put('/{job}', [CompanyJobController::class, 'update'])->name('update');
+            Route::post('/{job}/publish', [CompanyJobController::class, 'publish'])->name('publish');
+            Route::post('/{job}/close', [CompanyJobController::class, 'close'])->name('close');
+            Route::patch('/{job}/applications/{application}', [CompanyJobController::class, 'updateApplication'])->name('applications.update');
+        });
     });
 });
 require __DIR__.'/auth.php';

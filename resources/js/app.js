@@ -1347,7 +1347,6 @@ Alpine.data('registerWizard', (config) => ({
     documentsCount: config.initialDocumentsCount ?? 0,
     documentFiles: [],
     representativeName: config.initialRepresentativeName ?? '',
-    representativeEmail: config.initialRepresentativeEmail ?? '',
     companyNeed: config.initialCompanyNeed ?? '',
     companyWebsite: config.initialCompanyWebsite ?? '',
     companyCountry: config.initialCompanyCountry ?? config.defaultCompanyCountry ?? '',
@@ -1402,10 +1401,8 @@ Alpine.data('registerWizard', (config) => ({
 
     get companyStep2Valid() {
         const nameOk = this.representativeName.trim().length >= 2;
-        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.representativeEmail.trim());
 
         return nameOk
-            && emailOk
             && this.sector !== ''
             && this.companyNeed.trim().length >= 20;
     },
@@ -1547,8 +1544,6 @@ Alpine.data('registerWizard', (config) => ({
                 return this.documentsCount === 0;
             case 'representative_name':
                 return this.representativeName.trim() === '';
-            case 'representative_email':
-                return this.representativeEmail.trim() === '';
             case 'company_need':
                 return this.companyNeed.trim() === '';
             case 'company_website':
@@ -1578,7 +1573,6 @@ Alpine.data('registerWizard', (config) => ({
         if (this.isCompany && this.step === 2) {
             return [
                 'representative_name',
-                'representative_email',
                 'sector',
                 'company_need',
                 'company_website',
@@ -1792,23 +1786,6 @@ Alpine.data('registerWizard', (config) => ({
 
                 return null;
             }
-            case 'representative_email': {
-                const value = this.representativeEmail.trim();
-
-                if (! value) {
-                    return messages.representative_email_required ?? null;
-                }
-
-                if (! this.emailIsValid(value)) {
-                    return messages.representative_email_invalid ?? null;
-                }
-
-                if (value.length > 255) {
-                    return messages.representative_email_max ?? null;
-                }
-
-                return null;
-            }
             case 'company_need': {
                 const value = this.companyNeed.trim();
 
@@ -1976,7 +1953,6 @@ Alpine.data('registerWizard', (config) => ({
         this.documentsCount = 0;
         this.documentFiles = [];
         this.representativeName = '';
-        this.representativeEmail = '';
         this.companyNeed = '';
         this.companyWebsite = '';
         this.companyCountry = this.defaultCompanyCountry;

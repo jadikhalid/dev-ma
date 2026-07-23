@@ -24,6 +24,7 @@ class CompanyProfileTest extends TestCase
     {
         $user = User::factory()->create(array_merge([
             'role' => 'company',
+            'company_seat' => User::SEAT_OWNER,
             'name' => 'Acme SAS',
             'approval_status' => User::APPROVAL_APPROVED,
             'approved_at' => now(),
@@ -55,9 +56,15 @@ class CompanyProfileTest extends TestCase
     {
         $user = $this->approvedCompany();
 
-        $response = $this->actingAs($user)->get(route('company.profile.edit'));
+        $this->actingAs($user)
+            ->get(route('company.profile.edit'))
+            ->assertRedirect(route('profile.edit', ['panel' => 'company']));
+
+        $response = $this->actingAs($user)->get(route('profile.edit', ['panel' => 'company']));
 
         $response->assertOk();
+        $response->assertSee(__('talenma.company.section_identity'), false);
+        $response->assertDontSee(__('talenma.company.section_contact'), false);
     }
 
     public function test_pending_company_cannot_access_profile(): void
@@ -85,7 +92,7 @@ class CompanyProfileTest extends TestCase
             'website' => 'https://acme.example',
         ]);
 
-        $response->assertRedirect(route('company.profile.edit'));
+        $response->assertRedirect(route('profile.edit', ['panel' => 'company']));
         $response->assertSessionHas('updated_section', 'identity');
 
         $profile = $user->fresh()->companyProfile;
@@ -145,7 +152,7 @@ class CompanyProfileTest extends TestCase
             'logo' => UploadedFile::fake()->image('logo.jpg', 300, 300),
         ]);
 
-        $response->assertRedirect(route('company.profile.edit'));
+        $response->assertRedirect(route('profile.edit', ['panel' => 'company']));
 
         $profile = $user->fresh()->companyProfile;
         $this->assertNull($profile->logo_path);
@@ -183,7 +190,7 @@ class CompanyProfileTest extends TestCase
             'hiring_needs' => 'Recherche urgente de profils data engineers et DevOps pour renfort équipe produit.',
         ]);
 
-        $response->assertRedirect(route('company.profile.edit'));
+        $response->assertRedirect(route('profile.edit', ['panel' => 'company']));
         $response->assertSessionHas('updated_section', 'hiring');
 
         $this->assertStringContainsString(

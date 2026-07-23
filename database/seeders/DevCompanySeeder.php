@@ -154,6 +154,7 @@ class DevCompanySeeder extends Seeder
             'email' => $slug.'@'.self::EMAIL_DOMAIN,
             'password' => Hash::make(self::PASSWORD),
             'role' => 'company',
+            'company_seat' => User::SEAT_OWNER,
             'email_verified_at' => now(),
             'approval_status' => User::APPROVAL_APPROVED,
             'approved_at' => now(),
@@ -164,7 +165,6 @@ class DevCompanySeeder extends Seeder
         CompanyProfile::create([
             'user_id' => $user->id,
             'representative_name' => trim($firstName.' '.$lastName),
-            'representative_email' => 'contact-'.$slug.'@'.self::EMAIL_DOMAIN,
             'sector' => $sector->name_fr,
             'registration_sector' => $sector->name_fr,
             'profession_sector_id' => $sector->id,

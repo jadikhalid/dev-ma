@@ -17,7 +17,7 @@ class CompanyAccompanimentController extends Controller
     public function store(Request $request): JsonResponse|RedirectResponse
     {
         $user = Auth::user();
-        abort_unless($user?->isCompany() && $user->isApproved(), 403);
+        abort_unless($user?->canManageCompanyProfile(), 403);
 
         $data = $request->validate([
             'requester_name' => ['required', 'string', 'min:2', 'max:255'],

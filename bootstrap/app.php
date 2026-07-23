@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\EnsureUserIsNotDisabled::class,
         ]);
 
         $middleware->alias([
@@ -25,6 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'account.approved' => \App\Http\Middleware\EnsureTalentIsApproved::class,
             'account.pending' => \App\Http\Middleware\EnsureTalentIsPending::class,
             'account.rejected' => \App\Http\Middleware\EnsureTalentIsRejected::class,
+            'company.owner' => \App\Http\Middleware\EnsureCompanyOwner::class,
+            'company.jobs' => \App\Http\Middleware\EnsureCompanyCanAccessJobs::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

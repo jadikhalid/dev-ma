@@ -250,6 +250,7 @@ class UserModerationService
         }
 
         if ($role === 'company') {
+            $user->update(['company_seat' => User::SEAT_OWNER]);
             $user->companyProfile()->create([
                 'country' => $payload['country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY,
             ]);

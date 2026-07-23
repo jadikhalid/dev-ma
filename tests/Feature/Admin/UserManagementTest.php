@@ -293,6 +293,7 @@ class UserManagementTest extends TestCase
 
         $company = User::factory()->create([
             'role' => 'company',
+            'company_seat' => User::SEAT_OWNER,
             'name' => 'Acme Europe',
             'email' => 'contact@acme-europe.test',
             'approval_status' => User::APPROVAL_APPROVED,

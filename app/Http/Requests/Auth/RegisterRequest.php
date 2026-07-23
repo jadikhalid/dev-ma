@@ -35,9 +35,6 @@ class RegisterRequest extends FormRequest
             'representative_name' => is_string($this->representative_name)
                 ? trim(preg_replace('/\s+/u', ' ', $this->representative_name) ?? '')
                 : $this->representative_name,
-            'representative_email' => is_string($this->representative_email)
-                ? Str::lower(trim($this->representative_email))
-                : $this->representative_email,
             'company_need' => is_string($this->company_need) ? trim($this->company_need) : $this->company_need,
             'company_website' => is_string($this->company_website) ? trim($this->company_website) : $this->company_website,
             'company_country' => is_string($this->company_country)
@@ -123,14 +120,6 @@ class RegisterRequest extends FormRequest
                 'max:255',
                 'regex:/^[\p{L}\p{M}][\p{L}\p{M}\s\'\-\.]*$/u',
             ],
-            'representative_email' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'company'),
-                'nullable',
-                'string',
-                'lowercase',
-                'email',
-                'max:255',
-            ],
             'company_need' => [
                 Rule::requiredIf(fn () => $this->input('role') === 'company'),
                 'nullable',
@@ -169,7 +158,6 @@ class RegisterRequest extends FormRequest
             'description' => __('talenma.auth.registration_description'),
             'documents' => __('talenma.auth.registration_documents'),
             'representative_name' => __('talenma.auth.representative_name'),
-            'representative_email' => __('talenma.auth.representative_email'),
             'company_need' => __('talenma.auth.company_need'),
             'company_website' => __('talenma.auth.company_website'),
             'company_country' => __('talenma.auth.company_country'),
@@ -223,9 +211,6 @@ class RegisterRequest extends FormRequest
             'representative_name.min' => __('talenma.auth.validation.representative_name_min'),
             'representative_name.max' => __('talenma.auth.validation.representative_name_max'),
             'representative_name.regex' => __('talenma.auth.validation.representative_name_format'),
-            'representative_email.required' => __('talenma.auth.validation.representative_email_required'),
-            'representative_email.email' => __('talenma.auth.validation.representative_email_invalid'),
-            'representative_email.max' => __('talenma.auth.validation.representative_email_max'),
             'company_need.required' => __('talenma.auth.validation.company_need_required'),
             'company_need.min' => __('talenma.auth.validation.company_need_min'),
             'company_need.max' => __('talenma.auth.validation.company_need_max'),

@@ -28,10 +28,11 @@ class DashboardController extends Controller
         }
 
         if ($user->isCompany()) {
-            $user->load('companyProfile');
-            $profile = $user->companyProfile;
+            $profile = $user->companyOrganization();
             $completion = $this->companyProfileCompletion->assess($profile);
-            $recentRequests = $user->recruitmentRequests()->with('talent.profile')->latest()->take(5)->get();
+            $recentRequests = $user->isCompanyOwner()
+                ? $user->recruitmentRequests()->with('talent.profile')->latest()->take(5)->get()
+                : collect();
 
             return view('dashboard.company', compact('recentRequests', 'profile', 'completion'));
         }

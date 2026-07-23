@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'user_id',
     'logo_path',
     'representative_name',
-    'representative_email',
     'phone',
     'linkedin_url',
     'sector',
@@ -54,6 +53,16 @@ class CompanyProfile extends Model
     public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(CompanyProfileDocument::class)->orderBy('sort_order');
+    }
+
+    public function memberships(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CompanyMembership::class);
+    }
+
+    public function jobPostings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(JobPosting::class);
     }
 
     /**

@@ -30,7 +30,7 @@ class CompanySearchController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $completion = $this->profileCompletion->assess($request->user()->companyProfile);
+        $completion = $this->profileCompletion->assess($request->user()->companyOrganization());
 
         if (! $completion['is_catalog_ready']) {
             return redirect()
@@ -78,7 +78,7 @@ class CompanySearchController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $completion = $this->profileCompletion->assess($request->user()->companyProfile);
+        $completion = $this->profileCompletion->assess($request->user()->companyOrganization());
 
         if (! $completion['is_catalog_ready']) {
             return redirect()

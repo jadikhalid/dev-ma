@@ -55,7 +55,6 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'Password1',
             'role' => 'company',
             'representative_name' => 'Jean Dupont',
-            'representative_email' => 'jean.dupont@acme.com',
             'sector' => 'it-digital',
             'company_need' => 'Nous recherchons un développeur Laravel senior pour une mission de 6 mois en télétravail.',
             'company_country' => 'fr',
@@ -266,7 +265,7 @@ class RegistrationTest extends TestCase
         ]));
 
         $response->assertRedirect('/register');
-        $response->assertSessionHasErrors(['representative_name', 'representative_email', 'sector', 'company_need']);
+        $response->assertSessionHasErrors(['representative_name', 'sector', 'company_need']);
     }
 
     public function test_company_registration_stores_sector_and_documents_on_verify(): void

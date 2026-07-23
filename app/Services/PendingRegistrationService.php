@@ -130,6 +130,7 @@ class PendingRegistrationService
                 'email' => $pending->email,
                 'password' => $payload['password'],
                 'role' => $payload['role'],
+                'company_seat' => $payload['role'] === 'company' ? User::SEAT_OWNER : null,
                 'email_verified_at' => now(),
                 'approval_status' => User::APPROVAL_PENDING,
                 'approved_at' => null,
@@ -144,8 +145,7 @@ class PendingRegistrationService
                 $sectorLabel = $sector->localizedName($pending->locale);
 
                 $companyProfile = $user->companyProfile()->create([
-                    'representative_name' => $payload['representative_name'],
-                    'representative_email' => $payload['representative_email'],
+                    'representative_name' => $payload['representative_name'] ?? null,
                     'sector' => $sectorLabel,
                     'registration_sector' => $sectorLabel,
                     'profession_sector_id' => $sector->id,
@@ -236,7 +236,6 @@ class PendingRegistrationService
         if ($validated['role'] === 'company') {
             $payload['name'] = $validated['name'];
             $payload['representative_name'] = $validated['representative_name'];
-            $payload['representative_email'] = $validated['representative_email'];
             $payload['sector'] = $validated['sector'];
             $payload['company_need'] = $validated['company_need'];
             $payload['company_website'] = $validated['company_website'] ?? null;

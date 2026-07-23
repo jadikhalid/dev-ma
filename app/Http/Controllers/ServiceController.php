@@ -35,6 +35,6 @@ class ServiceController extends Controller
     {
         $user = Auth::user();
 
-        return $user && $user->isCompany() && $user->isApproved();
+        return $user && $user->isCompanyOwner() && $user->isApproved();
     }
 }

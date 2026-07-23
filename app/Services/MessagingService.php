@@ -327,7 +327,7 @@ class MessagingService
     {
         abort_unless($company->isCompany() && $company->isApproved(), 403);
 
-        $ready = $this->companyCompletion->assess($company->companyProfile)['is_catalog_ready'] ?? false;
+        $ready = $this->companyCompletion->assess($company->companyOrganization())['is_catalog_ready'] ?? false;
 
         abort_unless($ready, 403, __('talenma.dashboard.company.profile_incomplete'));
     }

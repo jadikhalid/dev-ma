@@ -1,12 +1,16 @@
+@php
+    $isCompanyOwner = Auth::user()->isCompanyOwner();
+    $useCompanyBranding = $isCompanyOwner;
+@endphp
 <section>
     <header>
         <h2 class="text-lg font-semibold text-gray-900">
-            {{ $user->isCompany()
+            {{ $useCompanyBranding
                 ? __('talenma.account.personal_info_title_company')
                 : __('talenma.account.personal_info_title') }}
         </h2>
         <p class="mt-1 text-sm text-gray-600">
-            {{ $user->isCompany()
+            {{ $useCompanyBranding
                 ? __('talenma.account.personal_info_desc_company')
                 : __('talenma.account.personal_info_desc') }}
         </p>
@@ -61,7 +65,7 @@
                 <div>
                     <x-input-label
                         for="avatar"
-                        :value="$user->isCompany() ? __('talenma.account.avatar_company') : __('talenma.account.avatar')"
+                        :value="$useCompanyBranding ? __('talenma.account.avatar_company') : __('talenma.account.avatar')"
                     />
                     <input
                         id="avatar"
@@ -73,7 +77,7 @@
                         class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                     >
                     <p class="mt-1 text-xs text-gray-500">
-                        {{ $user->isCompany() ? __('talenma.account.avatar_hint_company') : __('talenma.account.avatar_hint') }}
+                        {{ $useCompanyBranding ? __('talenma.account.avatar_hint_company') : __('talenma.account.avatar_hint') }}
                     </p>
                     <x-input-error class="mt-2" :messages="$errors->get('avatar')" />
                 </div>
@@ -87,23 +91,41 @@
                             @change="onRemoveToggle($event)"
                             class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         >
-                        {{ $user->isCompany() ? __('talenma.account.avatar_remove_company') : __('talenma.account.avatar_remove') }}
+                        {{ $useCompanyBranding ? __('talenma.account.avatar_remove_company') : __('talenma.account.avatar_remove') }}
                     </label>
                 @endif
             </div>
         </div>
 
-        <div>
-            <x-input-label
-                for="name"
-                :value="$user->isCompany() ? __('talenma.account.name_company') : __('talenma.account.name')"
-            />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
-        </div>
+        @if ($user->isCompanyMember())
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="first_name" :value="__('talenma.auth.first_name')" />
+                    <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full" :value="old('first_name', $user->first_name)" required autofocus autocomplete="given-name" />
+                    <x-input-error class="mt-2" :messages="$errors->get('first_name')" />
+                </div>
+                <div>
+                    <x-input-label for="last_name" :value="__('talenma.auth.last_name')" />
+                    <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full" :value="old('last_name', $user->last_name)" required autocomplete="family-name" />
+                    <x-input-error class="mt-2" :messages="$errors->get('last_name')" />
+                </div>
+            </div>
+        @else
+            <div>
+                <x-input-label
+                    for="name"
+                    :value="$useCompanyBranding ? __('talenma.account.name_company') : __('talenma.account.name')"
+                />
+                <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+                <x-input-error class="mt-2" :messages="$errors->get('name')" />
+            </div>
+        @endif
 
         <div>
-            <x-input-label for="email" :value="__('talenma.account.email')" />
+            <x-input-label
+                for="email"
+                :value="$useCompanyBranding ? __('talenma.account.email_company') : __('talenma.account.email')"
+            />
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 

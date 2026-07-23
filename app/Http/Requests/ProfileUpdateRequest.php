@@ -14,8 +14,7 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:255'],
+        $rules = [
             'email' => [
                 'required',
                 'string',
@@ -27,6 +26,15 @@ class ProfileUpdateRequest extends FormRequest
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'remove_avatar' => ['nullable', 'boolean'],
         ];
+
+        if ($this->user()?->isCompanyMember()) {
+            $rules['first_name'] = ['required', 'string', 'min:2', 'max:127'];
+            $rules['last_name'] = ['required', 'string', 'min:2', 'max:127'];
+        } else {
+            $rules['name'] = ['required', 'string', 'max:255'];
+        }
+
+        return $rules;
     }
 
     /**
@@ -36,6 +44,8 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => __('talenma.account.name'),
+            'first_name' => __('talenma.auth.first_name'),
+            'last_name' => __('talenma.auth.last_name'),
             'email' => __('talenma.account.email'),
             'avatar' => __('talenma.account.avatar'),
         ];

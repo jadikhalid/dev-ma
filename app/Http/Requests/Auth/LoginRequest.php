@@ -62,6 +62,18 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $authenticated = Auth::user();
+
+        if ($authenticated && $authenticated->isDisabled()) {
+            Auth::logout();
+
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => __('talenma.auth.account_disabled'),
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

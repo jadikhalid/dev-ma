@@ -49,4 +49,34 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    public function companyOwner(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'company',
+            'company_seat' => User::SEAT_OWNER,
+            'approval_status' => User::APPROVAL_APPROVED,
+            'approved_at' => now(),
+        ]);
+    }
+
+    public function companyMember(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'company',
+            'company_seat' => User::SEAT_MEMBER,
+            'approval_status' => User::APPROVAL_APPROVED,
+            'approved_at' => now(),
+        ]);
+    }
+
+    public function talent(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'dev',
+            'company_seat' => null,
+            'approval_status' => User::APPROVAL_APPROVED,
+            'approved_at' => now(),
+        ]);
+    }
 }
