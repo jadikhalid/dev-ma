@@ -23,6 +23,8 @@ class ResendPendingRegistrationController extends Controller
             $message = collect($exception->errors())->flatten()->first()
                 ?? __('talenma.auth.registration_resend_unavailable');
 
+            $request->session()->forget('pending_registration_email');
+
             return redirect()
                 ->route('login')
                 ->withInput($request->only('email'))
@@ -36,9 +38,10 @@ class ResendPendingRegistrationController extends Controller
                 ->with('toast_error', __('talenma.auth.verification_resend_failed'));
         }
 
+        $request->session()->put('pending_registration_email', $validated['email']);
+
         return redirect()
             ->route('login')
-            ->with('pending_registration_email', $validated['email'])
             ->with('toast_success', __('talenma.auth.verification_link_sent'));
     }
 }

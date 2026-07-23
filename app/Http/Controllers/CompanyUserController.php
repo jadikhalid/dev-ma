@@ -3,18 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\CompanyMembership;
+use App\Models\JobPosting;
+use App\Models\RecruitmentRequest;
 use App\Models\User;
+use App\Services\UserDeletionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class CompanyUserController extends Controller
 {
-    public function store(Request $request): RedirectResponse
+    public function __construct(
+        private UserDeletionService $userDeletion,
+    ) {}
+
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $owner = $request->user();
         abort_unless($owner->canManageCompanyUsers(), 403);
@@ -62,12 +67,18 @@ class CompanyUserController extends Controller
             ]);
         });
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.company_users.created'),
+            ]);
+        }
+
         return redirect()
-            ->route('profile.edit', ['panel' => 'company'])
+            ->route('profile.edit', ['panel' => 'account'])
             ->with('toast_success', __('talenma.company_users.created'));
     }
 
-    public function destroy(Request $request, User $member): RedirectResponse
+    public function destroy(Request $request, User $member): RedirectResponse|JsonResponse
     {
         $owner = $request->user();
         abort_unless($owner->canManageCompanyUsers(), 403);
@@ -81,17 +92,29 @@ class CompanyUserController extends Controller
             ->firstOrFail();
 
         abort_unless($member->isCompanyMember(), 403);
+        abort_unless(! $member->isCompanyOwner(), 403);
 
-        DB::transaction(function () use ($member, $membership) {
+        DB::transaction(function () use ($member, $membership, $owner) {
+            JobPosting::query()
+                ->where('created_by', $member->id)
+                ->update(['created_by' => $owner->id]);
+
+            RecruitmentRequest::query()
+                ->where('company_user_id', $member->id)
+                ->update(['company_user_id' => $owner->id]);
+
             $membership->delete();
-            $member->update([
-                'disabled_at' => now(),
-                'email' => 'disabled+'.$member->id.'.'.Str::lower(Str::random(6)).'@invalid.local',
-            ]);
+            $this->userDeletion->delete($member);
         });
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.company_users.removed'),
+            ]);
+        }
+
         return redirect()
-            ->route('profile.edit', ['panel' => 'company'])
+            ->route('profile.edit', ['panel' => 'account'])
             ->with('toast_success', __('talenma.company_users.removed'));
     }
 }

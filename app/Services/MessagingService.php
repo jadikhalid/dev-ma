@@ -27,10 +27,6 @@ class MessagingService
         'image/webp',
     ];
 
-    public function __construct(
-        private CompanyProfileCompletionService $companyCompletion,
-    ) {}
-
     /**
      * @return Collection<int, Conversation>
      */
@@ -326,10 +322,6 @@ class MessagingService
     private function assertCompanyCanMessage(User $company): void
     {
         abort_unless($company->isCompany() && $company->isApproved(), 403);
-
-        $ready = $this->companyCompletion->assess($company->companyOrganization())['is_catalog_ready'] ?? false;
-
-        abort_unless($ready, 403, __('talenma.dashboard.company.profile_incomplete'));
     }
 
     private function assertTalentIsContactable(User $talent): void

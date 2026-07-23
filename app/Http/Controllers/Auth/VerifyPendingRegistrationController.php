@@ -26,6 +26,7 @@ class VerifyPendingRegistrationController extends Controller
 
         Auth::login($user);
         request()->session()->regenerate();
+        request()->session()->forget('pending_registration_email');
 
         return $this->redirectAfterRegistration($user);
     }

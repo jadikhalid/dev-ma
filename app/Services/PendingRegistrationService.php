@@ -149,8 +149,8 @@ class PendingRegistrationService
                     'sector' => $sectorLabel,
                     'registration_sector' => $sectorLabel,
                     'profession_sector_id' => $sector->id,
-                    'hiring_needs' => $payload['company_need'],
-                    'registration_hiring_needs' => $payload['company_need'],
+                    'description' => $payload['company_description'],
+                    'registration_description' => $payload['company_description'],
                     'website' => $payload['company_website'] ?? null,
                     'country' => $payload['company_country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY,
                 ]);
@@ -237,7 +237,7 @@ class PendingRegistrationService
             $payload['name'] = $validated['name'];
             $payload['representative_name'] = $validated['representative_name'];
             $payload['sector'] = $validated['sector'];
-            $payload['company_need'] = $validated['company_need'];
+            $payload['company_description'] = $validated['company_description'];
             $payload['company_website'] = $validated['company_website'] ?? null;
             $payload['company_country'] = $validated['company_country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY;
         }

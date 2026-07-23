@@ -16,7 +16,7 @@
 @if ($linked)
     <a {{ $classes->merge(['href' => $attributes->get('href', '/')]) }}>
 @else
-    <div {{ $classes }}>
+    <div {{ $classes->merge(['aria-disabled' => 'true']) }}>
 @endif
     <span class="{{ $badgeClass }}">MA</span>
     <span class="font-semibold {{ $s['text'] }} tracking-tight {{ $textClass }} max-[420px]:hidden">Talents du <span class="{{ $accentClass }}">Maroc</span></span>

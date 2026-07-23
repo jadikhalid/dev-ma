@@ -7,6 +7,8 @@ use App\Models\CompanyProfile;
 class CompanyProfileCompletionService
 {
     /**
+     * Progress for the company dashboard (informational only — does not gate feature access).
+     *
      * @return array{
      *     percent: int,
      *     status: string,

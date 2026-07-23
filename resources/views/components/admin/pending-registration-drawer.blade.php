@@ -153,7 +153,7 @@
                                 </dd>
                             </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.description && user.description !== '—'">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.auth.registration_description') }}</dt>
+                                <dt class="text-xs text-gray-500">{{ __('talenma.company.section_presentation') }}</dt>
                                 <dd class="mt-2 text-gray-700 whitespace-pre-line leading-relaxed" x-text="user.description"></dd>
                             </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.company?.hiring_needs">

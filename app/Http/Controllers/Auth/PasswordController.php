@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,16 +14,26 @@ class PasswordController extends Controller
     /**
      * Update the user's password.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request): RedirectResponse|JsonResponse
     {
-        $validated = $request->validateWithBag('updatePassword', [
+        $rules = [
             'current_password' => ['required', 'current_password'],
             'password' => ['required', Password::defaults(), 'confirmed'],
-        ]);
+        ];
+
+        $validated = $request->wantsJson()
+            ? $request->validate($rules)
+            : $request->validateWithBag('updatePassword', $rules);
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.account.password_updated'),
+            ]);
+        }
 
         return back()->with('status', 'password-updated');
     }

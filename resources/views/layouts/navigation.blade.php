@@ -2,9 +2,6 @@
     $authUser = Auth::user();
     $pendingAccount = $authUser->isPendingApproval();
     $companyOrg = $authUser->isCompany() ? $authUser->companyOrganization() : null;
-    $catalogBlocked = $authUser->isCompany()
-        && ! app(\App\Services\CompanyProfileCompletionService::class)
-            ->assess($companyOrg)['is_catalog_ready'];
     $isCompanyOwner = $authUser->isCompanyOwner();
     $inboxUnread = (! $pendingAccount && ($authUser->isCompany() || $authUser->isTalent() || $authUser->isStaff()))
         ? app(\App\Services\MessagingService::class)->unreadCountFor($authUser)
@@ -15,7 +12,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center gap-2 sm:gap-4 min-w-0">
-                <x-brand-logo :href="route('home')" size="sm" />
+                <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" />
                 <div class="hidden lg:flex items-center gap-1 min-w-0">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingAccount">
                         <span class="inline-flex items-center gap-1.5">
@@ -50,7 +47,7 @@
                         <x-nav-link :href="route('talent.jobs.index')" :active="request()->routeIs('talent.jobs.*')" :disabled="$pendingAccount">{{ __('talenma.nav.jobs') }}</x-nav-link>
                         <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')" :disabled="$pendingAccount">{{ __('talenma.nav.my_profile') }}</x-nav-link>
                     @elseif ($authUser->isCompany())
-                        <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount || $catalogBlocked">
+                        <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-1.5">
                                 <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
                                 {{ __('talenma.nav.messages') }}
@@ -91,13 +88,13 @@
                         </button>
                     </x-slot>
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('home')">
+                        <x-dropdown-link :href="route('home')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-2">
                                 <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
                                 {{ __('talenma.nav.home') }}
                             </span>
                         </x-dropdown-link>
-                        <x-dropdown-link :href="route('profile.edit', $authUser->canManageCompanyProfile() ? ['panel' => 'account'] : [])">
+                        <x-dropdown-link :href="route('profile.edit', $authUser->canManageCompanyProfile() ? ['panel' => 'account'] : [])" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-2">
                                 <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
                                 {{ __('talenma.nav.settings') }}
@@ -182,7 +179,7 @@
                         <x-responsive-nav-link :href="route('talent.jobs.index')" :active="request()->routeIs('talent.jobs.*')">{{ __('talenma.nav.jobs') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')">{{ __('talenma.nav.my_profile') }}</x-responsive-nav-link>
                     @elseif ($authUser->isCompany())
-                        <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$catalogBlocked">
+                        <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
                             <span class="inline-flex items-center gap-2">
                                 <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
                                 {{ __('talenma.nav.messages') }}
@@ -194,13 +191,13 @@
                     @endif
                 </div>
             @endunless
-            <x-dropdown-link :href="route('home')">
+            <x-dropdown-link :href="route('home')" :disabled="$pendingAccount">
                 <span class="inline-flex items-center gap-2">
                     <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
                     {{ __('talenma.nav.home') }}
                 </span>
             </x-dropdown-link>
-            <x-dropdown-link :href="route('profile.edit', $authUser->canManageCompanyProfile() ? ['panel' => 'account'] : [])">
+            <x-dropdown-link :href="route('profile.edit', $authUser->canManageCompanyProfile() ? ['panel' => 'account'] : [])" :disabled="$pendingAccount">
                 <span class="inline-flex items-center gap-2">
                     <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
                     {{ __('talenma.nav.settings') }}

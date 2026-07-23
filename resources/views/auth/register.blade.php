@@ -14,7 +14,7 @@
         if (
             $errors->has('representative_name')
             || $errors->has('sector')
-            || $errors->has('company_need')
+            || $errors->has('company_description')
             || $errors->has('company_website')
             || $errors->has('company_country')
         ) {
@@ -63,19 +63,32 @@
         'representative_name_min' => __('talenma.auth.validation.representative_name_min'),
         'representative_name_max' => __('talenma.auth.validation.representative_name_max'),
         'representative_name_format' => __('talenma.auth.validation.representative_name_format'),
-        'company_need_required' => __('talenma.auth.validation.company_need_required'),
-        'company_need_min' => __('talenma.auth.validation.company_need_min'),
-        'company_need_max' => __('talenma.auth.validation.company_need_max'),
+        'company_description_required' => __('talenma.auth.validation.company_description_required'),
+        'company_description_min' => __('talenma.auth.validation.company_description_min'),
+        'company_description_max' => __('talenma.auth.validation.company_description_max'),
         'company_website_invalid' => __('talenma.auth.validation.company_website_invalid'),
     ];
 @endphp
 
-<x-guest-layout viewport-fit>
-    <x-slot name="title">{{ __('talenma.auth.register_title') }}</x-slot>
-    <x-slot name="description">{{ __('talenma.auth.register_desc') }}</x-slot>
+@php
+    $pendingRegistrationEmail = session('pending_registration_email');
+@endphp
 
-    <x-toast-stack persistent />
+<x-guest-layout :viewport-fit="! $pendingRegistrationEmail">
+    <x-slot name="title">
+        {{ $pendingRegistrationEmail ? __('talenma.auth.verify_email_title') : __('talenma.auth.register_title') }}
+    </x-slot>
+    @unless ($pendingRegistrationEmail)
+        <x-slot name="description">{{ __('talenma.auth.register_desc') }}</x-slot>
+    @endunless
 
+    <x-toast-stack :persistent="! $pendingRegistrationEmail" />
+
+    @if ($pendingRegistrationEmail)
+        @include('auth.partials.pending-registration-verification', [
+            'pendingEmail' => $pendingRegistrationEmail,
+        ])
+    @else
     <form
         method="POST"
         action="{{ route('register') }}"
@@ -94,7 +107,7 @@
             initialDescription: @js(old('description', '')),
             initialDocumentsCount: @js(is_array(old('documents')) ? count(old('documents')) : 0),
             initialRepresentativeName: @js(old('representative_name', '')),
-            initialCompanyNeed: @js(old('company_need', '')),
+            initialCompanyDescription: @js(old('company_description', '')),
             initialCompanyWebsite: @js(old('company_website', '')),
             initialCompanyCountry: @js(old('company_country', \App\Models\CompanyProfile::DEFAULT_COUNTRY)),
             defaultCompanyCountry: @js(\App\Models\CompanyProfile::DEFAULT_COUNTRY),
@@ -266,7 +279,7 @@
                 </div>
             </div>
 
-            {{-- Étape 2 entreprise : contact & besoin --}}
+            {{-- Étape 2 entreprise : contact & présentation --}}
             <div
                 x-show="isCompany && step === 2"
                 x-cloak
@@ -293,21 +306,24 @@
                     <x-input-error :messages="$errors->get('sector')" class="mt-1" />
                 </div>
                 <div>
-                    <x-input-label for="company_need" :value="__('talenma.auth.company_need')" class="text-xs sm:text-sm" />
+                    <x-input-label for="company_description" :value="__('talenma.company.description')" class="text-xs sm:text-sm" />
                     <textarea
-                        id="company_need"
-                        name="company_need"
-                        rows="3"
-                        maxlength="1000"
-                        x-model="companyNeed"
-                        @blur="onFieldBlur('company_need')"
-                        @input="onFieldInput('company_need')"
-                        x-bind:class="fieldInvalidClass('company_need')"
+                        id="company_description"
+                        name="company_description"
+                        rows="5"
+                        maxlength="5000"
+                        x-model="companyDescription"
+                        @blur="onFieldBlur('company_description')"
+                        @input="onFieldInput('company_description')"
+                        x-bind:class="fieldInvalidClass('company_description')"
                         class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm resize-none"
-                        placeholder="{{ __('talenma.auth.company_need_placeholder') }}"
-                    >{{ old('company_need') }}</textarea>
-                    <p class="mt-0.5 text-[11px] text-gray-500 text-right"><span x-text="companyNeed.length"></span>/1000</p>
-                    <x-input-error :messages="$errors->get('company_need')" class="mt-1" />
+                        placeholder="{{ __('talenma.company.description_placeholder') }}"
+                    >{{ old('company_description') }}</textarea>
+                    <div class="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-gray-500">
+                        <span>{{ __('talenma.company.description_hint') }}</span>
+                        <span class="shrink-0"><span x-text="companyDescription.length"></span>/5000</span>
+                    </div>
+                    <x-input-error :messages="$errors->get('company_description')" class="mt-1" />
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -501,4 +517,5 @@
 
         <p class="shrink-0 mt-2 text-center text-xs sm:text-sm text-gray-600">{{ __('talenma.auth.has_account') }} <a href="{{ route('login') }}" class="text-indigo-600 font-medium">{{ __('talenma.auth.login_btn') }}</a></p>
     </form>
+    @endif
 </x-guest-layout>

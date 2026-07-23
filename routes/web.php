@@ -33,6 +33,9 @@ Route::get('/locale/suggest-from-ip', [LocaleController::class, 'suggest'])
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/profile/email/confirm/{token}', [ProfileController::class, 'confirmPendingEmail'])
+    ->middleware('throttle:20,1')
+    ->name('profile.email.confirm');
 Route::get('/skill-suggestions', SkillSuggestionController::class)
     ->middleware('throttle:60,1')
     ->name('skill-suggestions');
@@ -61,6 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/contact', [ProfileController::class, 'updateContact'])->name('profile.contact.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/email/pending/cancel', [ProfileController::class, 'cancelPendingEmail'])->name('profile.email.cancel');
 
     Route::middleware('staff')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');

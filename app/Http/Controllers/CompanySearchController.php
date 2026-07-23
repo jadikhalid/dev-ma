@@ -6,7 +6,6 @@ use App\Models\Profession;
 use App\Models\Profile;
 use App\Models\ProfileDocument;
 use App\Models\User;
-use App\Services\CompanyProfileCompletionService;
 use App\Services\ProfessionCatalogService;
 use App\Services\TalentActivityTracker;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +18,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CompanySearchController extends Controller
 {
     public function __construct(
-        private CompanyProfileCompletionService $profileCompletion,
         private ProfessionCatalogService $professionCatalog,
         private TalentActivityTracker $activityTracker,
     ) {}
@@ -28,14 +26,6 @@ class CompanySearchController extends Controller
     {
         if (! $request->user()->isCompany()) {
             return redirect()->route('dashboard');
-        }
-
-        $completion = $this->profileCompletion->assess($request->user()->companyOrganization());
-
-        if (! $completion['is_catalog_ready']) {
-            return redirect()
-                ->route('dashboard')
-                ->with('toast_error', __('talenma.dashboard.company.profile_incomplete'));
         }
 
         $talents = $this->filteredTalentsQuery($request)
@@ -76,14 +66,6 @@ class CompanySearchController extends Controller
     {
         if (! $request->user()->isCompany()) {
             return redirect()->route('dashboard');
-        }
-
-        $completion = $this->profileCompletion->assess($request->user()->companyOrganization());
-
-        if (! $completion['is_catalog_ready']) {
-            return redirect()
-                ->route('dashboard')
-                ->with('toast_error', __('talenma.dashboard.company.profile_incomplete'));
         }
 
         if ($talent->role !== 'dev' || $talent->approval_status !== User::APPROVAL_APPROVED) {

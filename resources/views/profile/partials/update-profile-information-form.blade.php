@@ -21,10 +21,15 @@
     </form>
 
     <form
+        id="account-profile-form"
         method="post"
         action="{{ route('profile.update') }}"
         enctype="multipart/form-data"
-        class="mt-6 space-y-6"
+        class="relative mt-6 space-y-6"
+        data-ajax
+        data-loading-target="account-profile-card"
+        data-error-message="{{ __('talenma.common.save_error') }}"
+        novalidate
         x-data="avatarPreview({
             initialUrl: @js($user->avatarUrl()),
             initials: @js($user->initials()),
@@ -101,12 +106,33 @@
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
                     <x-input-label for="first_name" :value="__('talenma.auth.first_name')" />
-                    <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full" :value="old('first_name', $user->first_name)" required autofocus autocomplete="given-name" />
+                    <x-text-input
+                        id="first_name"
+                        name="first_name"
+                        type="text"
+                        class="mt-1 block w-full"
+                        :value="old('first_name', $user->first_name)"
+                        required
+                        autofocus
+                        autocomplete="given-name"
+                        data-required
+                        data-required-message="{{ __('talenma.auth.first_name') }}"
+                    />
                     <x-input-error class="mt-2" :messages="$errors->get('first_name')" />
                 </div>
                 <div>
                     <x-input-label for="last_name" :value="__('talenma.auth.last_name')" />
-                    <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full" :value="old('last_name', $user->last_name)" required autocomplete="family-name" />
+                    <x-text-input
+                        id="last_name"
+                        name="last_name"
+                        type="text"
+                        class="mt-1 block w-full"
+                        :value="old('last_name', $user->last_name)"
+                        required
+                        autocomplete="family-name"
+                        data-required
+                        data-required-message="{{ __('talenma.auth.last_name') }}"
+                    />
                     <x-input-error class="mt-2" :messages="$errors->get('last_name')" />
                 </div>
             </div>
@@ -116,7 +142,18 @@
                     for="name"
                     :value="$useCompanyBranding ? __('talenma.account.name_company') : __('talenma.account.name')"
                 />
-                <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+                <x-text-input
+                    id="name"
+                    name="name"
+                    type="text"
+                    class="mt-1 block w-full"
+                    :value="old('name', $user->name)"
+                    required
+                    autofocus
+                    autocomplete="name"
+                    data-required
+                    data-required-message="{{ $useCompanyBranding ? __('talenma.account.name_company') : __('talenma.account.name') }}"
+                />
                 <x-input-error class="mt-2" :messages="$errors->get('name')" />
             </div>
         @endif
@@ -126,10 +163,42 @@
                 for="email"
                 :value="$useCompanyBranding ? __('talenma.account.email_company') : __('talenma.account.email')"
             />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
+            <x-text-input
+                id="email"
+                name="email"
+                type="email"
+                class="mt-1 block w-full"
+                :value="old('email', $user->email)"
+                required
+                autocomplete="username"
+                data-required
+                data-required-message="{{ $useCompanyBranding ? __('talenma.account.email_company') : __('talenma.account.email') }}"
+            />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
+            @if ($useCompanyBranding && $user->hasPendingEmailChange())
+                <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 px-3.5 py-3 space-y-2">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                        {{ __('talenma.account.pending_email_label') }}
+                    </p>
+                    <input
+                        type="email"
+                        value="{{ $user->pending_email }}"
+                        disabled
+                        class="block w-full rounded-md border-gray-200 bg-gray-100 text-gray-400 shadow-sm text-sm cursor-not-allowed"
+                    >
+                    <p class="text-xs text-amber-800/80">
+                        {{ __('talenma.account.pending_email_hint', ['minutes' => \App\Services\PendingEmailChangeService::TTL_MINUTES]) }}
+                    </p>
+                    <button
+                        type="submit"
+                        form="cancel-pending-email-form"
+                        class="text-xs font-semibold text-amber-900 underline hover:text-amber-700"
+                    >
+                        {{ __('talenma.account.pending_email_cancel') }}
+                    </button>
+                </div>
+            @elseif ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail() && ! $useCompanyBranding)
                 <div>
                     <p class="text-sm mt-2 text-gray-800">
                         {{ __('talenma.account.email_unverified') }}
@@ -137,24 +206,21 @@
                             {{ __('talenma.account.resend_verification') }}
                         </button>
                     </p>
-
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
-                            {{ __('talenma.account.verification_sent') }}
-                        </p>
-                    @endif
                 </div>
             @endif
         </div>
 
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('talenma.common.save') }}</x-primary-button>
-
-            @if (session('status') === 'profile-updated')
-                <p x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 2000)" class="text-sm text-green-600 font-medium">
-                    {{ __('talenma.account.saved') }}
-                </p>
-            @endif
+        <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
+            <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">
+                {{ __('talenma.common.cancel') }}
+            </button>
+            <x-primary-button class="justify-center">{{ __('talenma.common.save') }}</x-primary-button>
         </div>
     </form>
+
+    @if ($useCompanyBranding && $user->hasPendingEmailChange())
+        <form id="cancel-pending-email-form" method="post" action="{{ route('profile.email.cancel') }}" class="hidden">
+            @csrf
+        </form>
+    @endif
 </section>

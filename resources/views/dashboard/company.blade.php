@@ -1,9 +1,7 @@
 @php
     $user = Auth::user();
     $isOwner = $user->isCompanyOwner();
-    $profileEditUrl = ($completion['next_section'] ?? null) === 'contact'
-        ? route('profile.edit', ['panel' => 'account'])
-        : route('profile.edit', ['panel' => 'company']);
+    $profileEditUrl = route('profile.edit', ['panel' => 'account']);
     $actionCols = $isOwner ? 'md:grid-cols-3' : 'md:grid-cols-2';
     $welcomeName = $isOwner
         ? (filled($profile?->representative_name) ? $profile->representative_name : $user->name)
@@ -50,7 +48,7 @@
                             />
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <span class="text-lg sm:text-xl font-bold text-gray-900">{{ $completion['percent'] }}%</span>
+                            <span class="text-sm sm:text-base font-bold text-gray-900">{{ $completion['percent'] }}%</span>
                             <span class="text-[9px] uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.company.progress_label') }}</span>
                         </div>
                     </div>
@@ -73,11 +71,7 @@
                 <h3 class="text-base font-bold text-gray-900">{{ __('talenma.dashboard.company.recruit_title') }}</h3>
                 <p class="mt-1.5 text-sm text-gray-600 flex-1">{{ __('talenma.dashboard.company.recruit_desc') }}</p>
                 <div class="mt-4 flex flex-col gap-2">
-                    @if ($completion['is_catalog_ready'])
-                        <a href="{{ route('company.search') }}" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 text-center">{{ __('talenma.dashboard.company.browse') }}</a>
-                    @else
-                        <span class="px-4 py-2 bg-gray-100 text-gray-400 text-sm font-semibold rounded-lg text-center cursor-not-allowed" title="{{ __('talenma.dashboard.company.profile_incomplete') }}">{{ __('talenma.dashboard.company.browse') }}</span>
-                    @endif
+                    <a href="{{ route('company.search') }}" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 text-center">{{ __('talenma.dashboard.company.browse') }}</a>
                     <a href="{{ route('recruitment.create') }}" class="px-4 py-2 border border-indigo-200 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50 text-center">{{ __('talenma.dashboard.company.intermediary') }}</a>
                 </div>
             </div>

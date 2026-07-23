@@ -48,6 +48,7 @@ class CompanyCatalogSearchService
                                 $profileQ->where('hiring_needs', 'like', '%'.$escaped.'%')
                                     ->orWhere('registration_hiring_needs', 'like', '%'.$escaped.'%')
                                     ->orWhere('description', 'like', '%'.$escaped.'%')
+                                    ->orWhere('registration_description', 'like', '%'.$escaped.'%')
                                     ->orWhere('sector', 'like', '%'.$escaped.'%');
                             });
                     });
@@ -197,6 +198,7 @@ class CompanyCatalogSearchService
             $profile?->hiring_needs,
             $profile?->registration_hiring_needs,
             $profile?->description,
+            $profile?->registration_description,
             $profile?->countryLabel(),
         ])));
 
@@ -214,7 +216,7 @@ class CompanyCatalogSearchService
             }
         }
 
-        $needs = trim((string) ($profile?->hiring_needs ?: $profile?->registration_hiring_needs ?: $profile?->description ?: ''));
+        $needs = trim((string) ($profile?->hiring_needs ?: $profile?->registration_hiring_needs ?: $profile?->description ?: $profile?->registration_description ?: ''));
 
         return [
             'id' => $company->id,

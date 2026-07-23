@@ -14,7 +14,7 @@ class CompanyMultiUserAndJobsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_owner_can_create_and_disable_company_member(): void
+    public function test_owner_can_create_and_delete_company_member(): void
     {
         [$owner] = $this->makeCompanyOwner();
 
@@ -27,7 +27,7 @@ class CompanyMultiUserAndJobsTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertRedirect(route('profile.edit', ['panel' => 'company']));
+        $response->assertRedirect(route('profile.edit', ['panel' => 'account']));
 
         $member = User::query()->where('email', 'sara@example.com')->first();
         $this->assertNotNull($member);
@@ -37,14 +37,29 @@ class CompanyMultiUserAndJobsTest extends TestCase
             'company_profile_id' => $owner->companyProfile->id,
         ]);
 
+        $memberId = $member->id;
+
         $this->actingAs($owner)
             ->delete(route('company.users.destroy', $member))
-            ->assertRedirect(route('profile.edit', ['panel' => 'company']));
+            ->assertRedirect(route('profile.edit', ['panel' => 'account']));
 
-        $this->assertNotNull($member->fresh()->disabled_at);
+        $this->assertNull(User::query()->find($memberId));
+        $this->assertDatabaseMissing('users', ['email' => 'sara@example.com']);
         $this->assertDatabaseMissing('company_memberships', [
-            'user_id' => $member->id,
+            'user_id' => $memberId,
         ]);
+
+        // Same email can be reused after hard delete.
+        $this->actingAs($owner)->post(route('company.users.store'), [
+            'first_name' => 'Sara',
+            'last_name' => 'Benali',
+            'email' => 'sara@example.com',
+            'job_title' => 'RH',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertRedirect(route('profile.edit', ['panel' => 'account']));
+
+        $this->assertDatabaseHas('users', ['email' => 'sara@example.com']);
     }
 
     public function test_member_cannot_access_company_profile_or_user_management(): void

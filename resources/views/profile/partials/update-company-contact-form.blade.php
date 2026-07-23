@@ -9,7 +9,15 @@
             <p class="mt-2 text-xs text-gray-500">{{ __('talenma.company.section_contact_email_hint', ['email' => $user->email]) }}</p>
         </header>
 
-        <form method="post" action="{{ route('profile.contact.update') }}" class="mt-6 space-y-6">
+        <form
+            method="post"
+            action="{{ route('profile.contact.update') }}"
+            class="relative mt-6 space-y-6"
+            data-ajax
+            data-loading-target="account-contact-card"
+            data-error-message="{{ __('talenma.common.save_error') }}"
+            novalidate
+        >
             @csrf
             @method('patch')
 
@@ -21,6 +29,8 @@
                     class="mt-1 block w-full"
                     :value="old('representative_name', $companyProfile?->representative_name)"
                     required
+                    data-required
+                    data-required-message="{{ __('talenma.company.representative_name_required') }}"
                 />
                 <x-input-error class="mt-2" :messages="$errors->get('representative_name')" />
             </div>
@@ -35,6 +45,8 @@
                         class="mt-1 block w-full"
                         :value="old('phone', $companyProfile?->phone)"
                         placeholder="+33 6 00 00 00 00"
+                        data-phone
+                        data-phone-message="{{ __('talenma.company.phone_invalid') }}"
                     />
                     <x-input-error class="mt-2" :messages="$errors->get('phone')" />
                 </div>
@@ -47,19 +59,20 @@
                         class="mt-1 block w-full"
                         :value="old('linkedin_url', $companyProfile?->linkedin_url)"
                         placeholder="https://linkedin.com/in/..."
+                        data-url
+                        data-url-message="{{ __('talenma.company.linkedin_invalid') }}"
+                        data-url-host="linkedin.com"
+                        data-url-host-message="{{ __('talenma.company.linkedin_host') }}"
                     />
                     <x-input-error class="mt-2" :messages="$errors->get('linkedin_url')" />
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
-                <x-primary-button>{{ __('talenma.common.save') }}</x-primary-button>
-
-                @if (session('status') === 'contact-updated')
-                    <p x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 2000)" class="text-sm text-green-600 font-medium">
-                        {{ __('talenma.account.contact_saved') }}
-                    </p>
-                @endif
+            <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
+                <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">
+                    {{ __('talenma.common.cancel') }}
+                </button>
+                <x-primary-button class="justify-center">{{ __('talenma.common.save') }}</x-primary-button>
             </div>
         </form>
     </section>

@@ -199,7 +199,7 @@ class CompanyProfileTest extends TestCase
         );
     }
 
-    public function test_catalog_is_blocked_when_profile_is_incomplete(): void
+    public function test_catalog_is_accessible_when_profile_is_incomplete(): void
     {
         $user = $this->approvedCompany([
             'hiring_needs' => null,
@@ -208,8 +208,7 @@ class CompanyProfileTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('company.search'));
 
-        $response->assertRedirect(route('dashboard'));
-        $response->assertSessionHas('toast_error');
+        $response->assertOk();
     }
 
     public function test_catalog_is_accessible_when_profile_is_ready(): void

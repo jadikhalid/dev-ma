@@ -1347,7 +1347,7 @@ Alpine.data('registerWizard', (config) => ({
     documentsCount: config.initialDocumentsCount ?? 0,
     documentFiles: [],
     representativeName: config.initialRepresentativeName ?? '',
-    companyNeed: config.initialCompanyNeed ?? '',
+    companyDescription: config.initialCompanyDescription ?? '',
     companyWebsite: config.initialCompanyWebsite ?? '',
     companyCountry: config.initialCompanyCountry ?? config.defaultCompanyCountry ?? '',
     defaultCompanyCountry: config.defaultCompanyCountry ?? '',
@@ -1404,7 +1404,7 @@ Alpine.data('registerWizard', (config) => ({
 
         return nameOk
             && this.sector !== ''
-            && this.companyNeed.trim().length >= 20;
+            && this.companyDescription.trim().length >= 50;
     },
 
     get talentStep2Valid() {
@@ -1544,8 +1544,8 @@ Alpine.data('registerWizard', (config) => ({
                 return this.documentsCount === 0;
             case 'representative_name':
                 return this.representativeName.trim() === '';
-            case 'company_need':
-                return this.companyNeed.trim() === '';
+            case 'company_description':
+                return this.companyDescription.trim() === '';
             case 'company_website':
                 return this.companyWebsite.trim() === '';
             default:
@@ -1574,7 +1574,7 @@ Alpine.data('registerWizard', (config) => ({
             return [
                 'representative_name',
                 'sector',
-                'company_need',
+                'company_description',
                 'company_website',
             ].includes(field);
         }
@@ -1786,19 +1786,19 @@ Alpine.data('registerWizard', (config) => ({
 
                 return null;
             }
-            case 'company_need': {
-                const value = this.companyNeed.trim();
+            case 'company_description': {
+                const value = this.companyDescription.trim();
 
                 if (! value) {
-                    return messages.company_need_required ?? null;
+                    return messages.company_description_required ?? null;
                 }
 
-                if (value.length < 20) {
-                    return messages.company_need_min ?? null;
+                if (value.length < 50) {
+                    return messages.company_description_min ?? null;
                 }
 
-                if (value.length > 1000) {
-                    return messages.company_need_max ?? null;
+                if (value.length > 5000) {
+                    return messages.company_description_max ?? null;
                 }
 
                 return null;
@@ -1953,7 +1953,7 @@ Alpine.data('registerWizard', (config) => ({
         this.documentsCount = 0;
         this.documentFiles = [];
         this.representativeName = '';
-        this.companyNeed = '';
+        this.companyDescription = '';
         this.companyWebsite = '';
         this.companyCountry = this.defaultCompanyCountry;
         this.clearFieldErrors();
@@ -2016,6 +2016,22 @@ Alpine.data('avatarPreview', (config = {}) => ({
     resetToOriginal() {
         this.revokeObjectUrl();
         this.previewUrl = this.originalUrl;
+    },
+
+    commitInitial() {
+        this.originalUrl = this.previewUrl;
+    },
+
+    resetToInitial() {
+        if (this.$refs.input) {
+            this.$refs.input.value = '';
+        }
+
+        if (this.$refs.removeAvatar) {
+            this.$refs.removeAvatar.checked = false;
+        }
+
+        this.resetToOriginal();
     },
 
     async onFileChange(event) {
@@ -3142,6 +3158,8 @@ function pushToast(type, message) {
 }
 
 async function refreshProfilePartial(elementId) {
+    const scrollY = window.scrollY;
+
     try {
         const response = await fetch(window.location.href, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -3158,14 +3176,18 @@ async function refreshProfilePartial(elementId) {
         const current = document.getElementById(elementId);
 
         if (fresh && current) {
-            current.innerHTML = fresh.innerHTML;
+            current.replaceWith(fresh);
 
-            if (window.Alpine?.initTree) {
-                window.Alpine.initTree(current);
+            const next = document.getElementById(elementId);
+
+            if (next && window.Alpine?.initTree) {
+                window.Alpine.initTree(next);
             }
         }
     } catch (_) {
         // Silent : la carte reste dans son état précédent.
+    } finally {
+        window.scrollTo({ top: scrollY, left: 0, behavior: 'instant' });
     }
 }
 
@@ -3249,6 +3271,10 @@ async function refreshPresentationCard() {
 
 async function refreshCertificationsCard() {
     await refreshPresentationCard();
+}
+
+async function refreshCompanyUsersCard() {
+    await refreshProfilePartial('account-users-card');
 }
 
 function alpineRootsInForm(form) {
@@ -3449,7 +3475,27 @@ document.addEventListener('submit', async (event) => {
 
         if (response.ok) {
             pushToast('success', payload.message);
+
+            if (form.hasAttribute('data-ajax-clear')) {
+                // Match by name too: Alpine may flip password inputs to type="text" when shown.
+                const clearSelector = form.dataset.ajaxClear
+                    || 'input[type="password"], input[name="current_password"], input[name="password"], input[name="password_confirmation"]';
+                form.querySelectorAll(clearSelector).forEach((field) => {
+                    if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
+                        field.value = '';
+                    }
+                });
+            }
+
             commitFormDefaults(form);
+
+            if (payload.reload) {
+                window.setTimeout(() => {
+                    window.location.reload();
+                }, 400);
+
+                return;
+            }
 
             const pickerData = window.Alpine?.$data(form);
 
@@ -3511,6 +3557,8 @@ document.addEventListener('submit', async (event) => {
                 }
             } else if (form.dataset.refresh === 'certifications') {
                 await refreshPresentationCard();
+            } else if (form.dataset.refresh === 'company-users') {
+                await refreshCompanyUsersCard();
             }
         } else if (response.status === 422) {
             const messages = payload.errors

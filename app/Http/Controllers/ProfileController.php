@@ -6,13 +6,17 @@ use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\CompanyProfile;
 use App\Models\User;
 use App\Services\AvatarService;
+use App\Services\PendingEmailChangeService;
 use App\Services\ProfessionCatalogService;
 use App\Services\UserDeletionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Throwable;
 
 class ProfileController extends Controller
 {
@@ -20,11 +24,17 @@ class ProfileController extends Controller
         private AvatarService $avatars,
         private UserDeletionService $userDeletion,
         private ProfessionCatalogService $professionCatalog,
+        private PendingEmailChangeService $pendingEmailChange,
     ) {}
 
     public function edit(Request $request): View|RedirectResponse
     {
         $user = $request->user();
+
+        if ($this->pendingEmailChange->clearExpired($user)) {
+            $user->refresh();
+        }
+
         $showCompanyPanel = $user->canManageCompanyProfile();
         $panel = $request->query('panel', 'account');
 
@@ -42,7 +52,7 @@ class ProfileController extends Controller
             'showCompanyPanel' => $showCompanyPanel,
         ];
 
-        if ($showCompanyPanel && $panel === 'company') {
+        if ($showCompanyPanel) {
             $profile = $user->companyProfile ?: $user->companyProfile()->create([
                 'country' => CompanyProfile::DEFAULT_COUNTRY,
             ]);
@@ -53,24 +63,28 @@ class ProfileController extends Controller
 
             $profile->load(['memberships.user']);
 
-            $data = array_merge($data, [
-                'profile' => $profile,
-                'memberships' => $profile->memberships,
-                'professionSectors' => $this->professionCatalog->sectorsForLocale(),
-                'sectorSlug' => old('sector', $this->professionCatalog->sectorSlugFromLabel($profile->sector) ?? ''),
-                'employeeCountOptions' => $this->employeeCountOptions(),
-                'countryOptions' => CompanyProfile::countryOptions(),
-                'citiesByCountry' => CompanyProfile::citiesByCountry(),
-            ]);
+            $data['profile'] = $profile;
+            $data['memberships'] = $profile->memberships;
+
+            if ($panel === 'company') {
+                $data = array_merge($data, [
+                    'professionSectors' => $this->professionCatalog->sectorsForLocale(),
+                    'sectorSlug' => old('sector', $this->professionCatalog->sectorSlugFromLabel($profile->sector) ?? ''),
+                    'employeeCountOptions' => $this->employeeCountOptions(),
+                    'countryOptions' => CompanyProfile::countryOptions(),
+                    'citiesByCountry' => CompanyProfile::citiesByCountry(),
+                ]);
+            }
         }
 
         return view('profile.edit', $data);
     }
 
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $validated = $request->validated();
+        $redirectParams = $this->accountRedirectParams($user);
 
         if ($request->boolean('remove_avatar')) {
             $this->avatars->delete($user);
@@ -79,6 +93,9 @@ class ProfileController extends Controller
         if ($request->hasFile('avatar')) {
             $this->avatars->store($user, $request->file('avatar'));
         }
+
+        $emailChanged = false;
+        $newEmail = strtolower(trim((string) $validated['email']));
 
         if ($user->isCompanyMember()) {
             $orgName = $user->companyOrganization()?->displayName() ?: $user->name;
@@ -89,24 +106,115 @@ class ProfileController extends Controller
                 'name' => $orgName.' / '.$person,
                 'email' => $validated['email'],
             ]);
+
+            if ($user->isDirty('email')) {
+                $user->email_verified_at = null;
+            }
+        } elseif ($user->isCompanyOwner()) {
+            $user->fill([
+                'name' => $validated['name'],
+            ]);
+
+            if ($newEmail !== strtolower($user->email)) {
+                $emailChanged = true;
+            }
         } else {
             $user->fill([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
             ]);
-        }
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
+            if ($user->isDirty('email')) {
+                $user->email_verified_at = null;
+            }
         }
 
         $user->save();
 
-        return Redirect::route('profile.edit', $this->accountRedirectParams($user))
-            ->with('status', 'profile-updated');
+        if ($emailChanged && $user->isCompanyOwner()) {
+            try {
+                $this->pendingEmailChange->request($user->fresh(), $newEmail);
+            } catch (ValidationException $e) {
+                throw $e;
+            } catch (Throwable) {
+                if ($request->wantsJson()) {
+                    return response()->json(['message' => __('talenma.account.pending_email_failed')], 422);
+                }
+
+                return Redirect::route('profile.edit', $redirectParams)
+                    ->with('toast_error', __('talenma.account.pending_email_failed'));
+            }
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => __('talenma.account.pending_email_sent'),
+                    'reload' => true,
+                ]);
+            }
+
+            return Redirect::route('profile.edit', $redirectParams)
+                ->with('toast_success', __('talenma.account.pending_email_sent'));
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.account.saved'),
+                'avatar_url' => $user->fresh()->avatarUrl(),
+            ]);
+        }
+
+        return Redirect::route('profile.edit', $redirectParams)
+            ->with('status', 'profile-updated')
+            ->with('toast_success', __('talenma.account.saved'));
     }
 
-    public function updateContact(Request $request): RedirectResponse
+    public function confirmPendingEmail(string $token): RedirectResponse
+    {
+        $result = $this->pendingEmailChange->confirm($token);
+
+        if (isset($result['error'])) {
+            $redirect = $this->pendingEmailRedirect($result['user_id'] ?? null);
+
+            return $redirect->with('toast_error', $result['error']);
+        }
+
+        /** @var User $user */
+        $user = $result['user'];
+
+        if (Auth::check() && (int) Auth::id() === (int) $user->id) {
+            return Redirect::route('profile.edit', ['panel' => 'account'])
+                ->with('toast_success', __('talenma.account.pending_email_confirmed'));
+        }
+
+        return Redirect::route('login')
+            ->with('toast_success', __('talenma.account.pending_email_confirmed'));
+    }
+
+    public function cancelPendingEmail(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isCompanyOwner(), 403);
+
+        $this->pendingEmailChange->clear($user, 'cancelled');
+
+        return Redirect::route('profile.edit', ['panel' => 'account'])
+            ->with('toast_success', __('talenma.account.pending_email_cancelled'));
+    }
+
+    private function pendingEmailRedirect(?int $userId): RedirectResponse
+    {
+        if (Auth::check() && $userId && (int) Auth::id() === $userId) {
+            return Redirect::route('profile.edit', ['panel' => 'account']);
+        }
+
+        if (Auth::check() && Auth::user()?->isCompanyOwner()) {
+            return Redirect::route('profile.edit', ['panel' => 'account']);
+        }
+
+        return Redirect::route('login');
+    }
+
+    public function updateContact(Request $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         abort_unless($user->isCompanyOwner(), 403);
@@ -142,6 +250,12 @@ class ProfileController extends Controller
             'linkedin_url' => $validated['linkedin_url'] ?? null,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.account.contact_saved'),
+            ]);
+        }
+
         return Redirect::route('profile.edit', ['panel' => 'account'])
             ->with('status', 'contact-updated');
     }
@@ -169,7 +283,7 @@ class ProfileController extends Controller
      */
     private function accountRedirectParams(User $user): array
     {
-        return $user->canManageCompanyProfile()
+        return $user->canManageCompanyProfile() || $user->isCompanyOwner()
             ? ['panel' => 'account']
             : [];
     }

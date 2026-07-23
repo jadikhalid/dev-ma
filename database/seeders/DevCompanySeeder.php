@@ -162,6 +162,14 @@ class DevCompanySeeder extends Seeder
             'subscription_expires_at' => null,
         ]);
 
+        $description = sprintf(
+            '%s — démonstration « %s ». Focus : %s. Mots-clés entreprise : %s.',
+            $companyName,
+            $sector->name_fr,
+            $focus,
+            implode(', ', $keywords)
+        );
+
         CompanyProfile::create([
             'user_id' => $user->id,
             'representative_name' => trim($firstName.' '.$lastName),
@@ -170,13 +178,8 @@ class DevCompanySeeder extends Seeder
             'profession_sector_id' => $sector->id,
             'country' => $country,
             'city' => $city,
-            'description' => sprintf(
-                '%s — démonstration « %s ». Focus : %s. Mots-clés entreprise : %s.',
-                $companyName,
-                $sector->name_fr,
-                $focus,
-                implode(', ', $keywords)
-            ),
+            'description' => $description,
+            'registration_description' => $description,
             'hiring_needs' => $hiringNeeds,
             'registration_hiring_needs' => $hiringNeeds,
             'website' => 'https://example.com/'.$slug,

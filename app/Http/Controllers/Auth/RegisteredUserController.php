@@ -46,9 +46,10 @@ class RegisteredUserController extends Controller
 
         $request->clearRateLimiter();
 
+        $request->session()->put('pending_registration_email', $email);
+
         return redirect()
             ->route('login')
-            ->with('toast_success', __('talenma.auth.register_success_verify'))
-            ->with('pending_registration_email', $email);
+            ->with('toast_success', __('talenma.auth.register_success_verify'));
     }
 }

@@ -30,10 +30,8 @@
 
     <div
         class="py-10"
-        @if ($showCompanyPanel && $panel === 'company')
-            data-ajax-network-error="{{ __('talenma.company.network_error') }}"
-            data-ajax-timeout-error="{{ __('talenma.company.timeout_error') }}"
-        @endif
+        data-ajax-network-error="{{ __('talenma.common.network_error') }}"
+        data-ajax-timeout-error="{{ __('talenma.common.timeout_error') }}"
     >
         <x-toast-stack />
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

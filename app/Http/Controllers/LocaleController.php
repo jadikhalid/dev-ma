@@ -32,6 +32,8 @@ class LocaleController extends Controller
             session(['locale_manual' => true]);
         }
 
-        return redirect()->back();
+        return redirect()->to(
+            $request->headers->get('Referer') ?: url()->previous() ?: route('home')
+        );
     }
 }

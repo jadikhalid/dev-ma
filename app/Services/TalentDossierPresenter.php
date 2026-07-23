@@ -79,7 +79,11 @@ class TalentDossierPresenter
             'approved_by' => $user->approvedBy?->name,
             'is_pending' => $user->isPendingApproval(),
             'sector' => filled($company?->registration_sector) ? $company->registration_sector : ($company?->sector ?? '—'),
-            'description' => filled($company?->registration_hiring_needs) ? $company->registration_hiring_needs : '—',
+            'description' => filled($company?->registration_description)
+                ? $company->registration_description
+                : (filled($company?->description)
+                    ? $company->description
+                    : (filled($company?->registration_hiring_needs) ? $company->registration_hiring_needs : '—')),
             'documents' => $company?->documents
                 ->map(fn ($document) => [
                     'id' => $document->id,
@@ -99,7 +103,7 @@ class TalentDossierPresenter
                 'country' => $this->text($company->countryLabel()),
                 'city' => $this->text($company->city),
                 'employee_count' => $this->text($company->employee_count),
-                'hiring_needs' => $this->text($company->registration_hiring_needs ?? $company->hiring_needs),
+                'hiring_needs' => $this->text($company->hiring_needs),
             ], fn ($value) => filled($value)) : [],
             'approve_url' => route('admin.users.approve', $user),
             'reject_url' => route('admin.users.reject', $user),

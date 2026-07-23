@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'country',
     'city',
     'description',
+    'registration_description',
     'website',
     'employee_count',
     'hiring_needs',

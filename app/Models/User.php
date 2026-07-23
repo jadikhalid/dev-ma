@@ -18,6 +18,9 @@ use Illuminate\Notifications\Notifiable;
     'first_name',
     'last_name',
     'email',
+    'pending_email',
+    'pending_email_token',
+    'pending_email_expires_at',
     'avatar_path',
     'password',
     'role',
@@ -31,7 +34,7 @@ use Illuminate\Notifications\Notifiable;
     'is_subscribed',
     'subscription_expires_at',
 ])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'pending_email_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     public const APPROVAL_PENDING = 'pending';
@@ -51,12 +54,20 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'pending_email_expires_at' => 'datetime',
             'approved_at' => 'datetime',
             'disabled_at' => 'datetime',
             'password' => 'hashed',
             'is_subscribed' => 'boolean',
             'subscription_expires_at' => 'datetime',
         ];
+    }
+
+    public function hasPendingEmailChange(): bool
+    {
+        return filled($this->pending_email)
+            && $this->pending_email_expires_at
+            && $this->pending_email_expires_at->isFuture();
     }
 
     public function profile(): HasOne

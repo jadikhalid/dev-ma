@@ -56,7 +56,7 @@ class RegistrationTest extends TestCase
             'role' => 'company',
             'representative_name' => 'Jean Dupont',
             'sector' => 'it-digital',
-            'company_need' => 'Nous recherchons un développeur Laravel senior pour une mission de 6 mois en télétravail.',
+            'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile, à la recherche de talents pour accompagner notre croissance.',
             'company_country' => 'fr',
         ], $overrides);
     }
@@ -94,6 +94,14 @@ class RegistrationTest extends TestCase
             ->assertSee(__('talenma.auth.verify_email_pending_no_login'))
             ->assertDontSee('name="password"', false)
             ->assertDontSee('type="password"', false);
+
+        $this->withSession([
+            'pending_registration_email' => 'test@example.com',
+        ])->get(route('register'))
+            ->assertOk()
+            ->assertSee(__('talenma.auth.verify_email_pending_title'))
+            ->assertSee(__('talenma.auth.resend_registration_verification'))
+            ->assertDontSee('name="role"', false);
     }
 
     public function test_email_verification_creates_user_and_profile(): void
@@ -265,7 +273,7 @@ class RegistrationTest extends TestCase
         ]));
 
         $response->assertRedirect('/register');
-        $response->assertSessionHasErrors(['representative_name', 'sector', 'company_need']);
+        $response->assertSessionHasErrors(['representative_name', 'sector', 'company_description']);
     }
 
     public function test_company_registration_stores_sector_and_documents_on_verify(): void
@@ -292,7 +300,9 @@ class RegistrationTest extends TestCase
 
         $this->assertNotNull($profile);
         $this->assertNotNull($profile->registration_sector);
-        $this->assertNotNull($profile->registration_hiring_needs);
+        $this->assertNotNull($profile->registration_description);
+        $this->assertSame($profile->description, $profile->registration_description);
+        $this->assertNull($profile->hiring_needs);
         $this->assertCount(1, $profile->documents);
     }
 
