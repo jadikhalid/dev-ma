@@ -22,6 +22,7 @@
                     </x-nav-link>
                     @if ($authUser->isStaff())
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
+                        <x-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">{{ __('talenma.nav.admin_recruitment') }}</x-nav-link>
                         @if ($authUser->isAdmin())
                             <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
                         @endif
@@ -45,6 +46,7 @@
                             </span>
                         </x-nav-link>
                         <x-nav-link :href="route('talent.jobs.index')" :active="request()->routeIs('talent.jobs.*')" :disabled="$pendingAccount">{{ __('talenma.nav.jobs') }}</x-nav-link>
+                        <x-nav-link :href="route('talent.direct-hire.index')" :active="request()->routeIs('talent.direct-hire.*')" :disabled="$pendingAccount">{{ __('talenma.nav.direct_hire') }}</x-nav-link>
                         <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')" :disabled="$pendingAccount">{{ __('talenma.nav.my_profile') }}</x-nav-link>
                     @elseif ($authUser->isCompany())
                         <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount">
@@ -154,6 +156,7 @@
                     </x-responsive-nav-link>
                     @if ($authUser->isStaff())
                         <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">{{ __('talenma.nav.admin_recruitment') }}</x-responsive-nav-link>
                         @if ($authUser->isAdmin())
                             <x-responsive-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
                         @endif
@@ -177,6 +180,7 @@
                             </span>
                         </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('talent.jobs.index')" :active="request()->routeIs('talent.jobs.*')">{{ __('talenma.nav.jobs') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('talent.direct-hire.index')" :active="request()->routeIs('talent.direct-hire.*')">{{ __('talenma.nav.direct_hire') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')">{{ __('talenma.nav.my_profile') }}</x-responsive-nav-link>
                     @elseif ($authUser->isCompany())
                         <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">

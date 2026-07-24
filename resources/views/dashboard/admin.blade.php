@@ -243,7 +243,9 @@
                         <div>
                             <dt class="text-xs text-gray-500">{{ __('talenma.dashboard.admin.platform_recruitment') }}</dt>
                             <dd class="mt-1 font-medium text-gray-900">
-                                {{ __('talenma.dashboard.admin.platform_recruitment_pending', ['pending' => $platform['recruitment_pending'], 'total' => $platform['recruitment_total']]) }}
+                                <a href="{{ route('admin.recruitment.index') }}" class="text-indigo-600 hover:text-indigo-800">
+                                    {{ __('talenma.dashboard.admin.platform_recruitment_pending', ['pending' => $platform['recruitment_pending'], 'total' => $platform['recruitment_total']]) }} →
+                                </a>
                             </dd>
                         </div>
                         @if (Auth::user()->isAdmin())

@@ -209,6 +209,7 @@ class CompanySearchController extends Controller
                 : null,
             'profile_url' => route('company.talent.show', $talent),
             'recruitment_url' => route('recruitment.create', $talent).'?mode=intermediary',
+            'direct_hire_url' => route('company.direct-hire.create', $talent),
         ];
     }
 
@@ -253,6 +254,8 @@ class CompanySearchController extends Controller
             'cv_url' => ($isPublic && $cv) ? route('company.talent.cv', $talent) : null,
             'talent_id' => $talent->id,
             'compose_url' => route('inbox.store'),
+            'direct_hire_url' => route('company.direct-hire.create', $talent),
+            'recruitment_url' => route('recruitment.create', $talent),
         ];
     }
 }

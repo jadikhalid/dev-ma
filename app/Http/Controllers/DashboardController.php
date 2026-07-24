@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DirectHireRequest;
 use App\Services\AdminDashboardService;
 use App\Services\CompanyProfileCompletionService;
 use App\Services\TalentDashboardStatsService;
@@ -34,14 +35,37 @@ class DashboardController extends Controller
                 ? $user->recruitmentRequests()->with('talent.profile')->latest()->take(5)->get()
                 : collect();
 
-            return view('dashboard.company', compact('recentRequests', 'profile', 'completion'));
+            $directHireQuery = DirectHireRequest::query()
+                ->with(['talent.profile', 'rounds'])
+                ->latest()
+                ->take(8);
+
+            if ($profile) {
+                $directHireQuery->where('company_profile_id', $profile->id);
+            } else {
+                $directHireQuery->where('company_user_id', $user->id);
+            }
+
+            $directHires = $directHireQuery->get();
+
+            return view('dashboard.company', compact('recentRequests', 'directHires', 'profile', 'completion'));
         }
 
         $user->load(['profile.profession', 'profile.professionSector', 'profile.documents']);
         $profile = $user->profile;
         $completion = $this->profileCompletion->assess($profile);
         $stats = $this->talentStats->build($user);
+        $directHires = DirectHireRequest::query()
+            ->where('talent_user_id', $user->id)
+            ->with(['companyProfile', 'company'])
+            ->latest()
+            ->take(8)
+            ->get();
+        $pendingDirectHires = $directHires->whereIn('status', [
+            DirectHireRequest::STATUS_PENDING_RESPONSE,
+            DirectHireRequest::STATUS_DEFERRED,
+        ])->count();
 
-        return view('dashboard.talent', compact('profile', 'completion', 'stats'));
+        return view('dashboard.talent', compact('profile', 'completion', 'stats', 'directHires', 'pendingDirectHires'));
     }
 }

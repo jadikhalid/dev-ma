@@ -39,14 +39,15 @@
                             <x-slot name="trigger">
                                 <button
                                     type="button"
-                                    class="rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                                    aria-label="{{ Auth::user()->name }}"
+                                    class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                                    aria-label="{{ Auth::user()->companyDisplayName() }}"
                                 >
                                     <x-company-logo
-                                        :profile="Auth::user()->companyProfile"
-                                        size="sm"
+                                        :profile="Auth::user()->companyOrganization() ?? Auth::user()->companyProfile"
+                                        size="xs"
                                         class="ring-1 ring-gray-200"
                                     />
+                                    <span class="hidden xl:inline">{{ Auth::user()->companyDisplayName() }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="content">

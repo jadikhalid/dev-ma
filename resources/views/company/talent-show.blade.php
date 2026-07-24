@@ -32,6 +32,14 @@
             </div>
             <span class="px-4 py-1.5 font-semibold rounded-full text-sm {{ $statusClasses }}">{{ $profile->statusLabel() }}</span>
         </div>
+        <div class="mt-4 flex flex-wrap gap-2">
+            <a href="{{ route('company.direct-hire.create', $talent) }}" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700">
+                {{ __('talenma.direct_hire.cta_btn') }}
+            </a>
+            <a href="{{ route('recruitment.create', $talent) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">
+                {{ __('talenma.talents.inter_btn') }}
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-10 max-w-4xl mx-auto px-4 sm:px-6">
@@ -102,7 +110,7 @@
                 </div>
             @endif
 
-            <div class="mt-10 p-6 bg-gray-50 rounded-xl border grid sm:grid-cols-2 gap-4">
+            <div class="mt-10 p-6 bg-gray-50 rounded-xl border grid sm:grid-cols-3 gap-4">
                 <div>
                     <h4 class="font-semibold text-gray-900">{{ __('talenma.inbox.compose_title') }}</h4>
                     <p class="mt-1 text-sm text-gray-600">{{ __('talenma.inbox.compose_desc') }}</p>
@@ -126,9 +134,14 @@
                     </form>
                 </div>
                 <div>
+                    <h4 class="font-semibold text-gray-900">{{ __('talenma.direct_hire.cta_title') }}</h4>
+                    <p class="mt-1 text-sm text-gray-600">{{ __('talenma.direct_hire.cta_desc') }}</p>
+                    <a href="{{ route('company.direct-hire.create', $talent) }}" class="mt-3 inline-block px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700">{{ __('talenma.direct_hire.cta_btn') }}</a>
+                </div>
+                <div>
                     <h4 class="font-semibold text-gray-900">{{ __('talenma.talents.inter_title') }}</h4>
                     <p class="mt-1 text-sm text-gray-600">{{ __('talenma.talents.inter_desc') }}</p>
-                    <a href="{{ route('recruitment.create', $talent) }}?mode=intermediary" class="mt-3 inline-block px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">{{ __('talenma.talents.inter_btn') }}</a>
+                    <a href="{{ route('recruitment.create', $talent) }}" class="mt-3 inline-block px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">{{ __('talenma.talents.inter_btn') }}</a>
                 </div>
             </div>
         </div>

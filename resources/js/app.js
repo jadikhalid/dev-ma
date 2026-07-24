@@ -3497,6 +3497,14 @@ document.addEventListener('submit', async (event) => {
                 return;
             }
 
+            if (payload.show_url) {
+                window.setTimeout(() => {
+                    window.location.href = payload.show_url;
+                }, 600);
+
+                return;
+            }
+
             const pickerData = window.Alpine?.$data(form);
 
             if (pickerData && typeof pickerData.resetToInitial === 'function' && ! hasUploadFiles) {

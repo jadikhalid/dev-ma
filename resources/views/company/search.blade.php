@@ -28,7 +28,8 @@
                     ? __('talenma.talents.experience', ['years' => $experienceYears])
                     : null,
                 'profile_url' => route('company.talent.show', $talent),
-                'recruitment_url' => route('recruitment.create', $talent).'?mode=intermediary',
+                'recruitment_url' => route('recruitment.create', $talent),
+                'direct_hire_url' => route('company.direct-hire.create', $talent),
             ];
         })->values();
     @endphp
@@ -452,6 +453,16 @@
                             </section>
 
                             <div class="mt-8 flex flex-wrap gap-3 border-t pt-6">
+                                <a
+                                    x-show="selectedProfile.direct_hire_url"
+                                    :href="selectedProfile.direct_hire_url"
+                                    class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                                >{{ __('talenma.direct_hire.cta_btn') }}</a>
+                                <a
+                                    x-show="selectedProfile.recruitment_url"
+                                    :href="selectedProfile.recruitment_url"
+                                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                                >{{ __('talenma.talents.inter_btn') }}</a>
                                 <a
                                     x-show="selectedProfile.cv_url"
                                     :href="selectedProfile.cv_url"

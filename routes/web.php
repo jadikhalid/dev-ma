@@ -4,7 +4,9 @@ use App\Http\Controllers\AccountStatusController;
 use App\Http\Controllers\Admin\CompanyProfileDocumentController;
 use App\Http\Controllers\Admin\ProfileDocumentController;
 use App\Http\Controllers\Admin\PublicationsController;
+use App\Http\Controllers\Admin\RecruitmentRequestController as AdminRecruitmentRequestController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Company\DirectHireController as CompanyDirectHireController;
 use App\Http\Controllers\CompanyAccompanimentController;
 use App\Http\Controllers\CompanyCatalogSearchController;
 use App\Http\Controllers\CompanyJobController;
@@ -21,6 +23,7 @@ use App\Http\Controllers\ProfileDetailsController;
 use App\Http\Controllers\RecruitmentRequestController;
 use App\Http\Controllers\SkillSuggestionController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\Talent\DirectHireController as TalentDirectHireController;
 use App\Http\Controllers\TalentJobController;
 use App\Http\Controllers\TalentProfileDocumentController;
 use App\Http\Controllers\TalentPresentationVideoController;
@@ -75,6 +78,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/users/{user}/approve', [UserManagementController::class, 'approve'])->name('users.approve');
         Route::post('/users/{user}/reject', [UserManagementController::class, 'reject'])->name('users.reject');
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+        Route::get('/recruitment', [AdminRecruitmentRequestController::class, 'index'])->name('recruitment.index');
+        Route::patch('/recruitment/{recruitmentRequest}/status', [AdminRecruitmentRequestController::class, 'updateStatus'])->name('recruitment.status');
 
         Route::middleware('admin')->group(function () {
             Route::post('/users/{user}/moderator', [UserManagementController::class, 'grantModerator'])->name('users.moderator.grant');
@@ -110,6 +115,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/jobs', [TalentJobController::class, 'index'])->name('talent.jobs.index');
         Route::get('/jobs/{job}', [TalentJobController::class, 'show'])->name('talent.jobs.show');
         Route::post('/jobs/{job}/apply', [TalentJobController::class, 'apply'])->name('talent.jobs.apply');
+
+        Route::get('/talent/direct-hire', [TalentDirectHireController::class, 'index'])->name('talent.direct-hire.index');
+        Route::get('/talent/direct-hire/{directHire}', [TalentDirectHireController::class, 'show'])->name('talent.direct-hire.show');
+        Route::post('/talent/direct-hire/{directHire}/decide', [TalentDirectHireController::class, 'decide'])->name('talent.direct-hire.decide');
     });
 
     Route::middleware('account.approved')->group(function () {
@@ -131,6 +140,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/talents', [CompanySearchController::class, 'index'])->name('company.search');
         Route::get('/talents/{talent}', [CompanySearchController::class, 'show'])->name('company.talent.show');
         Route::get('/talents/{talent}/cv', [CompanySearchController::class, 'showCv'])->name('company.talent.cv');
+
+        Route::get('/talents/{talent}/direct-hire', [CompanyDirectHireController::class, 'create'])->name('company.direct-hire.create');
+        Route::post('/talents/{talent}/direct-hire', [CompanyDirectHireController::class, 'store'])->name('company.direct-hire.store');
+        Route::get('/company/direct-hire/{directHire}', [CompanyDirectHireController::class, 'show'])->name('company.direct-hire.show');
+        Route::post('/company/direct-hire/{directHire}/rounds', [CompanyDirectHireController::class, 'storeRound'])->name('company.direct-hire.rounds.store');
+        Route::patch('/company/direct-hire/{directHire}/rounds/{round}', [CompanyDirectHireController::class, 'updateRound'])->name('company.direct-hire.rounds.update');
+        Route::post('/company/direct-hire/{directHire}/close', [CompanyDirectHireController::class, 'close'])->name('company.direct-hire.close');
+        Route::post('/company/direct-hire/{directHire}/withdraw', [CompanyDirectHireController::class, 'withdraw'])->name('company.direct-hire.withdraw');
 
         Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');
         Route::post('/recruitment/request', [RecruitmentRequestController::class, 'store'])->name('recruitment.store');

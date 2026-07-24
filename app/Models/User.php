@@ -90,6 +90,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(RecruitmentRequest::class, 'company_user_id');
     }
 
+    public function companyDirectHireRequests(): HasMany
+    {
+        return $this->hasMany(DirectHireRequest::class, 'company_user_id');
+    }
+
+    public function talentDirectHireRequests(): HasMany
+    {
+        return $this->hasMany(DirectHireRequest::class, 'talent_user_id');
+    }
+
     public function companyConversations(): HasMany
     {
         return $this->hasMany(Conversation::class, 'company_user_id');

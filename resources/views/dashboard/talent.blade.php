@@ -50,7 +50,7 @@
         <div class="bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
             <p class="text-lg font-bold uppercase tracking-wide text-indigo-600">{{ __('talenma.dashboard.talent.stats.title') }}</p>
 
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 <div class="rounded-xl bg-slate-50 px-4 py-4">
                     <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.talent.stats.views') }}</p>
                     <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($stats['profile_views_7d']) }}</p>
@@ -67,10 +67,49 @@
                     <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($stats['unread_messages']) }}</p>
                     <p class="mt-1 text-xs font-medium text-indigo-600">{{ __('talenma.dashboard.talent.stats.open_inbox') }}</p>
                 </a>
+                <a href="{{ route('talent.direct-hire.index') }}" class="rounded-xl bg-slate-50 px-4 py-4 hover:bg-indigo-50 transition block">
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.talent.stats.direct_hire') }}</p>
+                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($pendingDirectHires) }}</p>
+                    <p class="mt-1 text-xs font-medium text-indigo-600">{{ __('talenma.dashboard.talent.stats.open_direct_hire') }}</p>
+                </a>
                 <div class="rounded-xl bg-slate-50 px-4 py-4">
                     <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.talent.stats.recruitment') }}</p>
                     <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($stats['recruitment_requests_total']) }}</p>
                 </div>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-gray-900">{{ __('talenma.dashboard.talent.direct_hires_title') }}</p>
+                    <a href="{{ route('talent.direct-hire.index') }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.dashboard.talent.direct_hires_all') }}</a>
+                </div>
+                @if ($directHires->isEmpty())
+                    <p class="mt-3 text-sm text-gray-500">{{ __('talenma.dashboard.talent.direct_hires_empty') }}</p>
+                @else
+                    <ul class="mt-3 space-y-2">
+                        @foreach ($directHires as $hire)
+                            @php
+                                $tone = match ($hire->statusTone()) {
+                                    'amber' => 'bg-amber-50 text-amber-800 border-amber-200',
+                                    'violet' => 'bg-violet-50 text-violet-800 border-violet-200',
+                                    'sky' => 'bg-sky-50 text-sky-800 border-sky-200',
+                                    'emerald' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                    'rose' => 'bg-rose-50 text-rose-800 border-rose-200',
+                                    default => 'bg-gray-50 text-gray-700 border-gray-200',
+                                };
+                            @endphp
+                            <li>
+                                <a href="{{ route('talent.direct-hire.show', $hire) }}" class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2.5 hover:bg-gray-50 transition">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 truncate">{{ $hire->subject }}</p>
+                                        <p class="text-xs text-gray-500">{{ $hire->companyDisplayName() }}</p>
+                                    </div>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $tone }}">{{ $hire->statusLabel() }}</span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
             </div>
 
             <div>

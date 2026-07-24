@@ -25,7 +25,7 @@
         <p class="mt-3 text-indigo-100">{{ __('talenma.services.cta_desc') }}</p>
         @auth
             @if (auth()->user()->isCompany())
-                <a href="{{ route('recruitment.create') }}?mode=intermediary" class="mt-6 inline-block px-6 py-3 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50">{{ __('talenma.services.cta_request') }}</a>
+                <a href="{{ route('recruitment.create') }}" class="mt-6 inline-block px-6 py-3 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50">{{ __('talenma.services.cta_request') }}</a>
             @endif
         @else
             <a href="{{ route('register') }}" class="mt-6 inline-block px-6 py-3 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50">{{ __('talenma.services.cta_register') }}</a>

@@ -121,7 +121,7 @@ class AdminDashboardService
                 'member_since' => $actor->created_at?->translatedFormat('d M Y'),
                 'email_verified' => $actor->hasVerifiedEmail(),
             ],
-            'alerts' => $this->alerts($talentsPending, $companiesPending, $moderationPending, $isAdmin),
+            'alerts' => $this->alerts($talentsPending, $companiesPending, $moderationPending, $isAdmin, $recruitmentPending),
             'kpis' => $this->kpis(
                 $talentsPending,
                 $talentsApproved,
@@ -160,7 +160,7 @@ class AdminDashboardService
     /**
      * @return list<array{message: string, tone: string, href: string|null}>
      */
-    private function alerts(int $talentsPending, int $companiesPending, int $moderationPending, bool $isAdmin): array
+    private function alerts(int $talentsPending, int $companiesPending, int $moderationPending, bool $isAdmin, int $recruitmentPending = 0): array
     {
         $alerts = [];
 
@@ -177,6 +177,14 @@ class AdminDashboardService
                 'message' => trans_choice('talenma.dashboard.admin.alert_pending_companies', $companiesPending, ['count' => $companiesPending]),
                 'tone' => 'emerald',
                 'href' => route('admin.users.index', ['filter' => 'pending']),
+            ];
+        }
+
+        if ($recruitmentPending > 0) {
+            $alerts[] = [
+                'message' => trans_choice('talenma.dashboard.admin.alert_pending_recruitment', $recruitmentPending, ['count' => $recruitmentPending]),
+                'tone' => 'amber',
+                'href' => route('admin.recruitment.index', ['filter' => 'pending']),
             ];
         }
 
@@ -237,7 +245,7 @@ class AdminDashboardService
                 'key' => 'recruitment_pending',
                 'label' => __('talenma.dashboard.admin.kpi_recruitment_pending'),
                 'value' => $recruitmentPending,
-                'href' => null,
+                'href' => route('admin.recruitment.index', ['filter' => 'pending']),
                 'tone' => $recruitmentPending > 0 ? 'sky' : 'slate',
             ],
             [
