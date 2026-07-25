@@ -119,6 +119,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/talent/direct-hire', [TalentDirectHireController::class, 'index'])->name('talent.direct-hire.index');
         Route::get('/talent/direct-hire/{directHire}', [TalentDirectHireController::class, 'show'])->name('talent.direct-hire.show');
         Route::post('/talent/direct-hire/{directHire}/decide', [TalentDirectHireController::class, 'decide'])->name('talent.direct-hire.decide');
+        Route::post('/talent/direct-hire/{directHire}/messages', [TalentDirectHireController::class, 'storeMessage'])->name('talent.direct-hire.messages.store');
     });
 
     Route::middleware('account.approved')->group(function () {
@@ -144,8 +145,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/talents/{talent}/direct-hire', [CompanyDirectHireController::class, 'create'])->name('company.direct-hire.create');
         Route::post('/talents/{talent}/direct-hire', [CompanyDirectHireController::class, 'store'])->name('company.direct-hire.store');
         Route::get('/company/direct-hire/{directHire}', [CompanyDirectHireController::class, 'show'])->name('company.direct-hire.show');
+        Route::post('/company/direct-hire/{directHire}/messages', [CompanyDirectHireController::class, 'storeMessage'])->name('company.direct-hire.messages.store');
         Route::post('/company/direct-hire/{directHire}/rounds', [CompanyDirectHireController::class, 'storeRound'])->name('company.direct-hire.rounds.store');
         Route::patch('/company/direct-hire/{directHire}/rounds/{round}', [CompanyDirectHireController::class, 'updateRound'])->name('company.direct-hire.rounds.update');
+        Route::post('/company/direct-hire/{directHire}/rounds/{round}/cancel', [CompanyDirectHireController::class, 'cancelRound'])->name('company.direct-hire.rounds.cancel');
         Route::post('/company/direct-hire/{directHire}/close', [CompanyDirectHireController::class, 'close'])->name('company.direct-hire.close');
         Route::post('/company/direct-hire/{directHire}/withdraw', [CompanyDirectHireController::class, 'withdraw'])->name('company.direct-hire.withdraw');
 

@@ -90,7 +90,7 @@
                                 @endphp
                                 <li class="rounded-xl border border-gray-100 px-3 py-3 sm:px-4">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="font-medium text-gray-900 truncate">{{ $req->subject }}</span>
+                                        <span class="font-medium text-gray-900 truncate">{{ $req->shortSubject() }}</span>
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $tone }}">
                                             {{ $req->statusLabel() }}
                                         </span>
@@ -109,7 +109,19 @@
                 </div>
 
                 <div class="bg-white rounded-2xl border p-5">
-                    <h3 class="text-base font-semibold text-gray-900">{{ __('talenma.dashboard.company.direct_hires') }}</h3>
+                    {{-- Title dots: remain while ANY request still has unseen changes --}}
+                    <h3 class="inline-flex items-center gap-2 text-base font-semibold text-gray-900">
+                        {{ __('talenma.dashboard.company.direct_hires') }}
+                        @if ($directHireUnseen ?? false)
+                            @foreach (range(1, 3) as $dot)
+                                <span class="relative flex h-2.5 w-2.5" @if ($loop->first) title="{{ __('talenma.direct_hire.nav_new') }}" @endif>
+                                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                    <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                </span>
+                            @endforeach
+                            <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
+                        @endif
+                    </h3>
 
                     @if ($directHires->isEmpty())
                         <p class="mt-3 text-sm text-gray-500">{{ __('talenma.dashboard.company.direct_hires_empty') }}</p>
@@ -126,24 +138,34 @@
                                         default => 'bg-gray-50 text-gray-700 border-gray-200',
                                     };
                                     $latestRound = $hire->rounds->last();
+                                    $hireUnseen = $hire->hasUnseenChangesForCompany();
                                 @endphp
                                 <li>
-                                    <a href="{{ route('company.direct-hire.show', $hire) }}" class="block rounded-xl border border-gray-100 px-3 py-3 sm:px-4 hover:bg-gray-50 transition">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <span class="font-medium text-gray-900 truncate">{{ $hire->subject }}</span>
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $tone }}">
-                                                {{ $hire->statusLabel() }}
-                                            </span>
-                                        </div>
-                                        <p class="mt-1 text-xs text-gray-500">
-                                            {{ $hire->talent?->name }}
-                                            · {{ $hire->created_at?->translatedFormat('d M Y') }}
-                                        </p>
-                                        @if ($latestRound)
-                                            <p class="mt-1 text-xs text-gray-600">
-                                                {{ __('talenma.direct_hire.round_n', ['n' => $latestRound->position]) }} — {{ $latestRound->title }}
-                                                ({{ $latestRound->statusLabel() }})
+                                    <a href="{{ route('company.direct-hire.show', $hire) }}" class="flex items-center gap-3 rounded-xl border border-gray-100 px-3 py-3 sm:px-4 hover:bg-gray-50 transition">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="font-medium text-gray-900 truncate">{{ $hire->shortSubject() }}</span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $tone }}">
+                                                    {{ $hire->statusLabel() }}
+                                                </span>
+                                            </div>
+                                            <p class="mt-1 text-xs text-gray-500">
+                                                {{ $hire->talent?->name }}
+                                                · {{ $hire->created_at?->translatedFormat('d M Y') }}
                                             </p>
+                                            @if ($latestRound)
+                                                <p class="mt-1 text-xs text-gray-600">
+                                                    {{ __('talenma.direct_hire.round_n', ['n' => $latestRound->position]) }} — {{ $latestRound->title }}
+                                                    ({{ $latestRound->statusLabel() }})
+                                                </p>
+                                            @endif
+                                        </div>
+                                        @if ($hireUnseen)
+                                            <span class="relative flex h-2.5 w-2.5 shrink-0 self-center" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                                <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                            </span>
+                                            <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                         @endif
                                     </a>
                                 </li>

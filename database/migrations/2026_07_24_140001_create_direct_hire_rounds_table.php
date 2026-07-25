@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('direct_hire_request_id')->constrained('direct_hire_requests')->cascadeOnDelete();
             $table->unsignedSmallInteger('position');
             $table->string('title');
-            $table->string('status', 32)->default('pending');
+            $table->string('status', 32)->default('scheduled');
             $table->timestamp('scheduled_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->text('company_note')->nullable();

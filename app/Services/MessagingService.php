@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\NewInboxMessageMail;
 use App\Models\Conversation;
+use App\Models\DirectHireRequest;
 use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\User;
@@ -42,10 +43,16 @@ class MessagingService
             ->orderByDesc('id');
 
         if ($user->isCompany()) {
-            $query->where('company_user_id', $user->id);
+            $excludedIds = $this->directHireConversationIdsFor($user);
+
+            $query->where('company_user_id', $user->id)
+                ->when($excludedIds !== [], fn ($q) => $q->whereNotIn('id', $excludedIds));
         } elseif ($user->isTalent()) {
+            $excludedIds = $this->directHireConversationIdsFor($user);
+
             $query->where('channel', Conversation::CHANNEL_TALENT)
-                ->where('talent_user_id', $user->id);
+                ->where('talent_user_id', $user->id)
+                ->when($excludedIds !== [], fn ($q) => $q->whereNotIn('id', $excludedIds));
         } elseif ($user->isStaff()) {
             $query->where('channel', Conversation::CHANNEL_STAFF);
         } else {
@@ -60,6 +67,7 @@ class MessagingService
         if ($user->isCompany()) {
             return Conversation::query()
                 ->where('company_user_id', $user->id)
+                ->whereNotIn('id', $this->directHireConversationIdsFor($user))
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
                     $q->whereNull('company_last_read_at')
@@ -72,6 +80,7 @@ class MessagingService
             return Conversation::query()
                 ->where('channel', Conversation::CHANNEL_TALENT)
                 ->where('talent_user_id', $user->id)
+                ->whereNotIn('id', $this->directHireConversationIdsFor($user))
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
                     $q->whereNull('talent_last_read_at')
@@ -94,9 +103,40 @@ class MessagingService
         return 0;
     }
 
+    /**
+     * @return list<int>
+     */
+    private function directHireConversationIdsFor(User $user): array
+    {
+        $query = DirectHireRequest::query()->whereNotNull('conversation_id');
+
+        if ($user->isTalent()) {
+            $query->where('talent_user_id', $user->id);
+        } elseif ($user->isCompany()) {
+            $org = $user->companyOrganization();
+            $query->where(function ($q) use ($user, $org) {
+                $q->where('company_user_id', $user->id);
+                if ($org) {
+                    $q->orWhere('company_profile_id', $org->id);
+                }
+            });
+        } else {
+            return [];
+        }
+
+        return $query->pluck('conversation_id')->unique()->filter()->values()->all();
+    }
+
     public function assertCanAccess(User $user, Conversation $conversation): void
     {
         abort_unless($conversation->isParticipant($user), 403);
+
+        // Direct-hire threads are no longer part of the general inbox.
+        $linked = DirectHireRequest::query()
+            ->where('conversation_id', $conversation->id)
+            ->exists();
+
+        abort_if($linked, 404);
     }
 
     /**

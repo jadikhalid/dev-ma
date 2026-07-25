@@ -1,14 +1,22 @@
 @php
     $profile = $talent->profile;
-    $isPublic = $profile->isPublic();
-    $displayName = $profile->visibleDisplayName($talent);
-    $avatarUrl = $profile->visibleAvatarUrl($talent);
+    $forceReveal = $forceRevealProfile ?? false;
+    $isPublic = $profile->isRevealedAsPublic($forceReveal);
+    $displayName = $profile->visibleDisplayName($talent, $forceReveal);
+    $avatarUrl = $profile->visibleAvatarUrl($talent, $forceReveal);
     $statusTone = $profile->statusTone();
+    $canProposeDirectHire = $canProposeDirectHire ?? true;
     $statusClasses = match ($statusTone) {
         'busy' => 'bg-gray-200 text-gray-700',
         'listening' => 'bg-amber-100 text-amber-800',
         default => 'bg-emerald-100 text-emerald-800',
     };
+    $directHireBtnClass = $canProposeDirectHire
+        ? 'inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700'
+        : 'inline-flex items-center px-4 py-2 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed';
+    $directHireBodyBtnClass = $canProposeDirectHire
+        ? 'mt-3 inline-block px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700'
+        : 'mt-3 inline-block px-5 py-2.5 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed';
 @endphp
 
 <x-app-layout>
@@ -25,17 +33,23 @@
                     <p class="text-sm text-indigo-600 font-medium">
                         {{ collect([$profile->professionLabel(), $profile->sectorLabel()])->filter()->implode(' - ') }}
                     </p>
-                    @if ($profile->employerLabel())
-                        <p class="mt-1 text-xs text-gray-500">{{ __('talenma.talent.employer') }} : {{ $profile->employerLabel() }}</p>
+                    @if ($profile->employerLabel($forceReveal))
+                        <p class="mt-1 text-xs text-gray-500">{{ __('talenma.talent.employer') }} : {{ $profile->employerLabel($forceReveal) }}</p>
                     @endif
                 </div>
             </div>
             <span class="px-4 py-1.5 font-semibold rounded-full text-sm {{ $statusClasses }}">{{ $profile->statusLabel() }}</span>
         </div>
         <div class="mt-4 flex flex-wrap gap-2">
-            <a href="{{ route('company.direct-hire.create', $talent) }}" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700">
-                {{ __('talenma.direct_hire.cta_btn') }}
-            </a>
+            @if ($canProposeDirectHire)
+                <a href="{{ route('company.direct-hire.create', $talent) }}" class="{{ $directHireBtnClass }}">
+                    {{ __('talenma.direct_hire.cta_btn') }}
+                </a>
+            @else
+                <span class="{{ $directHireBtnClass }}" title="{{ __('talenma.direct_hire.cta_disabled_hint') }}">
+                    {{ __('talenma.direct_hire.cta_btn') }}
+                </span>
+            @endif
             <a href="{{ route('recruitment.create', $talent) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">
                 {{ __('talenma.talents.inter_btn') }}
             </a>
@@ -136,7 +150,12 @@
                 <div>
                     <h4 class="font-semibold text-gray-900">{{ __('talenma.direct_hire.cta_title') }}</h4>
                     <p class="mt-1 text-sm text-gray-600">{{ __('talenma.direct_hire.cta_desc') }}</p>
-                    <a href="{{ route('company.direct-hire.create', $talent) }}" class="mt-3 inline-block px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700">{{ __('talenma.direct_hire.cta_btn') }}</a>
+                    @if ($canProposeDirectHire)
+                        <a href="{{ route('company.direct-hire.create', $talent) }}" class="{{ $directHireBodyBtnClass }}">{{ __('talenma.direct_hire.cta_btn') }}</a>
+                    @else
+                        <span class="{{ $directHireBodyBtnClass }}" title="{{ __('talenma.direct_hire.cta_disabled_hint') }}">{{ __('talenma.direct_hire.cta_btn') }}</span>
+                        <p class="mt-2 text-xs text-gray-500">{{ __('talenma.direct_hire.cta_disabled_hint') }}</p>
+                    @endif
                 </div>
                 <div>
                     <h4 class="font-semibold text-gray-900">{{ __('talenma.talents.inter_title') }}</h4>

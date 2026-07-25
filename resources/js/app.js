@@ -2571,6 +2571,217 @@ Alpine.data('talentDocumentsPicker', (config = {}) => ({
     },
 }));
 
+Alpine.data('companyTalentProfileDrawer', (config = {}) => ({
+    labels: config.labels ?? {},
+    composeUrl: config.composeUrl ?? '',
+    csrf: config.csrf ?? '',
+    profileDrawerOpen: false,
+    profileLoading: false,
+    profileError: null,
+    selectedProfile: null,
+    profileRequestToken: 0,
+    videoModalOpen: false,
+    videoModalTalent: null,
+    composeSubject: '',
+    composeBody: '',
+    composeFiles: [],
+    composeSending: false,
+    composeError: null,
+    composeSuccessUrl: null,
+
+    async openProfile(url) {
+        if (! url) {
+            return;
+        }
+
+        const token = ++this.profileRequestToken;
+
+        this.profileDrawerOpen = true;
+        this.profileLoading = true;
+        this.profileError = null;
+        this.selectedProfile = null;
+        this.resetCompose();
+        document.body.classList.add('overflow-hidden');
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                throw new Error('profile_load_failed');
+            }
+
+            const profile = await response.json();
+
+            if (token !== this.profileRequestToken) {
+                return;
+            }
+
+            this.selectedProfile = profile;
+        } catch (error) {
+            if (token !== this.profileRequestToken) {
+                return;
+            }
+
+            this.profileError = this.labels.profileError ?? this.labels.error ?? 'Une erreur est survenue.';
+        } finally {
+            if (token === this.profileRequestToken) {
+                this.profileLoading = false;
+            }
+        }
+    },
+
+    closeProfile() {
+        this.closeVideoModal();
+        this.profileRequestToken += 1;
+        this.profileDrawerOpen = false;
+        this.profileLoading = false;
+        this.profileError = null;
+        this.selectedProfile = null;
+        this.resetCompose();
+        document.body.classList.remove('overflow-hidden');
+    },
+
+    openVideoModal(source = null) {
+        const talent = source ?? this.selectedProfile;
+
+        if (! talent?.presentation_video_url) {
+            return;
+        }
+
+        this.videoModalTalent = {
+            name: talent.name ?? '',
+            presentation_video_url: talent.presentation_video_url,
+        };
+        this.videoModalOpen = true;
+    },
+
+    closeVideoModal() {
+        const player = this.$refs?.profileVideoPlayer;
+        if (player) {
+            player.pause();
+            player.currentTime = 0;
+        }
+
+        this.videoModalOpen = false;
+        this.videoModalTalent = null;
+    },
+
+    onProfileEscape() {
+        if (this.videoModalOpen) {
+            this.closeVideoModal();
+
+            return;
+        }
+
+        this.closeProfile();
+    },
+
+    resetCompose() {
+        this.composeSubject = '';
+        this.composeBody = '';
+        this.composeFiles = [];
+        this.composeSending = false;
+        this.composeError = null;
+        this.composeSuccessUrl = null;
+    },
+
+    onComposeFiles(event) {
+        const incoming = Array.from(event.target.files ?? []);
+        const merged = [...this.composeFiles];
+
+        for (const file of incoming) {
+            if (merged.length >= 3) {
+                break;
+            }
+
+            if (! merged.some((existing) => existing.name === file.name && existing.size === file.size)) {
+                merged.push(file);
+            }
+        }
+
+        this.composeFiles = merged;
+        event.target.value = '';
+    },
+
+    removeComposeFile(index) {
+        this.composeFiles = this.composeFiles.filter((_, i) => i !== index);
+    },
+
+    async sendCompose() {
+        if (! this.selectedProfile?.talent_id || ! this.composeUrl) {
+            return;
+        }
+
+        const body = this.composeBody.trim();
+        const subject = this.composeSubject.trim();
+
+        if (body.length < 20) {
+            this.composeError = this.labels.composeMinBody ?? this.labels.composeError;
+
+            return;
+        }
+
+        this.composeSending = true;
+        this.composeError = null;
+
+        const formData = new FormData();
+        formData.append('talent_id', String(this.selectedProfile.talent_id));
+        formData.append('subject', subject);
+        formData.append('body', body);
+        formData.append('_token', this.csrf);
+
+        this.composeFiles.forEach((file) => {
+            formData.append('attachments[]', file);
+        });
+
+        try {
+            const response = await fetch(this.composeUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                const firstError = payload?.errors
+                    ? Object.values(payload.errors).flat()[0]
+                    : null;
+                throw new Error(firstError || payload?.message || 'compose_failed');
+            }
+
+            this.composeSuccessUrl = payload.show_url ?? null;
+            this.composeFiles = [];
+        } catch (error) {
+            this.composeError = error?.message || this.labels.composeError || this.labels.error;
+        } finally {
+            this.composeSending = false;
+        }
+    },
+
+    profileStatusClass(tone) {
+        if (tone === 'busy') {
+            return 'bg-gray-200 text-gray-700';
+        }
+
+        if (tone === 'listening') {
+            return 'bg-amber-100 text-amber-800';
+        }
+
+        return 'bg-emerald-100 text-emerald-800';
+    },
+}));
+
 Alpine.data('companyTalentCatalog', (config) => ({
     sectors: config.sectors ?? [],
     searchUrl: config.searchUrl ?? '',
@@ -2604,6 +2815,8 @@ Alpine.data('companyTalentCatalog', (config) => ({
     profileError: null,
     selectedProfile: null,
     profileRequestToken: 0,
+    videoModalOpen: false,
+    videoModalTalent: null,
     composeUrl: config.composeUrl ?? '',
     csrf: config.csrf ?? '',
     composeSubject: '',
@@ -2612,6 +2825,7 @@ Alpine.data('companyTalentCatalog', (config) => ({
     composeSending: false,
     composeError: null,
     composeSuccessUrl: null,
+    canProposeDirectHire: config.canProposeDirectHire !== false,
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
@@ -2836,6 +3050,9 @@ Alpine.data('companyTalentCatalog', (config) => ({
 
             this.talents = payload.talents ?? [];
             this.meta = payload.meta ?? this.meta;
+            if (typeof payload.can_propose_direct_hire === 'boolean') {
+                this.canProposeDirectHire = payload.can_propose_direct_hire;
+            }
         } catch (error) {
             if (token !== this.requestToken) {
                 return;
@@ -2897,6 +3114,7 @@ Alpine.data('companyTalentCatalog', (config) => ({
     },
 
     closeProfile() {
+        this.closeVideoModal();
         this.profileRequestToken += 1;
         this.profileDrawerOpen = false;
         this.profileLoading = false;
@@ -2904,6 +3122,41 @@ Alpine.data('companyTalentCatalog', (config) => ({
         this.selectedProfile = null;
         this.resetCompose();
         document.body.classList.remove('overflow-hidden');
+    },
+
+    openVideoModal(source = null) {
+        const talent = source ?? this.selectedProfile;
+
+        if (! talent?.presentation_video_url) {
+            return;
+        }
+
+        this.videoModalTalent = {
+            name: talent.name ?? '',
+            presentation_video_url: talent.presentation_video_url,
+        };
+        this.videoModalOpen = true;
+    },
+
+    closeVideoModal() {
+        const player = this.$refs?.profileVideoPlayer;
+        if (player) {
+            player.pause();
+            player.currentTime = 0;
+        }
+
+        this.videoModalOpen = false;
+        this.videoModalTalent = null;
+    },
+
+    onProfileEscape() {
+        if (this.videoModalOpen) {
+            this.closeVideoModal();
+
+            return;
+        }
+
+        this.closeProfile();
     },
 
     resetCompose() {
@@ -3143,6 +3396,498 @@ Alpine.data('inboxThread', (config) => ({
             this.error = error?.message || this.labels.error;
         } finally {
             this.sending = false;
+        }
+    },
+}));
+
+Alpine.data('directHireRoundCreate', (config = {}) => ({
+    storeUrl: config.storeUrl ?? '',
+    messages: config.messages ?? {},
+    title: '',
+    scheduledAt: '',
+    meetingUrl: '',
+    companyNote: '',
+    errors: {
+        title: null,
+        scheduled_at: null,
+        meeting_url: null,
+        company_note: null,
+    },
+    loading: false,
+
+    clearError(field) {
+        if (field in this.errors) {
+            this.errors[field] = null;
+        }
+    },
+
+    cancel() {
+        this.title = '';
+        this.scheduledAt = '';
+        this.meetingUrl = '';
+        this.companyNote = '';
+        this.errors = {
+            title: null,
+            scheduled_at: null,
+            meeting_url: null,
+            company_note: null,
+        };
+    },
+
+    validateLocal() {
+        this.errors = {
+            title: null,
+            scheduled_at: null,
+            meeting_url: null,
+            company_note: null,
+        };
+
+        let ok = true;
+        const title = this.title.trim();
+        const note = this.companyNote.trim();
+        const meetingUrl = this.meetingUrl.trim();
+
+        if (! title) {
+            this.errors.title = this.messages.titleRequired ?? null;
+            ok = false;
+        } else if (title.length < 3) {
+            this.errors.title = this.messages.titleMin ?? null;
+            ok = false;
+        } else if (title.length > 120) {
+            this.errors.title = this.messages.titleMax ?? null;
+            ok = false;
+        }
+
+        if (! this.scheduledAt) {
+            this.errors.scheduled_at = this.messages.scheduledRequired ?? null;
+            ok = false;
+        }
+
+        if (meetingUrl) {
+            if (meetingUrl.length > 2048) {
+                this.errors.meeting_url = this.messages.meetingUrlMax ?? null;
+                ok = false;
+            } else if (! isValidHttpUrl(meetingUrl)) {
+                this.errors.meeting_url = this.messages.meetingUrlInvalid ?? null;
+                ok = false;
+            }
+        }
+
+        if (note.length > 2000) {
+            this.errors.company_note = this.messages.noteMax ?? null;
+            ok = false;
+        }
+
+        return ok;
+    },
+
+    async submit() {
+        if (this.loading || ! this.storeUrl) {
+            return;
+        }
+
+        if (! this.validateLocal()) {
+            return;
+        }
+
+        this.loading = true;
+
+        try {
+            const token = this.$el.querySelector('[name="_token"]')?.value ?? '';
+            const body = new FormData();
+            body.append('_token', token);
+            body.append('title', this.title.trim());
+            body.append('scheduled_at', this.scheduledAt);
+
+            const meetingUrl = this.meetingUrl.trim();
+
+            if (meetingUrl) {
+                body.append('meeting_url', meetingUrl);
+            }
+
+            const note = this.companyNote.trim();
+
+            if (note) {
+                body.append('company_note', note);
+            }
+
+            const response = await fetch(this.storeUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body,
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                if (payload?.errors && typeof payload.errors === 'object') {
+                    Object.entries(payload.errors).forEach(([key, messages]) => {
+                        if (key in this.errors) {
+                            this.errors[key] = Array.isArray(messages) ? (messages[0] ?? null) : messages;
+                        }
+                    });
+
+                    const first = Object.values(payload.errors).flat()[0];
+
+                    if (first) {
+                        pushToast('error', first);
+                    }
+                } else {
+                    pushToast('error', payload?.message || this.messages.error || 'Error');
+                }
+
+                return;
+            }
+
+            const list = document.getElementById('direct-hire-rounds-list');
+            const empty = document.getElementById('direct-hire-rounds-empty');
+
+            if (empty) {
+                empty.remove();
+            }
+
+            if (list && payload.html) {
+                list.insertAdjacentHTML('beforeend', payload.html);
+                const card = list.lastElementChild;
+
+                if (card && window.Alpine?.initTree) {
+                    window.Alpine.initTree(card);
+                }
+            }
+
+            pushToast('success', payload.message || this.messages.success || '');
+            this.cancel();
+        } catch {
+            pushToast('error', this.messages.networkError || this.messages.error || 'Error');
+        } finally {
+            this.loading = false;
+        }
+    },
+}));
+
+Alpine.data('directHireRoundManage', (config = {}) => ({
+    updateUrl: config.updateUrl ?? '',
+    cancelUrl: config.cancelUrl ?? '',
+    canCancel: Boolean(config.canCancel),
+    messages: config.messages ?? {},
+    editing: false,
+    cancelling: false,
+    loading: false,
+    title: config.initial?.title ?? '',
+    scheduledAt: config.initial?.scheduledAt ?? '',
+    meetingUrl: config.initial?.meetingUrl ?? '',
+    companyNote: config.initial?.companyNote ?? '',
+    status: config.initial?.status ?? '',
+    cancelReason: '',
+    cancelError: null,
+    editErrors: {
+        title: null,
+        scheduled_at: null,
+        meeting_url: null,
+        company_note: null,
+    },
+
+    csrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.content
+            || document.querySelector('#direct-hire-rounds-block [name="_token"]')?.value
+            || '';
+    },
+
+    clearEditError(field) {
+        if (field in this.editErrors) {
+            this.editErrors[field] = null;
+        }
+    },
+
+    openEdit() {
+        this.cancelling = false;
+        this.editing = true;
+        this.editErrors = {
+            title: null,
+            scheduled_at: null,
+            meeting_url: null,
+            company_note: null,
+        };
+    },
+
+    closeEdit() {
+        this.editing = false;
+        this.title = config.initial?.title ?? '';
+        this.scheduledAt = config.initial?.scheduledAt ?? '';
+        this.meetingUrl = config.initial?.meetingUrl ?? '';
+        this.companyNote = config.initial?.companyNote ?? '';
+        this.editErrors = {
+            title: null,
+            scheduled_at: null,
+            meeting_url: null,
+            company_note: null,
+        };
+    },
+
+    openCancel() {
+        this.editing = false;
+        this.cancelling = true;
+        this.cancelError = null;
+    },
+
+    closeCancel() {
+        this.cancelling = false;
+        this.cancelReason = '';
+        this.cancelError = null;
+    },
+
+    validateDetails() {
+        this.editErrors = {
+            title: null,
+            scheduled_at: null,
+            meeting_url: null,
+            company_note: null,
+        };
+
+        let ok = true;
+        const title = this.title.trim();
+        const note = this.companyNote.trim();
+        const meetingUrl = this.meetingUrl.trim();
+
+        if (! title) {
+            this.editErrors.title = this.messages.titleRequired ?? null;
+            ok = false;
+        } else if (title.length < 3) {
+            this.editErrors.title = this.messages.titleMin ?? null;
+            ok = false;
+        } else if (title.length > 120) {
+            this.editErrors.title = this.messages.titleMax ?? null;
+            ok = false;
+        }
+
+        if (! this.scheduledAt) {
+            this.editErrors.scheduled_at = this.messages.scheduledRequired ?? null;
+            ok = false;
+        }
+
+        if (meetingUrl) {
+            if (meetingUrl.length > 2048) {
+                this.editErrors.meeting_url = this.messages.meetingUrlMax ?? null;
+                ok = false;
+            } else if (! isValidHttpUrl(meetingUrl)) {
+                this.editErrors.meeting_url = this.messages.meetingUrlInvalid ?? null;
+                ok = false;
+            }
+        }
+
+        if (note.length > 2000) {
+            this.editErrors.company_note = this.messages.noteMax ?? null;
+            ok = false;
+        }
+
+        return ok;
+    },
+
+    validateCancel() {
+        const reason = this.cancelReason.trim();
+
+        if (! reason) {
+            this.cancelError = this.messages.reasonRequired ?? null;
+
+            return false;
+        }
+
+        if (reason.length < 10) {
+            this.cancelError = this.messages.reasonMin ?? null;
+
+            return false;
+        }
+
+        if (reason.length > 2000) {
+            this.cancelError = this.messages.reasonMax ?? null;
+
+            return false;
+        }
+
+        this.cancelError = null;
+
+        return true;
+    },
+
+    replaceCard(html) {
+        if (! html || ! this.$el) {
+            return;
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = html.trim();
+        const next = wrapper.firstElementChild;
+
+        if (! next) {
+            return;
+        }
+
+        this.$el.replaceWith(next);
+
+        if (window.Alpine?.initTree) {
+            window.Alpine.initTree(next);
+        }
+    },
+
+    prependChat(html) {
+        if (! html) {
+            return;
+        }
+
+        const chat = document.getElementById('direct-hire-chat-messages');
+        const empty = document.getElementById('direct-hire-chat-empty');
+
+        if (empty) {
+            empty.remove();
+        }
+
+        if (chat) {
+            chat.insertAdjacentHTML('afterbegin', html);
+        }
+    },
+
+    async patchRound(fields) {
+        const body = new FormData();
+        body.append('_token', this.csrfToken());
+        body.append('_method', 'PATCH');
+
+        Object.entries(fields).forEach(([key, value]) => {
+            body.append(key, value ?? '');
+        });
+
+        const response = await fetch(this.updateUrl, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body,
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (! response.ok) {
+            const first = payload?.errors
+                ? Object.values(payload.errors).flat()[0]
+                : null;
+            const message = first || payload?.message || this.messages.error || 'Error';
+            const error = new Error(message);
+            error.payload = payload;
+            throw error;
+        }
+
+        return payload;
+    },
+
+    async saveDetails() {
+        if (this.loading || ! this.updateUrl) {
+            return;
+        }
+
+        if (! this.validateDetails()) {
+            return;
+        }
+
+        this.loading = true;
+
+        try {
+            const payload = await this.patchRound({
+                title: this.title.trim(),
+                scheduled_at: this.scheduledAt,
+                meeting_url: this.meetingUrl.trim(),
+                company_note: this.companyNote.trim(),
+            });
+
+            this.replaceCard(payload.html);
+            pushToast('success', payload.message || this.messages.updated || '');
+        } catch (error) {
+            const payload = error?.payload;
+
+            if (payload?.errors && typeof payload.errors === 'object') {
+                Object.entries(payload.errors).forEach(([key, messages]) => {
+                    if (key in this.editErrors) {
+                        this.editErrors[key] = Array.isArray(messages) ? (messages[0] ?? null) : messages;
+                    }
+                });
+            }
+
+            pushToast('error', error?.message || this.messages.error || 'Error');
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    async saveStatus() {
+        if (this.loading || ! this.updateUrl) {
+            return;
+        }
+
+        this.loading = true;
+
+        try {
+            const payload = await this.patchRound({
+                status: this.status,
+            });
+
+            this.replaceCard(payload.html);
+            pushToast('success', payload.message || this.messages.updated || '');
+        } catch (error) {
+            pushToast('error', error?.message || this.messages.error || 'Error');
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    async submitCancel() {
+        if (this.loading || ! this.cancelUrl || ! this.canCancel) {
+            return;
+        }
+
+        if (! this.validateCancel()) {
+            return;
+        }
+
+        this.loading = true;
+
+        try {
+            const body = new FormData();
+            body.append('_token', this.csrfToken());
+            body.append('cancellation_reason', this.cancelReason.trim());
+
+            const response = await fetch(this.cancelUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body,
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                const first = payload?.errors
+                    ? Object.values(payload.errors).flat()[0]
+                    : null;
+                this.cancelError = first || payload?.message || this.messages.cancelError || 'Error';
+                pushToast('error', this.cancelError);
+
+                return;
+            }
+
+            this.replaceCard(payload.html);
+            this.prependChat(payload.chat_html);
+            pushToast('success', payload.message || this.messages.cancelled || '');
+        } catch {
+            pushToast('error', this.messages.networkError || this.messages.cancelError || 'Error');
+        } finally {
+            this.loading = false;
         }
     },
 }));
@@ -3604,3 +4349,11 @@ document.addEventListener('submit', async (event) => {
 });
 
 Alpine.start();
+
+// Revalidate auth pages restored from the browser back-forward cache
+// so server-side state (notification dots, etc.) stays accurate.
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+        window.location.reload();
+    }
+});

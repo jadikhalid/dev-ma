@@ -26,7 +26,7 @@
                         <li>
                             <a href="{{ route('talent.direct-hire.show', $req) }}" class="block rounded-xl border border-gray-100 px-4 py-3 hover:bg-gray-50 transition">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span class="font-medium text-gray-900">{{ $req->subject }}</span>
+                                    <span class="font-medium text-gray-900">{{ $req->shortSubject() }}</span>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $tone }}">{{ $req->statusLabel() }}</span>
                                 </div>
                                 <p class="mt-1 text-sm text-gray-600">{{ $req->companyDisplayName() }}</p>

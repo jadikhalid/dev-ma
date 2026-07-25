@@ -6,6 +6,9 @@
     $inboxUnread = (! $pendingAccount && ($authUser->isCompany() || $authUser->isTalent() || $authUser->isStaff()))
         ? app(\App\Services\MessagingService::class)->unreadCountFor($authUser)
         : 0;
+    $directHirePending = (! $pendingAccount && $authUser->isTalent())
+        ? app(\App\Services\DirectHireService::class)->talentHasUnseenChanges($authUser)
+        : false;
 @endphp
 
 <nav x-data="{ open: false }" class="relative bg-white border-b border-gray-100 sticky top-0 z-40">
@@ -46,7 +49,18 @@
                             </span>
                         </x-nav-link>
                         <x-nav-link :href="route('talent.jobs.index')" :active="request()->routeIs('talent.jobs.*')" :disabled="$pendingAccount">{{ __('talenma.nav.jobs') }}</x-nav-link>
-                        <x-nav-link :href="route('talent.direct-hire.index')" :active="request()->routeIs('talent.direct-hire.*')" :disabled="$pendingAccount">{{ __('talenma.nav.direct_hire') }}</x-nav-link>
+                        <x-nav-link :href="route('talent.direct-hire.index')" :active="request()->routeIs('talent.direct-hire.*')" :disabled="$pendingAccount">
+                            <span class="inline-flex items-center gap-1.5">
+                                {{ __('talenma.nav.direct_hire') }}
+                                @if ($directHirePending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
+                                @endif
+                            </span>
+                        </x-nav-link>
                         <x-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')" :disabled="$pendingAccount">{{ __('talenma.nav.my_profile') }}</x-nav-link>
                     @elseif ($authUser->isCompany())
                         <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount">
@@ -180,7 +194,18 @@
                             </span>
                         </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('talent.jobs.index')" :active="request()->routeIs('talent.jobs.*')">{{ __('talenma.nav.jobs') }}</x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('talent.direct-hire.index')" :active="request()->routeIs('talent.direct-hire.*')">{{ __('talenma.nav.direct_hire') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('talent.direct-hire.index')" :active="request()->routeIs('talent.direct-hire.*')">
+                            <span class="inline-flex items-center gap-2">
+                                {{ __('talenma.nav.direct_hire') }}
+                                @if ($directHirePending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
+                                @endif
+                            </span>
+                        </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('profile.details.edit')" :active="request()->routeIs('profile.details.*')">{{ __('talenma.nav.my_profile') }}</x-responsive-nav-link>
                     @elseif ($authUser->isCompany())
                         <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">

@@ -1,8 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.create_title') }}</h2>
-            <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.create_subtitle', ['name' => $talent->name]) }}</p>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.create_title') }}</h2>
+                <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.create_subtitle', ['name' => $talent->name]) }}</p>
+            </div>
+            <a
+                href="{{ route('company.search') }}"
+                class="inline-flex shrink-0 items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50"
+            >{{ __('talenma.direct_hire.cancel') }}</a>
         </div>
     </x-slot>
 
@@ -14,7 +20,12 @@
                 — {{ collect([$talent->profile?->professionLabel(), $talent->profile?->sectorLabel()])->filter()->implode(' - ') }}
             </div>
 
-            <form method="POST" action="{{ route('company.direct-hire.store', $talent) }}" class="space-y-6">
+            <form
+                id="direct-hire-create-form"
+                method="POST"
+                action="{{ route('company.direct-hire.store', $talent) }}"
+                class="space-y-6"
+            >
                 @csrf
 
                 <div>
@@ -23,7 +34,8 @@
                         id="subject"
                         name="subject"
                         class="mt-1 block w-full"
-                        :value="old('subject', __('talenma.direct_hire.subject_default', ['name' => $talent->name]))"
+                        :value="old('subject')"
+                        :placeholder="__('talenma.direct_hire.subject_placeholder')"
                         maxlength="120"
                         required
                     />
@@ -49,9 +61,17 @@
 
                 <div class="flex flex-wrap gap-3">
                     <x-primary-button>{{ __('talenma.direct_hire.send') }}</x-primary-button>
-                    <a href="{{ route('company.talent.show', $talent) }}" class="inline-flex items-center px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-                        {{ __('talenma.direct_hire.cancel') }}
-                    </a>
+                    <button
+                        type="button"
+                        class="inline-flex items-center px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        onclick="
+                            const form = document.getElementById('direct-hire-create-form');
+                            const subject = form.querySelector('#subject');
+                            const message = form.querySelector('#message');
+                            if (subject) subject.value = '';
+                            if (message) message.value = '';
+                        "
+                    >{{ __('talenma.direct_hire.cancel') }}</button>
                 </div>
             </form>
         </div>

@@ -15,6 +15,8 @@ class DirectHireController extends Controller
 
     public function index(Request $request): View
     {
+        $this->directHires->markSeenForTalent($request->user());
+
         $requests = DirectHireRequest::query()
             ->where('talent_user_id', $request->user()->id)
             ->with(['companyProfile', 'company', 'rounds'])
@@ -29,17 +31,36 @@ class DirectHireController extends Controller
     public function show(Request $request, DirectHireRequest $directHire): View
     {
         $this->directHires->assertTalentCanView($directHire, $request->user());
+        $this->directHires->ensureThreadSeeded($directHire);
+        $this->directHires->markSeenForTalent($request->user(), $directHire);
 
         $directHire->load([
             'companyProfile',
             'company',
             'rounds',
-            'conversation',
+            'messages.sender',
         ]);
 
         return view('talent.direct-hire.show', [
             'directHire' => $directHire,
         ]);
+    }
+
+    public function storeMessage(Request $request, DirectHireRequest $directHire): RedirectResponse
+    {
+        $data = $request->validate([
+            'body' => ['required', 'string', 'min:2', 'max:5000'],
+        ], [
+            'body.required' => __('talenma.direct_hire.chat_required'),
+            'body.min' => __('talenma.direct_hire.chat_min'),
+        ]);
+
+        $this->directHires->postMessage($directHire, $request->user(), $data['body']);
+
+        return redirect()
+            ->route('talent.direct-hire.show', $directHire)
+            ->withFragment('direct-hire-chat')
+            ->with('toast_success', __('talenma.direct_hire.chat_sent'));
     }
 
     public function decide(Request $request, DirectHireRequest $directHire): RedirectResponse

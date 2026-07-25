@@ -8,18 +8,21 @@
 
     @php
         $selectClass = 'mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500';
-        $initialTalents = $talents->getCollection()->map(function ($talent) {
+        $canProposeDirectHire = $canProposeDirectHire ?? true;
+        $revealedTalentIds = $revealedTalentIds ?? [];
+        $initialTalents = $talents->getCollection()->map(function ($talent) use ($canProposeDirectHire, $revealedTalentIds) {
             $profile = $talent->profile;
             $experienceYears = $profile?->experience_years;
-            $isPublic = $profile?->isPublic() ?? false;
+            $forceReveal = in_array($talent->id, $revealedTalentIds, true);
+            $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
 
             return [
                 'id' => $talent->id,
-                'name' => $profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
-                'avatar_url' => $profile?->visibleAvatarUrl($talent),
+                'name' => $profile?->visibleDisplayName($talent, $forceReveal) ?? $talent->publicDisplayName(),
+                'avatar_url' => $profile?->visibleAvatarUrl($talent, $forceReveal),
                 'initials' => $talent->initials(),
                 'is_public' => $isPublic,
-                'employer_label' => $profile?->employerLabel(),
+                'employer_label' => $profile?->employerLabel($forceReveal),
                 'profession_label' => $profile?->professionLabel(),
                 'sector_label' => $profile?->sectorLabel(),
                 'specialization' => $profile?->specialization,
@@ -27,9 +30,18 @@
                 'experience_label' => $experienceYears !== null
                     ? __('talenma.talents.experience', ['years' => $experienceYears])
                     : null,
+                'availability_label' => $profile?->statusLabel(),
+                'availability_tone' => $profile?->statusTone(),
+                'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
+                    ? $profile->presentation_video_url
+                    : null,
+                'cv_url' => ($isPublic && $profile?->cvDocument())
+                    ? route('company.talent.cv', $talent)
+                    : null,
                 'profile_url' => route('company.talent.show', $talent),
                 'recruitment_url' => route('recruitment.create', $talent),
                 'direct_hire_url' => route('company.direct-hire.create', $talent),
+                'can_propose_direct_hire' => $canProposeDirectHire,
             ];
         })->values();
     @endphp
@@ -72,9 +84,11 @@
                 'next' => __('talenma.common.next'),
                 'composeError' => __('talenma.inbox.error'),
                 'composeMinBody' => __('talenma.inbox.compose_min_body'),
+                'directHireDisabled' => __('talenma.direct_hire.cta_disabled_hint'),
             ]),
             composeUrl: @js(route('inbox.store')),
             csrf: @js(csrf_token()),
+            canProposeDirectHire: @js($canProposeDirectHire),
         })"
     >
         <div class="bg-white rounded-2xl border p-6">
@@ -221,55 +235,95 @@
             </template>
 
             <template x-for="talent in talents" :key="talent.id">
-                <div class="bg-white rounded-2xl border p-6 flex flex-col justify-between hover:shadow-md transition">
-                    <div>
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                                <h3 class="font-bold text-lg text-gray-900" x-text="talent.name"></h3>
-                                <p class="mt-0.5 text-sm font-medium text-indigo-600">
-                                    <span x-text="talent.profession_label"></span>
-                                    <span x-show="talent.profession_label && talent.sector_label"> - </span>
-                                    <span x-text="talent.sector_label"></span>
-                                </p>
-                                <p
-                                    class="mt-1 text-xs text-gray-500"
-                                    x-show="talent.employer_label"
-                                    x-text="'{{ __('talenma.talent.employer') }} : ' + talent.employer_label"
-                                ></p>
-                            </div>
-                            <template x-if="talent.avatar_url">
-                                <img
-                                    :src="talent.avatar_url"
-                                    :alt="talent.name"
-                                    class="h-16 w-16 shrink-0 rounded-full object-cover ring-1 ring-gray-200"
-                                >
-                            </template>
-                            <template x-if="!talent.avatar_url">
+                <div class="bg-white rounded-2xl border p-5 flex flex-col hover:shadow-md transition">
+                    <div class="flex items-start gap-3">
+                        <template x-if="talent.avatar_url">
+                            <img
+                                :src="talent.avatar_url"
+                                :alt="talent.name"
+                                class="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-gray-200"
+                            >
+                        </template>
+                        <template x-if="!talent.avatar_url">
+                            <span
+                                class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-base font-bold text-indigo-700"
+                                x-text="talent.initials"
+                                aria-hidden="true"
+                            ></span>
+                        </template>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="font-bold text-base text-gray-900 truncate" x-text="talent.name"></h3>
                                 <span
-                                    class="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-lg font-bold text-indigo-700"
-                                    x-text="talent.initials"
-                                    aria-hidden="true"
+                                    x-show="talent.availability_label"
+                                    class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                                    :class="profileStatusClass(talent.availability_tone)"
+                                    x-text="talent.availability_label"
                                 ></span>
-                            </template>
-                        </div>
-                        <p
-                            class="mt-2 inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700"
-                            x-show="talent.experience_label"
-                            x-text="talent.experience_label"
-                        ></p>
-                        <div class="mt-3 flex flex-wrap gap-1" x-show="keySkills(talent).length">
-                            <template x-for="skill in keySkills(talent)" :key="skill">
-                                <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded" x-text="skill"></span>
-                            </template>
+                            </div>
+                            <p class="mt-0.5 text-sm font-medium text-indigo-600 truncate">
+                                <span x-text="talent.profession_label"></span>
+                                <span x-show="talent.profession_label && talent.sector_label"> · </span>
+                                <span x-text="talent.sector_label"></span>
+                            </p>
+                            <p
+                                class="mt-0.5 text-xs text-gray-500 truncate"
+                                x-show="talent.employer_label"
+                                x-text="talent.employer_label"
+                            ></p>
                         </div>
                     </div>
-                    <div class="mt-5 pt-4 border-t">
+
+                    <div class="mt-3 flex flex-wrap items-center gap-1.5">
+                        <span
+                            class="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700"
+                            x-show="talent.experience_label"
+                            x-text="talent.experience_label"
+                        ></span>
+                    </div>
+
+                    <div class="mt-3 flex flex-wrap gap-1 min-h-[1.5rem]" x-show="keySkills(talent).length">
+                        <template x-for="skill in keySkills(talent).slice(0, 4)" :key="skill">
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded" x-text="skill"></span>
+                        </template>
+                        <span
+                            class="px-2 py-0.5 text-xs text-gray-400"
+                            x-show="keySkills(talent).length > 4"
+                            x-text="'+' + (keySkills(talent).length - 4)"
+                        ></span>
+                    </div>
+
+                    <div class="mt-auto pt-4 flex gap-2">
                         <a
                             :href="talent.profile_url"
                             @click.prevent="openProfile(talent.profile_url)"
-                            class="block w-full text-center px-3 py-2 border border-indigo-200 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50"
+                            class="flex-1 text-center px-3 py-2 border border-indigo-200 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50"
                             x-text="labels.view"
                         ></a>
+                        <a
+                            :href="talent.cv_url || '#'"
+                            :target="talent.cv_url ? '_blank' : null"
+                            :rel="talent.cv_url ? 'noopener' : null"
+                            :aria-disabled="!talent.cv_url"
+                            :tabindex="talent.cv_url ? 0 : -1"
+                            @click="if (! talent.cv_url) { $event.preventDefault() }"
+                            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold"
+                            :class="talent.cv_url
+                                ? 'bg-slate-700 text-white hover:bg-slate-800'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none'"
+                        >{{ __('talenma.talents.view_cv') }}</a>
+                        <button
+                            type="button"
+                            :disabled="!talent.presentation_video_url"
+                            @click="openVideoModal(talent)"
+                            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold"
+                            :class="talent.presentation_video_url
+                                ? 'bg-violet-600 text-white hover:bg-violet-700'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.34-5.89a1.5 1.5 0 0 0 0-2.54L6.3 2.84Z"/></svg>
+                            {{ __('talenma.talents.view_video') }}
+                        </button>
                     </div>
                 </div>
             </template>
@@ -301,7 +355,7 @@
             role="dialog"
             aria-modal="true"
             aria-label="{{ __('talenma.talent.profile_title') }}"
-            @keydown.escape.window="closeProfile()"
+            @keydown.escape.window="onProfileEscape()"
         >
             <div
                 x-show="profileDrawerOpen"
@@ -454,21 +508,41 @@
 
                             <div class="mt-8 flex flex-wrap gap-3 border-t pt-6">
                                 <a
-                                    x-show="selectedProfile.direct_hire_url"
+                                    x-show="selectedProfile.direct_hire_url && selectedProfile.can_propose_direct_hire !== false"
                                     :href="selectedProfile.direct_hire_url"
                                     class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                                 >{{ __('talenma.direct_hire.cta_btn') }}</a>
+                                <span
+                                    x-show="selectedProfile.direct_hire_url && selectedProfile.can_propose_direct_hire === false"
+                                    class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
+                                    :title="labels.directHireDisabled"
+                                >{{ __('talenma.direct_hire.cta_btn') }}</span>
                                 <a
                                     x-show="selectedProfile.recruitment_url"
                                     :href="selectedProfile.recruitment_url"
                                     class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
                                 >{{ __('talenma.talents.inter_btn') }}</a>
                                 <a
-                                    x-show="selectedProfile.cv_url"
-                                    :href="selectedProfile.cv_url"
-                                    target="_blank"
-                                    class="rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                    :href="selectedProfile.cv_url || '#'"
+                                    :target="selectedProfile.cv_url ? '_blank' : null"
+                                    :rel="selectedProfile.cv_url ? 'noopener' : null"
+                                    :aria-disabled="!selectedProfile.cv_url"
+                                    :tabindex="selectedProfile.cv_url ? 0 : -1"
+                                    @click="if (! selectedProfile.cv_url) { $event.preventDefault() }"
+                                    class="rounded-lg border px-4 py-2 text-sm font-semibold"
+                                    :class="selectedProfile.cv_url
+                                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none'"
                                 >{{ __('talenma.talents.view_cv') }}</a>
+                                <button
+                                    type="button"
+                                    :disabled="!selectedProfile.presentation_video_url"
+                                    @click="openVideoModal(selectedProfile)"
+                                    class="rounded-lg border px-4 py-2 text-sm font-semibold"
+                                    :class="selectedProfile.presentation_video_url
+                                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'"
+                                >{{ __('talenma.talents.view_video') }}</button>
                                 <a
                                     x-show="selectedProfile.linkedin_url"
                                     :href="selectedProfile.linkedin_url"
@@ -568,6 +642,52 @@
                     </template>
                 </div>
             </aside>
+        </div>
+
+        {{-- Modale vidéo de présentation --}}
+        <div
+            x-show="videoModalOpen"
+            x-cloak
+            class="fixed inset-0 z-[90] flex items-center justify-center p-4 sm:p-8"
+            style="margin: 0; height: 100vh; min-height: 100vh; max-height: 100vh;"
+            role="dialog"
+            aria-modal="true"
+            aria-label="{{ __('talenma.talents.view_video') }}"
+        >
+            <div
+                class="absolute inset-0 bg-gray-950/70"
+                style="height: 100vh; min-height: 100vh; max-height: 100vh;"
+                @click="closeVideoModal()"
+            ></div>
+            <div
+                class="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl bg-black shadow-2xl"
+                @click.stop
+            >
+                <div class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                    <p class="truncate text-sm font-semibold text-white">
+                        <span x-text="videoModalTalent?.name"></span>
+                        — {{ __('talenma.talents.view_video') }}
+                    </p>
+                    <button
+                        type="button"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-2xl font-semibold leading-none text-white/80 hover:bg-white/10 hover:text-white"
+                        @click="closeVideoModal()"
+                        aria-label="{{ __('talenma.talents.close_video') }}"
+                    >×</button>
+                </div>
+                <div class="aspect-video bg-black">
+                    <template x-if="videoModalOpen && videoModalTalent?.presentation_video_url">
+                        <video
+                            x-ref="profileVideoPlayer"
+                            class="h-full w-full"
+                            controls
+                            playsinline
+                            autoplay
+                            :src="videoModalTalent.presentation_video_url"
+                        ></video>
+                    </template>
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>

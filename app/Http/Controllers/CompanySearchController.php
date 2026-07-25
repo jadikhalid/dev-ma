@@ -6,6 +6,7 @@ use App\Models\Profession;
 use App\Models\Profile;
 use App\Models\ProfileDocument;
 use App\Models\User;
+use App\Services\DirectHireService;
 use App\Services\ProfessionCatalogService;
 use App\Services\TalentActivityTracker;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,7 @@ class CompanySearchController extends Controller
     public function __construct(
         private ProfessionCatalogService $professionCatalog,
         private TalentActivityTracker $activityTracker,
+        private DirectHireService $directHires,
     ) {}
 
     public function index(Request $request): View|JsonResponse|RedirectResponse
@@ -28,6 +30,9 @@ class CompanySearchController extends Controller
             return redirect()->route('dashboard');
         }
 
+        $canProposeDirectHire = $this->directHires->companyCanPropose($request->user());
+        $revealedTalentIds = $this->directHires->openTalentIdsForCompany($request->user());
+
         $talents = $this->filteredTalentsQuery($request)
             ->latest()
             ->paginate(12)
@@ -35,7 +40,13 @@ class CompanySearchController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'talents' => $talents->getCollection()->map(fn (User $talent) => $this->presentTalent($talent))->values(),
+                'talents' => $talents->getCollection()
+                    ->map(fn (User $talent) => $this->presentTalent(
+                        $talent,
+                        $canProposeDirectHire,
+                        in_array($talent->id, $revealedTalentIds, true),
+                    ))
+                    ->values(),
                 'meta' => [
                     'total' => $talents->total(),
                     'current_page' => $talents->currentPage(),
@@ -44,6 +55,7 @@ class CompanySearchController extends Controller
                     'from' => $talents->firstItem(),
                     'to' => $talents->lastItem(),
                 ],
+                'can_propose_direct_hire' => $canProposeDirectHire,
             ]);
         }
 
@@ -52,6 +64,8 @@ class CompanySearchController extends Controller
         return view('company.search', [
             'talents' => $talents,
             'sectors' => $sectors,
+            'canProposeDirectHire' => $canProposeDirectHire,
+            'revealedTalentIds' => $revealedTalentIds,
             'filters' => [
                 'sector' => (string) $request->input('sector', ''),
                 'profession' => (string) $request->input('profession', ''),
@@ -76,11 +90,18 @@ class CompanySearchController extends Controller
 
         $this->activityTracker->recordProfileView($talent, $request->user());
 
+        $canProposeDirectHire = $this->directHires->companyCanPropose($request->user());
+        $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($request->user(), $talent);
+
         if ($request->wantsJson()) {
-            return response()->json($this->presentTalentProfile($talent));
+            return response()->json($this->presentTalentProfile($talent, $canProposeDirectHire, $forceReveal));
         }
 
-        return view('company.talent-show', compact('talent'));
+        return view('company.talent-show', [
+            'talent' => $talent,
+            'canProposeDirectHire' => $canProposeDirectHire,
+            'forceRevealProfile' => $forceReveal,
+        ]);
     }
 
     public function showCv(Request $request, User $talent): StreamedResponse
@@ -94,6 +115,12 @@ class CompanySearchController extends Controller
         }
 
         $talent->loadMissing('profile.documents');
+
+        $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($user, $talent);
+        abort_unless(
+            $talent->profile?->isRevealedAsPublic($forceReveal) ?? false,
+            403
+        );
 
         $lang = $request->query('lang');
         $cv = $talent->profile?->cvDocument(
@@ -125,7 +152,7 @@ class CompanySearchController extends Controller
     {
         $query = User::where('role', 'dev')
             ->where('approval_status', User::APPROVAL_APPROVED)
-            ->with(['profile.profession', 'profile.professionSector'])
+            ->with(['profile.profession', 'profile.professionSector', 'profile.documents'])
             ->whereHas('profile', fn ($q) => $q->whereNotNull('profession_id')->whereNotNull('bio'));
 
         if ($request->filled('sector')) {
@@ -187,19 +214,19 @@ class CompanySearchController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function presentTalent(User $talent): array
+    private function presentTalent(User $talent, bool $canProposeDirectHire = true, bool $forceReveal = false): array
     {
         $profile = $talent->profile;
         $experienceYears = $profile?->experience_years;
-        $isPublic = $profile?->isPublic() ?? false;
+        $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
 
         return [
             'id' => $talent->id,
-            'name' => $profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
-            'avatar_url' => $profile?->visibleAvatarUrl($talent),
+            'name' => $profile?->visibleDisplayName($talent, $forceReveal) ?? $talent->publicDisplayName(),
+            'avatar_url' => $profile?->visibleAvatarUrl($talent, $forceReveal),
             'initials' => $talent->initials(),
             'is_public' => $isPublic,
-            'employer_label' => $profile?->employerLabel(),
+            'employer_label' => $profile?->employerLabel($forceReveal),
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
             'specialization' => $profile?->specialization,
@@ -207,19 +234,28 @@ class CompanySearchController extends Controller
             'experience_label' => $experienceYears !== null
                 ? __('talenma.talents.experience', ['years' => $experienceYears])
                 : null,
+            'availability_label' => $profile?->statusLabel(),
+            'availability_tone' => $profile?->statusTone(),
+            'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
+                ? $profile->presentation_video_url
+                : null,
+            'cv_url' => ($isPublic && $profile?->cvDocument())
+                ? route('company.talent.cv', $talent)
+                : null,
             'profile_url' => route('company.talent.show', $talent),
             'recruitment_url' => route('recruitment.create', $talent).'?mode=intermediary',
             'direct_hire_url' => route('company.direct-hire.create', $talent),
+            'can_propose_direct_hire' => $canProposeDirectHire,
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function presentTalentProfile(User $talent): array
+    private function presentTalentProfile(User $talent, bool $canProposeDirectHire = true, bool $forceReveal = false): array
     {
         $profile = $talent->profile;
-        $isPublic = $profile?->isPublic() ?? false;
+        $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
         $keywords = collect(explode(',', (string) $profile?->specialization))
             ->map(fn (string $item) => trim($item))
             ->filter()
@@ -228,11 +264,11 @@ class CompanySearchController extends Controller
         $cv = $profile?->cvDocument();
 
         return [
-            'name' => $profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
-            'avatar_url' => $profile?->visibleAvatarUrl($talent),
+            'name' => $profile?->visibleDisplayName($talent, $forceReveal) ?? $talent->publicDisplayName(),
+            'avatar_url' => $profile?->visibleAvatarUrl($talent, $forceReveal),
             'initials' => $talent->initials(),
             'is_public' => $isPublic,
-            'employer_label' => $profile?->employerLabel(),
+            'employer_label' => $profile?->employerLabel($forceReveal),
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
             'experience_label' => $profile?->experience_years !== null
@@ -244,17 +280,19 @@ class CompanySearchController extends Controller
             'work_modes' => $profile?->workModeLabels() ?? [],
             'languages' => $profile?->languageLabels() ?? [],
             'bio' => $profile?->bio,
-            'education_label' => $profile?->education_level
-                ? __('talenma.talent.education_'.$profile->education_level)
-                : null,
+            'education_label' => $profile?->educationLabel(),
             'certifications' => $isPublic ? $profile?->certifications : null,
             'linkedin_url' => $isPublic ? $profile?->linkedin_url : null,
             'github_url' => $isPublic ? $profile?->github_url : null,
             'portfolio_url' => $isPublic ? $profile?->portfolio_url : null,
             'cv_url' => ($isPublic && $cv) ? route('company.talent.cv', $talent) : null,
+            'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
+                ? $profile->presentation_video_url
+                : null,
             'talent_id' => $talent->id,
             'compose_url' => route('inbox.store'),
             'direct_hire_url' => route('company.direct-hire.create', $talent),
+            'can_propose_direct_hire' => $canProposeDirectHire,
             'recruitment_url' => route('recruitment.create', $talent),
         ];
     }

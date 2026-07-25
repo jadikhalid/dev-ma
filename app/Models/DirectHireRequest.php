@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'closed_at',
     'closed_by',
     'closure_note',
+    'talent_seen_at',
+    'company_seen_at',
 ])]
 class DirectHireRequest extends Model
 {
@@ -104,6 +106,8 @@ class DirectHireRequest extends Model
         return [
             'talent_decision_at' => 'datetime',
             'closed_at' => 'datetime',
+            'talent_seen_at' => 'datetime',
+            'company_seen_at' => 'datetime',
         ];
     }
 
@@ -135,6 +139,11 @@ class DirectHireRequest extends Model
     public function rounds(): HasMany
     {
         return $this->hasMany(DirectHireRound::class)->orderBy('position');
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(DirectHireMessage::class)->orderByDesc('created_at')->orderByDesc('id');
     }
 
     public function statusLabel(): string
@@ -172,5 +181,36 @@ class DirectHireRequest extends Model
 
         return $this->companyProfile?->displayName()
             ?: ($this->company?->name ?? '');
+    }
+
+    /**
+     * Subject without the redundant "Proposition de recrutement :" prefix
+     * (kept when the title is already shown separately in the page header).
+     */
+    public function shortSubject(): string
+    {
+        $subject = trim((string) $this->subject);
+
+        $stripped = preg_replace(
+            '/^(proposition de recrutement|hire proposal|recruitment proposal)\s*[:—\-–]\s*/iu',
+            '',
+            $subject
+        );
+
+        $stripped = trim((string) $stripped);
+
+        return $stripped !== '' ? $stripped : $subject;
+    }
+
+    public function hasUnseenChangesForCompany(): bool
+    {
+        return $this->company_seen_at === null
+            || ($this->updated_at && $this->company_seen_at->lt($this->updated_at));
+    }
+
+    public function hasUnseenChangesForTalent(): bool
+    {
+        return $this->talent_seen_at === null
+            || ($this->updated_at && $this->talent_seen_at->lt($this->updated_at));
     }
 }

@@ -132,6 +132,24 @@ class Profile extends Model
         return __('talenma.talent.'.$key);
     }
 
+    public function educationLabel(): ?string
+    {
+        if (! filled($this->education_level)) {
+            return null;
+        }
+
+        $key = match ($this->education_level) {
+            'bac+2' => 'education_bac2',
+            'bac+3' => 'education_bac3',
+            'bac+5' => 'education_bac5',
+            'doctorate' => 'education_doctorate',
+            'other' => 'education_other',
+            default => null,
+        };
+
+        return $key ? __('talenma.talent.'.$key) : $this->education_level;
+    }
+
     public function statusTone(): string
     {
         return match ($this->availability) {
@@ -151,7 +169,16 @@ class Profile extends Model
         return ! $this->isPublic();
     }
 
-    public function visibleDisplayName(?User $user = null): string
+    /**
+     * Whether this profile should be shown with full public details to a viewer
+     * (public profile, or company with an open direct-hire process with this talent).
+     */
+    public function isRevealedAsPublic(bool $forceReveal = false): bool
+    {
+        return $this->isPublic() || $forceReveal;
+    }
+
+    public function visibleDisplayName(?User $user = null, bool $forceReveal = false): string
     {
         $user ??= $this->user;
 
@@ -159,25 +186,25 @@ class Profile extends Model
             return __('talenma.talent.anonymous');
         }
 
-        return $this->isPublic()
+        return $this->isRevealedAsPublic($forceReveal)
             ? $user->name
             : $user->publicDisplayName();
     }
 
-    public function visibleAvatarUrl(?User $user = null): ?string
+    public function visibleAvatarUrl(?User $user = null, bool $forceReveal = false): ?string
     {
         $user ??= $this->user;
 
-        if (! $user || $this->isPrivate()) {
+        if (! $user || ! $this->isRevealedAsPublic($forceReveal)) {
             return null;
         }
 
         return $user->avatarUrl();
     }
 
-    public function employerLabel(): ?string
+    public function employerLabel(bool $forceReveal = false): ?string
     {
-        if ($this->isPrivate()) {
+        if (! $this->isRevealedAsPublic($forceReveal)) {
             return __('talenma.talent.employer_confidential');
         }
 
