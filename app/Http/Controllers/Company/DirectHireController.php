@@ -16,6 +16,29 @@ class DirectHireController extends Controller
 {
     public function __construct(private DirectHireService $directHires) {}
 
+    public function index(Request $request): View
+    {
+        $user = $request->user();
+        abort_unless($user->isCompany(), 403);
+
+        $open = $this->directHires->queryForCompany($user)
+            ->with(['talent', 'rounds'])
+            ->whereIn('status', DirectHireRequest::openStatuses())
+            ->latest()
+            ->get();
+
+        $closed = $this->directHires->queryForCompany($user)
+            ->with(['talent', 'rounds'])
+            ->whereIn('status', DirectHireRequest::terminalStatuses())
+            ->latest()
+            ->get();
+
+        return view('company.direct-hire.index', [
+            'openRequests' => $open,
+            'closedRequests' => $closed,
+        ]);
+    }
+
     public function create(Request $request, User $talent): View|RedirectResponse
     {
         if (! $request->user()->isCompany()) {
@@ -24,10 +47,16 @@ class DirectHireController extends Controller
 
         abort_unless($talent->isTalent() && $talent->approval_status === 'approved', 404);
 
-        if (! $this->directHires->companyCanPropose($request->user())) {
+        $blockReason = $this->directHires->companyProposeBlockReason($request->user(), $talent);
+
+        if ($blockReason !== null) {
+            $message = $blockReason === 'hired'
+                ? __('talenma.direct_hire.error_already_hired')
+                : __('talenma.direct_hire.error_process_open');
+
             return redirect()
                 ->route('company.search')
-                ->with('toast_error', __('talenma.direct_hire.error_process_open'));
+                ->with('toast_error', $message);
         }
 
         return view('company.direct-hire.create', [
@@ -87,10 +116,11 @@ class DirectHireController extends Controller
     public function storeMessage(Request $request, DirectHireRequest $directHire): RedirectResponse
     {
         $data = $request->validate([
-            'body' => ['required', 'string', 'min:2', 'max:5000'],
+            'body' => ['required', 'string', 'min:2', 'max:2000'],
         ], [
             'body.required' => __('talenma.direct_hire.chat_required'),
             'body.min' => __('talenma.direct_hire.chat_min'),
+            'body.max' => __('talenma.direct_hire.chat_max'),
         ]);
 
         $this->directHires->postMessage($directHire, $request->user(), $data['body']);
@@ -203,12 +233,7 @@ class DirectHireController extends Controller
             return response()->json([
                 'ok' => true,
                 'message' => $message,
-                'html' => view('company.direct-hire._round-card', [
-                    'directHire' => $directHire,
-                    'round' => $round,
-                    'canManageRounds' => true,
-                    'roundStatuses' => DirectHireRound::outcomeStatuses(),
-                ])->render(),
+                'round' => $this->roundClientPayload($directHire, $round),
             ]);
         }
 
@@ -236,31 +261,44 @@ class DirectHireController extends Controller
         $message = __('talenma.direct_hire.round_cancelled');
 
         if ($request->wantsJson()) {
-            $systemMessage = $directHire->messages()
-                ->where('is_system', true)
-                ->latest('id')
-                ->first();
-
             return response()->json([
                 'ok' => true,
                 'message' => $message,
-                'html' => view('company.direct-hire._round-card', [
-                    'directHire' => $directHire,
-                    'round' => $round,
-                    'canManageRounds' => true,
-                    'roundStatuses' => DirectHireRound::outcomeStatuses(),
-                ])->render(),
-                'chat_html' => $systemMessage
-                    ? view('direct-hire._chat-message', [
-                        'msg' => $systemMessage,
-                        'directHire' => $directHire,
-                        'viewer' => $request->user(),
-                    ])->render()
-                    : null,
+                'round' => $this->roundClientPayload($directHire, $round),
             ]);
         }
 
         return back()->with('toast_success', $message);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function roundClientPayload(DirectHireRequest $directHire, DirectHireRound $round): array
+    {
+        $canCancel = $round->isCancellable();
+
+        return [
+            'id' => $round->id,
+            'position' => $round->position,
+            'title' => $round->title,
+            'status' => $round->status,
+            'status_label' => $round->statusLabel(),
+            'status_tone' => $round->statusTone(),
+            'can_edit' => $round->isEditable(),
+            'can_cancel' => $canCancel,
+            'cancel_url' => $canCancel
+                ? route('company.direct-hire.rounds.cancel', [$directHire, $round])
+                : null,
+            'scheduled_at_local' => $round->scheduled_at
+                ?->timezone(config('app.timezone'))
+                ->format('Y-m-d\TH:i'),
+            'scheduled_at_label' => $round->scheduled_at?->translatedFormat('d M Y H:i'),
+            'meeting_url' => $round->meeting_url,
+            'company_note' => $round->company_note,
+            'cancellation_reason' => $round->cancellation_reason,
+            'is_cancelled' => $round->isCancelled(),
+        ];
     }
 
     public function close(Request $request, DirectHireRequest $directHire): RedirectResponse

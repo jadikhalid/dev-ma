@@ -142,6 +142,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/talents/{talent}', [CompanySearchController::class, 'show'])->name('company.talent.show');
         Route::get('/talents/{talent}/cv', [CompanySearchController::class, 'showCv'])->name('company.talent.cv');
 
+        Route::get('/company/direct-hire', [CompanyDirectHireController::class, 'index'])->name('company.direct-hire.index');
         Route::get('/talents/{talent}/direct-hire', [CompanyDirectHireController::class, 'create'])->name('company.direct-hire.create');
         Route::post('/talents/{talent}/direct-hire', [CompanyDirectHireController::class, 'store'])->name('company.direct-hire.store');
         Route::get('/company/direct-hire/{directHire}', [CompanyDirectHireController::class, 'show'])->name('company.direct-hire.show');

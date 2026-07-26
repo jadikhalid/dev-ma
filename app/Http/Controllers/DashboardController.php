@@ -37,18 +37,12 @@ class DashboardController extends Controller
                 ? $user->recruitmentRequests()->with('talent.profile')->latest()->take(5)->get()
                 : collect();
 
-            $directHireQuery = DirectHireRequest::query()
+            $directHires = $this->directHires->queryForCompany($user)
                 ->with(['talent.profile', 'rounds'])
+                ->whereIn('status', DirectHireRequest::openStatuses())
                 ->latest()
-                ->take(8);
-
-            if ($profile) {
-                $directHireQuery->where('company_profile_id', $profile->id);
-            } else {
-                $directHireQuery->where('company_user_id', $user->id);
-            }
-
-            $directHires = $directHireQuery->get();
+                ->take(5)
+                ->get();
             $directHireUnseen = $this->directHires->companyHasUnseenChanges($user);
 
             return view('dashboard.company', compact('recentRequests', 'directHires', 'profile', 'completion', 'directHireUnseen'));
@@ -58,17 +52,11 @@ class DashboardController extends Controller
         $profile = $user->profile;
         $completion = $this->profileCompletion->assess($profile);
         $stats = $this->talentStats->build($user);
-        $directHires = DirectHireRequest::query()
+        $openDirectHires = DirectHireRequest::query()
             ->where('talent_user_id', $user->id)
-            ->with(['companyProfile', 'company'])
-            ->latest()
-            ->take(8)
-            ->get();
-        $pendingDirectHires = $directHires->whereIn('status', [
-            DirectHireRequest::STATUS_PENDING_RESPONSE,
-            DirectHireRequest::STATUS_DEFERRED,
-        ])->count();
+            ->whereIn('status', DirectHireRequest::openStatuses())
+            ->count();
 
-        return view('dashboard.talent', compact('profile', 'completion', 'stats', 'directHires', 'pendingDirectHires'));
+        return view('dashboard.talent', compact('profile', 'completion', 'stats', 'openDirectHires'));
     }
 }

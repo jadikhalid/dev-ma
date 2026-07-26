@@ -51,14 +51,13 @@ class DirectHireRound extends Model
     }
 
     /**
-     * Statuses selectable as round outcome (not cancellation).
+     * Result statuses selectable after a step is created (scheduled is set on create only).
      *
      * @return list<string>
      */
     public static function outcomeStatuses(): array
     {
         return [
-            self::STATUS_SCHEDULED,
             self::STATUS_PASSED,
             self::STATUS_FAILED,
             self::STATUS_SKIPPED,
@@ -96,10 +95,23 @@ class DirectHireRound extends Model
         return $this->status === self::STATUS_CANCELLED;
     }
 
-    public function isCancellable(): bool
+    public function isCompleted(): bool
+    {
+        return in_array($this->status, self::completedStatuses(), true);
+    }
+
+    /**
+     * Details (title, schedule, meeting, note) can only be edited while the step is open.
+     */
+    public function isEditable(): bool
     {
         return $this->status === self::STATUS_SCHEDULED
             || $this->status === self::STATUS_PENDING;
+    }
+
+    public function isCancellable(): bool
+    {
+        return $this->isEditable();
     }
 
     public function statusLabel(): string

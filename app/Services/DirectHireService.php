@@ -31,6 +31,12 @@ class DirectHireService
 
         $org = $company->companyOrganization();
 
+        if ($this->companyHasHiredTalent($company, $talent)) {
+            throw ValidationException::withMessages([
+                'talent_id' => __('talenma.direct_hire.error_already_hired'),
+            ]);
+        }
+
         if ($this->companyHasOpenRequest($company)) {
             throw ValidationException::withMessages([
                 'talent_id' => __('talenma.direct_hire.error_process_open'),
@@ -41,7 +47,9 @@ class DirectHireService
             $request = DirectHireRequest::create([
                 'company_user_id' => $company->id,
                 'talent_user_id' => $talent->id,
+                'talent_name_snapshot' => $talent->name,
                 'company_profile_id' => $org?->id,
+                'company_name_snapshot' => $org?->displayName() ?: $company->name,
                 'subject' => $subject,
                 'message' => $message,
                 'status' => DirectHireRequest::STATUS_PENDING_RESPONSE,
@@ -110,7 +118,9 @@ class DirectHireService
         $request->load(['company', 'companyProfile', 'talent']);
 
         try {
-            Mail::to($request->company->email)->send(new DirectHireDecisionMail($request, $decision));
+            if (filled($request->company?->email)) {
+                Mail::to($request->company->email)->send(new DirectHireDecisionMail($request, $decision));
+            }
         } catch (\Throwable) {
             // Never block the hire process on mail failures.
         }
@@ -133,11 +143,17 @@ class DirectHireService
             'body' => trim($body),
         ]);
 
-        $request->touch();
+        $now = now();
 
         if ($sender->isCompany()) {
-            DirectHireRequest::query()->whereKey($request->id)->update([
-                'company_seen_at' => now(),
+            $this->writeRequestTimestamps($request->id, [
+                'updated_at' => $now,
+                'company_seen_at' => $now,
+            ]);
+        } else {
+            $this->writeRequestTimestamps($request->id, [
+                'updated_at' => $now,
+                'talent_seen_at' => $now,
             ]);
         }
 
@@ -153,7 +169,7 @@ class DirectHireService
             return;
         }
 
-        if (! filled($request->message)) {
+        if (! filled($request->message) || $request->company_user_id === null) {
             return;
         }
 
@@ -214,6 +230,15 @@ class DirectHireService
         if ($round->isCancelled()) {
             throw ValidationException::withMessages([
                 'title' => __('talenma.direct_hire.error_round_already_cancelled'),
+            ]);
+        }
+
+        $detailKeys = ['title', 'scheduled_at', 'meeting_url', 'company_note'];
+        $wantsDetailUpdate = collect($detailKeys)->contains(fn (string $key) => array_key_exists($key, $data));
+
+        if ($wantsDetailUpdate && ! $round->isEditable()) {
+            throw ValidationException::withMessages([
+                'title' => __('talenma.direct_hire.error_round_not_editable'),
             ]);
         }
 
@@ -306,15 +331,6 @@ class DirectHireService
 
         $round = $round->fresh();
 
-        $request->messages()->create([
-            'sender_user_id' => $actor->id,
-            'body' => __('talenma.direct_hire.chat_system_round_cancelled', [
-                'title' => $round->title,
-                'reason' => $reason,
-            ]),
-            'is_system' => true,
-        ]);
-
         $this->markCompanyChangeForBothParties($request);
 
         $request->loadMissing(['talent', 'company']);
@@ -343,16 +359,31 @@ class DirectHireService
     }
 
     /**
-     * Company action: mark company as up-to-date and force talent unseen (blue dots).
+     * Company action: bump activity for the talent (blue dots) while keeping
+     * the company side marked as already seen.
      */
     private function markCompanyChangeForBothParties(DirectHireRequest $request): void
     {
-        $request->touch();
+        $now = now();
 
-        DirectHireRequest::query()->whereKey($request->id)->update([
-            'company_seen_at' => now(),
+        $this->writeRequestTimestamps($request->id, [
+            'updated_at' => $now,
+            'company_seen_at' => $now,
             'talent_seen_at' => null,
         ]);
+    }
+
+    /**
+     * Persist seen/activity timestamps without letting Eloquent overwrite
+     * updated_at with a second, slightly newer value (false "unseen" dots).
+     *
+     * @param  array<string, mixed>  $values
+     */
+    private function writeRequestTimestamps(int $requestId, array $values): void
+    {
+        DirectHireRequest::withoutTimestamps(function () use ($requestId, $values) {
+            DirectHireRequest::query()->whereKey($requestId)->update($values);
+        });
     }
 
     public function close(DirectHireRequest $request, User $actor, string $outcome, ?string $note = null): DirectHireRequest
@@ -374,13 +405,18 @@ class DirectHireService
             ]);
         }
 
-        $request->update([
-            'status' => $outcome,
-            'closed_at' => now(),
-            'closed_by' => $actor->id,
-            'closure_note' => filled($note) ? trim($note) : null,
-            'company_seen_at' => now(),
-        ]);
+        $now = now();
+
+        DirectHireRequest::withoutTimestamps(function () use ($request, $outcome, $actor, $note, $now) {
+            $request->update([
+                'status' => $outcome,
+                'closed_at' => $now,
+                'closed_by' => $actor->id,
+                'closure_note' => filled($note) ? trim($note) : null,
+                'company_seen_at' => $now,
+                'updated_at' => $now,
+            ]);
+        });
 
         return $request;
     }
@@ -395,26 +431,34 @@ class DirectHireService
             ]);
         }
 
-        $request->update([
-            'status' => DirectHireRequest::STATUS_WITHDRAWN,
-            'closed_at' => now(),
-            'closed_by' => $actor->id,
-            'closure_note' => filled($note) ? trim($note) : null,
-            'company_seen_at' => now(),
-        ]);
+        $now = now();
+
+        DirectHireRequest::withoutTimestamps(function () use ($request, $actor, $note, $now) {
+            $request->update([
+                'status' => DirectHireRequest::STATUS_WITHDRAWN,
+                'closed_at' => $now,
+                'closed_by' => $actor->id,
+                'closure_note' => filled($note) ? trim($note) : null,
+                'company_seen_at' => $now,
+                'updated_at' => $now,
+            ]);
+        });
 
         return $request;
     }
 
-    public function companyHasOpenRequest(User $company): bool
+    /**
+     * Base query of direct-hire requests visible to this company account.
+     */
+    public function queryForCompany(User $company): \Illuminate\Database\Eloquent\Builder
     {
+        $query = DirectHireRequest::query();
+
         if (! $company->isCompany()) {
-            return false;
+            return $query->whereRaw('0 = 1');
         }
 
         $org = $company->companyOrganization();
-        $query = DirectHireRequest::query()
-            ->whereIn('status', DirectHireRequest::openStatuses());
 
         if ($org) {
             $query->where('company_profile_id', $org->id);
@@ -422,7 +466,14 @@ class DirectHireService
             $query->where('company_user_id', $company->id);
         }
 
-        return $query->exists();
+        return $query;
+    }
+
+    public function companyHasOpenRequest(User $company): bool
+    {
+        return $this->queryForCompany($company)
+            ->whereIn('status', DirectHireRequest::openStatuses())
+            ->exists();
     }
 
     public function companyHasOpenRequestWithTalent(User $company, User $talent): bool
@@ -468,6 +519,7 @@ class DirectHireService
 
         return $query
             ->pluck('talent_user_id')
+            ->filter()
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values()
@@ -477,6 +529,100 @@ class DirectHireService
     public function companyCanPropose(User $company): bool
     {
         return $company->isCompany() && ! $this->companyHasOpenRequest($company);
+    }
+
+    public function companyHasHiredTalent(User $company, User $talent): bool
+    {
+        if (! $company->isCompany() || ! $talent->isTalent()) {
+            return false;
+        }
+
+        return $this->queryForCompany($company)
+            ->where('talent_user_id', $talent->id)
+            ->where('status', DirectHireRequest::STATUS_HIRED)
+            ->exists();
+    }
+
+    /**
+     * Talent user IDs already hired by this company (successful direct hire).
+     *
+     * @return list<int>
+     */
+    public function hiredTalentIdsForCompany(User $company): array
+    {
+        if (! $company->isCompany()) {
+            return [];
+        }
+
+        return $this->queryForCompany($company)
+            ->where('status', DirectHireRequest::STATUS_HIRED)
+            ->whereNotNull('talent_user_id')
+            ->pluck('talent_user_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Whether this company may start a new direct-hire proposal for this talent.
+     * Other companies remain free to propose even if this company already hired them.
+     */
+    public function companyCanProposeToTalent(User $company, User $talent): bool
+    {
+        return $this->companyProposeBlockReason($company, $talent) === null;
+    }
+
+    /**
+     * @return 'hired'|'open'|null
+     */
+    public function companyProposeBlockReason(User $company, User $talent): ?string
+    {
+        if (! $company->isCompany() || ! $talent->isTalent()) {
+            return 'open';
+        }
+
+        if ($this->companyHasHiredTalent($company, $talent)) {
+            return 'hired';
+        }
+
+        if ($this->companyHasOpenRequest($company)) {
+            return 'open';
+        }
+
+        return null;
+    }
+
+    public function companyProposeDisabledHint(User $company, User $talent): ?string
+    {
+        return match ($this->companyProposeBlockReason($company, $talent)) {
+            'hired' => __('talenma.direct_hire.cta_disabled_hired_hint'),
+            'open' => __('talenma.direct_hire.cta_disabled_hint'),
+            default => null,
+        };
+    }
+
+    /**
+     * Resolve propose flag + hint without N+1 when IDs are preloaded.
+     *
+     * @param  list<int>  $hiredTalentIds
+     * @return array{0: bool, 1: string|null}
+     */
+    public function resolveProposeForTalent(User $company, User $talent, bool $canProposeGlobally, array $hiredTalentIds): array
+    {
+        if (in_array((int) $talent->id, $hiredTalentIds, true)) {
+            return [false, __('talenma.direct_hire.cta_disabled_hired_hint')];
+        }
+
+        if (! $canProposeGlobally) {
+            return [false, __('talenma.direct_hire.cta_disabled_hint')];
+        }
+
+        if (! $company->isCompany() || ! $talent->isTalent()) {
+            return [false, __('talenma.direct_hire.cta_disabled_hint')];
+        }
+
+        return [true, null];
     }
 
     public function talentHasUnseenChanges(User $talent): bool
@@ -506,7 +652,10 @@ class DirectHireService
             $query->whereKey($directHire->id);
         }
 
-        $query->update(['talent_seen_at' => now()]);
+        // Viewing must not bump updated_at (would re-notify the company).
+        DirectHireRequest::withoutTimestamps(function () use ($query) {
+            $query->update(['talent_seen_at' => now()]);
+        });
     }
 
     /**
@@ -543,9 +692,125 @@ class DirectHireService
     {
         $this->assertCompanyCanManage($directHire, $company);
 
-        DirectHireRequest::query()
-            ->whereKey($directHire->id)
-            ->update(['company_seen_at' => now()]);
+        // Viewing must not bump updated_at (would keep/recreate the blue dots).
+        DirectHireRequest::withoutTimestamps(function () use ($directHire) {
+            DirectHireRequest::query()
+                ->whereKey($directHire->id)
+                ->update(['company_seen_at' => now()]);
+        });
+    }
+
+    /**
+     * Keep direct-hire dossiers for the surviving party when an account is deleted.
+     * Hard-delete a dossier only when both parties are gone.
+     */
+    public function releasePartyOnUserDeletion(User $user): void
+    {
+        if ($user->isTalent()) {
+            $this->detachTalentParty($user);
+
+            return;
+        }
+
+        if (! $user->isCompany()) {
+            return;
+        }
+
+        $org = $user->companyOrganization();
+
+        // Seat removal: reassign creator to the owner so org history stays intact.
+        if ($user->isCompanyMember() && $org && (int) $org->user_id !== (int) $user->id) {
+            DirectHireRequest::query()
+                ->where('company_user_id', $user->id)
+                ->update(['company_user_id' => $org->user_id]);
+
+            return;
+        }
+
+        $this->detachCompanyParty($user, $org);
+    }
+
+    private function detachTalentParty(User $talent): void
+    {
+        $hires = DirectHireRequest::query()
+            ->where('talent_user_id', $talent->id)
+            ->with(['companyProfile.user', 'company'])
+            ->get();
+
+        foreach ($hires as $hire) {
+            $hire->talent_name_snapshot = filled($hire->talent_name_snapshot)
+                ? $hire->talent_name_snapshot
+                : $talent->name;
+            $hire->company_name_snapshot = filled($hire->company_name_snapshot)
+                ? $hire->company_name_snapshot
+                : $hire->companyDisplayName();
+            $hire->talent_user_id = null;
+
+            if (! $hire->hasCompanyParty()) {
+                $hire->delete();
+
+                continue;
+            }
+
+            $this->closeOpenHireAfterPartyLeft($hire);
+            $hire->save();
+        }
+    }
+
+    private function detachCompanyParty(User $company, ?\App\Models\CompanyProfile $org): void
+    {
+        $query = DirectHireRequest::query()->with(['companyProfile.user', 'company', 'talent']);
+
+        if ($org) {
+            $actorIds = $org->memberships()->pluck('user_id')
+                ->push($org->user_id)
+                ->push($company->id)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $query->where(function ($inner) use ($org, $actorIds) {
+                $inner->where('company_profile_id', $org->id)
+                    ->orWhereIn('company_user_id', $actorIds);
+            });
+        } else {
+            $query->where('company_user_id', $company->id);
+        }
+
+        $companyLabel = $org?->displayName() ?: $company->name;
+
+        foreach ($query->get() as $hire) {
+            $hire->company_name_snapshot = filled($hire->company_name_snapshot)
+                ? $hire->company_name_snapshot
+                : $companyLabel;
+            $hire->talent_name_snapshot = filled($hire->talent_name_snapshot)
+                ? $hire->talent_name_snapshot
+                : ($hire->talent?->name ?? $hire->talent_name_snapshot);
+            // Company profile is deleted next — treat company side as leaving now.
+            $hire->company_user_id = null;
+
+            if (! $hire->hasTalentParty()) {
+                $hire->delete();
+
+                continue;
+            }
+
+            $this->closeOpenHireAfterPartyLeft($hire);
+            $hire->save();
+        }
+    }
+
+    private function closeOpenHireAfterPartyLeft(DirectHireRequest $hire): void
+    {
+        if (! $hire->isOpen()) {
+            return;
+        }
+
+        $hire->status = DirectHireRequest::STATUS_WITHDRAWN;
+        $hire->closed_at = now();
+        $hire->closed_by = null;
+        $hire->closure_note = __('talenma.direct_hire.closure_party_deleted');
     }
 
     public function assertCompanyCanManage(DirectHireRequest $request, User $actor): void

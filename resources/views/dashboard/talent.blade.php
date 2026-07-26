@@ -70,7 +70,7 @@
                     </a>
                     <a href="{{ route('talent.direct-hire.index') }}" class="rounded-xl bg-slate-50 px-4 py-4 hover:bg-indigo-50 transition block">
                         <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.talent.stats.direct_hire') }}</p>
-                        <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($pendingDirectHires) }}</p>
+                        <p class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($openDirectHires) }}</p>
                         <p class="mt-1 text-xs font-medium text-indigo-600">{{ __('talenma.dashboard.talent.stats.open_direct_hire') }}</p>
                     </a>
                     <div class="rounded-xl bg-slate-50 px-4 py-4">
@@ -79,63 +79,86 @@
                     </div>
                 </div>
 
-                <div>
-                    <div class="flex items-center justify-between gap-3">
-                        <p class="text-sm font-semibold text-gray-900">{{ __('talenma.dashboard.talent.direct_hires_title') }}</p>
-                        <a href="{{ route('talent.direct-hire.index') }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.dashboard.talent.direct_hires_all') }}</a>
+                <div class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold tracking-tight text-slate-900">{{ __('talenma.dashboard.talent.stats.recent_title') }}</p>
+                            <p class="text-xs text-slate-500">{{ __('talenma.dashboard.talent.stats.recent_subtitle') }}</p>
+                        </div>
                     </div>
-                    @if ($directHires->isEmpty())
-                        <p class="mt-3 text-sm text-gray-500">{{ __('talenma.dashboard.talent.direct_hires_empty') }}</p>
+
+                    @if (count($stats['recent_activity']) === 0)
+                        <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center">
+                            <p class="text-sm text-slate-500">{{ __('talenma.dashboard.talent.stats.recent_empty') }}</p>
+                        </div>
                     @else
-                        <ul class="mt-3 space-y-2">
-                            @foreach ($directHires as $hire)
+                        <ol class="relative mt-4 space-y-2.5 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+                            @foreach ($stats['recent_activity'] as $item)
                                 @php
-                                    $tone = match ($hire->statusTone()) {
-                                        'amber' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                        'violet' => 'bg-violet-50 text-violet-800 border-violet-200',
-                                        'sky' => 'bg-sky-50 text-sky-800 border-sky-200',
-                                        'emerald' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                                        'rose' => 'bg-rose-50 text-rose-800 border-rose-200',
-                                        default => 'bg-gray-50 text-gray-700 border-gray-200',
+                                    $label = match ($item['type']) {
+                                        'cv_download' => filled($item['detail'] ?? null)
+                                            ? __('talenma.dashboard.talent.stats.activity_cv_lang', ['actor' => $item['actor'], 'lang' => $item['detail']])
+                                            : __('talenma.dashboard.talent.stats.activity_cv', ['actor' => $item['actor']]),
+                                        'direct_hire_proposed' => __('talenma.dashboard.talent.stats.activity_direct_hire_proposed', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_hired' => __('talenma.dashboard.talent.stats.activity_direct_hire_hired', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_closed_negative' => __('talenma.dashboard.talent.stats.activity_direct_hire_closed_negative', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_withdrawn' => __('talenma.dashboard.talent.stats.activity_direct_hire_withdrawn', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_round_added' => __('talenma.dashboard.talent.stats.activity_direct_hire_round_added', ['actor' => $item['actor'], 'round' => $item['detail'] ?? '', 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_round_result' => __('talenma.dashboard.talent.stats.activity_direct_hire_round_result', ['actor' => $item['actor'], 'round' => $item['detail'] ?? '', 'result' => $item['result'] ?? '']),
+                                        'direct_hire_round_cancelled' => __('talenma.dashboard.talent.stats.activity_direct_hire_round_cancelled', ['actor' => $item['actor'], 'round' => $item['detail'] ?? '']),
+                                        'direct_hire_message' => __('talenma.dashboard.talent.stats.activity_direct_hire_message', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        default => __('talenma.dashboard.talent.stats.activity_view', ['actor' => $item['actor']]),
+                                    };
+
+                                    [$category, $dotClass, $rowClass] = match (true) {
+                                        ($item['type'] ?? '') === 'cv_download' => [
+                                            __('talenma.dashboard.talent.stats.activity_cat_cv'),
+                                            'bg-violet-500',
+                                            'hover:bg-violet-50/80',
+                                        ],
+                                        str_starts_with((string) ($item['type'] ?? ''), 'direct_hire') => [
+                                            __('talenma.dashboard.talent.stats.activity_cat_hire'),
+                                            'bg-indigo-500',
+                                            'hover:bg-indigo-50/80',
+                                        ],
+                                        default => [
+                                            __('talenma.dashboard.talent.stats.activity_cat_profile'),
+                                            'bg-sky-500',
+                                            'hover:bg-sky-50/80',
+                                        ],
                                     };
                                 @endphp
-                                <li>
-                                    <a href="{{ route('talent.direct-hire.show', $hire) }}" class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2.5 hover:bg-gray-50 transition">
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-medium text-gray-900 truncate">{{ $hire->shortSubject() }}</p>
-                                            <p class="text-xs text-gray-500">{{ $hire->companyDisplayName() }}</p>
-                                        </div>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $tone }}">{{ $hire->statusLabel() }}</span>
-                                    </a>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-
-                <div>
-                    <p class="text-sm font-semibold text-gray-900">{{ __('talenma.dashboard.talent.stats.recent_title') }}</p>
-                    @if (count($stats['recent_activity']) === 0)
-                        <p class="mt-3 text-sm text-gray-500">{{ __('talenma.dashboard.talent.stats.recent_empty') }}</p>
-                    @else
-                        <ul class="mt-3 divide-y divide-gray-100">
-                            @foreach ($stats['recent_activity'] as $item)
-                                <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 py-3 text-sm">
-                                    <span class="text-gray-800">
-                                        @if ($item['type'] === 'cv_download')
-                                            @if (filled($item['detail']))
-                                                {{ __('talenma.dashboard.talent.stats.activity_cv_lang', ['actor' => $item['actor'], 'lang' => $item['detail']]) }}
-                                            @else
-                                                {{ __('talenma.dashboard.talent.stats.activity_cv', ['actor' => $item['actor']]) }}
-                                            @endif
-                                        @else
-                                            {{ __('talenma.dashboard.talent.stats.activity_view', ['actor' => $item['actor']]) }}
-                                        @endif
+                                <li class="relative pl-10">
+                                    <span class="absolute left-3 top-4 z-10 flex h-3.5 w-3.5 items-center justify-center">
+                                        <span class="absolute inline-flex h-full w-full rounded-full {{ $dotClass }} opacity-25"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full {{ $dotClass }} ring-2 ring-white"></span>
                                     </span>
-                                    <span class="text-xs text-gray-400 shrink-0">{{ $item['at']?->diffForHumans() }}</span>
+
+                                    @if (! empty($item['href']))
+                                        <a href="{{ $item['href'] }}" class="group flex flex-col gap-1.5 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm transition duration-200 {{ $rowClass }} hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                            <div class="min-w-0">
+                                                <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">{{ $category }}</span>
+                                                <p class="mt-1.5 text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $label }}</p>
+                                            </div>
+                                            <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
+                                        </a>
+                                    @else
+                                        <div class="flex flex-col gap-1.5 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                            <div class="min-w-0">
+                                                <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">{{ $category }}</span>
+                                                <p class="mt-1.5 text-sm font-medium leading-snug text-slate-900">{{ $label }}</p>
+                                            </div>
+                                            <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
+                                        </div>
+                                    @endif
                                 </li>
                             @endforeach
-                        </ul>
+                        </ol>
                     @endif
                 </div>
             </div>

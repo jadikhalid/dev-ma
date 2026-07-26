@@ -6,6 +6,7 @@
     $avatarUrl = $profile->visibleAvatarUrl($talent, $forceReveal);
     $statusTone = $profile->statusTone();
     $canProposeDirectHire = $canProposeDirectHire ?? true;
+    $directHireDisabledHint = $directHireDisabledHint ?? __('talenma.direct_hire.cta_disabled_hint');
     $statusClasses = match ($statusTone) {
         'busy' => 'bg-gray-200 text-gray-700',
         'listening' => 'bg-amber-100 text-amber-800',
@@ -46,7 +47,7 @@
                     {{ __('talenma.direct_hire.cta_btn') }}
                 </a>
             @else
-                <span class="{{ $directHireBtnClass }}" title="{{ __('talenma.direct_hire.cta_disabled_hint') }}">
+                <span class="{{ $directHireBtnClass }}" title="{{ $directHireDisabledHint }}">
                     {{ __('talenma.direct_hire.cta_btn') }}
                 </span>
             @endif
@@ -153,8 +154,8 @@
                     @if ($canProposeDirectHire)
                         <a href="{{ route('company.direct-hire.create', $talent) }}" class="{{ $directHireBodyBtnClass }}">{{ __('talenma.direct_hire.cta_btn') }}</a>
                     @else
-                        <span class="{{ $directHireBodyBtnClass }}" title="{{ __('talenma.direct_hire.cta_disabled_hint') }}">{{ __('talenma.direct_hire.cta_btn') }}</span>
-                        <p class="mt-2 text-xs text-gray-500">{{ __('talenma.direct_hire.cta_disabled_hint') }}</p>
+                        <span class="{{ $directHireBodyBtnClass }}" title="{{ $directHireDisabledHint }}">{{ __('talenma.direct_hire.cta_btn') }}</span>
+                        <p class="mt-2 text-xs text-gray-500">{{ $directHireDisabledHint }}</p>
                     @endif
                 </div>
                 <div>

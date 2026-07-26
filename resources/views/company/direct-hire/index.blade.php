@@ -36,8 +36,8 @@
 <x-app-layout>
     <x-slot name="header">
         <div>
-            <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.talent_index_title') }}</h2>
-            <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.talent_index_subtitle') }}</p>
+            <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.company_index_title') }}</h2>
+            <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.company_index_subtitle') }}</p>
         </div>
     </x-slot>
 
@@ -47,14 +47,14 @@
             <section class="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-white p-3.5 sm:p-4 min-w-0">
                 <div class="mb-3 flex items-baseline justify-between gap-2">
                     <h3 class="text-sm font-bold text-slate-900">
-                        {{ __('talenma.direct_hire.talent_index_open') }}
+                        {{ __('talenma.direct_hire.company_index_open') }}
                         <span class="ml-1.5 text-xs font-semibold text-indigo-600">{{ $openRequests->count() }}</span>
                     </h3>
                 </div>
 
                 @if ($openRequests->isEmpty())
                     <p class="rounded-lg border border-dashed border-slate-200 bg-white/80 px-3 py-4 text-center text-sm text-slate-500">
-                        {{ __('talenma.direct_hire.talent_index_open_empty') }}
+                        {{ __('talenma.direct_hire.company_index_open_empty') }}
                     </p>
                 @else
                     <ul class="space-y-2">
@@ -65,7 +65,7 @@
                             @endphp
                             <li>
                                 <a
-                                    href="{{ route('talent.direct-hire.show', $hire) }}"
+                                    href="{{ route('company.direct-hire.show', $hire) }}"
                                     class="group relative flex overflow-hidden rounded-lg bg-white ring-1 ring-slate-200/90 shadow-sm transition duration-150 {{ $tones['hover'] }} hover:-translate-y-px hover:shadow"
                                 >
                                     <span class="absolute inset-y-0 left-0 w-1 {{ $tones['bar'] }}" aria-hidden="true"></span>
@@ -76,7 +76,7 @@
                                             </p>
                                             <span class="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 {{ $tones['badge'] }}">
                                                 {{ $hire->statusLabel() }}
-                                                @if ($hire->hasUnseenChangesForTalent())
+                                                @if ($hire->hasUnseenChangesForCompany())
                                                     <span class="relative flex h-1.5 w-1.5" title="{{ __('talenma.direct_hire.nav_new') }}">
                                                         <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
                                                         <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500"></span>
@@ -85,9 +85,9 @@
                                             </span>
                                         </div>
                                         <p class="truncate text-xs text-slate-600">
-                                            <span class="font-medium text-slate-800">{{ $hire->companyDisplayName() }}</span>
+                                            <span class="font-medium text-slate-800">{{ $hire->talentDisplayName() }}</span>
                                             <span class="text-slate-300"> · </span>
-                                            {{ __('talenma.direct_hire.talent_index_opened', ['date' => $hire->created_at?->translatedFormat('d M Y') ?? '—']) }}
+                                            {{ __('talenma.direct_hire.company_index_opened', ['date' => $hire->created_at?->translatedFormat('d M Y') ?? '—']) }}
                                         </p>
                                         @if ($progress)
                                             <p class="truncate text-[11px] font-medium text-indigo-700">{{ $progress }}</p>
@@ -104,14 +104,14 @@
             <section class="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-4 min-w-0">
                 <div class="mb-3 flex items-baseline justify-between gap-2">
                     <h3 class="text-sm font-bold text-slate-900">
-                        {{ __('talenma.direct_hire.talent_index_closed') }}
+                        {{ __('talenma.direct_hire.company_index_closed') }}
                         <span class="ml-1.5 text-xs font-semibold text-slate-500">{{ $closedRequests->count() }}</span>
                     </h3>
                 </div>
 
                 @if ($closedRequests->isEmpty())
                     <p class="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3 py-4 text-center text-sm text-slate-500">
-                        {{ __('talenma.direct_hire.talent_index_closed_empty') }}
+                        {{ __('talenma.direct_hire.company_index_closed_empty') }}
                     </p>
                 @else
                     <ul class="space-y-2">
@@ -123,7 +123,7 @@
                             @endphp
                             <li>
                                 <a
-                                    href="{{ route('talent.direct-hire.show', $hire) }}"
+                                    href="{{ route('company.direct-hire.show', $hire) }}"
                                     class="group relative flex overflow-hidden rounded-lg bg-slate-50/80 ring-1 ring-slate-200/90 transition duration-150 {{ $tones['hover'] }} hover:-translate-y-px hover:bg-white hover:shadow"
                                 >
                                     <span class="absolute inset-y-0 left-0 w-1 {{ $tones['bar'] }}" aria-hidden="true"></span>
@@ -137,12 +137,12 @@
                                             </span>
                                         </div>
                                         <p class="truncate text-xs text-slate-600">
-                                            <span class="font-medium text-slate-800">{{ $hire->companyDisplayName() }}</span>
+                                            <span class="font-medium text-slate-800">{{ $hire->talentDisplayName() }}</span>
                                         </p>
                                         <p class="truncate text-[11px] text-slate-500">
-                                            {{ __('talenma.direct_hire.talent_index_opened', ['date' => $hire->created_at?->translatedFormat('d M Y') ?? '—']) }}
+                                            {{ __('talenma.direct_hire.company_index_opened', ['date' => $hire->created_at?->translatedFormat('d M Y') ?? '—']) }}
                                             <span class="text-slate-300"> · </span>
-                                            {{ __('talenma.direct_hire.talent_index_closed_on', ['date' => $closedAt?->translatedFormat('d M Y') ?? '—']) }}
+                                            {{ __('talenma.direct_hire.company_index_closed_on', ['date' => $closedAt?->translatedFormat('d M Y') ?? '—']) }}
                                         </p>
                                         @if ($progress)
                                             <p class="truncate text-[11px] font-medium text-slate-600">{{ $progress }}</p>

@@ -9,12 +9,18 @@
     @php
         $selectClass = 'mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500';
         $canProposeDirectHire = $canProposeDirectHire ?? true;
+        $hiredTalentIds = $hiredTalentIds ?? [];
         $revealedTalentIds = $revealedTalentIds ?? [];
-        $initialTalents = $talents->getCollection()->map(function ($talent) use ($canProposeDirectHire, $revealedTalentIds) {
+        $initialTalents = $talents->getCollection()->map(function ($talent) use ($canProposeDirectHire, $hiredTalentIds, $revealedTalentIds) {
             $profile = $talent->profile;
             $experienceYears = $profile?->experience_years;
             $forceReveal = in_array($talent->id, $revealedTalentIds, true);
             $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
+            $alreadyHired = in_array($talent->id, $hiredTalentIds, true);
+            $canPropose = $canProposeDirectHire && ! $alreadyHired;
+            $disabledHint = $alreadyHired
+                ? __('talenma.direct_hire.cta_disabled_hired_hint')
+                : ($canPropose ? null : __('talenma.direct_hire.cta_disabled_hint'));
 
             return [
                 'id' => $talent->id,
@@ -41,7 +47,8 @@
                 'profile_url' => route('company.talent.show', $talent),
                 'recruitment_url' => route('recruitment.create', $talent),
                 'direct_hire_url' => route('company.direct-hire.create', $talent),
-                'can_propose_direct_hire' => $canProposeDirectHire,
+                'can_propose_direct_hire' => $canPropose,
+                'direct_hire_disabled_hint' => $disabledHint,
             ];
         })->values();
     @endphp
@@ -515,7 +522,7 @@
                                 <span
                                     x-show="selectedProfile.direct_hire_url && selectedProfile.can_propose_direct_hire === false"
                                     class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
-                                    :title="labels.directHireDisabled"
+                                    :title="selectedProfile.direct_hire_disabled_hint || labels.directHireDisabled"
                                 >{{ __('talenma.direct_hire.cta_btn') }}</span>
                                 <a
                                     x-show="selectedProfile.recruitment_url"

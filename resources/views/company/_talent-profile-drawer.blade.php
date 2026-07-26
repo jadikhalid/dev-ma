@@ -168,7 +168,7 @@
                             <span
                                 x-show="selectedProfile.direct_hire_url && selectedProfile.can_propose_direct_hire === false"
                                 class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
-                                :title="labels.directHireDisabled"
+                                :title="selectedProfile.direct_hire_disabled_hint || labels.directHireDisabled"
                             >{{ __('talenma.direct_hire.cta_btn') }}</span>
                             <a
                                 x-show="selectedProfile.recruitment_url"

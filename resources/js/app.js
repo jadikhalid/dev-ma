@@ -3569,19 +3569,81 @@ Alpine.data('directHireRoundCreate', (config = {}) => ({
     },
 }));
 
+Alpine.data('directHireChat', (initialBody = '') => ({
+    body: initialBody ?? '',
+    sending: false,
+    maxLength: 2000,
+
+    get canSend() {
+        const length = this.body.trim().length;
+
+        return length >= 2 && length <= this.maxLength;
+    },
+
+    get characterCount() {
+        return this.body.length;
+    },
+
+    get nearLimit() {
+        return this.characterCount >= this.maxLength - 100;
+    },
+
+    scrollToEnd() {
+        this.$nextTick(() => {
+            const el = this.$refs.messages;
+
+            if (el) {
+                el.scrollTop = el.scrollHeight;
+            }
+        });
+    },
+
+    resizeComposer() {
+        const el = this.$refs.composer;
+
+        if (! el) {
+            return;
+        }
+
+        el.style.height = 'auto';
+        el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+    },
+
+    onKeydown(event) {
+        if (event.key === 'Enter' && ! event.shiftKey) {
+            event.preventDefault();
+
+            if (this.canSend && ! this.sending) {
+                event.target.form?.requestSubmit();
+            }
+        }
+    },
+}));
+
 Alpine.data('directHireRoundManage', (config = {}) => ({
     updateUrl: config.updateUrl ?? '',
     cancelUrl: config.cancelUrl ?? '',
+    canEdit: Boolean(config.canEdit),
     canCancel: Boolean(config.canCancel),
+    isCancelled: false,
+    cancellationReason: '',
     messages: config.messages ?? {},
     editing: false,
     cancelling: false,
     loading: false,
     title: config.initial?.title ?? '',
+    displayTitle: config.initial?.title ?? '',
     scheduledAt: config.initial?.scheduledAt ?? '',
+    displayScheduled: config.initial?.scheduledLabel ?? '',
     meetingUrl: config.initial?.meetingUrl ?? '',
+    displayMeetingUrl: config.initial?.meetingUrl ?? '',
     companyNote: config.initial?.companyNote ?? '',
-    status: config.initial?.status ?? '',
+    displayNote: config.initial?.companyNote ?? '',
+    status: (config.initial?.status === 'scheduled' || config.initial?.status === 'pending')
+        ? ''
+        : (config.initial?.status ?? ''),
+    statusLabel: config.initial?.statusLabel ?? '',
+    statusTone: config.initial?.statusTone ?? 'sky',
     cancelReason: '',
     cancelError: null,
     editErrors: {
@@ -3589,6 +3651,47 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
         scheduled_at: null,
         meeting_url: null,
         company_note: null,
+    },
+    _initial: { ...(config.initial ?? {}) },
+
+    get statusBadgeClass() {
+        return this.roundToneClasses(this.statusTone);
+    },
+
+    get accentBarClass() {
+        return this.roundAccentClass(this.statusTone);
+    },
+
+    get scheduledLine() {
+        if (! this.displayScheduled) {
+            return '';
+        }
+
+        return `${this.messages.scheduledPrefix ?? ''} : ${this.displayScheduled}`;
+    },
+
+    roundToneClasses(tone) {
+        const map = {
+            sky: 'bg-sky-50 text-sky-800 border-sky-200',
+            emerald: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+            rose: 'bg-rose-50 text-rose-800 border-rose-200',
+            amber: 'bg-amber-50 text-amber-800 border-amber-200',
+            slate: 'bg-slate-100 text-slate-700 border-slate-200',
+        };
+
+        return map[tone] || map.slate;
+    },
+
+    roundAccentClass(tone) {
+        const map = {
+            sky: 'bg-sky-500',
+            emerald: 'bg-emerald-500',
+            rose: 'bg-rose-500',
+            amber: 'bg-amber-500',
+            slate: 'bg-slate-400',
+        };
+
+        return map[tone] || map.slate;
     },
 
     csrfToken() {
@@ -3604,6 +3707,10 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
     },
 
     openEdit() {
+        if (! this.canEdit) {
+            return;
+        }
+
         this.cancelling = false;
         this.editing = true;
         this.editErrors = {
@@ -3616,10 +3723,10 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
 
     closeEdit() {
         this.editing = false;
-        this.title = config.initial?.title ?? '';
-        this.scheduledAt = config.initial?.scheduledAt ?? '';
-        this.meetingUrl = config.initial?.meetingUrl ?? '';
-        this.companyNote = config.initial?.companyNote ?? '';
+        this.title = this._initial.title ?? '';
+        this.scheduledAt = this._initial.scheduledAt ?? '';
+        this.meetingUrl = this._initial.meetingUrl ?? '';
+        this.companyNote = this._initial.companyNote ?? '';
         this.editErrors = {
             title: null,
             scheduled_at: null,
@@ -3638,6 +3745,46 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
         this.cancelling = false;
         this.cancelReason = '';
         this.cancelError = null;
+    },
+
+    applyRound(round) {
+        if (! round) {
+            return;
+        }
+
+        this.status = (round.status === 'scheduled' || round.status === 'pending')
+            ? ''
+            : (round.status ?? this.status);
+        this.statusLabel = round.status_label ?? this.statusLabel;
+        this.statusTone = round.status_tone ?? this.statusTone;
+        this.canEdit = Boolean(round.can_edit);
+        this.canCancel = Boolean(round.can_cancel);
+        this.cancelUrl = round.cancel_url ?? null;
+        this.isCancelled = Boolean(round.is_cancelled);
+        this.cancellationReason = round.cancellation_reason ?? '';
+        this.title = round.title ?? this.title;
+        this.displayTitle = round.title ?? this.displayTitle;
+        this.scheduledAt = round.scheduled_at_local ?? this.scheduledAt;
+        this.displayScheduled = round.scheduled_at_label ?? '';
+        this.meetingUrl = round.meeting_url ?? '';
+        this.displayMeetingUrl = round.meeting_url ?? '';
+        this.companyNote = round.company_note ?? '';
+        this.displayNote = round.company_note ?? '';
+        this.cancelReason = '';
+        this.cancelError = null;
+        this.cancelling = false;
+        this.editing = false;
+
+        this._initial = {
+            title: this.title,
+            scheduledAt: this.scheduledAt,
+            scheduledLabel: this.displayScheduled,
+            meetingUrl: this.meetingUrl,
+            companyNote: this.companyNote,
+            status: this.status,
+            statusLabel: this.statusLabel,
+            statusTone: this.statusTone,
+        };
     },
 
     validateDetails() {
@@ -3713,43 +3860,6 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
         return true;
     },
 
-    replaceCard(html) {
-        if (! html || ! this.$el) {
-            return;
-        }
-
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = html.trim();
-        const next = wrapper.firstElementChild;
-
-        if (! next) {
-            return;
-        }
-
-        this.$el.replaceWith(next);
-
-        if (window.Alpine?.initTree) {
-            window.Alpine.initTree(next);
-        }
-    },
-
-    prependChat(html) {
-        if (! html) {
-            return;
-        }
-
-        const chat = document.getElementById('direct-hire-chat-messages');
-        const empty = document.getElementById('direct-hire-chat-empty');
-
-        if (empty) {
-            empty.remove();
-        }
-
-        if (chat) {
-            chat.insertAdjacentHTML('afterbegin', html);
-        }
-    },
-
     async patchRound(fields) {
         const body = new FormData();
         body.append('_token', this.csrfToken());
@@ -3785,7 +3895,7 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
     },
 
     async saveDetails() {
-        if (this.loading || ! this.updateUrl) {
+        if (this.loading || ! this.updateUrl || ! this.canEdit) {
             return;
         }
 
@@ -3803,7 +3913,7 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
                 company_note: this.companyNote.trim(),
             });
 
-            this.replaceCard(payload.html);
+            this.applyRound(payload.round);
             pushToast('success', payload.message || this.messages.updated || '');
         } catch (error) {
             const payload = error?.payload;
@@ -3827,6 +3937,12 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
             return;
         }
 
+        if (! ['passed', 'failed', 'skipped'].includes(this.status)) {
+            pushToast('error', this.messages.resultRequired || this.messages.error || 'Error');
+
+            return;
+        }
+
         this.loading = true;
 
         try {
@@ -3834,7 +3950,7 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
                 status: this.status,
             });
 
-            this.replaceCard(payload.html);
+            this.applyRound(payload.round);
             pushToast('success', payload.message || this.messages.updated || '');
         } catch (error) {
             pushToast('error', error?.message || this.messages.error || 'Error');
@@ -3881,8 +3997,7 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
                 return;
             }
 
-            this.replaceCard(payload.html);
-            this.prependChat(payload.chat_html);
+            this.applyRound(payload.round);
             pushToast('success', payload.message || this.messages.cancelled || '');
         } catch {
             pushToast('error', this.messages.networkError || this.messages.cancelError || 'Error');

@@ -10,17 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'direct_hire_request_id',
     'sender_user_id',
     'body',
-    'is_system',
 ])]
 class DirectHireMessage extends Model
 {
-    protected function casts(): array
-    {
-        return [
-            'is_system' => 'boolean',
-        ];
-    }
-
     public function request(): BelongsTo
     {
         return $this->belongsTo(DirectHireRequest::class, 'direct_hire_request_id');

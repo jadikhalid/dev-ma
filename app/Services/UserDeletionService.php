@@ -11,11 +11,15 @@ class UserDeletionService
     public function __construct(
         private AvatarService $avatars,
         private PendingRegistrationService $pendingRegistrations,
+        private DirectHireService $directHires,
     ) {}
 
     public function delete(User $user): void
     {
         DB::transaction(function () use ($user) {
+            // Detach (or purge orphan) direct-hire dossiers before FK/profile cleanup.
+            $this->directHires->releasePartyOnUserDeletion($user);
+
             $this->deleteProfileAssets($user);
             $this->deleteCompanyAssets($user);
             $this->deleteMessageAttachments($user);

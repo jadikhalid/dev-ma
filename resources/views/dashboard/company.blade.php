@@ -110,18 +110,23 @@
 
                 <div class="bg-white rounded-2xl border p-5">
                     {{-- Title dots: remain while ANY request still has unseen changes --}}
-                    <h3 class="inline-flex items-center gap-2 text-base font-semibold text-gray-900">
-                        {{ __('talenma.dashboard.company.direct_hires') }}
-                        @if ($directHireUnseen ?? false)
-                            @foreach (range(1, 3) as $dot)
-                                <span class="relative flex h-2.5 w-2.5" @if ($loop->first) title="{{ __('talenma.direct_hire.nav_new') }}" @endif>
-                                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                    <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                </span>
-                            @endforeach
-                            <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
-                        @endif
-                    </h3>
+                    <div class="flex items-center justify-between gap-3">
+                        <h3 class="inline-flex items-center gap-2 text-base font-semibold text-gray-900">
+                            {{ __('talenma.dashboard.company.direct_hires') }}
+                            @if ($directHireUnseen ?? false)
+                                @foreach (range(1, 3) as $dot)
+                                    <span class="relative flex h-2.5 w-2.5" @if ($loop->first) title="{{ __('talenma.direct_hire.nav_new') }}" @endif>
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                @endforeach
+                                <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
+                            @endif
+                        </h3>
+                        <a href="{{ route('company.direct-hire.index') }}" class="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                            {{ __('talenma.dashboard.company.direct_hires_all') }}
+                        </a>
+                    </div>
 
                     @if ($directHires->isEmpty())
                         <p class="mt-3 text-sm text-gray-500">{{ __('talenma.dashboard.company.direct_hires_empty') }}</p>
@@ -150,7 +155,7 @@
                                                 </span>
                                             </div>
                                             <p class="mt-1 text-xs text-gray-500">
-                                                {{ $hire->talent?->name }}
+                                                {{ $hire->talentDisplayName() }}
                                                 · {{ $hire->created_at?->translatedFormat('d M Y') }}
                                             </p>
                                             @if ($latestRound)

@@ -25,8 +25,12 @@
             </div>
             <div class="inline-flex items-center gap-2 shrink-0">
                 <span class="text-sm text-gray-500">{{ __('talenma.direct_hire.status_prefix') }}</span>
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border {{ $tone }}">
-                    {{ $directHire->statusLabel() }}
+                <span class="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 px-2.5 py-1 rounded-full text-xs font-semibold border {{ $tone }}">
+                    <span>{{ $directHire->statusLabel() }}</span>
+                    @if ($progress = $directHire->progressLabel())
+                        <span class="opacity-40" aria-hidden="true">·</span>
+                        <span class="font-medium">{{ $progress }}</span>
+                    @endif
                 </span>
             </div>
         </div>
@@ -173,7 +177,7 @@
                 @endif
             </div>
 
-            <aside class="min-w-0 w-full self-start">
+            <aside class="min-w-0 w-full lg:self-stretch">
                 @include('direct-hire._chat', ['directHire' => $directHire, 'sidebar' => true])
             </aside>
         </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CompanyMembership;
+use App\Models\DirectHireRequest;
 use App\Models\JobPosting;
 use App\Models\RecruitmentRequest;
 use App\Models\User;
@@ -100,6 +101,10 @@ class CompanyUserController extends Controller
                 ->update(['created_by' => $owner->id]);
 
             RecruitmentRequest::query()
+                ->where('company_user_id', $member->id)
+                ->update(['company_user_id' => $owner->id]);
+
+            DirectHireRequest::query()
                 ->where('company_user_id', $member->id)
                 ->update(['company_user_id' => $owner->id]);
 

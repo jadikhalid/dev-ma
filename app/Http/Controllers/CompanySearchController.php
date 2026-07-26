@@ -30,8 +30,10 @@ class CompanySearchController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $canProposeDirectHire = $this->directHires->companyCanPropose($request->user());
-        $revealedTalentIds = $this->directHires->openTalentIdsForCompany($request->user());
+        $company = $request->user();
+        $canProposeDirectHire = $this->directHires->companyCanPropose($company);
+        $hiredTalentIds = $this->directHires->hiredTalentIdsForCompany($company);
+        $revealedTalentIds = $this->directHires->openTalentIdsForCompany($company);
 
         $talents = $this->filteredTalentsQuery($request)
             ->latest()
@@ -43,7 +45,9 @@ class CompanySearchController extends Controller
                 'talents' => $talents->getCollection()
                     ->map(fn (User $talent) => $this->presentTalent(
                         $talent,
+                        $company,
                         $canProposeDirectHire,
+                        $hiredTalentIds,
                         in_array($talent->id, $revealedTalentIds, true),
                     ))
                     ->values(),
@@ -65,6 +69,7 @@ class CompanySearchController extends Controller
             'talents' => $talents,
             'sectors' => $sectors,
             'canProposeDirectHire' => $canProposeDirectHire,
+            'hiredTalentIds' => $hiredTalentIds,
             'revealedTalentIds' => $revealedTalentIds,
             'filters' => [
                 'sector' => (string) $request->input('sector', ''),
@@ -90,16 +95,25 @@ class CompanySearchController extends Controller
 
         $this->activityTracker->recordProfileView($talent, $request->user());
 
-        $canProposeDirectHire = $this->directHires->companyCanPropose($request->user());
-        $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($request->user(), $talent);
+        $company = $request->user();
+        $canProposeDirectHire = $this->directHires->companyCanProposeToTalent($company, $talent);
+        $directHireDisabledHint = $this->directHires->companyProposeDisabledHint($company, $talent);
+        $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($company, $talent);
 
         if ($request->wantsJson()) {
-            return response()->json($this->presentTalentProfile($talent, $canProposeDirectHire, $forceReveal));
+            return response()->json($this->presentTalentProfile(
+                $talent,
+                $company,
+                $this->directHires->companyCanPropose($company),
+                $this->directHires->hiredTalentIdsForCompany($company),
+                $forceReveal,
+            ));
         }
 
         return view('company.talent-show', [
             'talent' => $talent,
             'canProposeDirectHire' => $canProposeDirectHire,
+            'directHireDisabledHint' => $directHireDisabledHint,
             'forceRevealProfile' => $forceReveal,
         ]);
     }
@@ -212,13 +226,25 @@ class CompanySearchController extends Controller
     }
 
     /**
+     * @param  list<int>  $hiredTalentIds
      * @return array<string, mixed>
      */
-    private function presentTalent(User $talent, bool $canProposeDirectHire = true, bool $forceReveal = false): array
-    {
+    private function presentTalent(
+        User $talent,
+        User $company,
+        bool $canProposeGlobally = true,
+        array $hiredTalentIds = [],
+        bool $forceReveal = false,
+    ): array {
         $profile = $talent->profile;
         $experienceYears = $profile?->experience_years;
         $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
+        [$canPropose, $disabledHint] = $this->directHires->resolveProposeForTalent(
+            $company,
+            $talent,
+            $canProposeGlobally,
+            $hiredTalentIds,
+        );
 
         return [
             'id' => $talent->id,
@@ -245,15 +271,22 @@ class CompanySearchController extends Controller
             'profile_url' => route('company.talent.show', $talent),
             'recruitment_url' => route('recruitment.create', $talent).'?mode=intermediary',
             'direct_hire_url' => route('company.direct-hire.create', $talent),
-            'can_propose_direct_hire' => $canProposeDirectHire,
+            'can_propose_direct_hire' => $canPropose,
+            'direct_hire_disabled_hint' => $disabledHint,
         ];
     }
 
     /**
+     * @param  list<int>  $hiredTalentIds
      * @return array<string, mixed>
      */
-    private function presentTalentProfile(User $talent, bool $canProposeDirectHire = true, bool $forceReveal = false): array
-    {
+    private function presentTalentProfile(
+        User $talent,
+        User $company,
+        bool $canProposeGlobally = true,
+        array $hiredTalentIds = [],
+        bool $forceReveal = false,
+    ): array {
         $profile = $talent->profile;
         $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
         $keywords = collect(explode(',', (string) $profile?->specialization))
@@ -262,6 +295,12 @@ class CompanySearchController extends Controller
             ->unique()
             ->values();
         $cv = $profile?->cvDocument();
+        [$canPropose, $disabledHint] = $this->directHires->resolveProposeForTalent(
+            $company,
+            $talent,
+            $canProposeGlobally,
+            $hiredTalentIds,
+        );
 
         return [
             'name' => $profile?->visibleDisplayName($talent, $forceReveal) ?? $talent->publicDisplayName(),
@@ -292,7 +331,8 @@ class CompanySearchController extends Controller
             'talent_id' => $talent->id,
             'compose_url' => route('inbox.store'),
             'direct_hire_url' => route('company.direct-hire.create', $talent),
-            'can_propose_direct_hire' => $canProposeDirectHire,
+            'can_propose_direct_hire' => $canPropose,
+            'direct_hire_disabled_hint' => $disabledHint,
             'recruitment_url' => route('recruitment.create', $talent),
         ];
     }

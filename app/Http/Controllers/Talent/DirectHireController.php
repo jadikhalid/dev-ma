@@ -15,16 +15,26 @@ class DirectHireController extends Controller
 
     public function index(Request $request): View
     {
-        $this->directHires->markSeenForTalent($request->user());
+        $user = $request->user();
+        abort_unless($user->isTalent(), 403);
 
-        $requests = DirectHireRequest::query()
-            ->where('talent_user_id', $request->user()->id)
-            ->with(['companyProfile', 'company', 'rounds'])
+        $base = DirectHireRequest::query()
+            ->where('talent_user_id', $user->id)
+            ->with(['companyProfile', 'company', 'rounds']);
+
+        $open = (clone $base)
+            ->whereIn('status', DirectHireRequest::openStatuses())
             ->latest()
-            ->paginate(20);
+            ->get();
+
+        $closed = (clone $base)
+            ->whereIn('status', DirectHireRequest::terminalStatuses())
+            ->latest()
+            ->get();
 
         return view('talent.direct-hire.index', [
-            'requests' => $requests,
+            'openRequests' => $open,
+            'closedRequests' => $closed,
         ]);
     }
 
@@ -49,10 +59,11 @@ class DirectHireController extends Controller
     public function storeMessage(Request $request, DirectHireRequest $directHire): RedirectResponse
     {
         $data = $request->validate([
-            'body' => ['required', 'string', 'min:2', 'max:5000'],
+            'body' => ['required', 'string', 'min:2', 'max:2000'],
         ], [
             'body.required' => __('talenma.direct_hire.chat_required'),
             'body.min' => __('talenma.direct_hire.chat_min'),
+            'body.max' => __('talenma.direct_hire.chat_max'),
         ]);
 
         $this->directHires->postMessage($directHire, $request->user(), $data['body']);

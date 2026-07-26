@@ -32,7 +32,7 @@
                     <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.show_title') }}</h2>
                     <p class="text-sm text-gray-500 truncate">{{ __('talenma.direct_hire.title_prefix') }} {{ $directHire->shortSubject() }}</p>
                     <p class="text-sm text-gray-500">
-                        {{ __('talenma.direct_hire.with_talent', ['name' => $talent?->name]) }}
+                        {{ __('talenma.direct_hire.with_talent', ['name' => $directHire->talentDisplayName()]) }}
                         @if ($talent)
                             —
                             <button
@@ -261,7 +261,7 @@
                 @endif
             </div>
 
-            <aside class="min-w-0 w-full self-start">
+            <aside class="min-w-0 w-full lg:self-stretch">
                 @include('direct-hire._chat', ['directHire' => $directHire, 'sidebar' => true])
             </aside>
         </div>

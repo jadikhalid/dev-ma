@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'company_user_id',
     'talent_user_id',
+    'talent_name_snapshot',
     'company_profile_id',
+    'company_name_snapshot',
     'subject',
     'message',
     'status',
@@ -143,12 +145,69 @@ class DirectHireRequest extends Model
 
     public function messages(): HasMany
     {
-        return $this->hasMany(DirectHireMessage::class)->orderByDesc('created_at')->orderByDesc('id');
+        return $this->hasMany(DirectHireMessage::class)->orderBy('created_at')->orderBy('id');
     }
 
     public function statusLabel(): string
     {
         return __('talenma.direct_hire.status_'.$this->status);
+    }
+
+    /**
+     * Short progress line for list badges (current / last step, or final hire outcome).
+     */
+    public function progressLabel(): ?string
+    {
+        if ($this->status === self::STATUS_HIRED) {
+            return __('talenma.direct_hire.progress_hired');
+        }
+
+        if ($this->status !== self::STATUS_IN_PROCESS) {
+            return null;
+        }
+
+        $this->loadMissing('rounds');
+
+        $rounds = $this->rounds
+            ->filter(fn (DirectHireRound $round) => ! $round->isCancelled())
+            ->sortBy('position')
+            ->values();
+
+        if ($rounds->isEmpty()) {
+            return __('talenma.direct_hire.progress_awaiting_steps');
+        }
+
+        $parts = [];
+
+        $lastCompleted = $rounds
+            ->filter(fn (DirectHireRound $round) => in_array($round->status, DirectHireRound::outcomeStatuses(), true))
+            ->last();
+
+        $current = $rounds->first(fn (DirectHireRound $round) => $round->isEditable());
+
+        if ($lastCompleted) {
+            $parts[] = __('talenma.direct_hire.progress_round', [
+                'n' => $lastCompleted->position,
+                'status' => $lastCompleted->statusLabel(),
+            ]);
+        }
+
+        if ($current && (! $lastCompleted || $current->id !== $lastCompleted->id)) {
+            $parts[] = __('talenma.direct_hire.progress_round', [
+                'n' => $current->position,
+                'status' => $current->statusLabel(),
+            ]);
+        }
+
+        if ($parts === [] && $rounds->isNotEmpty()) {
+            $latest = $rounds->last();
+            $parts[] = __('talenma.direct_hire.progress_round', [
+                'n' => $latest->position,
+                'status' => $latest->statusLabel(),
+            ]);
+        }
+
+        return $parts === [] ? null : implode(' · ', $parts);
     }
 
     public function statusTone(): string
@@ -177,10 +236,47 @@ class DirectHireRequest extends Model
 
     public function companyDisplayName(): string
     {
-        $this->loadMissing('companyProfile');
+        $this->loadMissing(['companyProfile.user', 'company']);
 
-        return $this->companyProfile?->displayName()
-            ?: ($this->company?->name ?? '');
+        $live = trim((string) (
+            $this->companyProfile?->displayName()
+            ?: ($this->company?->name ?? '')
+        ));
+
+        if ($live !== '') {
+            return $live;
+        }
+
+        $snapshot = trim((string) ($this->company_name_snapshot ?? ''));
+
+        return $snapshot !== ''
+            ? $snapshot
+            : __('talenma.direct_hire.party_deleted');
+    }
+
+    public function talentDisplayName(): string
+    {
+        $live = trim((string) ($this->talent?->name ?? ''));
+
+        if ($live !== '') {
+            return $live;
+        }
+
+        $snapshot = trim((string) ($this->talent_name_snapshot ?? ''));
+
+        return $snapshot !== ''
+            ? $snapshot
+            : __('talenma.direct_hire.party_deleted');
+    }
+
+    public function hasCompanyParty(): bool
+    {
+        return $this->company_user_id !== null || $this->company_profile_id !== null;
+    }
+
+    public function hasTalentParty(): bool
+    {
+        return $this->talent_user_id !== null;
     }
 
     /**
@@ -204,13 +300,28 @@ class DirectHireRequest extends Model
 
     public function hasUnseenChangesForCompany(): bool
     {
-        return $this->company_seen_at === null
-            || ($this->updated_at && $this->company_seen_at->lt($this->updated_at));
+        if ($this->company_seen_at === null) {
+            return true;
+        }
+
+        if (! $this->updated_at) {
+            return false;
+        }
+
+        // Compare at second precision — same-second mark-seen must not look "unseen".
+        return $this->company_seen_at->getTimestamp() < $this->updated_at->getTimestamp();
     }
 
     public function hasUnseenChangesForTalent(): bool
     {
-        return $this->talent_seen_at === null
-            || ($this->updated_at && $this->talent_seen_at->lt($this->updated_at));
+        if ($this->talent_seen_at === null) {
+            return true;
+        }
+
+        if (! $this->updated_at) {
+            return false;
+        }
+
+        return $this->talent_seen_at->getTimestamp() < $this->updated_at->getTimestamp();
     }
 }
