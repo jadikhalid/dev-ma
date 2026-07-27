@@ -3620,6 +3620,334 @@ Alpine.data('directHireChat', (initialBody = '') => ({
     },
 }));
 
+Alpine.data('directHireTalentDecide', (config = {}) => ({
+    url: config.url ?? '',
+    messages: config.messages ?? {},
+    loading: false,
+
+    async submit(event) {
+        if (this.loading) {
+            return;
+        }
+
+        const form = event.target;
+        const submitter = event.submitter;
+        const decision = submitter?.getAttribute('value') || submitter?.value;
+
+        if (! decision) {
+            return;
+        }
+
+        this.loading = true;
+        setPartialLoading('direct-hire-decide-actions', true);
+
+        const formData = new FormData(form);
+        formData.set('decision', decision);
+
+        try {
+            const response = await fetch(this.url, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (! response.ok) {
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [];
+
+                if (messages.length === 0 && payload?.message) {
+                    messages.push(payload.message);
+                }
+
+                pushToast('error', messages[0] || this.messages.error || 'Error');
+
+                return;
+            }
+
+            this.applyDecision(payload);
+            pushToast('success', payload?.message || '');
+        } catch {
+            pushToast('error', this.messages.networkError || this.messages.error || 'Error');
+        } finally {
+            this.loading = false;
+            setPartialLoading('direct-hire-decide-actions', false);
+        }
+    },
+
+    applyDecision(payload) {
+        if (! payload) {
+            return;
+        }
+
+        if (payload.status_badge_html) {
+            const badge = document.getElementById('direct-hire-status-badge');
+
+            if (badge) {
+                badge.outerHTML = payload.status_badge_html;
+            }
+        }
+
+        if (typeof payload.decision_note_html === 'string') {
+            const existingNote = document.getElementById('direct-hire-talent-note');
+            const proposalBody = document.getElementById('direct-hire-proposal-body');
+
+            if (payload.decision_note_html.trim() !== '') {
+                if (existingNote) {
+                    existingNote.outerHTML = payload.decision_note_html;
+                } else if (proposalBody) {
+                    const blockquote = proposalBody.querySelector('blockquote');
+
+                    if (blockquote) {
+                        blockquote.insertAdjacentHTML('afterend', payload.decision_note_html);
+                    } else {
+                        proposalBody.insertAdjacentHTML('beforeend', payload.decision_note_html);
+                    }
+                }
+            } else if (existingNote) {
+                existingNote.remove();
+            }
+        }
+
+        if (payload.can_decide === false) {
+            document.getElementById('direct-hire-decide')?.remove();
+        }
+
+        if (payload.show_rounds && payload.rounds_html) {
+            const existingRounds = document.getElementById('direct-hire-rounds');
+            const mainColumn = document.getElementById('direct-hire-main-column');
+
+            if (existingRounds) {
+                existingRounds.outerHTML = payload.rounds_html;
+            } else if (mainColumn) {
+                mainColumn.insertAdjacentHTML('beforeend', payload.rounds_html);
+            }
+        }
+
+        if (payload.can_chat === false) {
+            this.closeChatUi();
+        }
+    },
+
+    closeChatUi() {
+        const badge = document.getElementById('direct-hire-chat-badge');
+        const closedBadge = this.messages.chatClosedBadge || '';
+        const closedHint = this.messages.chatClosed || '';
+
+        if (badge) {
+            badge.className = 'shrink-0 inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200';
+            badge.textContent = closedBadge;
+        }
+
+        const footer = document.getElementById('direct-hire-chat-footer');
+
+        if (footer) {
+            footer.innerHTML = `
+                <div class="shrink-0 border-t border-slate-200 bg-slate-50 px-4 sm:px-5 py-3.5">
+                    <p class="text-xs text-slate-500"></p>
+                </div>
+            `;
+            const hint = footer.querySelector('p');
+
+            if (hint) {
+                hint.textContent = closedHint;
+            }
+        }
+    },
+}));
+
+Alpine.data('directHireCompanyClose', (config = {}) => ({
+    url: config.url ?? '',
+    messages: config.messages ?? {},
+    loading: false,
+    confirming: false,
+    pendingForm: null,
+    pendingOutcome: null,
+
+    get confirmTitle() {
+        return this.pendingOutcome === 'hired'
+            ? (this.messages.confirmHiredTitle || this.messages.confirmTitle || '')
+            : (this.messages.confirmNegativeTitle || this.messages.confirmTitle || '');
+    },
+
+    get confirmBody() {
+        return this.pendingOutcome === 'hired'
+            ? (this.messages.confirmHiredBody || this.messages.confirmBody || '')
+            : (this.messages.confirmNegativeBody || this.messages.confirmBody || '');
+    },
+
+    get confirmButtonLabel() {
+        return this.pendingOutcome === 'hired'
+            ? (this.messages.confirmHiredBtn || this.messages.confirmBtn || '')
+            : (this.messages.confirmNegativeBtn || this.messages.confirmBtn || '');
+    },
+
+    get confirmButtonClass() {
+        return this.pendingOutcome === 'hired'
+            ? 'inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-sm text-white hover:bg-emerald-700 disabled:opacity-50'
+            : 'inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-lg font-semibold text-sm text-white hover:bg-rose-700 disabled:opacity-50';
+    },
+
+    requestConfirm(event) {
+        if (this.loading) {
+            return;
+        }
+
+        const form = event.target;
+        const outcome = form.querySelector('[name="outcome"]')?.value;
+
+        if (! ['hired', 'closed_negative'].includes(outcome)) {
+            return;
+        }
+
+        this.pendingForm = form;
+        this.pendingOutcome = outcome;
+        this.confirming = true;
+    },
+
+    closeConfirm() {
+        if (this.loading) {
+            return;
+        }
+
+        this.confirming = false;
+        this.pendingForm = null;
+        this.pendingOutcome = null;
+    },
+
+    async confirmSubmit() {
+        if (this.loading || ! this.pendingForm) {
+            return;
+        }
+
+        const form = this.pendingForm;
+
+        this.loading = true;
+        setPartialLoading('direct-hire-close-actions', true);
+
+        try {
+            const response = await fetch(this.url || form.action, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: new FormData(form),
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (! response.ok) {
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [];
+
+                if (messages.length === 0 && payload?.message) {
+                    messages.push(payload.message);
+                }
+
+                pushToast('error', messages[0] || this.messages.error || 'Error');
+                this.confirming = false;
+
+                return;
+            }
+
+            this.confirming = false;
+            this.pendingForm = null;
+            this.pendingOutcome = null;
+            this.applyClose(payload);
+            pushToast('success', payload?.message || '');
+        } catch {
+            pushToast('error', this.messages.networkError || this.messages.error || 'Error');
+            this.confirming = false;
+        } finally {
+            this.loading = false;
+            setPartialLoading('direct-hire-close-actions', false);
+        }
+    },
+
+    applyClose(payload) {
+        if (! payload) {
+            return;
+        }
+
+        if (payload.status_badge_html) {
+            const badge = document.getElementById('direct-hire-status-badge');
+
+            if (badge) {
+                badge.outerHTML = payload.status_badge_html;
+            }
+        }
+
+        if (typeof payload.closure_note_html === 'string') {
+            const existing = document.getElementById('direct-hire-closure-note');
+            const proposalCard = document.getElementById('direct-hire-proposal-card');
+
+            if (existing) {
+                existing.outerHTML = payload.closure_note_html;
+            } else if (proposalCard) {
+                proposalCard.insertAdjacentHTML('beforeend', payload.closure_note_html);
+            }
+        }
+
+        if (typeof payload.rounds_list_html === 'string') {
+            const list = document.getElementById('direct-hire-rounds-list');
+
+            if (list) {
+                if (window.Alpine?.destroyTree) {
+                    window.Alpine.destroyTree(list);
+                }
+
+                list.innerHTML = payload.rounds_list_html;
+
+                if (window.Alpine?.initTree) {
+                    window.Alpine.initTree(list);
+                }
+            }
+        }
+
+        document.getElementById('direct-hire-round-create')?.remove();
+        document.getElementById('direct-hire-close-actions')?.remove();
+
+        if (payload.can_withdraw === false) {
+            document.getElementById('direct-hire-withdraw')?.remove();
+        }
+
+        if (payload.can_chat === false) {
+            const badge = document.getElementById('direct-hire-chat-badge');
+            const closedBadge = this.messages.chatClosedBadge || '';
+            const closedHint = this.messages.chatClosed || '';
+
+            if (badge) {
+                badge.className = 'shrink-0 inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200';
+                badge.textContent = closedBadge;
+            }
+
+            const footer = document.getElementById('direct-hire-chat-footer');
+
+            if (footer) {
+                footer.innerHTML = `
+                    <div class="shrink-0 border-t border-slate-200 bg-slate-50 px-4 sm:px-5 py-3.5">
+                        <p class="text-xs text-slate-500"></p>
+                    </div>
+                `;
+                const hint = footer.querySelector('p');
+
+                if (hint) {
+                    hint.textContent = closedHint;
+                }
+            }
+        }
+    },
+}));
+
 Alpine.data('directHireRoundManage', (config = {}) => ({
     updateUrl: config.updateUrl ?? '',
     cancelUrl: config.cancelUrl ?? '',
@@ -3630,6 +3958,7 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
     messages: config.messages ?? {},
     editing: false,
     cancelling: false,
+    confirmingResult: false,
     loading: false,
     title: config.initial?.title ?? '',
     displayTitle: config.initial?.title ?? '',
@@ -3660,6 +3989,18 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
 
     get accentBarClass() {
         return this.roundAccentClass(this.statusTone);
+    },
+
+    get confirmResultMessage() {
+        const labels = {
+            passed: this.messages.statusPassed || 'passed',
+            failed: this.messages.statusFailed || 'failed',
+            skipped: this.messages.statusSkipped || 'skipped',
+        };
+        const statusLabel = labels[this.status] || this.status;
+        const template = this.messages.confirmResultBody || ':status';
+
+        return template.replace(':status', statusLabel);
     },
 
     get scheduledLine() {
@@ -3712,6 +4053,7 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
         }
 
         this.cancelling = false;
+        this.confirmingResult = false;
         this.editing = true;
         this.editErrors = {
             title: null,
@@ -3932,13 +4274,38 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
         }
     },
 
-    async saveStatus() {
-        if (this.loading || ! this.updateUrl) {
+    async requestConfirmStatus() {
+        if (this.loading || ! this.updateUrl || ! this.canEdit) {
             return;
         }
 
         if (! ['passed', 'failed', 'skipped'].includes(this.status)) {
             pushToast('error', this.messages.resultRequired || this.messages.error || 'Error');
+
+            return;
+        }
+
+        this.editing = false;
+        this.cancelling = false;
+        this.confirmingResult = true;
+    },
+
+    closeConfirmStatus() {
+        if (this.loading) {
+            return;
+        }
+
+        this.confirmingResult = false;
+    },
+
+    async confirmSaveStatus() {
+        if (this.loading || ! this.updateUrl || ! this.canEdit) {
+            return;
+        }
+
+        if (! ['passed', 'failed', 'skipped'].includes(this.status)) {
+            pushToast('error', this.messages.resultRequired || this.messages.error || 'Error');
+            this.confirmingResult = false;
 
             return;
         }
@@ -3951,6 +4318,7 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
             });
 
             this.applyRound(payload.round);
+            this.confirmingResult = false;
             pushToast('success', payload.message || this.messages.updated || '');
         } catch (error) {
             pushToast('error', error?.message || this.messages.error || 'Error');
@@ -4219,41 +4587,62 @@ document.addEventListener('submit', async (event) => {
     }
 
     // Validation locale : champs marqués [data-required] / [data-min-length] (feedback instantané, sans serveur)
-    const requiredErrors = [];
+    // On n'affiche que la première erreur (pas d'accumulation de toasts).
+    let firstError = null;
 
     form.querySelectorAll('[data-required]').forEach((field) => {
+        if (firstError) {
+            return;
+        }
+
         if (String(field.value ?? '').trim() === '') {
-            requiredErrors.push(field.dataset.requiredMessage || form.dataset.errorMessage || 'Error');
+            firstError = field.dataset.requiredMessage || form.dataset.errorMessage || 'Error';
         }
     });
 
     form.querySelectorAll('[data-min-length]').forEach((field) => {
+        if (firstError) {
+            return;
+        }
+
         const minLength = Number(field.dataset.minLength || 0);
         const length = String(field.value ?? '').trim().length;
 
         if (length > 0 && length < minLength) {
-            requiredErrors.push(field.dataset.minLengthMessage || form.dataset.errorMessage || 'Error');
+            firstError = field.dataset.minLengthMessage || form.dataset.errorMessage || 'Error';
         }
     });
 
     form.querySelectorAll('[data-required-group]').forEach((group) => {
+        if (firstError) {
+            return;
+        }
+
         const checkboxes = group.querySelectorAll('input[type="checkbox"]');
         const anyChecked = [...checkboxes].some((checkbox) => checkbox.checked);
 
         if (! anyChecked) {
-            requiredErrors.push(group.dataset.requiredMessage || form.dataset.errorMessage || 'Error');
+            firstError = group.dataset.requiredMessage || form.dataset.errorMessage || 'Error';
         }
     });
 
     form.querySelectorAll('[data-phone]').forEach((field) => {
+        if (firstError) {
+            return;
+        }
+
         const value = String(field.value ?? '').trim();
 
         if (value !== '' && ! isValidPhoneNumber(value)) {
-            requiredErrors.push(field.dataset.phoneMessage || form.dataset.errorMessage || 'Error');
+            firstError = field.dataset.phoneMessage || form.dataset.errorMessage || 'Error';
         }
     });
 
     form.querySelectorAll('[data-url]').forEach((field) => {
+        if (firstError) {
+            return;
+        }
+
         const value = String(field.value ?? '').trim();
 
         if (value === '') {
@@ -4261,7 +4650,7 @@ document.addEventListener('submit', async (event) => {
         }
 
         if (! isValidHttpUrl(value)) {
-            requiredErrors.push(field.dataset.urlMessage || form.dataset.errorMessage || 'Error');
+            firstError = field.dataset.urlMessage || form.dataset.errorMessage || 'Error';
 
             return;
         }
@@ -4272,12 +4661,12 @@ document.addEventListener('submit', async (event) => {
             .filter(Boolean);
 
         if (hosts.length > 0 && ! urlHostMatches(value, hosts)) {
-            requiredErrors.push(field.dataset.urlHostMessage || field.dataset.urlMessage || form.dataset.errorMessage || 'Error');
+            firstError = field.dataset.urlHostMessage || field.dataset.urlMessage || form.dataset.errorMessage || 'Error';
         }
     });
 
-    if (requiredErrors.length > 0) {
-        [...new Set(requiredErrors)].forEach((message) => pushToast('error', message));
+    if (firstError !== null) {
+        pushToast('error', firstError);
 
         return;
     }
@@ -4302,6 +4691,8 @@ document.addEventListener('submit', async (event) => {
     const hasUploadFiles = [...formData.values()].some((value) => value instanceof File && value.size > 0);
     const isDelete = String(formData.get('_method') || '').toUpperCase() === 'DELETE';
     const loadingTargetId = form.dataset.loadingTarget || null;
+    let keepLoadingUntilRedirect = false;
+    let skipFinallyCleanup = false;
     const controller = new AbortController();
     const customTimeout = Number(form.dataset.ajaxTimeout || 0);
     const timeoutMs = customTimeout > 0
@@ -4334,7 +4725,11 @@ document.addEventListener('submit', async (event) => {
         }
 
         if (response.ok) {
-            pushToast('success', payload.message);
+            // Quand on redirige, on laisse le flash backend afficher un seul toast
+            // au chargement de la page cible.
+            if (! payload.show_url) {
+                pushToast('success', payload.message);
+            }
 
             if (form.hasAttribute('data-ajax-clear')) {
                 // Match by name too: Alpine may flip password inputs to type="text" when shown.
@@ -4358,10 +4753,10 @@ document.addEventListener('submit', async (event) => {
             }
 
             if (payload.show_url) {
-                window.setTimeout(() => {
-                    window.location.href = payload.show_url;
-                }, 600);
-
+                // Pas de clignotement : on garde l'overlay/spinner jusqu'à la navigation.
+                keepLoadingUntilRedirect = Boolean(loadingTargetId);
+                skipFinallyCleanup = true;
+                window.location.href = payload.show_url;
                 return;
             }
 
@@ -4454,12 +4849,14 @@ document.addEventListener('submit', async (event) => {
     } finally {
         window.clearTimeout(timeoutId);
 
-        if (loadingTargetId) {
+        if (loadingTargetId && ! keepLoadingUntilRedirect) {
             setPartialLoading(loadingTargetId, false);
         }
 
-        form.dataset.submitting = '0';
-        submitButtons.forEach((button) => { button.disabled = false; });
+        if (! skipFinallyCleanup) {
+            form.dataset.submitting = '0';
+            submitButtons.forEach((button) => { button.disabled = false; });
+        }
     }
 });
 

@@ -28,12 +28,12 @@
                 <p class="text-xs text-slate-500 truncate">{{ __('talenma.direct_hire.chat_with', ['name' => $peerName]) }}</p>
             </div>
             @if ($canChat)
-                <span class="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100">
+                <span id="direct-hire-chat-badge" class="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100">
                     <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
                     {{ __('talenma.direct_hire.chat_open_badge') }}
                 </span>
             @else
-                <span class="shrink-0 inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200">
+                <span id="direct-hire-chat-badge" class="shrink-0 inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200">
                     {{ __('talenma.direct_hire.chat_closed_badge') }}
                 </span>
             @endif
@@ -45,7 +45,20 @@
         x-ref="messages"
         class="overflow-y-auto overflow-x-hidden px-3 sm:px-4 py-4 space-y-3 min-w-0 flex-1 min-h-0 bg-slate-50 {{ $sidebar ? '' : 'max-h-[min(22rem,45dvh)]' }}"
     >
-        @forelse ($directHire->messages as $msg)
+        @php
+            // Le thread de chat doit contenir uniquement les messages explicites échangés.
+            // Les anciens seeds de proposition (company message == $directHire->message) sont ignorés.
+            $chatMessages = $directHire->messages->reject(function ($msg) use ($directHire) {
+                if ($directHire->company_user_id === null) {
+                    return false;
+                }
+
+                return (int) $msg->sender_user_id === (int) $directHire->company_user_id
+                    && trim((string) $msg->body) === trim((string) $directHire->message);
+            });
+        @endphp
+
+        @forelse ($chatMessages as $msg)
             @include('direct-hire._chat-message', [
                 'msg' => $msg,
                 'directHire' => $directHire,
@@ -64,56 +77,58 @@
         @endforelse
     </div>
 
-    @if ($canChat)
-        <form
-            method="POST"
-            action="{{ $storeRoute }}"
-            class="shrink-0 border-t border-indigo-100 bg-white p-3 sm:p-4 min-w-0"
-            x-on:submit="sending = true"
-        >
-            @csrf
-            <label for="direct-hire-chat-body" class="sr-only">{{ __('talenma.direct_hire.chat_placeholder') }}</label>
-            <div class="flex items-end gap-2 rounded-2xl bg-slate-50 p-2 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-indigo-400 focus-within:bg-white transition">
-                <textarea
-                    id="direct-hire-chat-body"
-                    name="body"
-                    rows="1"
-                    required
-                    minlength="2"
-                    maxlength="2000"
-                    x-model="body"
-                    x-ref="composer"
-                    x-on:keydown="onKeydown($event)"
-                    x-on:input="resizeComposer()"
-                    x-bind:readonly="sending"
-                    class="block max-h-[140px] min-h-[2.5rem] w-full flex-1 resize-none border-0 bg-transparent px-2.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-0"
-                    placeholder="{{ __('talenma.direct_hire.chat_placeholder') }}"
-                ></textarea>
-                <button
-                    type="submit"
-                    class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:opacity-50"
-                    x-bind:disabled="sending || ! canSend"
-                    title="{{ __('talenma.direct_hire.chat_send') }}"
-                >
-                    <span class="sr-only">{{ __('talenma.direct_hire.chat_send') }}</span>
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                    </svg>
-                </button>
+    <div id="direct-hire-chat-footer">
+        @if ($canChat)
+            <form
+                method="POST"
+                action="{{ $storeRoute }}"
+                class="shrink-0 border-t border-indigo-100 bg-white p-3 sm:p-4 min-w-0"
+                x-on:submit="sending = true"
+            >
+                @csrf
+                <label for="direct-hire-chat-body" class="sr-only">{{ __('talenma.direct_hire.chat_placeholder') }}</label>
+                <div class="flex items-end gap-2 rounded-2xl bg-slate-50 p-2 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-indigo-400 focus-within:bg-white transition">
+                    <textarea
+                        id="direct-hire-chat-body"
+                        name="body"
+                        rows="1"
+                        required
+                        minlength="2"
+                        maxlength="2000"
+                        x-model="body"
+                        x-ref="composer"
+                        x-on:keydown="onKeydown($event)"
+                        x-on:input="resizeComposer()"
+                        x-bind:readonly="sending"
+                        class="block max-h-[140px] min-h-[2.5rem] w-full flex-1 resize-none border-0 bg-transparent px-2.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-0"
+                        placeholder="{{ __('talenma.direct_hire.chat_placeholder') }}"
+                    ></textarea>
+                    <button
+                        type="submit"
+                        class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:opacity-50"
+                        x-bind:disabled="sending || ! canSend"
+                        title="{{ __('talenma.direct_hire.chat_send') }}"
+                    >
+                        <span class="sr-only">{{ __('talenma.direct_hire.chat_send') }}</span>
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <p class="text-[11px] text-slate-400">{{ __('talenma.direct_hire.chat_composer_hint') }}</p>
+                    <p
+                        class="text-[11px] tabular-nums"
+                        x-bind:class="nearLimit ? 'font-semibold text-amber-600' : 'text-slate-400'"
+                        x-text="characterCount + ' / ' + maxLength"
+                    ></p>
+                </div>
+                <x-input-error class="mt-2" :messages="$errors->get('body')" />
+            </form>
+        @else
+            <div class="shrink-0 border-t border-slate-200 bg-slate-50 px-4 sm:px-5 py-3.5">
+                <p class="text-xs text-slate-500">{{ __('talenma.direct_hire.chat_closed') }}</p>
             </div>
-            <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-                <p class="text-[11px] text-slate-400">{{ __('talenma.direct_hire.chat_composer_hint') }}</p>
-                <p
-                    class="text-[11px] tabular-nums"
-                    x-bind:class="nearLimit ? 'font-semibold text-amber-600' : 'text-slate-400'"
-                    x-text="characterCount + ' / ' + maxLength"
-                ></p>
-            </div>
-            <x-input-error class="mt-2" :messages="$errors->get('body')" />
-        </form>
-    @else
-        <div class="shrink-0 border-t border-slate-200 bg-slate-50 px-4 sm:px-5 py-3.5">
-            <p class="text-xs text-slate-500">{{ __('talenma.direct_hire.chat_closed') }}</p>
-        </div>
-    @endif
+        @endif
+    </div>
 </section>

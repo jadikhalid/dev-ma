@@ -64,9 +64,15 @@ class DirectHireController extends Controller
         ]);
     }
 
-    public function store(Request $request, User $talent): RedirectResponse
+    public function store(Request $request, User $talent): RedirectResponse|JsonResponse
     {
         if (! $request->user()->isCompany()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => __('talenma.direct_hire.create_error'),
+                ], 403);
+            }
+
             return redirect()->route('dashboard');
         }
 
@@ -89,9 +95,21 @@ class DirectHireController extends Controller
             $data['message'],
         );
 
+        $message = __('talenma.direct_hire.sent');
+
+        if ($request->expectsJson()) {
+            // On affiche le toast uniquement après le chargement de la page cible.
+            session()->flash('toast_success', $message);
+
+            return response()->json([
+                'message' => $message,
+                'show_url' => route('company.direct-hire.show', $directHire),
+            ]);
+        }
+
         return redirect()
             ->route('company.direct-hire.show', $directHire)
-            ->with('toast_success', __('talenma.direct_hire.sent'));
+            ->with('toast_success', $message);
     }
 
     public function show(Request $request, DirectHireRequest $directHire): View
@@ -301,21 +319,48 @@ class DirectHireController extends Controller
         ];
     }
 
-    public function close(Request $request, DirectHireRequest $directHire): RedirectResponse
+    public function close(Request $request, DirectHireRequest $directHire): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'outcome' => ['required', 'in:hired,closed_negative'],
             'closure_note' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $this->directHires->close(
+        $directHire = $this->directHires->close(
             $directHire,
             $request->user(),
             $data['outcome'],
             $data['closure_note'] ?? null,
         );
 
-        return back()->with('toast_success', __('talenma.direct_hire.closed'));
+        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile']);
+
+        $message = __('talenma.direct_hire.closed');
+
+        if ($request->expectsJson()) {
+            $canManageRounds = false;
+            $roundStatuses = DirectHireRound::outcomeStatuses();
+
+            return response()->json([
+                'message' => $message,
+                'can_manage_rounds' => $canManageRounds,
+                'can_withdraw' => false,
+                'can_chat' => ! $directHire->isTerminal(),
+                'status_badge_html' => view('company.direct-hire._status-badge', [
+                    'directHire' => $directHire,
+                ])->render(),
+                'closure_note_html' => view('company.direct-hire._closure-note', [
+                    'directHire' => $directHire,
+                ])->render(),
+                'rounds_list_html' => view('company.direct-hire._rounds-list', [
+                    'directHire' => $directHire,
+                    'canManageRounds' => $canManageRounds,
+                    'roundStatuses' => $roundStatuses,
+                ])->render(),
+            ]);
+        }
+
+        return back()->with('toast_success', $message);
     }
 
     public function withdraw(Request $request, DirectHireRequest $directHire): RedirectResponse

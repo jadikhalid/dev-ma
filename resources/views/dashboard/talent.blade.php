@@ -97,7 +97,7 @@
                             <p class="text-sm text-slate-500">{{ __('talenma.dashboard.talent.stats.recent_empty') }}</p>
                         </div>
                     @else
-                        <ol class="relative mt-4 space-y-2.5 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+                        <ol class="activity-scroll relative mt-4 max-h-[28.5rem] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
                             @foreach ($stats['recent_activity'] as $item)
                                 @php
                                     $label = match ($item['type']) {
@@ -105,6 +105,9 @@
                                             ? __('talenma.dashboard.talent.stats.activity_cv_lang', ['actor' => $item['actor'], 'lang' => $item['detail']])
                                             : __('talenma.dashboard.talent.stats.activity_cv', ['actor' => $item['actor']]),
                                         'direct_hire_proposed' => __('talenma.dashboard.talent.stats.activity_direct_hire_proposed', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_accepted' => __('talenma.dashboard.talent.stats.activity_direct_hire_accepted', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_declined' => __('talenma.dashboard.talent.stats.activity_direct_hire_declined', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_deferred' => __('talenma.dashboard.talent.stats.activity_direct_hire_deferred', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_hired' => __('talenma.dashboard.talent.stats.activity_direct_hire_hired', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_closed_negative' => __('talenma.dashboard.talent.stats.activity_direct_hire_closed_negative', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_withdrawn' => __('talenma.dashboard.talent.stats.activity_direct_hire_withdrawn', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
@@ -112,6 +115,7 @@
                                         'direct_hire_round_result' => __('talenma.dashboard.talent.stats.activity_direct_hire_round_result', ['actor' => $item['actor'], 'round' => $item['detail'] ?? '', 'result' => $item['result'] ?? '']),
                                         'direct_hire_round_cancelled' => __('talenma.dashboard.talent.stats.activity_direct_hire_round_cancelled', ['actor' => $item['actor'], 'round' => $item['detail'] ?? '']),
                                         'direct_hire_message' => __('talenma.dashboard.talent.stats.activity_direct_hire_message', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_message_sent' => __('talenma.dashboard.talent.stats.activity_direct_hire_message_sent', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         default => __('talenma.dashboard.talent.stats.activity_view', ['actor' => $item['actor']]),
                                     };
 

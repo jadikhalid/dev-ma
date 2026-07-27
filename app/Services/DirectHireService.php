@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Mail\DirectHireClosedMail;
 use App\Mail\DirectHireDecisionMail;
 use App\Mail\DirectHireProposalMail;
 use App\Mail\DirectHireRoundCancelledMail;
+use App\Mail\DirectHireRoundChangedMail;
 use App\Models\DirectHireMessage;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
@@ -55,11 +57,6 @@ class DirectHireService
                 'status' => DirectHireRequest::STATUS_PENDING_RESPONSE,
                 'conversation_id' => null,
                 'company_seen_at' => now(),
-            ]);
-
-            $request->messages()->create([
-                'sender_user_id' => $company->id,
-                'body' => $message,
             ]);
 
             return $request;
@@ -165,18 +162,8 @@ class DirectHireService
      */
     public function ensureThreadSeeded(DirectHireRequest $request): void
     {
-        if ($request->messages()->exists()) {
-            return;
-        }
-
-        if (! filled($request->message) || $request->company_user_id === null) {
-            return;
-        }
-
-        $request->messages()->create([
-            'sender_user_id' => $request->company_user_id,
-            'body' => $request->message,
-        ]);
+        // No automatic seeding: the chat must contain only explicit conversation
+        // messages (sent from the chat composer), not the initial proposal text.
     }
 
     public function addRound(
@@ -207,6 +194,7 @@ class DirectHireService
         ]);
 
         $this->markCompanyChangeForBothParties($request);
+        $this->notifyTalentRoundChanged($request, $round->fresh(), 'created');
 
         return $round;
     }
@@ -263,6 +251,12 @@ class DirectHireService
         }
 
         if (array_key_exists('status', $data)) {
+            if (! $round->isEditable()) {
+                throw ValidationException::withMessages([
+                    'status' => __('talenma.direct_hire.error_round_result_locked'),
+                ]);
+            }
+
             $status = $data['status'];
 
             if ($status === DirectHireRound::STATUS_CANCELLED) {
@@ -291,7 +285,10 @@ class DirectHireService
 
         $this->markCompanyChangeForBothParties($request);
 
-        return $round->fresh();
+        $round = $round->fresh();
+        $this->notifyTalentRoundChanged($request, $round, 'updated');
+
+        return $round;
     }
 
     /**
@@ -374,6 +371,42 @@ class DirectHireService
     }
 
     /**
+     * @param  'created'|'updated'  $event
+     */
+    private function notifyTalentRoundChanged(
+        DirectHireRequest $request,
+        DirectHireRound $round,
+        string $event,
+    ): void {
+        $request->loadMissing(['talent', 'company', 'companyProfile']);
+
+        if (! filled($request->talent?->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($request->talent->email)->send(
+                new DirectHireRoundChangedMail($request, $round, $event)
+            );
+        } catch (\Throwable) {
+            // Never block the hire process on mail failures.
+        }
+    }
+
+    private function notifyTalentClosed(DirectHireRequest $request): void
+    {
+        if (! filled($request->talent?->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($request->talent->email)->send(new DirectHireClosedMail($request));
+        } catch (\Throwable) {
+            // Never block the hire process on mail failures.
+        }
+    }
+
+    /**
      * Persist seen/activity timestamps without letting Eloquent overwrite
      * updated_at with a second, slightly newer value (false "unseen" dots).
      *
@@ -414,9 +447,13 @@ class DirectHireService
                 'closed_by' => $actor->id,
                 'closure_note' => filled($note) ? trim($note) : null,
                 'company_seen_at' => $now,
+                'talent_seen_at' => null,
                 'updated_at' => $now,
             ]);
         });
+
+        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
+        $this->notifyTalentClosed($request);
 
         return $request;
     }

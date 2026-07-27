@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DirectHireRequest;
 use App\Services\AdminDashboardService;
+use App\Services\CompanyDashboardActivityService;
 use App\Services\CompanyProfileCompletionService;
 use App\Services\DirectHireService;
 use App\Services\TalentDashboardStatsService;
@@ -17,6 +18,7 @@ class DashboardController extends Controller
         private CompanyProfileCompletionService $companyProfileCompletion,
         private AdminDashboardService $adminDashboard,
         private TalentDashboardStatsService $talentStats,
+        private CompanyDashboardActivityService $companyActivity,
         private DirectHireService $directHires,
     ) {}
 
@@ -44,8 +46,16 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get();
             $directHireUnseen = $this->directHires->companyHasUnseenChanges($user);
+            $recentActivity = $this->companyActivity->recentActivity($user);
 
-            return view('dashboard.company', compact('recentRequests', 'directHires', 'profile', 'completion', 'directHireUnseen'));
+            return view('dashboard.company', compact(
+                'recentRequests',
+                'directHires',
+                'profile',
+                'completion',
+                'directHireUnseen',
+                'recentActivity',
+            ));
         }
 
         $user->load(['profile.profession', 'profile.professionSector', 'profile.documents']);

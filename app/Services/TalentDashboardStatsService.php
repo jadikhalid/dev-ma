@@ -63,7 +63,7 @@ class TalentDashboardStatsService
     /**
      * @return list<array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
      */
-    private function recentActivity(User $talent, int $limit = 10): array
+    private function recentActivity(User $talent, int $limit = 20): array
     {
         $fetch = max($limit * 2, 20);
 
@@ -143,7 +143,32 @@ class TalentDashboardStatsService
                 ));
             }
 
-            if ($request->closed_at) {
+            if ($request->talent_decision_at) {
+                $decisionType = match ($request->status) {
+                    DirectHireRequest::STATUS_IN_PROCESS,
+                    DirectHireRequest::STATUS_HIRED,
+                    DirectHireRequest::STATUS_CLOSED_NEGATIVE => 'direct_hire_accepted',
+                    DirectHireRequest::STATUS_DECLINED => 'direct_hire_declined',
+                    DirectHireRequest::STATUS_DEFERRED => 'direct_hire_deferred',
+                    default => null,
+                };
+
+                if ($decisionType !== null) {
+                    $events->push($this->activityItem(
+                        type: $decisionType,
+                        actor: $actor,
+                        at: $request->talent_decision_at,
+                        subject: $subject,
+                        href: $href,
+                    ));
+                }
+            }
+
+            if ($request->closed_at && in_array($request->status, [
+                DirectHireRequest::STATUS_HIRED,
+                DirectHireRequest::STATUS_CLOSED_NEGATIVE,
+                DirectHireRequest::STATUS_WITHDRAWN,
+            ], true)) {
                 $type = match ($request->status) {
                     DirectHireRequest::STATUS_HIRED => 'direct_hire_hired',
                     DirectHireRequest::STATUS_WITHDRAWN => 'direct_hire_withdrawn',
@@ -213,7 +238,6 @@ class TalentDashboardStatsService
         }
 
         $messages = DirectHireMessage::query()
-            ->where('sender_user_id', '!=', $talent->id)
             ->whereHas('request', fn ($query) => $query->where('talent_user_id', $talent->id))
             ->with(['request.companyProfile', 'request.company'])
             ->latest()
@@ -223,22 +247,26 @@ class TalentDashboardStatsService
         foreach ($messages as $message) {
             $request = $message->request;
 
-            if (! $request) {
+            if (! $request || ! $message->sender_user_id) {
                 continue;
             }
 
             // Skip the seeded proposal copy — already covered by direct_hire_proposed.
             if (
-                $message->created_at
+                (int) $message->sender_user_id === (int) $request->company_user_id
+                && $message->created_at
                 && $request->created_at
                 && $message->created_at->diffInSeconds($request->created_at) <= 5
             ) {
                 continue;
             }
 
+            $actor = $request->companyDisplayName() ?: $this->actorName($request->company);
+            $isTalentMessage = (int) $message->sender_user_id === (int) $talent->id;
+
             $events->push($this->activityItem(
-                type: 'direct_hire_message',
-                actor: $request->companyDisplayName() ?: $this->actorName($request->company),
+                type: $isTalentMessage ? 'direct_hire_message_sent' : 'direct_hire_message',
+                actor: $actor,
                 at: $message->created_at,
                 subject: $request->shortSubject(),
                 href: route('talent.direct-hire.show', $request),

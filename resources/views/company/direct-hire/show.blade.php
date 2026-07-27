@@ -1,12 +1,4 @@
 @php
-    $tone = match ($directHire->statusTone()) {
-        'amber' => 'bg-amber-50 text-amber-800 border-amber-200',
-        'violet' => 'bg-violet-50 text-violet-800 border-violet-200',
-        'sky' => 'bg-sky-50 text-sky-800 border-sky-200',
-        'emerald' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
-        'rose' => 'bg-rose-50 text-rose-800 border-rose-200',
-        default => 'bg-gray-50 text-gray-700 border-gray-200',
-    };
     $talent = $directHire->talent;
     $canManageRounds = $directHire->status === \App\Models\DirectHireRequest::STATUS_IN_PROCESS;
     $canWithdraw = $directHire->isOpen();
@@ -45,20 +37,27 @@
                 </div>
                 <div class="inline-flex items-center gap-2 shrink-0">
                     <span class="text-sm text-gray-500">{{ __('talenma.direct_hire.status_prefix') }}</span>
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border {{ $tone }}">
-                        {{ $directHire->statusLabel() }}
-                    </span>
+                    @include('company.direct-hire._status-badge', ['directHire' => $directHire])
                 </div>
             </div>
 
             @include('company._talent-profile-drawer', ['hideHireActions' => true])
+
+            <div class="mt-2">
+                <a
+                    href="{{ route('company.direct-hire.index') }}"
+                    class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                >
+                    {{ __('talenma.direct_hire.show_back_to_list') }}
+                </a>
+            </div>
         </div>
     </x-slot>
 
     <div class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-5 lg:gap-6 items-start">
             <div class="space-y-5 min-w-0">
-                <div class="bg-white rounded-2xl border p-6 space-y-5">
+                <div id="direct-hire-proposal-card" class="bg-white rounded-2xl border p-6 space-y-5">
                     <div>
                         <div class="flex flex-wrap items-baseline justify-between gap-2">
                             <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('talenma.direct_hire.proposal') }}</h3>
@@ -78,7 +77,9 @@
                             <p class="mt-1 text-sm text-slate-900">
                                 @php
                                     $decisionLabel = match ($directHire->status) {
-                                        \App\Models\DirectHireRequest::STATUS_IN_PROCESS => __('talenma.direct_hire.decision_label_accepted'),
+                                        \App\Models\DirectHireRequest::STATUS_IN_PROCESS,
+                                        \App\Models\DirectHireRequest::STATUS_HIRED,
+                                        \App\Models\DirectHireRequest::STATUS_CLOSED_NEGATIVE => __('talenma.direct_hire.decision_label_accepted'),
                                         \App\Models\DirectHireRequest::STATUS_DECLINED => __('talenma.direct_hire.decision_label_declined'),
                                         \App\Models\DirectHireRequest::STATUS_DEFERRED => __('talenma.direct_hire.decision_label_deferred'),
                                         default => $directHire->statusLabel(),
@@ -95,12 +96,7 @@
                         </div>
                     @endif
 
-                    @if (filled($directHire->closure_note) && $directHire->isTerminal())
-                        <div class="rounded-lg border border-slate-100 bg-slate-50/80 px-3.5 py-3">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('talenma.direct_hire.closure_note_label') }}</p>
-                            <p class="mt-2 text-sm text-slate-700 whitespace-pre-line">{{ $directHire->closure_note }}</p>
-                        </div>
-                    @endif
+                    @include('company.direct-hire._closure-note', ['directHire' => $directHire])
                 </div>
 
                 @if ($canManageRounds || $directHire->rounds->isNotEmpty())
@@ -108,20 +104,16 @@
                         <h3 class="text-base font-semibold text-gray-900">{{ __('talenma.direct_hire.rounds_title') }}</h3>
 
                         <div id="direct-hire-rounds-list" class="space-y-4">
-                            @forelse ($directHire->rounds as $round)
-                                @include('company.direct-hire._round-card', [
-                                    'directHire' => $directHire,
-                                    'round' => $round,
-                                    'canManageRounds' => $canManageRounds,
-                                    'roundStatuses' => $roundStatuses,
-                                ])
-                            @empty
-                                <p id="direct-hire-rounds-empty" class="text-sm text-gray-500">{{ __('talenma.direct_hire.rounds_empty') }}</p>
-                            @endforelse
+                            @include('company.direct-hire._rounds-list', [
+                                'directHire' => $directHire,
+                                'canManageRounds' => $canManageRounds,
+                                'roundStatuses' => $roundStatuses,
+                            ])
                         </div>
 
                         @if ($canManageRounds)
                             <form
+                                id="direct-hire-round-create"
                                 method="POST"
                                 action="{{ route('company.direct-hire.rounds.store', $directHire) }}"
                                 class="relative mt-2 rounded-lg border border-dashed border-slate-200 bg-slate-50/40 px-3.5 py-3 space-y-2.5"
@@ -229,28 +221,74 @@
                                 </div>
                             </form>
 
-                            <div class="grid sm:grid-cols-2 gap-4 pt-2">
-                                <form method="POST" action="{{ route('company.direct-hire.close', $directHire) }}" class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-3">
+                            <div
+                                id="direct-hire-close-actions"
+                                class="relative grid sm:grid-cols-2 gap-4 pt-2"
+                                x-data="directHireCompanyClose({
+                                    url: @js(route('company.direct-hire.close', $directHire)),
+                                    messages: @js([
+                                        'error' => __('talenma.direct_hire.close_error'),
+                                        'networkError' => __('talenma.direct_hire.network_error'),
+                                        'chatClosed' => __('talenma.direct_hire.chat_closed'),
+                                        'chatClosedBadge' => __('talenma.direct_hire.chat_closed_badge'),
+                                        'confirmHiredTitle' => __('talenma.direct_hire.close_confirm_hired_title'),
+                                        'confirmHiredBody' => __('talenma.direct_hire.close_confirm_hired_body'),
+                                        'confirmHiredBtn' => __('talenma.direct_hire.close_confirm_hired_btn'),
+                                        'confirmNegativeTitle' => __('talenma.direct_hire.close_confirm_negative_title'),
+                                        'confirmNegativeBody' => __('talenma.direct_hire.close_confirm_negative_body'),
+                                        'confirmNegativeBtn' => __('talenma.direct_hire.close_confirm_negative_btn'),
+                                        'confirmCancel' => __('talenma.direct_hire.cancel'),
+                                    ]),
+                                })"
+                            >
+                                <form method="POST" action="{{ route('company.direct-hire.close', $directHire) }}" class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-3" @submit.prevent="requestConfirm">
                                     @csrf
                                     <input type="hidden" name="outcome" value="hired">
                                     <p class="text-sm font-semibold text-emerald-900">{{ __('talenma.direct_hire.close_hired') }}</p>
-                                    <textarea name="closure_note" rows="2" maxlength="2000" class="block w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.direct_hire.closure_note_placeholder') }}"></textarea>
-                                    <button type="submit" class="inline-flex px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700">{{ __('talenma.direct_hire.close_hired_btn') }}</button>
+                                    <textarea name="closure_note" rows="2" maxlength="2000" class="block w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.direct_hire.closure_note_placeholder') }}" x-bind:disabled="loading"></textarea>
+                                    <button type="submit" class="inline-flex px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-60" x-bind:disabled="loading">{{ __('talenma.direct_hire.close_hired_btn') }}</button>
                                 </form>
-                                <form method="POST" action="{{ route('company.direct-hire.close', $directHire) }}" class="rounded-xl border border-rose-100 bg-rose-50/40 p-4 space-y-3">
+                                <form method="POST" action="{{ route('company.direct-hire.close', $directHire) }}" class="rounded-xl border border-rose-100 bg-rose-50/40 p-4 space-y-3" @submit.prevent="requestConfirm">
                                     @csrf
                                     <input type="hidden" name="outcome" value="closed_negative">
                                     <p class="text-sm font-semibold text-rose-900">{{ __('talenma.direct_hire.close_negative') }}</p>
-                                    <textarea name="closure_note" rows="2" maxlength="2000" class="block w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.direct_hire.closure_note_placeholder') }}"></textarea>
-                                    <button type="submit" class="inline-flex px-4 py-2 bg-rose-600 text-white text-sm font-semibold rounded-lg hover:bg-rose-700">{{ __('talenma.direct_hire.close_negative_btn') }}</button>
+                                    <textarea name="closure_note" rows="2" maxlength="2000" class="block w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.direct_hire.closure_note_placeholder') }}" x-bind:disabled="loading"></textarea>
+                                    <button type="submit" class="inline-flex px-4 py-2 bg-rose-600 text-white text-sm font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-60" x-bind:disabled="loading">{{ __('talenma.direct_hire.close_negative_btn') }}</button>
                                 </form>
+
+                                <div
+                                    x-show="confirming"
+                                    x-cloak
+                                    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                                    role="dialog"
+                                    aria-modal="true"
+                                    x-on:keydown.escape.window="closeConfirm"
+                                >
+                                    <div class="absolute inset-0 bg-slate-900/40" x-on:click="closeConfirm" aria-hidden="true"></div>
+                                    <div class="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
+                                        <p class="text-base font-semibold text-slate-900" x-text="confirmTitle"></p>
+                                        <p class="mt-2 text-sm text-slate-600" x-text="confirmBody"></p>
+                                        <div class="mt-5 flex flex-wrap justify-end gap-3">
+                                            <x-secondary-button type="button" x-on:click="closeConfirm" x-bind:disabled="loading">
+                                                <span x-text="messages.confirmCancel"></span>
+                                            </x-secondary-button>
+                                            <button
+                                                type="button"
+                                                x-bind:class="confirmButtonClass"
+                                                x-on:click="confirmSubmit"
+                                                x-bind:disabled="loading"
+                                                x-text="confirmButtonLabel"
+                                            ></button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         @endif
                     </div>
                 @endif
 
                 @if ($canWithdraw)
-                    <div class="bg-white rounded-2xl border p-6">
+                    <div id="direct-hire-withdraw" class="bg-white rounded-2xl border p-6">
                         <form method="POST" action="{{ route('company.direct-hire.withdraw', $directHire) }}" class="space-y-3" onsubmit="return confirm(@js(__('talenma.direct_hire.withdraw_confirm')))">
                             @csrf
                             <p class="text-sm font-semibold text-gray-900">{{ __('talenma.direct_hire.withdraw_title') }}</p>

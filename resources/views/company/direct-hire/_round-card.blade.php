@@ -67,6 +67,13 @@
                 'meetingPrefix' => __('talenma.direct_hire.round_meeting_url'),
                 'meetingOpen' => __('talenma.direct_hire.round_meeting_url_open'),
                 'cancellationReasonLabel' => __('talenma.direct_hire.round_cancellation_reason_label'),
+                'confirmResultTitle' => __('talenma.direct_hire.round_result_confirm_title'),
+                'confirmResultBody' => __('talenma.direct_hire.round_result_confirm_body'),
+                'confirmResultConfirm' => __('talenma.direct_hire.round_result_confirm_btn'),
+                'confirmResultCancel' => __('talenma.direct_hire.cancel'),
+                'statusPassed' => __('talenma.direct_hire.round_status_passed'),
+                'statusFailed' => __('talenma.direct_hire.round_status_failed'),
+                'statusSkipped' => __('talenma.direct_hire.round_status_skipped'),
             ]),
         })"
     @endif
@@ -189,7 +196,7 @@
             @endif
 
             @if ($canManage)
-                <form class="mt-3 flex flex-wrap items-end gap-3" x-show="!isCancelled" x-on:submit.prevent="saveStatus">
+                <form class="mt-3 flex flex-wrap items-end gap-3" x-show="!isCancelled && canEdit" x-cloak x-on:submit.prevent="requestConfirmStatus">
                     <div class="min-w-[12rem] flex-1">
                         <x-input-label :for="'round-status-'.$round->id" :value="__('talenma.direct_hire.round_result')" />
                         <select
@@ -206,6 +213,29 @@
                     </div>
                     <x-primary-button type="submit" x-bind:disabled="loading">{{ __('talenma.direct_hire.round_save_result') }}</x-primary-button>
                 </form>
+
+                <div
+                    x-show="confirmingResult"
+                    x-cloak
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    x-on:keydown.escape.window="closeConfirmStatus"
+                >
+                    <div class="absolute inset-0 bg-slate-900/40" x-on:click="closeConfirmStatus" aria-hidden="true"></div>
+                    <div class="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
+                        <p class="text-base font-semibold text-slate-900" x-text="messages.confirmResultTitle"></p>
+                        <p class="mt-2 text-sm text-slate-600" x-text="confirmResultMessage"></p>
+                        <div class="mt-5 flex flex-wrap justify-end gap-3">
+                            <x-secondary-button type="button" x-on:click="closeConfirmStatus" x-bind:disabled="loading">
+                                <span x-text="messages.confirmResultCancel"></span>
+                            </x-secondary-button>
+                            <x-primary-button type="button" x-on:click="confirmSaveStatus" x-bind:disabled="loading">
+                                <span x-text="messages.confirmResultConfirm"></span>
+                            </x-primary-button>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="mt-3 pt-3 border-t border-gray-100" x-show="!isCancelled && canCancel" x-cloak>
                     <button

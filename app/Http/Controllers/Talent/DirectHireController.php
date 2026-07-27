@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Talent;
 use App\Http\Controllers\Controller;
 use App\Models\DirectHireRequest;
 use App\Services\DirectHireService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -74,7 +75,7 @@ class DirectHireController extends Controller
             ->with('toast_success', __('talenma.direct_hire.chat_sent'));
     }
 
-    public function decide(Request $request, DirectHireRequest $directHire): RedirectResponse
+    public function decide(Request $request, DirectHireRequest $directHire): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'decision' => ['required', 'in:'.implode(',', DirectHireRequest::talentDecisions())],
@@ -84,18 +85,46 @@ class DirectHireController extends Controller
             'decision.in' => __('talenma.direct_hire.error_decision_invalid'),
         ]);
 
-        $this->directHires->decide(
+        $directHire = $this->directHires->decide(
             $directHire,
             $request->user(),
             $data['decision'],
             $data['talent_decision_note'] ?? null,
         );
 
+        $directHire->load(['rounds', 'companyProfile', 'company']);
+
         $message = match ($data['decision']) {
             DirectHireRequest::DECISION_ACCEPT => __('talenma.direct_hire.decision_accepted'),
             DirectHireRequest::DECISION_DECLINE => __('talenma.direct_hire.decision_declined'),
             default => __('talenma.direct_hire.decision_deferred'),
         };
+
+        if ($request->expectsJson()) {
+            $canDecide = in_array($directHire->status, [
+                DirectHireRequest::STATUS_PENDING_RESPONSE,
+                DirectHireRequest::STATUS_DEFERRED,
+            ], true);
+
+            $showRounds = $directHire->rounds->isNotEmpty()
+                || $directHire->status === DirectHireRequest::STATUS_IN_PROCESS;
+
+            return response()->json([
+                'message' => $message,
+                'can_decide' => $canDecide,
+                'can_chat' => ! $directHire->isTerminal(),
+                'show_rounds' => $showRounds,
+                'status_badge_html' => view('talent.direct-hire._status-badge', [
+                    'directHire' => $directHire,
+                ])->render(),
+                'decision_note_html' => view('talent.direct-hire._decision-note', [
+                    'directHire' => $directHire,
+                ])->render(),
+                'rounds_html' => $showRounds
+                    ? view('talent.direct-hire._rounds', ['directHire' => $directHire])->render()
+                    : null,
+            ]);
+        }
 
         return redirect()
             ->route('talent.direct-hire.show', $directHire)
