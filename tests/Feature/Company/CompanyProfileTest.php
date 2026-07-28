@@ -136,6 +136,81 @@ class CompanyProfileTest extends TestCase
         $this->assertSame('/storage/avatars/'.$user->id.'.jpg', $user->fresh()->companyProfile->logoUrl());
     }
 
+    public function test_company_owner_can_upload_and_remove_contact_photo(): void
+    {
+        Storage::fake('public');
+
+        $user = $this->approvedCompany([
+            'representative_name' => 'Jean Dupont',
+        ]);
+
+        $upload = $this->actingAs($user)->patch(route('profile.contact.update'), [
+            'representative_name' => 'Jean Dupont',
+            'phone' => '+33 6 00 00 00 00',
+            'representative_photo' => UploadedFile::fake()->image('contact.jpg', 300, 300),
+        ]);
+
+        $upload
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit', ['panel' => 'account']));
+
+        $profile = $user->fresh()->companyProfile;
+        $this->assertNotNull($profile->representative_photo_path);
+        $this->assertStringStartsWith('company-contacts/'.$profile->id, $profile->representative_photo_path);
+        Storage::disk('public')->assertExists($profile->representative_photo_path);
+        $this->assertSame(
+            '/storage/'.$profile->representative_photo_path,
+            $profile->representativePhotoUrl(),
+        );
+
+        $remove = $this->actingAs($user)
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->patch(route('profile.contact.update'), [
+                'representative_name' => 'Jean Dupont',
+                'remove_representative_photo' => '1',
+            ]);
+
+        $remove->assertOk()
+            ->assertJsonPath('message', __('talenma.account.contact_saved'))
+            ->assertJsonPath('representative_photo_url', null);
+
+        $profile = $user->fresh()->companyProfile;
+        $this->assertNull($profile->representative_photo_path);
+        $this->assertNull($profile->representativePhotoUrl());
+    }
+
+    public function test_non_owner_cannot_update_contact_photo(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'talent',
+            'approval_status' => User::APPROVAL_APPROVED,
+            'approved_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('profile.contact.update'), [
+                'representative_name' => 'Hack',
+                'representative_photo' => UploadedFile::fake()->image('contact.jpg', 100, 100),
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_account_panel_shows_contact_photo_upload(): void
+    {
+        $user = $this->approvedCompany([
+            'representative_name' => 'Jean Dupont',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('profile.edit', ['panel' => 'account']))
+            ->assertOk()
+            ->assertSee(__('talenma.company.representative_photo'), false)
+            ->assertSee('name="representative_photo"', false);
+    }
+
     public function test_company_profile_identity_update_ignores_logo_upload(): void
     {
         Storage::fake('public');

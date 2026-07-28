@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\DirectHireRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -17,9 +18,15 @@ class DirectHireProposalMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $companyName = $this->directHire->companyFormalDisplayName();
+
         return new Envelope(
+            from: new Address(
+                (string) config('mail.from.address'),
+                $this->directHire->mailFromNameAsCompany(),
+            ),
             subject: __('talenma.mail.direct_hire_proposal.subject', [
-                'company' => $this->directHire->companyDisplayName(),
+                'company' => $companyName,
             ]),
         );
     }
@@ -30,7 +37,7 @@ class DirectHireProposalMail extends Mailable
             view: 'emails.direct-hire-proposal',
             with: [
                 'directHire' => $this->directHire,
-                'companyName' => $this->directHire->companyDisplayName(),
+                'companyName' => $this->directHire->companyFormalDisplayName(),
                 'talent' => $this->directHire->talent,
                 'url' => route('talent.direct-hire.show', $this->directHire),
             ],

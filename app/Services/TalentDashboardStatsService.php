@@ -164,6 +164,16 @@ class TalentDashboardStatsService
                 }
             }
 
+            if ($request->company_deferral_responded_at && $request->status === DirectHireRequest::STATUS_DEFERRED) {
+                $events->push($this->activityItem(
+                    type: 'direct_hire_deferral_accepted',
+                    actor: $actor,
+                    at: $request->company_deferral_responded_at,
+                    subject: $subject,
+                    href: $href,
+                ));
+            }
+
             if ($request->closed_at && in_array($request->status, [
                 DirectHireRequest::STATUS_HIRED,
                 DirectHireRequest::STATUS_CLOSED_NEGATIVE,
@@ -248,16 +258,6 @@ class TalentDashboardStatsService
             $request = $message->request;
 
             if (! $request || ! $message->sender_user_id) {
-                continue;
-            }
-
-            // Skip the seeded proposal copy — already covered by direct_hire_proposed.
-            if (
-                (int) $message->sender_user_id === (int) $request->company_user_id
-                && $message->created_at
-                && $request->created_at
-                && $message->created_at->diffInSeconds($request->created_at) <= 5
-            ) {
                 continue;
             }
 

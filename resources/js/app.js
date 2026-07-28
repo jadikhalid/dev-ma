@@ -3624,25 +3624,62 @@ Alpine.data('directHireTalentDecide', (config = {}) => ({
     url: config.url ?? '',
     messages: config.messages ?? {},
     loading: false,
+    deferLocked: Boolean(config.deferLocked),
+    confirmingDefer: false,
 
-    async submit(event) {
+    requestDefer() {
+        if (this.loading || this.deferLocked) {
+            return;
+        }
+
+        this.confirmingDefer = true;
+    },
+
+    closeDeferConfirm() {
         if (this.loading) {
             return;
         }
 
-        const form = event.target;
-        const submitter = event.submitter;
-        const decision = submitter?.getAttribute('value') || submitter?.value;
+        this.confirmingDefer = false;
+    },
 
-        if (! decision) {
+    confirmDefer() {
+        this.confirmingDefer = false;
+        this.submitDecision('defer');
+    },
+
+    async submitDecision(decision) {
+        if (this.loading) {
+            return;
+        }
+
+        const allowed = ['accept', 'defer', 'decline'];
+
+        if (! allowed.includes(decision)) {
+            pushToast('error', this.messages.decisionRequired || this.messages.error || 'Error');
+
+            return;
+        }
+
+        if (decision === 'defer' && this.deferLocked) {
+            return;
+        }
+
+        const note = (this.$refs.note?.value || '').trim();
+
+        if (note.length > 2000) {
+            pushToast('error', this.messages.noteMax || this.messages.error || 'Error');
+
             return;
         }
 
         this.loading = true;
-        setPartialLoading('direct-hire-decide-actions', true);
+        setPartialLoading('direct-hire-decide', true);
 
-        const formData = new FormData(form);
+        const form = this.$el.querySelector('form');
+        const formData = new FormData(form || undefined);
         formData.set('decision', decision);
+        formData.set('talent_decision_note', note);
 
         try {
             const response = await fetch(this.url, {
@@ -3677,7 +3714,7 @@ Alpine.data('directHireTalentDecide', (config = {}) => ({
             pushToast('error', this.messages.networkError || this.messages.error || 'Error');
         } finally {
             this.loading = false;
-            setPartialLoading('direct-hire-decide-actions', false);
+            setPartialLoading('direct-hire-decide', false);
         }
     },
 
@@ -3712,6 +3749,14 @@ Alpine.data('directHireTalentDecide', (config = {}) => ({
                 }
             } else if (existingNote) {
                 existingNote.remove();
+            }
+        }
+
+        if (payload.defer_locked) {
+            this.deferLocked = true;
+
+            if (this.$refs.note) {
+                this.$refs.note.value = '';
             }
         }
 
@@ -3757,6 +3802,169 @@ Alpine.data('directHireTalentDecide', (config = {}) => ({
 
             if (hint) {
                 hint.textContent = closedHint;
+            }
+        }
+    },
+}));
+
+Alpine.data('directHireDeferralReply', (config = {}) => ({
+    url: config.url ?? '',
+    messages: config.messages ?? {},
+    loading: false,
+
+    async submitAction(action) {
+        if (this.loading) {
+            return;
+        }
+
+        if (! ['accept', 'refuse'].includes(action)) {
+            pushToast('error', this.messages.error || 'Error');
+
+            return;
+        }
+
+        const note = (this.$refs.note?.value || '').trim();
+
+        if (note.length > 2000) {
+            pushToast('error', this.messages.noteMax || this.messages.error || 'Error');
+
+            return;
+        }
+
+        if (action === 'refuse' && note.length === 0) {
+            pushToast('error', this.messages.refuseNoteRequired || this.messages.error || 'Error');
+
+            return;
+        }
+
+        this.loading = true;
+        setPartialLoading('direct-hire-deferral-reply', true);
+
+        const form = this.$el.querySelector('form');
+        const formData = new FormData(form || undefined);
+        formData.set('action', action);
+        formData.set('note', note);
+
+        try {
+            const response = await fetch(this.url, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (! response.ok) {
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [];
+
+                if (messages.length === 0 && payload?.message) {
+                    messages.push(payload.message);
+                }
+
+                pushToast('error', messages[0] || this.messages.error || 'Error');
+
+                return;
+            }
+
+            this.applyReply(payload);
+            pushToast('success', payload?.message || '');
+        } catch {
+            pushToast('error', this.messages.networkError || this.messages.error || 'Error');
+        } finally {
+            this.loading = false;
+            setPartialLoading('direct-hire-deferral-reply', false);
+        }
+    },
+
+    applyReply(payload) {
+        if (! payload) {
+            return;
+        }
+
+        if (payload.status_badge_html) {
+            const badge = document.getElementById('direct-hire-status-badge');
+
+            if (badge) {
+                badge.outerHTML = payload.status_badge_html;
+            }
+        }
+
+        if (typeof payload.deferral_note_html === 'string') {
+            const existing = document.getElementById('direct-hire-company-deferral-note');
+            const proposalCard = document.getElementById('direct-hire-proposal-card');
+
+            if (payload.deferral_note_html.trim() !== '') {
+                if (existing) {
+                    existing.outerHTML = payload.deferral_note_html;
+                } else if (proposalCard) {
+                    const closure = proposalCard.querySelector('#direct-hire-closure-note');
+                    if (closure) {
+                        closure.insertAdjacentHTML('beforebegin', payload.deferral_note_html);
+                    } else {
+                        proposalCard.insertAdjacentHTML('beforeend', payload.deferral_note_html);
+                    }
+                }
+            } else if (existing) {
+                existing.remove();
+            }
+        }
+
+        if (typeof payload.closure_note_html === 'string') {
+            const existingClosure = document.getElementById('direct-hire-closure-note');
+            const proposalCard = document.getElementById('direct-hire-proposal-card');
+
+            if (payload.closure_note_html.trim() !== '') {
+                if (existingClosure) {
+                    existingClosure.outerHTML = payload.closure_note_html;
+                } else if (proposalCard) {
+                    proposalCard.insertAdjacentHTML('beforeend', payload.closure_note_html);
+                }
+            }
+        }
+
+        if (payload.can_respond_to_deferral === false) {
+            document.getElementById('direct-hire-deferral-reply')?.remove();
+        }
+
+        if (payload.can_withdraw === false) {
+            document.getElementById('direct-hire-withdraw')?.remove();
+        } else if (payload.withdraw_html && ! document.getElementById('direct-hire-withdraw')) {
+            const mainColumn = document.getElementById('direct-hire-main-column');
+
+            if (mainColumn) {
+                mainColumn.insertAdjacentHTML('beforeend', payload.withdraw_html);
+            }
+        }
+
+        if (payload.can_chat === false) {
+            const badge = document.getElementById('direct-hire-chat-badge');
+            const closedBadge = this.messages.chatClosedBadge || '';
+            const closedHint = this.messages.chatClosed || '';
+
+            if (badge) {
+                badge.className = 'shrink-0 inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200';
+                badge.textContent = closedBadge;
+            }
+
+            const footer = document.getElementById('direct-hire-chat-footer');
+
+            if (footer) {
+                footer.innerHTML = `
+                    <div class="shrink-0 border-t border-slate-200 bg-slate-50 px-4 sm:px-5 py-3.5">
+                        <p class="text-xs text-slate-500"></p>
+                    </div>
+                `;
+                const hint = footer.querySelector('p');
+
+                if (hint) {
+                    hint.textContent = closedHint;
+                }
             }
         }
     },

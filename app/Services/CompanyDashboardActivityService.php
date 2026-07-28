@@ -88,14 +88,29 @@ class CompanyDashboardActivityService
                 }
             }
 
+            if ($request->company_deferral_responded_at && $request->status === DirectHireRequest::STATUS_DEFERRED) {
+                $events->push($this->activityItem(
+                    type: 'direct_hire_deferral_accepted',
+                    actor: $actor,
+                    at: $request->company_deferral_responded_at,
+                    subject: $subject,
+                    href: $href,
+                ));
+            }
+
             if ($request->closed_at && in_array($request->status, [
                 DirectHireRequest::STATUS_HIRED,
                 DirectHireRequest::STATUS_CLOSED_NEGATIVE,
+                DirectHireRequest::STATUS_WITHDRAWN,
             ], true)) {
+                $type = match ($request->status) {
+                    DirectHireRequest::STATUS_HIRED => 'direct_hire_hired',
+                    DirectHireRequest::STATUS_WITHDRAWN => 'direct_hire_withdrawn',
+                    default => 'direct_hire_closed_negative',
+                };
+
                 $events->push($this->activityItem(
-                    type: $request->status === DirectHireRequest::STATUS_HIRED
-                        ? 'direct_hire_hired'
-                        : 'direct_hire_closed_negative',
+                    type: $type,
                     actor: $actor,
                     at: $request->closed_at,
                     subject: $subject,
@@ -116,14 +131,17 @@ class CompanyDashboardActivityService
         foreach ($messageQuery as $message) {
             $request = $message->request;
 
-            if (! $request || (int) $message->sender_user_id !== (int) $request->talent_user_id) {
+            if (! $request || ! $message->sender_user_id) {
                 continue;
             }
 
+            $fromTalent = (int) $message->sender_user_id === (int) $request->talent_user_id;
+            $actor = $request->talentDisplayName()
+                ?: __('talenma.dashboard.company.activity.unknown_talent');
+
             $events->push($this->activityItem(
-                type: 'direct_hire_message',
-                actor: $request->talentDisplayName()
-                    ?: __('talenma.dashboard.company.activity.unknown_talent'),
+                type: $fromTalent ? 'direct_hire_message' : 'direct_hire_message_sent',
+                actor: $actor,
                 at: $message->created_at,
                 subject: $request->shortSubject(),
                 href: route('company.direct-hire.show', $request),

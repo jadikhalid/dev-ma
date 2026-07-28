@@ -1,7 +1,8 @@
 @php
     $talent = $directHire->talent;
     $canManageRounds = $directHire->status === \App\Models\DirectHireRequest::STATUS_IN_PROCESS;
-    $canWithdraw = $directHire->isOpen();
+    $canRespondToDeferral = $directHire->awaitsCompanyDeferralReply();
+    $canWithdraw = $directHire->isOpen() && ! $canRespondToDeferral;
 @endphp
 
 <x-app-layout>
@@ -56,7 +57,7 @@
 
     <div class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-5 lg:gap-6 items-start">
-            <div class="space-y-5 min-w-0">
+            <div id="direct-hire-main-column" class="space-y-5 min-w-0">
                 <div id="direct-hire-proposal-card" class="bg-white rounded-2xl border p-6 space-y-5">
                     <div>
                         <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -95,6 +96,8 @@
                             @endif
                         </div>
                     @endif
+
+                    @include('company.direct-hire._deferral-note', ['directHire' => $directHire])
 
                     @include('company.direct-hire._closure-note', ['directHire' => $directHire])
                 </div>
@@ -287,15 +290,65 @@
                     </div>
                 @endif
 
-                @if ($canWithdraw)
-                    <div id="direct-hire-withdraw" class="bg-white rounded-2xl border p-6">
-                        <form method="POST" action="{{ route('company.direct-hire.withdraw', $directHire) }}" class="space-y-3" onsubmit="return confirm(@js(__('talenma.direct_hire.withdraw_confirm')))">
+                @if ($canRespondToDeferral)
+                    <div
+                        id="direct-hire-deferral-reply"
+                        class="relative bg-white rounded-2xl border p-6"
+                        x-data="directHireDeferralReply({
+                            url: @js(route('company.direct-hire.deferral', $directHire)),
+                            messages: @js([
+                                'error' => __('talenma.direct_hire.deferral_reply_error'),
+                                'networkError' => __('talenma.direct_hire.network_error'),
+                                'noteMax' => __('talenma.direct_hire.chat_max'),
+                                'refuseNoteRequired' => __('talenma.direct_hire.deferral_refuse_note_required'),
+                                'chatClosedBadge' => __('talenma.direct_hire.chat_closed_badge'),
+                                'chatClosed' => __('talenma.direct_hire.chat_closed'),
+                            ]),
+                        })"
+                    >
+                        <form method="POST" action="{{ route('company.direct-hire.deferral', $directHire) }}" class="space-y-4" @submit.prevent>
                             @csrf
-                            <p class="text-sm font-semibold text-gray-900">{{ __('talenma.direct_hire.withdraw_title') }}</p>
-                            <textarea name="closure_note" rows="2" maxlength="2000" class="block w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.direct_hire.closure_note_placeholder') }}"></textarea>
-                            <button type="submit" class="inline-flex px-4 py-2 border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50">{{ __('talenma.direct_hire.withdraw_btn') }}</button>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900">{{ __('talenma.direct_hire.deferral_reply_title') }}</p>
+                                <p class="mt-1 text-sm text-gray-500">{{ __('talenma.direct_hire.deferral_reply_subtitle') }}</p>
+                            </div>
+                            <div>
+                                <x-input-label for="company_deferral_note" :value="__('talenma.direct_hire.deferral_reply_note')" />
+                                <textarea
+                                    id="company_deferral_note"
+                                    name="note"
+                                    rows="3"
+                                    maxlength="2000"
+                                    class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    placeholder="{{ __('talenma.direct_hire.deferral_reply_note_placeholder') }}"
+                                    x-ref="note"
+                                    x-bind:disabled="loading"
+                                ></textarea>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    class="inline-flex justify-center px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-60"
+                                    x-bind:disabled="loading"
+                                    @click="submitAction('accept')"
+                                >
+                                    {{ __('talenma.direct_hire.deferral_accept_btn') }}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="inline-flex justify-center px-4 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-60"
+                                    x-bind:disabled="loading"
+                                    @click="submitAction('refuse')"
+                                >
+                                    {{ __('talenma.direct_hire.deferral_refuse_btn') }}
+                                </button>
+                            </div>
                         </form>
                     </div>
+                @endif
+
+                @if ($canWithdraw)
+                    @include('company.direct-hire._withdraw', ['directHire' => $directHire])
                 @endif
             </div>
 

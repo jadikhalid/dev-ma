@@ -48,6 +48,8 @@
 
                         @include('talent.direct-hire._decision-note', ['directHire' => $directHire])
 
+                        @include('talent.direct-hire._company-deferral-note', ['directHire' => $directHire])
+
                         @if (filled($directHire->closure_note) && $directHire->isTerminal())
                             <div class="rounded-lg bg-slate-50/80 border border-slate-100 px-3.5 py-3">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('talenma.direct_hire.closure_note_label') }}</p>
@@ -61,14 +63,21 @@
                 @if ($canDecide)
                     <section
                         id="direct-hire-decide"
-                        class="bg-white rounded-2xl border overflow-hidden"
+                        class="relative bg-white rounded-2xl border overflow-hidden"
                         x-data="directHireTalentDecide({
                             url: @js(route('talent.direct-hire.decide', $directHire)),
+                            deferLocked: @js($directHire->status === \App\Models\DirectHireRequest::STATUS_DEFERRED),
                             messages: @js([
                                 'error' => __('talenma.direct_hire.decide_error'),
                                 'networkError' => __('talenma.direct_hire.network_error'),
+                                'noteMax' => __('talenma.direct_hire.chat_max'),
+                                'decisionRequired' => __('talenma.direct_hire.decision_required'),
                                 'chatClosedBadge' => __('talenma.direct_hire.chat_closed_badge'),
                                 'chatClosed' => __('talenma.direct_hire.chat_closed'),
+                                'deferConfirmTitle' => __('talenma.direct_hire.defer_confirm_title'),
+                                'deferConfirmBody' => __('talenma.direct_hire.defer_confirm_body'),
+                                'deferConfirmBtn' => __('talenma.direct_hire.defer_confirm_btn'),
+                                'deferConfirmCancel' => __('talenma.direct_hire.defer_confirm_cancel'),
                             ]),
                         })"
                     >
@@ -80,7 +89,7 @@
                             method="POST"
                             action="{{ route('talent.direct-hire.decide', $directHire) }}"
                             class="p-5 space-y-4"
-                            @submit.prevent="submit($event)"
+                            @submit.prevent
                         >
                             @csrf
                             <div>
@@ -92,6 +101,7 @@
                                     maxlength="2000"
                                     class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="{{ __('talenma.direct_hire.decision_note_placeholder') }}"
+                                    x-ref="note"
                                     x-bind:disabled="loading"
                                 >{{ old('talent_decision_note') }}</textarea>
                             </div>
@@ -100,34 +110,62 @@
                                 class="relative grid grid-cols-1 sm:grid-cols-3 gap-2"
                             >
                                 <button
-                                    type="submit"
-                                    name="decision"
-                                    value="accept"
+                                    type="button"
                                     class="inline-flex justify-center px-4 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-60"
                                     x-bind:disabled="loading"
+                                    @click="submitDecision('accept')"
                                 >
                                     {{ __('talenma.direct_hire.decide_accept') }}
                                 </button>
                                 <button
-                                    type="submit"
-                                    name="decision"
-                                    value="defer"
-                                    class="inline-flex justify-center px-4 py-2.5 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600 disabled:opacity-60"
-                                    x-bind:disabled="loading"
+                                    type="button"
+                                    id="direct-hire-decide-defer"
+                                    class="inline-flex justify-center px-4 py-2.5 text-sm font-semibold rounded-lg disabled:cursor-not-allowed"
+                                    x-bind:class="deferLocked
+                                        ? 'bg-amber-100 text-amber-700/70 opacity-60'
+                                        : 'bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60'"
+                                    x-bind:disabled="loading || deferLocked"
+                                    @click="requestDefer()"
                                 >
                                     {{ __('talenma.direct_hire.decide_defer') }}
                                 </button>
                                 <button
-                                    type="submit"
-                                    name="decision"
-                                    value="decline"
+                                    type="button"
                                     class="inline-flex justify-center px-4 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-60"
                                     x-bind:disabled="loading"
+                                    @click="submitDecision('decline')"
                                 >
                                     {{ __('talenma.direct_hire.decide_decline') }}
                                 </button>
                             </div>
                         </form>
+
+                        <div
+                            x-show="confirmingDefer"
+                            x-cloak
+                            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                            role="dialog"
+                            aria-modal="true"
+                            x-on:keydown.escape.window="closeDeferConfirm"
+                        >
+                            <div class="absolute inset-0 bg-slate-900/40" x-on:click="closeDeferConfirm" aria-hidden="true"></div>
+                            <div class="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
+                                <p class="text-base font-semibold text-slate-900" x-text="messages.deferConfirmTitle"></p>
+                                <p class="mt-2 text-sm text-slate-600" x-text="messages.deferConfirmBody"></p>
+                                <div class="mt-5 flex flex-wrap justify-end gap-3">
+                                    <x-secondary-button type="button" x-on:click="closeDeferConfirm" x-bind:disabled="loading">
+                                        <span x-text="messages.deferConfirmCancel"></span>
+                                    </x-secondary-button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center px-4 py-2 bg-amber-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-600 focus:bg-amber-600 active:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-60"
+                                        x-on:click="confirmDefer"
+                                        x-bind:disabled="loading"
+                                        x-text="messages.deferConfirmBtn"
+                                    ></button>
+                                </div>
+                            </div>
+                        </div>
                     </section>
                 @endif
 

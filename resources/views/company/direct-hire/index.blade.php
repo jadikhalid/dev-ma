@@ -132,8 +132,14 @@
                                             <p class="min-w-0 truncate text-sm font-semibold text-slate-800 group-hover:text-indigo-800">
                                                 {{ $hire->shortSubject() }}
                                             </p>
-                                            <span class="inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 {{ $tones['badge'] }}">
+                                            <span class="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 {{ $tones['badge'] }}">
                                                 {{ $hire->statusLabel() }}
+                                                @if ($hire->hasUnseenChangesForCompany())
+                                                    <span class="relative flex h-1.5 w-1.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                                        <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                                                    </span>
+                                                @endif
                                             </span>
                                         </div>
                                         <p class="truncate text-xs text-slate-600">

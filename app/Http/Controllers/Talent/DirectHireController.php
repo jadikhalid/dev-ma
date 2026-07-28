@@ -112,7 +112,8 @@ class DirectHireController extends Controller
             return response()->json([
                 'message' => $message,
                 'can_decide' => $canDecide,
-                'can_chat' => ! $directHire->isTerminal(),
+                'defer_locked' => $directHire->status === DirectHireRequest::STATUS_DEFERRED,
+                'can_chat' => $directHire->allowsChat(),
                 'show_rounds' => $showRounds,
                 'status_badge_html' => view('talent.direct-hire._status-badge', [
                     'directHire' => $directHire,

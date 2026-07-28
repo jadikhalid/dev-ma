@@ -12,14 +12,83 @@
         <form
             method="post"
             action="{{ route('profile.contact.update') }}"
+            enctype="multipart/form-data"
             class="relative mt-6 space-y-6"
             data-ajax
             data-loading-target="account-contact-card"
             data-error-message="{{ __('talenma.common.save_error') }}"
             novalidate
+            x-data="avatarPreview({
+                initialUrl: @js($companyProfile?->representativePhotoUrl()),
+                initials: @js($companyProfile?->representativeInitials() ?? '—'),
+                maxBytes: {{ 2 * 1024 * 1024 }},
+                maxSize: {{ \App\Services\AvatarService::MAX_SIZE }},
+                allowedMimes: @js(\App\Services\AvatarService::ALLOWED_MIMES),
+                messages: {
+                    invalidType: @js(__('talenma.company.representative_photo_invalid_type')),
+                    tooLarge: @js(__('talenma.company.representative_photo_too_large')),
+                },
+            })"
         >
             @csrf
             @method('patch')
+
+            <div class="flex flex-col sm:flex-row sm:items-center gap-5 pb-6 border-b border-gray-100">
+                <div class="relative shrink-0">
+                    <img
+                        x-show="previewUrl"
+                        x-cloak
+                        :src="previewUrl"
+                        alt="{{ $companyProfile?->representative_name ?: __('talenma.company.section_contact') }}"
+                        class="w-32 h-32 rounded-full object-cover shrink-0 ring-2 ring-indigo-100"
+                    >
+                    <span
+                        x-show="!previewUrl"
+                        class="inline-flex items-center justify-center w-32 h-32 rounded-full bg-indigo-100 text-indigo-700 font-bold text-3xl shrink-0"
+                        aria-hidden="true"
+                        x-text="initials"
+                    ></span>
+                    <span
+                        x-show="processing"
+                        x-cloak
+                        class="absolute inset-0 flex items-center justify-center rounded-full bg-white/70 text-xs font-semibold text-indigo-700"
+                    >…</span>
+                </div>
+                <div class="flex-1 space-y-3">
+                    <div>
+                        <x-input-label
+                            for="representative_photo"
+                            :value="__('talenma.company.representative_photo')"
+                        />
+                        <input
+                            id="representative_photo"
+                            name="representative_photo"
+                            type="file"
+                            x-ref="input"
+                            accept="image/jpeg,image/png,image/webp"
+                            @change="onFileChange($event)"
+                            class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                        >
+                        <p class="mt-1 text-xs text-gray-500">
+                            {{ __('talenma.company.representative_photo_hint') }}
+                        </p>
+                        <x-input-error class="mt-2" :messages="$errors->get('representative_photo')" />
+                    </div>
+                    @if ($companyProfile?->representative_photo_path)
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                            <input
+                                type="checkbox"
+                                name="remove_representative_photo"
+                                value="1"
+                                x-ref="removeAvatar"
+                                @change="onRemoveToggle($event)"
+                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            >
+                            {{ __('talenma.company.representative_photo_remove') }}
+                        </label>
+                    @endif
+                </div>
+            </div>
 
             <div>
                 <x-input-label for="representative_name" :value="__('talenma.company.contact_full_name')" />

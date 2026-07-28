@@ -108,6 +108,7 @@
                                         'direct_hire_accepted' => __('talenma.dashboard.talent.stats.activity_direct_hire_accepted', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_declined' => __('talenma.dashboard.talent.stats.activity_direct_hire_declined', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_deferred' => __('talenma.dashboard.talent.stats.activity_direct_hire_deferred', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'direct_hire_deferral_accepted' => __('talenma.dashboard.talent.stats.activity_direct_hire_deferral_accepted', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_hired' => __('talenma.dashboard.talent.stats.activity_direct_hire_hired', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_closed_negative' => __('talenma.dashboard.talent.stats.activity_direct_hire_closed_negative', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_withdrawn' => __('talenma.dashboard.talent.stats.activity_direct_hire_withdrawn', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),

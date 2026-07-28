@@ -2,11 +2,14 @@
 
 namespace App\Services;
 
+use App\Mail\DirectHireChatMessageMail;
 use App\Mail\DirectHireClosedMail;
 use App\Mail\DirectHireDecisionMail;
+use App\Mail\DirectHireDeferralAcknowledgedMail;
 use App\Mail\DirectHireProposalMail;
 use App\Mail\DirectHireRoundCancelledMail;
 use App\Mail\DirectHireRoundChangedMail;
+use App\Mail\DirectHireWithdrawnMail;
 use App\Models\DirectHireMessage;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
@@ -94,24 +97,42 @@ class DirectHireService
             ]);
         }
 
+        if (
+            $decision === DirectHireRequest::DECISION_DEFER
+            && $request->status === DirectHireRequest::STATUS_DEFERRED
+        ) {
+            throw ValidationException::withMessages([
+                'decision' => __('talenma.direct_hire.error_already_deferred'),
+            ]);
+        }
+
         $newStatus = match ($decision) {
             DirectHireRequest::DECISION_ACCEPT => DirectHireRequest::STATUS_IN_PROCESS,
             DirectHireRequest::DECISION_DECLINE => DirectHireRequest::STATUS_DECLINED,
             DirectHireRequest::DECISION_DEFER => DirectHireRequest::STATUS_DEFERRED,
         };
 
-        $request->update([
-            'status' => $newStatus,
-            'talent_decision_at' => now(),
-            'talent_decision_note' => filled($note) ? trim($note) : null,
-            'talent_seen_at' => now(),
-            'closed_at' => $newStatus === DirectHireRequest::STATUS_DECLINED ? now() : null,
-            'closed_by' => $newStatus === DirectHireRequest::STATUS_DECLINED ? $talent->id : null,
-            'closure_note' => $newStatus === DirectHireRequest::STATUS_DECLINED
-                ? (filled($note) ? trim($note) : null)
-                : $request->closure_note,
-        ]);
+        $now = now();
 
+        DirectHireRequest::withoutTimestamps(function () use ($request, $newStatus, $talent, $note, $now) {
+            $request->update([
+                'status' => $newStatus,
+                'talent_decision_at' => $now,
+                'talent_decision_note' => filled($note) ? trim($note) : null,
+                'talent_seen_at' => $now,
+                // Talent acted: force company unseen indicators (nav + dashboard dots).
+                'company_seen_at' => null,
+                'closed_at' => $newStatus === DirectHireRequest::STATUS_DECLINED ? $now : null,
+                'closed_by' => $newStatus === DirectHireRequest::STATUS_DECLINED ? $talent->id : null,
+                // closure_note is reserved for company close messages — do not mirror talent notes.
+                'closure_note' => $newStatus === DirectHireRequest::STATUS_DECLINED
+                    ? null
+                    : $request->closure_note,
+                'updated_at' => $now,
+            ]);
+        });
+
+        $request->refresh();
         $request->load(['company', 'companyProfile', 'talent']);
 
         try {
@@ -125,11 +146,82 @@ class DirectHireService
         return $request;
     }
 
+    public function respondToDeferral(
+        DirectHireRequest $request,
+        User $actor,
+        string $action,
+        ?string $note = null,
+    ): DirectHireRequest {
+        $this->assertCompanyCanManage($request, $actor);
+
+        if (! $request->awaitsCompanyDeferralReply()) {
+            throw ValidationException::withMessages([
+                'action' => __('talenma.direct_hire.error_deferral_reply_locked'),
+            ]);
+        }
+
+        if (! in_array($action, DirectHireRequest::companyDeferralActions(), true)) {
+            throw ValidationException::withMessages([
+                'action' => __('talenma.direct_hire.error_deferral_action_invalid'),
+            ]);
+        }
+
+        if ($action === DirectHireRequest::DEFERRAL_REFUSE) {
+            if (! filled($note)) {
+                throw ValidationException::withMessages([
+                    'note' => __('talenma.direct_hire.deferral_refuse_note_required'),
+                ]);
+            }
+
+            return $this->withdraw($request, $actor, $note);
+        }
+
+        return $this->acknowledgeDeferral($request, $actor, $note);
+    }
+
+    public function acknowledgeDeferral(
+        DirectHireRequest $request,
+        User $actor,
+        ?string $note = null,
+    ): DirectHireRequest {
+        $this->assertCompanyCanManage($request, $actor);
+
+        if (! $request->awaitsCompanyDeferralReply()) {
+            throw ValidationException::withMessages([
+                'action' => __('talenma.direct_hire.error_deferral_reply_locked'),
+            ]);
+        }
+
+        $now = now();
+
+        DirectHireRequest::withoutTimestamps(function () use ($request, $note, $now) {
+            $request->update([
+                'company_deferral_note' => filled($note) ? trim($note) : null,
+                'company_deferral_responded_at' => $now,
+                'company_seen_at' => $now,
+                'talent_seen_at' => null,
+                'updated_at' => $now,
+            ]);
+        });
+
+        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
+
+        try {
+            if (filled($request->talent?->email)) {
+                Mail::to($request->talent->email)->send(new DirectHireDeferralAcknowledgedMail($request));
+            }
+        } catch (\Throwable) {
+            // Never block the hire process on mail failures.
+        }
+
+        return $request;
+    }
+
     public function postMessage(DirectHireRequest $request, User $sender, string $body): DirectHireMessage
     {
         $this->assertCanChat($request, $sender);
 
-        if ($request->isTerminal()) {
+        if (! $request->allowsChat()) {
             throw ValidationException::withMessages([
                 'body' => __('talenma.direct_hire.error_chat_closed'),
             ]);
@@ -146,13 +238,18 @@ class DirectHireService
             $this->writeRequestTimestamps($request->id, [
                 'updated_at' => $now,
                 'company_seen_at' => $now,
+                'talent_seen_at' => null,
             ]);
         } else {
             $this->writeRequestTimestamps($request->id, [
                 'updated_at' => $now,
                 'talent_seen_at' => $now,
+                'company_seen_at' => null,
             ]);
         }
+
+        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
+        $this->notifyChatRecipient($request, $message, $sender);
 
         return $message;
     }
@@ -406,6 +503,44 @@ class DirectHireService
         }
     }
 
+    private function notifyTalentWithdrawn(DirectHireRequest $request): void
+    {
+        if (! filled($request->talent?->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($request->talent->email)->send(new DirectHireWithdrawnMail($request));
+        } catch (\Throwable) {
+            // Never block the hire process on mail failures.
+        }
+    }
+
+    private function notifyChatRecipient(
+        DirectHireRequest $request,
+        DirectHireMessage $message,
+        User $sender,
+    ): void {
+        $recipientIsCompany = $sender->isTalent();
+        $recipient = $recipientIsCompany ? $request->company : $request->talent;
+
+        if (! $recipient || ! filled($recipient->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($recipient->email)->send(new DirectHireChatMessageMail(
+                $request,
+                $message,
+                $sender,
+                $recipient,
+                $recipientIsCompany,
+            ));
+        } catch (\Throwable) {
+            // Never block the hire process on mail failures.
+        }
+    }
+
     /**
      * Persist seen/activity timestamps without letting Eloquent overwrite
      * updated_at with a second, slightly newer value (false "unseen" dots).
@@ -477,9 +612,13 @@ class DirectHireService
                 'closed_by' => $actor->id,
                 'closure_note' => filled($note) ? trim($note) : null,
                 'company_seen_at' => $now,
+                'talent_seen_at' => null,
                 'updated_at' => $now,
             ]);
         });
+
+        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
+        $this->notifyTalentWithdrawn($request);
 
         return $request;
     }

@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'status',
     'talent_decision_at',
     'talent_decision_note',
+    'company_deferral_note',
+    'company_deferral_responded_at',
     'conversation_id',
     'closed_at',
     'closed_by',
@@ -49,6 +51,10 @@ class DirectHireRequest extends Model
     public const DECISION_DECLINE = 'decline';
 
     public const DECISION_DEFER = 'defer';
+
+    public const DEFERRAL_ACCEPT = 'accept';
+
+    public const DEFERRAL_REFUSE = 'refuse';
 
     /**
      * @return list<string>
@@ -103,14 +109,32 @@ class DirectHireRequest extends Model
         ];
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function companyDeferralActions(): array
+    {
+        return [
+            self::DEFERRAL_ACCEPT,
+            self::DEFERRAL_REFUSE,
+        ];
+    }
+
     protected function casts(): array
     {
         return [
             'talent_decision_at' => 'datetime',
+            'company_deferral_responded_at' => 'datetime',
             'closed_at' => 'datetime',
             'talent_seen_at' => 'datetime',
             'company_seen_at' => 'datetime',
         ];
+    }
+
+    public function awaitsCompanyDeferralReply(): bool
+    {
+        return $this->status === self::STATUS_DEFERRED
+            && $this->company_deferral_responded_at === null;
     }
 
     public function company(): BelongsTo
@@ -234,6 +258,15 @@ class DirectHireRequest extends Model
         return in_array($this->status, self::terminalStatuses(), true);
     }
 
+    /**
+     * Chat stays open after hire, negative close, or talent decline for continued exchanges.
+     * Closed only when the company withdrew the proposal.
+     */
+    public function allowsChat(): bool
+    {
+        return $this->status !== self::STATUS_WITHDRAWN;
+    }
+
     public function companyDisplayName(): string
     {
         $this->loadMissing(['companyProfile.user', 'company']);
@@ -267,6 +300,102 @@ class DirectHireRequest extends Model
         return $snapshot !== ''
             ? $snapshot
             : __('talenma.direct_hire.party_deleted');
+    }
+
+    /**
+     * Talent full name for outbound mail (From / subject), Title Case.
+     */
+    public function talentFormalDisplayName(): string
+    {
+        $this->loadMissing('talent');
+
+        $talent = $this->talent;
+        $raw = '';
+
+        if ($talent) {
+            $raw = trim((string) (($talent->first_name ?? '').' '.($talent->last_name ?? '')));
+
+            if ($raw === '') {
+                $raw = trim((string) $talent->name);
+            }
+        }
+
+        if ($raw === '') {
+            $raw = $this->talentDisplayName();
+        }
+
+        return $this->titleCasePersonName($raw);
+    }
+
+    /**
+     * Company name for outbound mail (From / subject) — preserve original casing.
+     */
+    public function companyFormalDisplayName(): string
+    {
+        return $this->companyDisplayName();
+    }
+
+    public function mailFromNameAsCompany(): string
+    {
+        return 'Talents du Maroc / '.$this->companyDisplayName();
+    }
+
+    public function mailFromNameAsTalent(): string
+    {
+        return 'Talents du Maroc / '.$this->talentFormalDisplayName();
+    }
+
+    /**
+     * Person to greet on company-side mail: initiator user, else primary contact.
+     */
+    public function companyRecipientGreetingName(): string
+    {
+        $this->loadMissing(['company', 'companyProfile']);
+
+        $initiator = $this->company;
+
+        if ($initiator?->isCompanyMember()) {
+            $person = trim((string) (($initiator->first_name ?? '').' '.($initiator->last_name ?? '')));
+
+            if ($person === '') {
+                $person = trim((string) $initiator->name);
+            }
+
+            if ($person !== '') {
+                return $this->titleCasePersonName($person);
+            }
+        }
+
+        $representative = trim((string) ($this->companyProfile?->representative_name ?? ''));
+
+        if ($representative !== '') {
+            return $this->titleCasePersonName($representative);
+        }
+
+        if ($initiator) {
+            $person = trim((string) (($initiator->first_name ?? '').' '.($initiator->last_name ?? '')));
+
+            if ($person === '') {
+                $person = trim((string) $initiator->name);
+            }
+
+            if ($person !== '' && $person !== $this->companyDisplayName()) {
+                return $this->titleCasePersonName($person);
+            }
+        }
+
+        return $this->titleCasePersonName($this->companyDisplayName());
+    }
+
+    private function titleCasePersonName(string $name): string
+    {
+        $normalized = trim(preg_replace('/\s+/u', ' ', $name) ?: '');
+
+        if ($normalized === '') {
+            return '';
+        }
+
+        return mb_convert_case($normalized, MB_CASE_TITLE, 'UTF-8');
     }
 
     public function hasCompanyParty(): bool

@@ -98,6 +98,7 @@ class TalentDossierPresenter
             'company' => $company ? array_filter([
                 'company_name' => $this->text($user->name),
                 'representative_name' => $this->text($company->representative_name),
+                'representative_photo_url' => $company->representativePhotoUrl(),
                 'email' => $this->text($user->email),
                 'website' => $this->text($company->website),
                 'country' => $this->text($company->countryLabel()),
@@ -164,6 +165,7 @@ class TalentDossierPresenter
             'description' => $this->text($profile->description),
             'hiring_needs' => $this->text($profile->hiring_needs),
             'representative_name' => $this->text($profile->representative_name),
+            'representative_photo_url' => $profile->representativePhotoUrl(),
             'email' => $this->text($profile->user?->email),
             'phone' => $this->text($profile->phone),
             'linkedin_url' => $profile->linkedin_url,

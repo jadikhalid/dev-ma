@@ -151,6 +151,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/company/direct-hire/{directHire}/rounds/{round}', [CompanyDirectHireController::class, 'updateRound'])->name('company.direct-hire.rounds.update');
         Route::post('/company/direct-hire/{directHire}/rounds/{round}/cancel', [CompanyDirectHireController::class, 'cancelRound'])->name('company.direct-hire.rounds.cancel');
         Route::post('/company/direct-hire/{directHire}/close', [CompanyDirectHireController::class, 'close'])->name('company.direct-hire.close');
+        Route::post('/company/direct-hire/{directHire}/deferral', [CompanyDirectHireController::class, 'respondToDeferral'])->name('company.direct-hire.deferral');
         Route::post('/company/direct-hire/{directHire}/withdraw', [CompanyDirectHireController::class, 'withdraw'])->name('company.direct-hire.withdraw');
 
         Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');

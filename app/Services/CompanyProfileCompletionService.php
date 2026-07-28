@@ -123,6 +123,7 @@ class CompanyProfileCompletionService
     {
         $items = [
             ['label' => __('talenma.company.check_representative'), 'done' => filled($profile->representative_name)],
+            ['label' => __('talenma.company.check_representative_photo'), 'done' => filled($profile->representative_photo_path)],
             ['label' => __('talenma.company.check_phone'), 'done' => filled($profile->phone)],
             ['label' => __('talenma.company.check_linkedin'), 'done' => filled($profile->linkedin_url)],
         ];

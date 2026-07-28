@@ -345,13 +345,72 @@ class DirectHireController extends Controller
                 'message' => $message,
                 'can_manage_rounds' => $canManageRounds,
                 'can_withdraw' => false,
-                'can_chat' => ! $directHire->isTerminal(),
+                'can_chat' => $directHire->allowsChat(),
                 'status_badge_html' => view('company.direct-hire._status-badge', [
                     'directHire' => $directHire,
                 ])->render(),
                 'closure_note_html' => view('company.direct-hire._closure-note', [
                     'directHire' => $directHire,
                 ])->render(),
+                'rounds_list_html' => view('company.direct-hire._rounds-list', [
+                    'directHire' => $directHire,
+                    'canManageRounds' => $canManageRounds,
+                    'roundStatuses' => $roundStatuses,
+                ])->render(),
+            ]);
+        }
+
+        return back()->with('toast_success', $message);
+    }
+
+    public function respondToDeferral(Request $request, DirectHireRequest $directHire): RedirectResponse|JsonResponse
+    {
+        $data = $request->validate([
+            'action' => ['required', 'in:'.implode(',', DirectHireRequest::companyDeferralActions())],
+            'note' => ['nullable', 'string', 'max:2000'],
+        ], [
+            'action.required' => __('talenma.direct_hire.deferral_action_required'),
+            'action.in' => __('talenma.direct_hire.error_deferral_action_invalid'),
+            'note.max' => __('talenma.direct_hire.chat_max'),
+        ]);
+
+        $directHire = $this->directHires->respondToDeferral(
+            $directHire,
+            $request->user(),
+            $data['action'],
+            $data['note'] ?? null,
+        );
+
+        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile']);
+
+        $message = $data['action'] === DirectHireRequest::DEFERRAL_ACCEPT
+            ? __('talenma.direct_hire.deferral_accepted')
+            : __('talenma.direct_hire.deferral_refused');
+
+        if ($request->expectsJson()) {
+            $canManageRounds = $directHire->status === DirectHireRequest::STATUS_IN_PROCESS;
+            $canRespondToDeferral = $directHire->awaitsCompanyDeferralReply();
+            $canWithdraw = $directHire->isOpen() && ! $canRespondToDeferral;
+            $roundStatuses = DirectHireRound::outcomeStatuses();
+
+            return response()->json([
+                'message' => $message,
+                'can_manage_rounds' => $canManageRounds,
+                'can_respond_to_deferral' => $canRespondToDeferral,
+                'can_withdraw' => $canWithdraw,
+                'can_chat' => $directHire->allowsChat(),
+                'status_badge_html' => view('company.direct-hire._status-badge', [
+                    'directHire' => $directHire,
+                ])->render(),
+                'deferral_note_html' => view('company.direct-hire._deferral-note', [
+                    'directHire' => $directHire,
+                ])->render(),
+                'closure_note_html' => view('company.direct-hire._closure-note', [
+                    'directHire' => $directHire,
+                ])->render(),
+                'withdraw_html' => $canWithdraw
+                    ? view('company.direct-hire._withdraw', ['directHire' => $directHire])->render()
+                    : null,
                 'rounds_list_html' => view('company.direct-hire._rounds-list', [
                     'directHire' => $directHire,
                     'canManageRounds' => $canManageRounds,

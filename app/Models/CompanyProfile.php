@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'user_id',
     'logo_path',
     'representative_name',
+    'representative_photo_path',
     'phone',
     'linkedin_url',
     'sector',
@@ -384,6 +385,33 @@ class CompanyProfile extends Model
 
         // Legacy company_profiles.logo_path — kept as fallback until re-uploaded via /profile.
         return '/storage/'.ltrim($this->logo_path, '/');
+    }
+
+    public function representativePhotoUrl(): ?string
+    {
+        if (! $this->representative_photo_path) {
+            return null;
+        }
+
+        return '/storage/'.ltrim($this->representative_photo_path, '/');
+    }
+
+    public function representativeInitials(): string
+    {
+        $name = trim((string) ($this->representative_name ?: ''));
+
+        if ($name === '') {
+            return '—';
+        }
+
+        $parts = preg_split('/\s+/u', $name) ?: [];
+        $initials = '';
+
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $initials .= mb_strtoupper(mb_substr($part, 0, 1));
+        }
+
+        return $initials !== '' ? $initials : mb_strtoupper(mb_substr($name, 0, 2));
     }
 
     public function displayName(): string

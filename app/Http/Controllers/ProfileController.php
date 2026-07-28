@@ -6,6 +6,7 @@ use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\CompanyProfile;
 use App\Models\User;
 use App\Services\AvatarService;
+use App\Services\CompanyContactPhotoService;
 use App\Services\PendingEmailChangeService;
 use App\Services\ProfessionCatalogService;
 use App\Services\UserDeletionService;
@@ -22,6 +23,7 @@ class ProfileController extends Controller
 {
     public function __construct(
         private AvatarService $avatars,
+        private CompanyContactPhotoService $contactPhotos,
         private UserDeletionService $userDeletion,
         private ProfessionCatalogService $professionCatalog,
         private PendingEmailChangeService $pendingEmailChange,
@@ -228,14 +230,20 @@ class ProfileController extends Controller
                 'max:255',
                 'regex:/^https?:\/\/([a-z0-9-]+\.)*linkedin\.com(\/|$)/i',
             ],
+            'representative_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_representative_photo' => ['nullable', 'boolean'],
         ], [
             'representative_name.required' => __('talenma.company.representative_name_required'),
             'linkedin_url.url' => __('talenma.company.linkedin_invalid'),
             'linkedin_url.regex' => __('talenma.company.linkedin_host'),
+            'representative_photo.image' => __('talenma.company.representative_photo_invalid_type'),
+            'representative_photo.mimes' => __('talenma.company.representative_photo_invalid_type'),
+            'representative_photo.max' => __('talenma.company.representative_photo_too_large'),
         ], [
             'representative_name' => __('talenma.company.contact_full_name'),
             'phone' => __('talenma.talent.phone'),
             'linkedin_url' => __('talenma.company.linkedin'),
+            'representative_photo' => __('talenma.company.representative_photo'),
         ]);
 
         $profile = $user->companyProfile()->firstOrCreate([
@@ -243,6 +251,14 @@ class ProfileController extends Controller
         ], [
             'country' => CompanyProfile::DEFAULT_COUNTRY,
         ]);
+
+        if ($request->boolean('remove_representative_photo')) {
+            $this->contactPhotos->delete($profile);
+        }
+
+        if ($request->hasFile('representative_photo')) {
+            $this->contactPhotos->store($profile, $request->file('representative_photo'));
+        }
 
         $profile->update([
             'representative_name' => $validated['representative_name'],
@@ -253,6 +269,7 @@ class ProfileController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => __('talenma.account.contact_saved'),
+                'representative_photo_url' => $profile->fresh()->representativePhotoUrl(),
             ]);
         }
 

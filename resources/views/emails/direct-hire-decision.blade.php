@@ -1,6 +1,6 @@
-<x-emails.layout>
+<x-emails.layout :show-brand="false" :show-footer="false">
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">
-        {{ __('talenma.mail.direct_hire_decision.greeting', ['name' => $company->name]) }}
+        {{ __('talenma.mail.direct_hire_decision.greeting', ['name' => $greetingName]) }}
     </p>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">
         {{ __('talenma.mail.direct_hire_decision.body_'.$decision, ['talent' => $talentName, 'subject' => $directHire->subject]) }}

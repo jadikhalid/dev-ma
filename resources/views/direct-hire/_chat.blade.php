@@ -1,6 +1,6 @@
 @php
     $viewer = Auth::user();
-    $canChat = ! $directHire->isTerminal();
+    $canChat = $directHire->allowsChat();
     $sidebar = $sidebar ?? false;
     $storeRoute = $viewer->isTalent()
         ? route('talent.direct-hire.messages.store', $directHire)

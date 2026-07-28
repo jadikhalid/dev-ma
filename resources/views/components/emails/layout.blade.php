@@ -1,3 +1,7 @@
+@props([
+    'showBrand' => true,
+    'showFooter' => true,
+])
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -12,15 +16,23 @@
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;">
                     <tr>
                         <td style="padding:32px 32px 8px;">
-                            <p style="margin:0 0 24px;font-size:18px;font-weight:700;color:#4f46e5;">{{ __('talenma.meta.title') }}</p>
+                            @if ($showBrand)
+                                <p style="margin:0 0 24px;font-size:18px;font-weight:700;color:#4f46e5;">{{ __('talenma.meta.title') }}</p>
+                            @endif
                             {{ $slot }}
                         </td>
                     </tr>
-                    <tr>
-                        <td style="padding:8px 32px 32px;">
-                            <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6b7280;">{{ __('talenma.mail.footer') }}</p>
-                        </td>
-                    </tr>
+                    @if ($showFooter)
+                        <tr>
+                            <td style="padding:8px 32px 32px;">
+                                <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6b7280;">{{ __('talenma.mail.footer') }}</p>
+                            </td>
+                        </tr>
+                    @else
+                        <tr>
+                            <td style="padding:8px 32px 32px;"></td>
+                        </tr>
+                    @endif
                 </table>
             </td>
         </tr>

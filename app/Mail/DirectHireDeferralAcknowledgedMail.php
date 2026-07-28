@@ -10,7 +10,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class DirectHireClosedMail extends Mailable
+class DirectHireDeferralAcknowledgedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -25,7 +25,7 @@ class DirectHireClosedMail extends Mailable
                 (string) config('mail.from.address'),
                 $this->directHire->mailFromNameAsCompany(),
             ),
-            subject: __('talenma.mail.direct_hire_closed.subject_'.$this->directHire->status, [
+            subject: __('talenma.mail.direct_hire_deferral_acknowledged.subject', [
                 'company' => $companyName,
             ]),
         );
@@ -34,10 +34,9 @@ class DirectHireClosedMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.direct-hire-closed',
+            view: 'emails.direct-hire-deferral-acknowledged',
             with: [
                 'directHire' => $this->directHire,
-                'outcome' => $this->directHire->status,
                 'talentName' => $this->directHire->talentFormalDisplayName(),
                 'companyName' => $this->directHire->companyFormalDisplayName(),
                 'url' => route('talent.direct-hire.show', $this->directHire),
