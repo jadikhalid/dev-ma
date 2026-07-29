@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProfessionSector;
 use App\Models\RecruitmentRequest;
 use App\Models\User;
-use App\Services\MessagingService;
-use App\Services\ProfessionCatalogService;
+use App\Services\RecruitmentRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,9 +13,70 @@ use Illuminate\View\View;
 class RecruitmentRequestController extends Controller
 {
     public function __construct(
-        private ProfessionCatalogService $professionCatalog,
-        private MessagingService $messaging,
+        private RecruitmentRequestService $recruitmentRequests,
     ) {}
+
+    public function index(Request $request): View|RedirectResponse
+    {
+        if (! $request->user()->isCompany()) {
+            return redirect()->route('dashboard');
+        }
+
+        $user = $request->user();
+
+        $all = $user->isCompanyOwner()
+            ? $user->recruitmentRequests()->with('talent')->latest()->get()
+            : collect();
+
+        return view('sourcing.index', [
+            'openRequests' => $all->where('mode', RecruitmentRequest::MODE_OPEN)->values(),
+            'namedRequests' => $all->where('mode', RecruitmentRequest::MODE_NAMED)->values(),
+        ]);
+    }
+
+    public function show(Request $request, RecruitmentRequest $recruitmentRequest): View|RedirectResponse
+    {
+        abort_unless($recruitmentRequest->canAccess($request->user()), 403);
+
+        if (! $request->user()->isCompany() && ! $request->user()->isStaff()) {
+            return redirect()->route('dashboard');
+        }
+
+        $recruitmentRequest->load(['talent.profile', 'company', 'messages.sender', 'statusUpdatedBy', 'statusEvents.actor']);
+
+        if ($request->user()->isCompany()) {
+            $this->recruitmentRequests->markSeenForCompany($request->user(), $recruitmentRequest);
+        }
+
+        return view('sourcing.show', [
+            'recruitment' => $recruitmentRequest,
+            'isStaff' => $request->user()->isStaff(),
+            'statuses' => RecruitmentRequest::statuses(),
+        ]);
+    }
+
+    public function storeMessage(Request $request, RecruitmentRequest $recruitmentRequest): RedirectResponse
+    {
+        abort_unless($recruitmentRequest->canAccess($request->user()), 403);
+
+        $data = $request->validate([
+            'body' => ['required', 'string', 'min:2', 'max:2000'],
+        ], [
+            'body.required' => __('talenma.recruitment.chat_body_required'),
+            'body.min' => __('talenma.recruitment.chat_body_min'),
+            'body.max' => __('talenma.recruitment.chat_body_max'),
+        ]);
+
+        $this->recruitmentRequests->postMessage(
+            $recruitmentRequest,
+            $request->user(),
+            $data['body'],
+        );
+
+        return redirect()
+            ->to(route('sourcing.show', $recruitmentRequest).'#sourcing-chat')
+            ->with('toast_success', __('talenma.recruitment.chat_sent'));
+    }
 
     public function create(Request $request, ?User $talent = null): View|RedirectResponse
     {
@@ -25,9 +84,26 @@ class RecruitmentRequestController extends Controller
             return redirect()->route('dashboard');
         }
 
+        if ($talent) {
+            abort_unless($talent->isTalent() && $talent->approval_status === 'approved', 404);
+
+            $existing = $this->recruitmentRequests->existingNamedRequestForCompanyTalent(
+                $request->user(),
+                $talent,
+            );
+
+            if ($existing) {
+                return redirect()
+                    ->route('sourcing.show', $existing)
+                    ->with('toast_error', $this->recruitmentRequests->namedRequestDisabledHint(
+                        $request->user(),
+                        $talent,
+                    ));
+            }
+        }
+
         return view('recruitment.create', [
             'talent' => $talent?->load('profile'),
-            'professionSectors' => $this->professionCatalog->sectorsForLocale(),
         ]);
     }
 
@@ -41,12 +117,6 @@ class RecruitmentRequestController extends Controller
             'developer_user_id' => ['nullable', 'exists:users,id'],
             'role_title' => ['required', 'string', 'min:5', 'max:120'],
             'need' => ['required', 'string', 'min:50', 'max:5000'],
-            'sector' => [
-                'nullable',
-                'string',
-                'max:64',
-                'exists:profession_sectors,slug',
-            ],
         ], [
             'role_title.required' => __('talenma.recruitment.role_title_required'),
             'role_title.min' => __('talenma.recruitment.role_title_min'),
@@ -54,87 +124,68 @@ class RecruitmentRequestController extends Controller
             'need.required' => __('talenma.recruitment.need_required'),
             'need.min' => __('talenma.recruitment.need_min'),
             'need.max' => __('talenma.recruitment.need_max'),
-            'sector.exists' => __('talenma.recruitment.sector_invalid'),
         ]);
 
         $user = $request->user();
-        $sector = null;
+        $talent = null;
 
-        if (filled($data['sector'] ?? null)) {
-            $sector = ProfessionSector::query()
-                ->where('slug', $data['sector'])
-                ->where('is_active', true)
-                ->first();
+        if (filled($data['developer_user_id'] ?? null)) {
+            $talent = User::query()->find($data['developer_user_id']);
+
+            if (! $talent || ! $talent->isTalent() || $talent->approval_status !== 'approved') {
+                $talent = null;
+            }
         }
 
-        $sectorLabel = $sector?->localizedName(app()->getLocale());
+        if ($talent) {
+            $existing = $this->recruitmentRequests->existingNamedRequestForCompanyTalent($user, $talent);
+
+            if ($existing) {
+                $message = $this->recruitmentRequests->namedRequestDisabledHint($user, $talent)
+                    ?: __('talenma.recruitment.named_blocked_open');
+
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => $message], 422);
+                }
+
+                return redirect()
+                    ->route('sourcing.show', $existing)
+                    ->with('toast_error', $message);
+            }
+        }
+
+        $mode = $talent
+            ? RecruitmentRequest::MODE_NAMED
+            : RecruitmentRequest::MODE_OPEN;
 
         $recruitment = RecruitmentRequest::create([
             'company_user_id' => $user->id,
-            'developer_user_id' => $data['developer_user_id'] ?? null,
-            'profession_sector_id' => $sector?->id,
-            'mode' => 'intermediary',
+            'developer_user_id' => $talent?->id,
+            'mode' => $mode,
             'subject' => $data['role_title'],
             'message' => $data['need'],
-            'status' => 'pending',
+            'status' => RecruitmentRequest::STATUS_PENDING,
+            'company_seen_at' => now(),
         ]);
+
+        $this->recruitmentRequests->recordSubmitted($recruitment, $user);
+        $this->recruitmentRequests->notifySubmitted($recruitment);
 
         $recruitment->load('talent');
 
-        $inboxBody = $this->formatStaffMessage(
-            companyName: $user->isCompanyOwner() ? $user->name : ($user->companyOrganization()?->displayName() ?: $user->name),
-            roleTitle: $data['role_title'],
-            need: $data['need'],
-            sectorLabel: $sectorLabel,
-            talentName: $recruitment->talent?->name,
-        );
-
-        $conversation = $this->messaging->startStaffConversation(
-            $user,
-            __('talenma.recruitment.inbox_subject', ['title' => $data['role_title']]),
-            $inboxBody,
-        );
-
-        $message = __('talenma.recruitment.sent');
+        $message = __('talenma.recruitment.sent_dashboard_'.$mode);
 
         if ($request->expectsJson()) {
+            session()->flash('toast_success', $message);
+
             return response()->json([
                 'message' => $message,
-                'show_url' => route('inbox.show', $conversation),
+                'show_url' => route('sourcing.show', $recruitment),
             ]);
         }
 
         return redirect()
-            ->route('inbox.show', $conversation)
+            ->route('sourcing.show', $recruitment)
             ->with('toast_success', $message);
-    }
-
-    private function formatStaffMessage(
-        string $companyName,
-        string $roleTitle,
-        string $need,
-        ?string $sectorLabel,
-        ?string $talentName,
-    ): string {
-        $lines = [
-            __('talenma.recruitment.inbox_intro'),
-            '',
-            __('talenma.recruitment.inbox_company', ['name' => $companyName]),
-            __('talenma.recruitment.inbox_role', ['title' => $roleTitle]),
-        ];
-
-        if (filled($sectorLabel)) {
-            $lines[] = __('talenma.recruitment.inbox_sector', ['sector' => $sectorLabel]);
-        }
-
-        if (filled($talentName)) {
-            $lines[] = __('talenma.recruitment.inbox_talent', ['name' => $talentName]);
-        }
-
-        $lines[] = '';
-        $lines[] = __('talenma.recruitment.inbox_need_label');
-        $lines[] = $need;
-
-        return implode("\n", $lines);
     }
 }

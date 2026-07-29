@@ -76,6 +76,104 @@
             </div>
         @endif
 
+        {{-- Activité sourcing / intermédiation --}}
+        <section class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold tracking-tight text-slate-900">{{ __('talenma.dashboard.admin.activity_title') }}</p>
+                        <p class="text-xs text-slate-500">{{ __('talenma.dashboard.admin.activity_subtitle') }}</p>
+                    </div>
+                </div>
+                <a href="{{ route('admin.recruitment.index') }}" class="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                    {{ __('talenma.dashboard.admin.activity_all') }}
+                </a>
+            </div>
+
+            @if (empty($recentActivity ?? []))
+                <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center">
+                    <p class="text-sm text-slate-500">{{ __('talenma.dashboard.admin.activity_empty') }}</p>
+                </div>
+            @else
+                <ol class="relative mt-4 max-h-[22rem] space-y-2 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+                    @foreach ($recentActivity as $item)
+                        @php
+                            $mode = (($item['detail'] ?? 'open') === 'named') ? 'named' : 'open';
+                            $self = ($item['self'] ?? false) === true;
+                            $label = match ($item['type']) {
+                                'recruitment_submitted' => __('talenma.dashboard.admin.activity_recruitment_submitted_'.$mode, [
+                                    'actor' => $item['actor'],
+                                    'subject' => $item['subject'] ?? '',
+                                ]),
+                                'recruitment_message' => __('talenma.dashboard.admin.activity_recruitment_message', [
+                                    'actor' => $item['actor'],
+                                ]),
+                                'recruitment_message_sent' => __(
+                                    'talenma.dashboard.admin.activity_recruitment_message_sent'.($self ? '_self' : ''),
+                                    ['actor' => $item['actor']],
+                                ),
+                                'recruitment_comment' => __(
+                                    'talenma.dashboard.admin.activity_recruitment_comment'.($self ? '_self' : ''),
+                                    ['actor' => $item['actor']],
+                                ),
+                                'recruitment_status' => match ($item['result'] ?? '') {
+                                    'in_progress' => __(
+                                        'talenma.dashboard.admin.activity_recruitment_taken_'.$mode.($self ? '_self' : ''),
+                                        ['actor' => $item['actor'], 'subject' => $item['subject'] ?? ''],
+                                    ),
+                                    'completed_successful', 'completed' => __(
+                                        'talenma.dashboard.admin.activity_recruitment_closed_successful_'.$mode.($self ? '_self' : ''),
+                                        ['actor' => $item['actor'], 'subject' => $item['subject'] ?? ''],
+                                    ),
+                                    'completed_unsuccessful', 'cancelled' => __(
+                                        'talenma.dashboard.admin.activity_recruitment_closed_unsuccessful_'.$mode.($self ? '_self' : ''),
+                                        ['actor' => $item['actor'], 'subject' => $item['subject'] ?? ''],
+                                    ),
+                                    'pending' => __(
+                                        'talenma.dashboard.admin.activity_recruitment_reopened_'.$mode.($self ? '_self' : ''),
+                                        ['actor' => $item['actor'], 'subject' => $item['subject'] ?? ''],
+                                    ),
+                                    default => __('talenma.dashboard.admin.activity_recruitment_status', [
+                                        'actor' => $item['actor'],
+                                        'subject' => $item['subject'] ?? '',
+                                        'result' => $item['result'] ?? '',
+                                    ]),
+                                },
+                                default => $item['actor'],
+                            };
+                            $dotClass = match ($item['type'] ?? '') {
+                                'recruitment_message', 'recruitment_message_sent' => 'bg-violet-500',
+                                'recruitment_submitted' => 'bg-sky-500',
+                                default => 'bg-amber-500',
+                            };
+                        @endphp
+                        <li class="relative pl-10">
+                            <span class="absolute left-3 top-4 z-10 flex h-3.5 w-3.5 items-center justify-center">
+                                <span class="absolute inline-flex h-full w-full rounded-full {{ $dotClass }} opacity-25"></span>
+                                <span class="relative inline-flex h-2.5 w-2.5 rounded-full {{ $dotClass }} ring-2 ring-white"></span>
+                            </span>
+                            @if (! empty($item['href']))
+                                <a href="{{ $item['href'] }}" class="group flex flex-col gap-1.5 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200 hover:bg-sky-50/80 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                    <p class="text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $label }}</p>
+                                    <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
+                                </a>
+                            @else
+                                <div class="flex flex-col gap-1.5 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                    <p class="text-sm font-medium leading-snug text-slate-900">{{ $label }}</p>
+                                    <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
+                                </div>
+                            @endif
+                        </li>
+                    @endforeach
+                </ol>
+            @endif
+        </section>
+
         {{-- KPIs --}}
         <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             @foreach ($dashboard['kpis'] as $kpi)

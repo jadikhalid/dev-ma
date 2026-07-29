@@ -48,9 +48,7 @@ class NewInboxMessageMail extends Mailable
     private function senderDisplayName(): string
     {
         if ($this->sender->isCompany()) {
-            $this->sender->loadMissing('companyProfile');
-
-            return $this->sender->name;
+            return $this->sender->companyMailPersonName();
         }
 
         return $this->sender->name;

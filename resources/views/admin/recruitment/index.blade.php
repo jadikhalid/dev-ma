@@ -1,9 +1,15 @@
 @php
     $statusTone = [
-        'pending' => 'bg-amber-50 text-amber-800 border-amber-200',
-        'in_progress' => 'bg-sky-50 text-sky-800 border-sky-200',
+        'pending' => 'bg-sky-50 text-sky-800 border-sky-200',
+        'in_progress' => 'bg-amber-50 text-amber-800 border-amber-200',
+        'completed_successful' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        'completed_unsuccessful' => 'bg-rose-50 text-rose-800 border-rose-200',
         'completed' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
         'cancelled' => 'bg-rose-50 text-rose-800 border-rose-200',
+    ];
+    $modeTone = [
+        'named' => 'bg-violet-50 text-violet-800 border-violet-200',
+        'open' => 'bg-indigo-50 text-indigo-800 border-indigo-200',
     ];
 @endphp
 
@@ -18,14 +24,38 @@
     <div class="py-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div class="flex flex-wrap gap-2">
             @foreach ([
+                'all' => __('talenma.recruitment.mode_filter_all'),
+                'named' => __('talenma.recruitment.mode_named'),
+                'open' => __('talenma.recruitment.mode_open'),
+            ] as $key => $label)
+                <a
+                    href="{{ route('admin.recruitment.index', ['filter' => $filter, 'mode' => $key]) }}"
+                    @class([
+                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border transition',
+                        'bg-violet-600 text-white border-violet-600' => $mode === $key,
+                        'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' => $mode !== $key,
+                    ])
+                >
+                    {{ $label }}
+                    <span @class([
+                        'text-xs px-1.5 py-0.5 rounded-full',
+                        'bg-white/20' => $mode === $key,
+                        'bg-gray-100 text-gray-600' => $mode !== $key,
+                    ])>{{ $modeCounts[$key] ?? 0 }}</span>
+                </a>
+            @endforeach
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            @foreach ([
                 'pending' => __('talenma.recruitment.status_pending'),
                 'in_progress' => __('talenma.recruitment.status_in_progress'),
-                'completed' => __('talenma.recruitment.status_completed'),
-                'cancelled' => __('talenma.recruitment.status_cancelled'),
+                'completed_successful' => __('talenma.recruitment.status_completed_successful'),
+                'completed_unsuccessful' => __('talenma.recruitment.status_completed_unsuccessful'),
                 'all' => __('talenma.recruitment.filter_all'),
             ] as $key => $label)
                 <a
-                    href="{{ route('admin.recruitment.index', ['filter' => $key]) }}"
+                    href="{{ route('admin.recruitment.index', ['filter' => $key, 'mode' => $mode]) }}"
                     @class([
                         'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border transition',
                         'bg-indigo-600 text-white border-indigo-600' => $filter === $key,
@@ -49,14 +79,14 @@
         @else
             <div class="space-y-4">
                 @foreach ($requests as $req)
-                    @php
-                        $conversationId = $conversationIds[$req->company_user_id] ?? null;
-                    @endphp
                     <article class="bg-white rounded-2xl border p-5 sm:p-6 space-y-4">
                         <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <h3 class="text-base font-semibold text-gray-900 truncate">{{ $req->subject }}</h3>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $modeTone[$req->mode] ?? 'bg-gray-50 text-gray-700 border-gray-200' }}">
+                                        {{ $req->modeLabel() }}
+                                    </span>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $statusTone[$req->status] ?? 'bg-gray-50 text-gray-700 border-gray-200' }}">
                                         {{ $req->statusLabel() }}
                                     </span>
@@ -64,19 +94,14 @@
                                 <p class="mt-1 text-sm text-gray-500">
                                     {{ $req->company?->name ?? '—' }}
                                     · {{ $req->created_at?->translatedFormat('d M Y, H:i') }}
-                                    @if ($req->professionSector)
-                                        · {{ $req->professionSector->localizedName(app()->getLocale()) }}
-                                    @endif
-                                    @if ($req->talent)
+                                    @if ($req->isNamed() && $req->talent)
                                         · {{ __('talenma.recruitment.inbox_talent', ['name' => $req->talent->name]) }}
                                     @endif
                                 </p>
                             </div>
-                            @if ($conversationId)
-                                <a href="{{ route('inbox.show', $conversationId) }}" class="inline-flex shrink-0 text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-                                    {{ __('talenma.recruitment.admin_open_thread') }} →
-                                </a>
-                            @endif
+                            <a href="{{ route('admin.recruitment.show', $req) }}" class="inline-flex shrink-0 text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+                                {{ __('talenma.recruitment.admin_open_thread') }} →
+                            </a>
                         </div>
 
                         <div class="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-sm text-gray-700 whitespace-pre-line">{{ $req->message }}</div>
@@ -104,6 +129,7 @@
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="filter" value="{{ $filter }}">
+                            <input type="hidden" name="mode" value="{{ $mode }}">
 
                             <div>
                                 <x-input-label for="status-{{ $req->id }}" :value="__('talenma.recruitment.admin_status')" />
@@ -114,7 +140,10 @@
                                     required
                                 >
                                     @foreach ($statuses as $status)
-                                        <option value="{{ $status }}" @selected($req->status === $status)>
+                                        <option
+                                            value="{{ $status }}"
+                                            @selected($req->normalizeStatus() === $status)
+                                        >
                                             {{ __('talenma.recruitment.status_'.$status) }}
                                         </option>
                                     @endforeach

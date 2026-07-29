@@ -79,6 +79,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/users/{user}/reject', [UserManagementController::class, 'reject'])->name('users.reject');
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
         Route::get('/recruitment', [AdminRecruitmentRequestController::class, 'index'])->name('recruitment.index');
+        Route::get('/recruitment/{recruitmentRequest}', [AdminRecruitmentRequestController::class, 'show'])->name('recruitment.show');
+        Route::post('/recruitment/{recruitmentRequest}/messages', [AdminRecruitmentRequestController::class, 'storeMessage'])->name('recruitment.messages.store');
         Route::patch('/recruitment/{recruitmentRequest}/status', [AdminRecruitmentRequestController::class, 'updateStatus'])->name('recruitment.status');
 
         Route::middleware('admin')->group(function () {
@@ -156,6 +158,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');
         Route::post('/recruitment/request', [RecruitmentRequestController::class, 'store'])->name('recruitment.store');
+        Route::get('/sourcing', [RecruitmentRequestController::class, 'index'])->name('sourcing.index');
+        Route::get('/sourcing/{recruitmentRequest}', [RecruitmentRequestController::class, 'show'])->name('sourcing.show');
+        Route::post('/sourcing/{recruitmentRequest}/messages', [RecruitmentRequestController::class, 'storeMessage'])->name('sourcing.messages.store');
 
         Route::middleware('company.jobs')->prefix('company/jobs')->name('company.jobs.')->group(function () {
             Route::get('/', [CompanyJobController::class, 'index'])->name('index');

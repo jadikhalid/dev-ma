@@ -77,16 +77,21 @@
                 </div>
 
                 <div class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                            </svg>
-                        </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-bold tracking-tight text-slate-900">{{ __('talenma.dashboard.company.recent_requests') }}</p>
-                            <p class="text-xs text-slate-500">{{ __('talenma.dashboard.company.recent_requests_subtitle') }}</p>
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                                </svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold tracking-tight text-slate-900">{{ __('talenma.dashboard.company.recent_requests') }}</p>
+                                <p class="text-xs text-slate-500">{{ __('talenma.dashboard.company.recent_requests_subtitle') }}</p>
+                            </div>
                         </div>
+                        <a href="{{ route('sourcing.index') }}" class="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                            {{ __('talenma.dashboard.company.sourcing_all') }}
+                        </a>
                     </div>
 
                     @if ($recentRequests->isEmpty())
@@ -98,32 +103,36 @@
                             @foreach ($recentRequests as $req)
                                 @php
                                     $tone = match ($req->status) {
-                                        'pending' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                        'in_progress' => 'bg-sky-50 text-sky-800 border-sky-200',
-                                        'completed' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                                        'cancelled' => 'bg-rose-50 text-rose-800 border-rose-200',
+                                        'pending' => 'bg-sky-50 text-sky-800 border-sky-200',
+                                        'in_progress' => 'bg-amber-50 text-amber-800 border-amber-200',
+                                        'completed_successful', 'completed' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                        'completed_unsuccessful', 'cancelled' => 'bg-rose-50 text-rose-800 border-rose-200',
                                         default => 'bg-slate-100 text-slate-700 border-slate-200',
                                     };
-                                    $subject = \Illuminate\Support\Str::limit((string) ($req->subject ?: '—'), 60);
                                 @endphp
-                                <li class="rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm">
-                                    <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                                        <div class="min-w-0">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <span class="text-sm font-medium leading-snug text-slate-900 truncate">{{ $subject }}</span>
-                                                <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $tone }}">
-                                                    {{ $req->statusLabel() }}
-                                                </span>
+                                <li>
+                                    <a
+                                        href="{{ route('sourcing.show', $req) }}"
+                                        class="group block rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200"
+                                    >
+                                        <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <span class="text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $req->displayTitle() }}</span>
+                                                    <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $tone }}">
+                                                        {{ $req->statusLabel() }}
+                                                    </span>
+                                                </div>
+                                                @if (filled($req->admin_comment))
+                                                    <p class="mt-1.5 text-sm text-slate-600 whitespace-pre-line">
+                                                        <span class="font-medium text-slate-900">{{ __('talenma.recruitment.company_comment_label') }} :</span>
+                                                        {{ $req->admin_comment }}
+                                                    </p>
+                                                @endif
                                             </div>
-                                            @if (filled($req->admin_comment))
-                                                <p class="mt-1.5 text-sm text-slate-600 whitespace-pre-line">
-                                                    <span class="font-medium text-slate-900">{{ __('talenma.recruitment.company_comment_label') }} :</span>
-                                                    {{ $req->admin_comment }}
-                                                </p>
-                                            @endif
+                                            <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5">{{ $req->created_at?->translatedFormat('d M Y') }}</time>
                                         </div>
-                                        <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5">{{ $req->created_at?->translatedFormat('d M Y') }}</time>
-                                    </div>
+                                    </a>
                                 </li>
                             @endforeach
                         </ul>
@@ -222,7 +231,6 @@
                         </span>
                         <div class="min-w-0">
                             <p class="text-sm font-bold tracking-tight text-slate-900">{{ __('talenma.dashboard.company.activity.recent_title') }}</p>
-                            <p class="text-xs text-slate-500">{{ __('talenma.dashboard.company.activity.recent_subtitle') }}</p>
                         </div>
                     </div>
 
@@ -249,9 +257,27 @@
                                         'direct_hire_closed_negative' => __('talenma.dashboard.company.activity.activity_direct_hire_closed_negative', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_withdrawn' => __('talenma.dashboard.company.activity.activity_direct_hire_withdrawn', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'job_application' => __('talenma.dashboard.company.activity.activity_job_application', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
-                                        'recruitment_status' => __('talenma.dashboard.company.activity.activity_recruitment_status', ['subject' => $item['subject'] ?? '', 'result' => $item['result'] ?? '']),
+                                        'recruitment_submitted' => __('talenma.dashboard.company.activity.activity_recruitment_submitted_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
+                                        'recruitment_message' => __('talenma.dashboard.company.activity.activity_recruitment_message'),
+                                        'recruitment_message_sent' => __('talenma.dashboard.company.activity.activity_recruitment_message_sent'),
+                                        'recruitment_comment' => __('talenma.dashboard.company.activity.activity_recruitment_comment_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open')),
+                                        'recruitment_status' => match ($item['result'] ?? '') {
+                                            'in_progress' => __('talenma.dashboard.company.activity.activity_recruitment_taken_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open')),
+                                            'completed_successful', 'completed' => __('talenma.dashboard.company.activity.activity_recruitment_closed_successful_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
+                                            'completed_unsuccessful', 'cancelled' => __('talenma.dashboard.company.activity.activity_recruitment_closed_unsuccessful_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
+                                            'pending' => __('talenma.dashboard.company.activity.activity_recruitment_reopened_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
+                                            default => __('talenma.dashboard.company.activity.activity_recruitment_status', ['subject' => $item['subject'] ?? '', 'result' => $item['result'] ?? '']),
+                                        },
                                         default => $item['actor'],
                                     };
+
+                                    $hideCategoryBadge = in_array(($item['type'] ?? ''), [
+                                        'recruitment_submitted',
+                                        'recruitment_status',
+                                        'recruitment_message',
+                                        'recruitment_message_sent',
+                                        'recruitment_comment',
+                                    ], true);
 
                                     [$category, $dotClass, $rowClass] = match (true) {
                                         ($item['type'] ?? '') === 'job_application' => [
@@ -259,7 +285,7 @@
                                             'bg-emerald-500',
                                             'hover:bg-emerald-50/80',
                                         ],
-                                        ($item['type'] ?? '') === 'recruitment_status' => [
+                                        str_starts_with((string) ($item['type'] ?? ''), 'recruitment_') => [
                                             __('talenma.dashboard.company.activity.activity_cat_sourcing'),
                                             'bg-sky-500',
                                             'hover:bg-sky-50/80',
@@ -285,16 +311,26 @@
                                     @if (! empty($item['href']))
                                         <a href="{{ $item['href'] }}" class="group flex flex-col gap-1.5 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm transition duration-200 {{ $rowClass }} hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                                             <div class="min-w-0">
-                                                <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">{{ $category }}</span>
-                                                <p class="mt-1.5 text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $label }}</p>
+                                                @unless ($hideCategoryBadge)
+                                                    <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">{{ $category }}</span>
+                                                @endunless
+                                                <p @class([
+                                                    'text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800',
+                                                    'mt-1.5' => ! $hideCategoryBadge,
+                                                ])>{{ $label }}</p>
                                             </div>
                                             <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
                                         </a>
                                     @else
                                         <div class="flex flex-col gap-1.5 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                                             <div class="min-w-0">
-                                                <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">{{ $category }}</span>
-                                                <p class="mt-1.5 text-sm font-medium leading-snug text-slate-900">{{ $label }}</p>
+                                                @unless ($hideCategoryBadge)
+                                                    <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">{{ $category }}</span>
+                                                @endunless
+                                                <p @class([
+                                                    'text-sm font-medium leading-snug text-slate-900',
+                                                    'mt-1.5' => ! $hideCategoryBadge,
+                                                ])>{{ $label }}</p>
                                             </div>
                                             <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
                                         </div>
@@ -315,7 +351,16 @@
                     <h3 class="text-sm font-bold text-gray-900">{{ __('talenma.dashboard.company.recruit_title') }}</h3>
                     <p class="mt-1.5 text-xs text-gray-600 leading-relaxed flex-1">{{ __('talenma.dashboard.company.recruit_desc') }}</p>
                     <div class="mt-3 flex flex-col gap-2">
-                        <a href="{{ route('company.search') }}" class="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 text-center">{{ __('talenma.dashboard.company.browse') }}</a>
+                        <a
+                            href="{{ route('company.search') }}"
+                            class="group relative inline-flex items-center justify-center gap-2 overflow-hidden px-3 py-2.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-md shadow-indigo-600/30 ring-2 ring-indigo-300 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/40 transition"
+                        >
+                            <span class="absolute inset-0 animate-pulse bg-white/10" aria-hidden="true"></span>
+                            <span class="relative">{{ __('talenma.dashboard.company.browse') }}</span>
+                            <svg class="relative h-3.5 w-3.5 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                            </svg>
+                        </a>
                         <a href="{{ route('recruitment.create') }}" class="px-3 py-2 border border-indigo-200 text-indigo-700 text-xs font-semibold rounded-lg hover:bg-indigo-50 text-center">{{ __('talenma.dashboard.company.intermediary') }}</a>
                     </div>
                 </div>

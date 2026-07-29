@@ -7,6 +7,8 @@ use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
 use App\Models\JobApplication;
 use App\Models\RecruitmentRequest;
+use App\Models\RecruitmentRequestMessage;
+use App\Models\RecruitmentRequestStatusEvent;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -224,7 +226,7 @@ class CompanyDashboardActivityService
     }
 
     /**
-     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
      */
     private function recruitmentEvents(User $company, int $limit): Collection
     {
@@ -232,20 +234,95 @@ class CompanyDashboardActivityService
             return collect();
         }
 
-        return RecruitmentRequest::query()
-            ->where('company_user_id', $company->id)
-            ->whereNotNull('status_updated_at')
-            ->latest('status_updated_at')
+        $teamActor = __('talenma.dashboard.company.activity.team_actor');
+
+        $statusEvents = RecruitmentRequestStatusEvent::query()
+            ->whereHas('request', fn ($query) => $query->where('company_user_id', $company->id))
+            ->with(['request.talent'])
+            ->latest('created_at')
             ->limit($limit)
             ->get()
-            ->map(fn (RecruitmentRequest $request) => $this->activityItem(
-                type: 'recruitment_status',
-                actor: __('talenma.dashboard.company.activity.team_actor'),
-                at: $request->status_updated_at,
-                subject: \Illuminate\Support\Str::limit((string) ($request->subject ?: '—'), 60),
-                result: $request->statusLabel(),
-                href: null,
-            ));
+            ->map(function (RecruitmentRequestStatusEvent $event) use ($teamActor) {
+                $request = $event->request;
+
+                if (! $request) {
+                    return null;
+                }
+
+                $subject = $request->isNamed() && filled($request->talent?->name)
+                    ? $request->talent->name
+                    : \Illuminate\Support\Str::limit((string) ($request->subject ?: '—'), 60);
+                $href = route('sourcing.show', $request);
+
+                if ($event->event === RecruitmentRequestStatusEvent::EVENT_SUBMITTED) {
+                    return $this->activityItem(
+                        type: 'recruitment_submitted',
+                        actor: $teamActor,
+                        at: $event->created_at,
+                        subject: $subject,
+                        detail: $request->mode,
+                        href: $href,
+                        self: true,
+                    );
+                }
+
+                if ($event->event === RecruitmentRequestStatusEvent::EVENT_COMMENT_UPDATED) {
+                    return $this->activityItem(
+                        type: 'recruitment_comment',
+                        actor: $teamActor,
+                        at: $event->created_at,
+                        subject: $subject,
+                        detail: $request->mode,
+                        href: $href,
+                    );
+                }
+
+                return $this->activityItem(
+                    type: 'recruitment_status',
+                    actor: $teamActor,
+                    at: $event->created_at,
+                    subject: $subject,
+                    detail: $request->mode,
+                    result: $event->status,
+                    href: $href,
+                );
+            })
+            ->filter()
+            ->values();
+
+        $messageEvents = RecruitmentRequestMessage::query()
+            ->whereHas('request', fn ($query) => $query->where('company_user_id', $company->id))
+            ->with(['request.talent', 'sender'])
+            ->latest()
+            ->limit($limit)
+            ->get()
+            ->map(function (RecruitmentRequestMessage $message) use ($company, $teamActor) {
+                $request = $message->request;
+
+                if (! $request || ! $message->sender_user_id) {
+                    return null;
+                }
+
+                $subject = $request->isNamed() && filled($request->talent?->name)
+                    ? $request->talent->name
+                    : \Illuminate\Support\Str::limit((string) ($request->subject ?: '—'), 60);
+                $fromCompany = (int) $message->sender_user_id === (int) $company->id
+                    || ($message->sender?->isCompany() ?? false);
+
+                return $this->activityItem(
+                    type: $fromCompany ? 'recruitment_message_sent' : 'recruitment_message',
+                    actor: $fromCompany ? $teamActor : $teamActor,
+                    at: $message->created_at,
+                    subject: $subject,
+                    detail: $request->mode,
+                    href: route('sourcing.show', $request).'#sourcing-chat',
+                    self: $fromCompany,
+                );
+            })
+            ->filter()
+            ->values();
+
+        return $statusEvents->concat($messageEvents);
     }
 
     /**
@@ -308,6 +385,7 @@ class CompanyDashboardActivityService
         ?string $subject = null,
         ?string $result = null,
         ?string $href = null,
+        bool $self = false,
     ): array {
         return [
             'type' => $type,
@@ -317,6 +395,7 @@ class CompanyDashboardActivityService
             'result' => $result,
             'href' => $href,
             'at' => $at,
+            'self' => $self,
         ];
     }
 }

@@ -10,8 +10,9 @@
         $selectClass = 'mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500';
         $canProposeDirectHire = $canProposeDirectHire ?? true;
         $hiredTalentIds = $hiredTalentIds ?? [];
+        $blockedNamedTalentIds = $blockedNamedTalentIds ?? [];
         $revealedTalentIds = $revealedTalentIds ?? [];
-        $initialTalents = $talents->getCollection()->map(function ($talent) use ($canProposeDirectHire, $hiredTalentIds, $revealedTalentIds) {
+        $initialTalents = $talents->getCollection()->map(function ($talent) use ($canProposeDirectHire, $hiredTalentIds, $blockedNamedTalentIds, $revealedTalentIds) {
             $profile = $talent->profile;
             $experienceYears = $profile?->experience_years;
             $forceReveal = in_array($talent->id, $revealedTalentIds, true);
@@ -21,6 +22,10 @@
             $disabledHint = $alreadyHired
                 ? __('talenma.direct_hire.cta_disabled_hired_hint')
                 : ($canPropose ? null : __('talenma.direct_hire.cta_disabled_hint'));
+            $canRequestNamed = ! in_array($talent->id, $blockedNamedTalentIds, true);
+            $namedHint = $canRequestNamed
+                ? null
+                : __('talenma.recruitment.named_blocked_open');
 
             return [
                 'id' => $talent->id,
@@ -45,7 +50,9 @@
                     ? route('company.talent.cv', $talent)
                     : null,
                 'profile_url' => route('company.talent.show', $talent),
-                'recruitment_url' => route('recruitment.create', $talent),
+                'recruitment_url' => $canRequestNamed ? route('recruitment.create', $talent) : null,
+                'can_request_named' => $canRequestNamed,
+                'named_request_disabled_hint' => $namedHint,
                 'direct_hire_url' => route('company.direct-hire.create', $talent),
                 'can_propose_direct_hire' => $canPropose,
                 'direct_hire_disabled_hint' => $disabledHint,
@@ -92,6 +99,7 @@
                 'composeError' => __('talenma.inbox.error'),
                 'composeMinBody' => __('talenma.inbox.compose_min_body'),
                 'directHireDisabled' => __('talenma.direct_hire.cta_disabled_hint'),
+                'namedDisabled' => __('talenma.recruitment.named_blocked_open'),
             ]),
             composeUrl: @js(route('inbox.store')),
             csrf: @js(csrf_token()),
@@ -525,10 +533,15 @@
                                     :title="selectedProfile.direct_hire_disabled_hint || labels.directHireDisabled"
                                 >{{ __('talenma.direct_hire.cta_btn') }}</span>
                                 <a
-                                    x-show="selectedProfile.recruitment_url"
+                                    x-show="selectedProfile.recruitment_url && selectedProfile.can_request_named !== false"
                                     :href="selectedProfile.recruitment_url"
                                     class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
                                 >{{ __('talenma.talents.inter_btn') }}</a>
+                                <span
+                                    x-show="selectedProfile.can_request_named === false"
+                                    class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
+                                    :title="selectedProfile.named_request_disabled_hint || labels.namedDisabled"
+                                >{{ __('talenma.talents.inter_btn') }}</span>
                                 <a
                                     :href="selectedProfile.cv_url || '#'"
                                     :target="selectedProfile.cv_url ? '_blank' : null"

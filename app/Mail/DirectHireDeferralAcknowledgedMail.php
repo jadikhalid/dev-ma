@@ -38,7 +38,7 @@ class DirectHireDeferralAcknowledgedMail extends Mailable
             with: [
                 'directHire' => $this->directHire,
                 'talentName' => $this->directHire->talentFormalDisplayName(),
-                'companyName' => $this->directHire->companyFormalDisplayName(),
+                'companyName' => $this->directHire->companyRecipientGreetingName(),
                 'url' => route('talent.direct-hire.show', $this->directHire),
             ],
         );

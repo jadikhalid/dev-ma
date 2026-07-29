@@ -50,7 +50,7 @@ class DirectHireRoundChangedMail extends Mailable
                 'round' => $this->round,
                 'event' => $this->event,
                 'talentName' => $this->directHire->talentFormalDisplayName(),
-                'companyName' => $this->directHire->companyFormalDisplayName(),
+                'companyName' => $this->directHire->companyRecipientGreetingName(),
                 'url' => route('talent.direct-hire.show', $this->directHire),
             ],
         );

@@ -33,6 +33,7 @@ use Illuminate\Notifications\Notifiable;
     'disabled_at',
     'is_subscribed',
     'subscription_expires_at',
+    'dashboard_activity_seen_at',
 ])]
 #[Hidden(['password', 'remember_token', 'pending_email_token'])]
 class User extends Authenticatable implements MustVerifyEmail
@@ -57,6 +58,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'pending_email_expires_at' => 'datetime',
             'approved_at' => 'datetime',
             'disabled_at' => 'datetime',
+            'dashboard_activity_seen_at' => 'datetime',
             'password' => 'hashed',
             'is_subscribed' => 'boolean',
             'subscription_expires_at' => 'datetime',
@@ -318,5 +320,52 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $orgName.' / '.$person;
+    }
+
+    /**
+     * Person name for email bodies: representative, else member/user name (never the org brand alone when a person is known).
+     */
+    public function companyMailPersonName(): string
+    {
+        if (! $this->isCompany()) {
+            return $this->titleCasePersonName($this->name);
+        }
+
+        if ($this->isCompanyMember()) {
+            $person = trim((string) (($this->first_name ?? '').' '.($this->last_name ?? '')));
+
+            if ($person === '') {
+                $person = trim((string) $this->name);
+            }
+
+            if ($person !== '') {
+                return $this->titleCasePersonName($person);
+            }
+        }
+
+        $representative = trim((string) ($this->companyOrganization()?->representative_name ?? ''));
+
+        if ($representative !== '') {
+            return $this->titleCasePersonName($representative);
+        }
+
+        $person = trim((string) (($this->first_name ?? '').' '.($this->last_name ?? '')));
+
+        if ($person !== '') {
+            return $this->titleCasePersonName($person);
+        }
+
+        return $this->titleCasePersonName($this->name);
+    }
+
+    private function titleCasePersonName(string $name): string
+    {
+        $normalized = trim(preg_replace('/\s+/u', ' ', $name) ?: '');
+
+        if ($normalized === '') {
+            return '';
+        }
+
+        return mb_convert_case($normalized, MB_CASE_TITLE, 'UTF-8');
     }
 }

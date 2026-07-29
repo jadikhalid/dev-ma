@@ -7,6 +7,9 @@
     $statusTone = $profile->statusTone();
     $canProposeDirectHire = $canProposeDirectHire ?? true;
     $directHireDisabledHint = $directHireDisabledHint ?? __('talenma.direct_hire.cta_disabled_hint');
+    $canRequestNamed = $canRequestNamed ?? true;
+    $namedRequestDisabledHint = $namedRequestDisabledHint ?? __('talenma.recruitment.named_blocked_open');
+    $existingNamedRequest = $existingNamedRequest ?? null;
     $statusClasses = match ($statusTone) {
         'busy' => 'bg-gray-200 text-gray-700',
         'listening' => 'bg-amber-100 text-amber-800',
@@ -17,6 +20,12 @@
         : 'inline-flex items-center px-4 py-2 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed';
     $directHireBodyBtnClass = $canProposeDirectHire
         ? 'mt-3 inline-block px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700'
+        : 'mt-3 inline-block px-5 py-2.5 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed';
+    $namedBtnClass = $canRequestNamed
+        ? 'inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700'
+        : 'inline-flex items-center px-4 py-2 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed';
+    $namedBodyBtnClass = $canRequestNamed
+        ? 'mt-3 inline-block px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700'
         : 'mt-3 inline-block px-5 py-2.5 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed';
 @endphp
 
@@ -51,9 +60,20 @@
                     {{ __('talenma.direct_hire.cta_btn') }}
                 </span>
             @endif
-            <a href="{{ route('recruitment.create', $talent) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">
-                {{ __('talenma.talents.inter_btn') }}
-            </a>
+            @if ($canRequestNamed)
+                <a href="{{ route('recruitment.create', $talent) }}" class="{{ $namedBtnClass }}">
+                    {{ __('talenma.talents.inter_btn') }}
+                </a>
+            @else
+                <span class="{{ $namedBtnClass }}" title="{{ $namedRequestDisabledHint }}">
+                    {{ __('talenma.talents.inter_btn') }}
+                </span>
+                @if ($existingNamedRequest)
+                    <a href="{{ route('sourcing.show', $existingNamedRequest) }}" class="inline-flex items-center px-4 py-2 border border-indigo-200 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50">
+                        {{ __('talenma.recruitment.named_view_existing') }}
+                    </a>
+                @endif
+            @endif
         </div>
     </x-slot>
 
@@ -161,7 +181,17 @@
                 <div>
                     <h4 class="font-semibold text-gray-900">{{ __('talenma.talents.inter_title') }}</h4>
                     <p class="mt-1 text-sm text-gray-600">{{ __('talenma.talents.inter_desc') }}</p>
-                    <a href="{{ route('recruitment.create', $talent) }}" class="mt-3 inline-block px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">{{ __('talenma.talents.inter_btn') }}</a>
+                    @if ($canRequestNamed)
+                        <a href="{{ route('recruitment.create', $talent) }}" class="{{ $namedBodyBtnClass }}">{{ __('talenma.talents.inter_btn') }}</a>
+                    @else
+                        <span class="{{ $namedBodyBtnClass }}" title="{{ $namedRequestDisabledHint }}">{{ __('talenma.talents.inter_btn') }}</span>
+                        <p class="mt-2 text-xs text-gray-500">{{ $namedRequestDisabledHint }}</p>
+                        @if ($existingNamedRequest)
+                            <a href="{{ route('sourcing.show', $existingNamedRequest) }}" class="mt-2 inline-block text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                                {{ __('talenma.recruitment.named_view_existing') }} →
+                            </a>
+                        @endif
+                    @endif
                 </div>
             </div>
         </div>

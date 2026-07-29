@@ -62,7 +62,7 @@ class DirectHireChatMessageMail extends Mailable
     private function senderDisplayName(): string
     {
         if ($this->sender->isCompany()) {
-            return $this->directHire->companyFormalDisplayName();
+            return $this->directHire->companyRecipientGreetingName();
         }
 
         return $this->directHire->talentFormalDisplayName();

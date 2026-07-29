@@ -171,10 +171,15 @@
                                 :title="selectedProfile.direct_hire_disabled_hint || labels.directHireDisabled"
                             >{{ __('talenma.direct_hire.cta_btn') }}</span>
                             <a
-                                x-show="selectedProfile.recruitment_url"
+                                x-show="selectedProfile.recruitment_url && selectedProfile.can_request_named !== false"
                                 :href="selectedProfile.recruitment_url"
                                 class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
                             >{{ __('talenma.talents.inter_btn') }}</a>
+                            <span
+                                x-show="selectedProfile.can_request_named === false"
+                                class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
+                                :title="selectedProfile.named_request_disabled_hint || '{{ __('talenma.recruitment.named_blocked_open') }}'"
+                            >{{ __('talenma.talents.inter_btn') }}</span>
                         @endunless
                         <a
                             :href="selectedProfile.cv_url || '#'"

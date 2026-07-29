@@ -6,7 +6,9 @@ use App\Models\DirectHireRequest;
 use App\Services\AdminDashboardService;
 use App\Services\CompanyDashboardActivityService;
 use App\Services\CompanyProfileCompletionService;
+use App\Services\DashboardActivityToastService;
 use App\Services\DirectHireService;
+use App\Services\StaffRecruitmentActivityService;
 use App\Services\TalentDashboardStatsService;
 use App\Services\TalentProfileCompletionService;
 use Illuminate\Http\Request;
@@ -19,6 +21,8 @@ class DashboardController extends Controller
         private AdminDashboardService $adminDashboard,
         private TalentDashboardStatsService $talentStats,
         private CompanyDashboardActivityService $companyActivity,
+        private StaffRecruitmentActivityService $staffRecruitmentActivity,
+        private DashboardActivityToastService $activityToasts,
         private DirectHireService $directHires,
     ) {}
 
@@ -27,8 +31,12 @@ class DashboardController extends Controller
         $user = $request->user();
 
         if ($user->isStaff()) {
+            $recentActivity = $this->staffRecruitmentActivity->recentActivity($user);
+            $this->activityToasts->flashUnseen($user, $recentActivity, 'staff');
+
             return view('dashboard.admin', [
                 'dashboard' => $this->adminDashboard->build($user),
+                'recentActivity' => $recentActivity,
             ]);
         }
 
@@ -47,6 +55,7 @@ class DashboardController extends Controller
                 ->get();
             $directHireUnseen = $this->directHires->companyHasUnseenChanges($user);
             $recentActivity = $this->companyActivity->recentActivity($user);
+            $this->activityToasts->flashUnseen($user, $recentActivity, 'company');
 
             return view('dashboard.company', compact(
                 'recentRequests',
@@ -62,6 +71,7 @@ class DashboardController extends Controller
         $profile = $user->profile;
         $completion = $this->profileCompletion->assess($profile);
         $stats = $this->talentStats->build($user);
+        $this->activityToasts->flashUnseen($user, $stats['recent_activity'] ?? [], 'talent');
         $openDirectHires = DirectHireRequest::query()
             ->where('talent_user_id', $user->id)
             ->whereIn('status', DirectHireRequest::openStatuses())

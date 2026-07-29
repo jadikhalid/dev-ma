@@ -1271,51 +1271,63 @@ document.addEventListener('DOMContentLoaded', initMobileLocaleFromIp);
 
 Alpine.data('toastStack', (initialToasts = []) => ({
     toasts: [],
+    queue: [],
+    activeId: null,
+    dismissTimer: null,
 
     init() {
-        initialToasts.forEach((toast) => {
-            this.push(toast.type, toast.message);
+        (initialToasts || []).forEach((toast) => {
+            this.enqueue(toast.type ?? 'success', toast.message ?? '');
         });
+
+        this.drain();
     },
 
     push(type, message) {
-        const hadToasts = this.toasts.length > 0;
+        this.enqueue(type, message);
+        this.drain();
+    },
 
-        if (hadToasts) {
-            this.toasts.forEach((toast) => {
-                toast.visible = false;
-            });
+    enqueue(type, message) {
+        if (! message) {
+            return;
         }
 
+        this.queue.push({ type, message });
+    },
+
+    drain() {
+        if (this.activeId || this.queue.length === 0) {
+            return;
+        }
+
+        const next = this.queue.shift();
         const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-        const show = () => {
-            this.toasts = [{
-                id,
-                type,
-                message,
-                visible: false,
-            }];
+        const duration = next.type === 'error' ? 4500 : (next.type === 'info' ? 4000 : 3500);
 
-            // Laisser Alpine monter le nœud caché, puis ouvrir pour déclencher l’entrée.
-            this.$nextTick(() => {
-                requestAnimationFrame(() => {
-                    const toast = this.toasts.find((item) => item.id === id);
+        this.activeId = id;
+        this.toasts = [{
+            id,
+            type: next.type,
+            message: next.message,
+            visible: false,
+        }];
 
-                    if (! toast) {
-                        return;
-                    }
+        this.$nextTick(() => {
+            requestAnimationFrame(() => {
+                const toast = this.toasts.find((item) => item.id === id);
 
-                    toast.visible = true;
-                    window.setTimeout(() => this.dismiss(id), type === 'success' ? 3500 : 4500);
-                });
+                if (! toast) {
+                    this.activeId = null;
+                    this.drain();
+
+                    return;
+                }
+
+                toast.visible = true;
+                this.dismissTimer = window.setTimeout(() => this.dismiss(id), duration);
             });
-        };
-
-        if (hadToasts) {
-            window.setTimeout(show, 280);
-        } else {
-            show();
-        }
+        });
     },
 
     dismiss(id) {
@@ -1325,10 +1337,21 @@ Alpine.data('toastStack', (initialToasts = []) => ({
             return;
         }
 
+        if (this.dismissTimer) {
+            window.clearTimeout(this.dismissTimer);
+            this.dismissTimer = null;
+        }
+
         toast.visible = false;
 
         window.setTimeout(() => {
             this.toasts = this.toasts.filter((item) => item.id !== id);
+
+            if (this.activeId === id) {
+                this.activeId = null;
+            }
+
+            this.drain();
         }, 300);
     },
 }));
