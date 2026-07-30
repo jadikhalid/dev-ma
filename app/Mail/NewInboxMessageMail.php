@@ -25,8 +25,9 @@ class NewInboxMessageMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: MailSender::from(),
             subject: __('talenma.mail.inbox_message.subject', [
-                'name' => $this->senderDisplayName(),
+                'name' => $this->senderCompanyName(),
             ]),
         );
     }
@@ -37,7 +38,8 @@ class NewInboxMessageMail extends Mailable
             view: 'emails.inbox-message',
             with: [
                 'recipient' => $this->recipient,
-                'senderName' => $this->senderDisplayName(),
+                'greetingName' => $this->recipientGreetingName(),
+                'senderName' => $this->senderBodyLabel(),
                 'subject' => $this->conversation->subject,
                 'preview' => \Illuminate\Support\Str::limit($this->message->body, 180),
                 'inboxUrl' => route('inbox.show', $this->conversation),
@@ -45,12 +47,55 @@ class NewInboxMessageMail extends Mailable
         );
     }
 
-    private function senderDisplayName(): string
+    private function recipientGreetingName(): string
+    {
+        if ($this->recipient->isCompany()) {
+            return $this->recipient->companyMailPersonName();
+        }
+
+        return $this->recipient->name;
+    }
+
+    private function senderCompanyName(): string
+    {
+        if ($this->sender->isCompany()) {
+            $org = $this->sender->companyOrganization()?->displayName();
+
+            if (filled($org)) {
+                return $org;
+            }
+
+            return $this->sender->companyDisplayName();
+        }
+
+        return $this->sender->name;
+    }
+
+    private function senderPersonName(): string
     {
         if ($this->sender->isCompany()) {
             return $this->sender->companyMailPersonName();
         }
 
         return $this->sender->name;
+    }
+
+    private function senderBodyLabel(): string
+    {
+        if (! $this->sender->isCompany()) {
+            return $this->sender->name;
+        }
+
+        $company = $this->senderCompanyName();
+        $person = $this->senderPersonName();
+
+        if ($person !== '' && strcasecmp($person, $company) !== 0) {
+            return __('talenma.mail.inbox_message.sender_with_company', [
+                'person' => $person,
+                'company' => $company,
+            ]);
+        }
+
+        return $company;
     }
 }

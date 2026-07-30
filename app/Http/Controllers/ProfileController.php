@@ -27,6 +27,7 @@ class ProfileController extends Controller
         private UserDeletionService $userDeletion,
         private ProfessionCatalogService $professionCatalog,
         private PendingEmailChangeService $pendingEmailChange,
+        private ProfileDetailsController $profileDetails,
     ) {}
 
     public function edit(Request $request): View|RedirectResponse
@@ -38,9 +39,10 @@ class ProfileController extends Controller
         }
 
         $showCompanyPanel = $user->canManageCompanyProfile();
+        $showTalentPanel = $user->isTalent();
         $panel = $request->query('panel', 'account');
 
-        if (! in_array($panel, ['account', 'company'], true)) {
+        if (! in_array($panel, ['account', 'company', 'talent'], true)) {
             $panel = 'account';
         }
 
@@ -48,10 +50,15 @@ class ProfileController extends Controller
             return redirect()->route('profile.edit', ['panel' => 'account']);
         }
 
+        if ($panel === 'talent' && ! $showTalentPanel) {
+            return redirect()->route('profile.edit', ['panel' => 'account']);
+        }
+
         $data = [
             'user' => $user,
             'panel' => $panel,
             'showCompanyPanel' => $showCompanyPanel,
+            'showTalentPanel' => $showTalentPanel,
         ];
 
         if ($showCompanyPanel) {
@@ -77,6 +84,10 @@ class ProfileController extends Controller
                     'citiesByCountry' => CompanyProfile::citiesByCountry(),
                 ]);
             }
+        }
+
+        if ($showTalentPanel && $panel === 'talent') {
+            $data = array_merge($data, $this->profileDetails->panelData($user));
         }
 
         return view('profile.edit', $data);
@@ -300,7 +311,7 @@ class ProfileController extends Controller
      */
     private function accountRedirectParams(User $user): array
     {
-        return $user->canManageCompanyProfile() || $user->isCompanyOwner()
+        return $user->canManageCompanyProfile() || $user->isCompanyOwner() || $user->isTalent()
             ? ['panel' => 'account']
             : [];
     }

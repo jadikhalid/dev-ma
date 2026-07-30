@@ -176,6 +176,17 @@ class RecruitmentRequestController extends Controller
         $message = __('talenma.recruitment.sent_dashboard_'.$mode);
 
         if ($request->expectsJson()) {
+            if ($request->boolean('embed')) {
+                return response()->json([
+                    'message' => $message,
+                    'mode' => $mode,
+                    'card_html' => view('sourcing._request-card', [
+                        'recruitment' => $recruitment,
+                    ])->render(),
+                    'stay' => true,
+                ]);
+            }
+
             session()->flash('toast_success', $message);
 
             return response()->json([

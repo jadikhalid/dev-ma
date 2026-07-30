@@ -2737,12 +2737,18 @@ Alpine.data('companyTalentProfileDrawer', (config = {}) => ({
     },
 
     async sendCompose() {
-        if (! this.selectedProfile?.talent_id || ! this.composeUrl) {
+        if (! this.selectedProfile?.talent_id || ! this.composeUrl || this.composeSending) {
             return;
         }
 
         const body = this.composeBody.trim();
         const subject = this.composeSubject.trim();
+
+        if (! subject) {
+            this.composeError = this.labels.composeSubjectRequired ?? this.labels.composeError;
+
+            return;
+        }
 
         if (body.length < 20) {
             this.composeError = this.labels.composeMinBody ?? this.labels.composeError;
@@ -2784,6 +2790,8 @@ Alpine.data('companyTalentProfileDrawer', (config = {}) => ({
             }
 
             this.composeSuccessUrl = payload.show_url ?? null;
+            this.composeSubject = '';
+            this.composeBody = '';
             this.composeFiles = [];
         } catch (error) {
             this.composeError = error?.message || this.labels.composeError || this.labels.error;
@@ -3214,12 +3222,18 @@ Alpine.data('companyTalentCatalog', (config) => ({
     },
 
     async sendCompose() {
-        if (! this.selectedProfile?.talent_id || ! this.composeUrl) {
+        if (! this.selectedProfile?.talent_id || ! this.composeUrl || this.composeSending) {
             return;
         }
 
         const body = this.composeBody.trim();
         const subject = this.composeSubject.trim();
+
+        if (! subject) {
+            this.composeError = this.labels.composeSubjectRequired ?? this.labels.composeError;
+
+            return;
+        }
 
         if (body.length < 20) {
             this.composeError = this.labels.composeMinBody ?? this.labels.composeError;
@@ -3261,6 +3275,8 @@ Alpine.data('companyTalentCatalog', (config) => ({
             }
 
             this.composeSuccessUrl = payload.show_url ?? null;
+            this.composeSubject = '';
+            this.composeBody = '';
             this.composeFiles = [];
         } catch (error) {
             this.composeError = error?.message || this.labels.composeError || this.labels.error;
@@ -3289,6 +3305,343 @@ Alpine.data('companyTalentCatalog', (config) => ({
         }
 
         this.refreshResults(target);
+    },
+}));
+
+Alpine.data('sourcingIndex', () => ({
+    createOpen: false,
+
+    openCreate() {
+        this.createOpen = true;
+        document.documentElement.classList.add('overflow-hidden');
+    },
+
+    closeCreate() {
+        this.createOpen = false;
+        document.documentElement.classList.remove('overflow-hidden');
+    },
+}));
+
+Alpine.data('inboxWorkspace', (config) => ({
+    conversations: config.conversations ?? [],
+    conversation: config.conversation ?? null,
+    indexUrl: config.indexUrl ?? '/inbox',
+    csrf: config.csrf ?? '',
+    labels: config.labels ?? {},
+    messages: config.conversation?.messages ?? [],
+    body: '',
+    files: [],
+    sending: false,
+    selecting: false,
+    error: null,
+    pollTimer: null,
+    selectToken: 0,
+
+    get selectedId() {
+        return this.conversation?.id ?? null;
+    },
+
+    get hasSelection() {
+        return Boolean(this.selectedId);
+    },
+
+    get pollUrl() {
+        return this.conversation?.show_url ?? '';
+    },
+
+    get replyUrl() {
+        if (! this.conversation?.id) {
+            return '';
+        }
+
+        return `${this.conversation.show_url.replace(/\/$/, '')}/messages`;
+    },
+
+    init() {
+        this.$nextTick(() => this.scrollToBottom());
+        this.pollTimer = setInterval(() => this.poll(), 9000);
+        this.onDocumentClick = (event) => this.handlePageClick(event);
+        document.addEventListener('click', this.onDocumentClick);
+
+        // Visiting /inbox marks conversations read server-side: sync sticky header badge.
+        if (! this.hasSelection) {
+            updateInboxNavBadge(0);
+        }
+
+        window.addEventListener('popstate', () => {
+            const match = window.location.pathname.match(/\/inbox\/(\d+)/);
+            const id = match ? Number(match[1]) : null;
+
+            if (id && id !== this.selectedId) {
+                const item = this.conversations.find((c) => Number(c.id) === id);
+                if (item) {
+                    this.selectConversation(item, { pushState: false });
+                }
+            } else if (! id && this.hasSelection) {
+                this.clearSelection({ pushState: false });
+            }
+        });
+    },
+
+    destroy() {
+        if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+        }
+
+        if (this.onDocumentClick) {
+            document.removeEventListener('click', this.onDocumentClick);
+        }
+    },
+
+    isActive(item) {
+        return this.hasSelection && Number(item.id) === Number(this.selectedId);
+    },
+
+    handlePageClick(event) {
+        if (! this.hasSelection || this.selecting || this.sending) {
+            return;
+        }
+
+        const target = event.target;
+
+        if (! (target instanceof Element)) {
+            return;
+        }
+
+        // Keep selection when interacting with the thread pane or a conversation row.
+        if (target.closest('[data-inbox-thread]') || target.closest('[data-inbox-item]')) {
+            return;
+        }
+
+        this.clearSelection();
+    },
+
+    async selectConversation(item, options = {}) {
+        const pushState = options.pushState !== false;
+
+        if (! item?.show_url || this.selecting) {
+            return;
+        }
+
+        if (Number(item.id) === Number(this.selectedId)) {
+            return;
+        }
+
+        const token = ++this.selectToken;
+        this.selecting = true;
+        this.error = null;
+        this.body = '';
+        this.files = [];
+
+        try {
+            const response = await fetch(item.show_url, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                throw new Error('select_failed');
+            }
+
+            const payload = await response.json();
+
+            if (token !== this.selectToken) {
+                return;
+            }
+
+            this.conversation = payload;
+            this.messages = payload.messages ?? [];
+            this.conversations = this.conversations.map((c) => (
+                Number(c.id) === Number(payload.id)
+                    ? { ...c, unread: false }
+                    : c
+            ));
+
+            if (typeof payload.unread_count === 'number') {
+                updateInboxNavBadge(payload.unread_count);
+            }
+
+            if (pushState && payload.show_url) {
+                window.history.pushState({ inboxId: payload.id }, '', payload.show_url);
+            }
+
+            this.$nextTick(() => this.scrollToBottom());
+        } catch (error) {
+            if (token === this.selectToken) {
+                this.error = this.labels.error ?? null;
+            }
+        } finally {
+            if (token === this.selectToken) {
+                this.selecting = false;
+            }
+        }
+    },
+
+    clearSelection(options = {}) {
+        const pushState = options.pushState !== false;
+        this.selectToken += 1;
+        this.conversation = null;
+        this.messages = [];
+        this.body = '';
+        this.files = [];
+        this.error = null;
+        this.selecting = false;
+
+        if (pushState) {
+            window.history.pushState({}, '', this.indexUrl);
+        }
+    },
+
+    bumpConversationInList(conversationPayload) {
+        if (! conversationPayload?.id) {
+            return;
+        }
+
+        const id = Number(conversationPayload.id);
+        const threadMessages = conversationPayload.messages ?? this.messages ?? [];
+        const latest = threadMessages.length > 0 ? threadMessages[threadMessages.length - 1] : null;
+        const existing = this.conversations.find((item) => Number(item.id) === id) ?? {};
+        const previewSource = latest?.body ?? existing.last_message_preview ?? '';
+        const preview = previewSource
+            ? (previewSource.length > 100 ? `${previewSource.slice(0, 100)}…` : previewSource)
+            : null;
+
+        const updated = {
+            ...existing,
+            id,
+            subject: conversationPayload.subject ?? existing.subject,
+            counterpart: conversationPayload.counterpart
+                ? {
+                    id: conversationPayload.counterpart.id ?? existing.counterpart?.id,
+                    name: conversationPayload.counterpart.name ?? existing.counterpart?.name,
+                }
+                : existing.counterpart,
+            unread: false,
+            last_message_at: latest?.created_at ?? conversationPayload.last_message_at ?? existing.last_message_at ?? new Date().toISOString(),
+            last_message_preview: preview,
+            show_url: conversationPayload.show_url ?? existing.show_url,
+            channel: conversationPayload.channel ?? existing.channel,
+        };
+
+        this.conversations = [
+            updated,
+            ...this.conversations.filter((item) => Number(item.id) !== id),
+        ];
+    },
+
+    scrollToBottom() {
+        const thread = this.$refs.thread;
+
+        if (thread) {
+            thread.scrollTop = thread.scrollHeight;
+        }
+    },
+
+    onFiles(event) {
+        const incoming = Array.from(event.target.files ?? []);
+        const merged = [...this.files];
+
+        for (const file of incoming) {
+            if (merged.length >= 3) {
+                break;
+            }
+
+            if (! merged.some((existing) => existing.name === file.name && existing.size === file.size)) {
+                merged.push(file);
+            }
+        }
+
+        this.files = merged;
+        event.target.value = '';
+    },
+
+    removeFile(index) {
+        this.files = this.files.filter((_, i) => i !== index);
+    },
+
+    async poll() {
+        if (! this.pollUrl || document.hidden || this.selecting) {
+            return;
+        }
+
+        try {
+            const response = await fetch(this.pollUrl, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                return;
+            }
+
+            const payload = await response.json();
+            const nextMessages = payload.messages ?? [];
+            const previousCount = this.messages.length;
+
+            this.messages = nextMessages;
+            this.conversation = { ...this.conversation, ...payload, messages: nextMessages };
+
+            if (nextMessages.length > previousCount) {
+                this.bumpConversationInList(this.conversation);
+                this.$nextTick(() => this.scrollToBottom());
+            }
+        } catch (error) {
+            // Silent polling failures.
+        }
+    },
+
+    async sendReply() {
+        if (! this.replyUrl || ! this.body.trim() || this.sending) {
+            return;
+        }
+
+        this.sending = true;
+        this.error = null;
+
+        const formData = new FormData();
+        formData.append('body', this.body.trim());
+        formData.append('_token', this.csrf);
+        this.files.forEach((file) => formData.append('attachments[]', file));
+
+        try {
+            const response = await fetch(this.replyUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                const firstError = payload?.errors
+                    ? Object.values(payload.errors).flat()[0]
+                    : null;
+                throw new Error(firstError || payload?.message || 'reply_failed');
+            }
+
+            this.messages = payload.conversation?.messages ?? this.messages;
+            if (payload.conversation) {
+                this.conversation = payload.conversation;
+            }
+            this.bumpConversationInList(this.conversation);
+            this.body = '';
+            this.files = [];
+            this.$nextTick(() => this.scrollToBottom());
+        } catch (error) {
+            this.error = error?.message || this.labels.error;
+        } finally {
+            this.sending = false;
+        }
     },
 }));
 
@@ -4606,6 +4959,23 @@ Alpine.data('directHireRoundManage', (config = {}) => ({
     },
 }));
 
+function updateInboxNavBadge(count) {
+    const n = Math.max(0, Number(count) || 0);
+    const label = n > 99 ? '99+' : String(n);
+
+    document.querySelectorAll('[data-inbox-unread-badge]').forEach((badge) => {
+        if (n <= 0) {
+            badge.remove();
+
+            return;
+        }
+
+        badge.textContent = label;
+        badge.hidden = false;
+        badge.classList.remove('hidden');
+    });
+}
+
 function pushToast(type, message) {
     if (! message) {
         return;
@@ -4734,6 +5104,24 @@ async function refreshCertificationsCard() {
 
 async function refreshCompanyUsersCard() {
     await refreshProfilePartial('account-users-card');
+}
+
+function insertSourcingOpenCard(cardHtml) {
+    const list = document.getElementById('sourcing-open-list');
+    const empty = document.getElementById('sourcing-open-empty');
+
+    if (! list || ! cardHtml) {
+        return;
+    }
+
+    const item = document.createElement('li');
+    item.innerHTML = cardHtml.trim();
+    list.prepend(item);
+    list.classList.remove('hidden');
+
+    if (empty) {
+        empty.classList.add('hidden');
+    }
 }
 
 function alpineRootsInForm(form) {
@@ -4979,6 +5367,15 @@ document.addEventListener('submit', async (event) => {
                 window.setTimeout(() => {
                     window.location.reload();
                 }, 400);
+
+                return;
+            }
+
+            if (payload.stay && payload.card_html) {
+                insertSourcingOpenCard(payload.card_html);
+                form.reset();
+                commitFormDefaults(form);
+                window.dispatchEvent(new CustomEvent('sourcing-open-created'));
 
                 return;
             }

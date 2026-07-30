@@ -149,7 +149,7 @@ MAIL_USERNAME=…
 MAIL_PASSWORD=…
 MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=…   # même boîte que MAIL_USERNAME chez Hostinger
-MAIL_FROM_NAME="${APP_NAME}"
+MAIL_FROM_NAME="Talents MA"
 
 ADMIN_EMAIL=admin@talentsdumaroc.com
 ADMIN_PASSWORD=…      # utilisé par ProductionDataSeeder (updateOrCreate)

@@ -57,7 +57,7 @@ class TalentProfileDocumentController extends Controller
         }
 
         return redirect()
-            ->route('profile.details.edit')
+            ->route('profile.edit', ['panel' => 'talent'])
             ->with('toast_success', $message);
     }
 

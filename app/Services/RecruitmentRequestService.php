@@ -34,12 +34,14 @@ class RecruitmentRequestService
         string $status,
         ?User $actor = null,
         ?Carbon $at = null,
+        ?string $comment = null,
     ): RecruitmentRequestStatusEvent {
         $status = $request->normalizeStatus($status);
 
         return $request->statusEvents()->create([
             'event' => RecruitmentRequestStatusEvent::EVENT_STATUS_CHANGED,
             'status' => $status,
+            'comment' => filled($comment) ? $comment : null,
             'actor_user_id' => $actor?->id,
             'created_at' => $at ?? now(),
         ]);
@@ -49,10 +51,12 @@ class RecruitmentRequestService
         RecruitmentRequest $request,
         ?User $actor = null,
         ?Carbon $at = null,
+        ?string $comment = null,
     ): RecruitmentRequestStatusEvent {
         return $request->statusEvents()->create([
             'event' => RecruitmentRequestStatusEvent::EVENT_COMMENT_UPDATED,
             'status' => $request->normalizeStatus(),
+            'comment' => filled($comment) ? $comment : null,
             'actor_user_id' => $actor?->id,
             'created_at' => $at ?? now(),
         ]);
@@ -86,9 +90,18 @@ class RecruitmentRequestService
         $request->loadMissing('company');
 
         if ($statusChanged) {
-            $this->recordStatusChange($request, $request->status, $actor);
+            $this->recordStatusChange(
+                $request,
+                $request->status,
+                $actor,
+                comment: $commentChanged ? $request->admin_comment : null,
+            );
         } elseif ($commentChanged) {
-            $this->recordCommentUpdate($request, $actor);
+            $this->recordCommentUpdate(
+                $request,
+                $actor,
+                comment: $request->admin_comment,
+            );
         }
 
         $this->flagUnseenForCompany($request);

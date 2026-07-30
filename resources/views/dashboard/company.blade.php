@@ -72,8 +72,8 @@
         {{-- Activités (70%) + Services (30%) --}}
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] gap-4 lg:gap-5 items-start">
             <section class="space-y-4 min-w-0">
-                <div class="bg-white rounded-2xl border px-4 py-3">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-900">{{ __('talenma.dashboard.company.section_ongoing') }}</h2>
+                <div class="rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4 py-3.5">
+                    <h2 class="text-sm font-bold uppercase tracking-[0.11em] text-indigo-900">{{ __('talenma.dashboard.company.section_ongoing') }}</h2>
                 </div>
 
                 <div class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
@@ -239,7 +239,7 @@
                             <p class="text-sm text-slate-500">{{ __('talenma.dashboard.company.activity.recent_empty') }}</p>
                         </div>
                     @else
-                        <ol class="activity-scroll relative mt-4 max-h-[28.5rem] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+                        <ol class="activity-scroll relative mt-4 max-h-[calc(5*4.35rem+4*0.625rem)] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
                             @foreach ($recentActivity as $item)
                                 @php
                                     $label = match ($item['type']) {
@@ -260,6 +260,8 @@
                                         'recruitment_submitted' => __('talenma.dashboard.company.activity.activity_recruitment_submitted_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                         'recruitment_message' => __('talenma.dashboard.company.activity.activity_recruitment_message'),
                                         'recruitment_message_sent' => __('talenma.dashboard.company.activity.activity_recruitment_message_sent'),
+                                        'inbox_message' => __('talenma.dashboard.company.activity.activity_inbox_message', ['actor' => $item['actor']]),
+                                        'inbox_message_sent' => __('talenma.dashboard.company.activity.activity_inbox_message_sent', ['actor' => $item['actor']]),
                                         'recruitment_comment' => __('talenma.dashboard.company.activity.activity_recruitment_comment_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open')),
                                         'recruitment_status' => match ($item['result'] ?? '') {
                                             'in_progress' => __('talenma.dashboard.company.activity.activity_recruitment_taken_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open')),
@@ -277,6 +279,8 @@
                                         'recruitment_message',
                                         'recruitment_message_sent',
                                         'recruitment_comment',
+                                        'inbox_message',
+                                        'inbox_message_sent',
                                     ], true);
 
                                     [$category, $dotClass, $rowClass] = match (true) {
@@ -284,6 +288,11 @@
                                             __('talenma.dashboard.company.activity.activity_cat_jobs'),
                                             'bg-emerald-500',
                                             'hover:bg-emerald-50/80',
+                                        ],
+                                        str_starts_with((string) ($item['type'] ?? ''), 'inbox_') => [
+                                            __('talenma.dashboard.company.activity.activity_cat_inbox'),
+                                            'bg-blue-500',
+                                            'hover:bg-blue-50/80',
                                         ],
                                         str_starts_with((string) ($item['type'] ?? ''), 'recruitment_') => [
                                             __('talenma.dashboard.company.activity.activity_cat_sourcing'),
@@ -343,8 +352,8 @@
             </section>
 
             <aside class="space-y-3">
-                <div class="bg-white rounded-2xl border px-4 py-3">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-900">{{ __('talenma.dashboard.company.section_services') }}</h2>
+                <div class="rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4 py-3.5">
+                    <h2 class="text-sm font-bold uppercase tracking-[0.11em] text-indigo-900">{{ __('talenma.dashboard.company.section_services') }}</h2>
                 </div>
 
                 <div class="bg-white rounded-2xl border p-4 flex flex-col">
@@ -361,7 +370,6 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                             </svg>
                         </a>
-                        <a href="{{ route('recruitment.create') }}" class="px-3 py-2 border border-indigo-200 text-indigo-700 text-xs font-semibold rounded-lg hover:bg-indigo-50 text-center">{{ __('talenma.dashboard.company.intermediary') }}</a>
                     </div>
                 </div>
 
@@ -373,16 +381,6 @@
                         <a href="{{ route('company.jobs.create') }}" class="px-3 py-2 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-lg hover:bg-emerald-50 text-center">{{ __('talenma.dashboard.company.jobs_create') }}</a>
                     </div>
                 </div>
-
-                @if ($isOwner)
-                    <div class="bg-white rounded-2xl border p-4 flex flex-col">
-                        <h3 class="text-sm font-bold text-gray-900">{{ __('talenma.dashboard.company.morocco_title') }}</h3>
-                        <p class="mt-1.5 text-xs text-gray-600 leading-relaxed flex-1">{{ __('talenma.dashboard.company.morocco_desc') }}</p>
-                        <div class="mt-3">
-                            <a href="{{ route('services.index') }}" class="inline-flex text-xs font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.dashboard.company.morocco_link') }}</a>
-                        </div>
-                    </div>
-                @endif
             </aside>
         </div>
     </div>

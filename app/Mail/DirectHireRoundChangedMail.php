@@ -6,7 +6,6 @@ use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -29,10 +28,7 @@ class DirectHireRoundChangedMail extends Mailable
         $companyName = $this->directHire->companyFormalDisplayName();
 
         return new Envelope(
-            from: new Address(
-                (string) config('mail.from.address'),
-                $this->directHire->mailFromNameAsCompany(),
-            ),
+            from: MailSender::from(),
             subject: __('talenma.mail.direct_hire_round_changed.subject_'.$this->event, [
                 'title' => $this->round->title,
                 'company' => $companyName,

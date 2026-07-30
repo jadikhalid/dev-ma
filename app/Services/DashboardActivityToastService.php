@@ -14,6 +14,7 @@ class DashboardActivityToastService
         'recruitment_message_sent',
         'direct_hire_proposed',
         'direct_hire_message_sent',
+        'inbox_message_sent',
         'direct_hire_withdrawn',
         'direct_hire_hired',
         'direct_hire_closed_negative',
@@ -28,6 +29,7 @@ class DashboardActivityToastService
         'direct_hire_declined',
         'direct_hire_deferred',
         'direct_hire_message_sent',
+        'inbox_message_sent',
     ];
 
     /**

@@ -1,23 +1,6 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center gap-4">
-            <x-user-avatar :user="$user" size="md" />
-            <div>
-                <h2 class="text-xl font-bold">{{ trim($user->first_name.' '.$user->last_name) ?: $user->name }}</h2>
-                <p id="profile-header-profession" class="text-sm text-gray-500">{{ $profile->professionLabel() ?? '—' }}</p>
-                <p id="profile-header-sector" class="mt-1 text-xs font-medium text-indigo-600">{{ $profile->sectorLabel() ?? '—' }}</p>
-            </div>
-        </div>
-    </x-slot>
-
-    <div
-        class="py-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8"
-        data-ajax-network-error="{{ __('talenma.talent.network_error') }}"
-        data-ajax-timeout-error="{{ __('talenma.talent.timeout_error') }}"
-    >
-        <x-toast-stack persistent />
-
-        <form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-3 space-y-3" data-ajax novalidate data-error-message="{{ __('talenma.talent.save_error') }}">
+﻿{{-- Expects: $user, $profile, profession/docs/options vars from ProfileController --}}
+<div class="space-y-8">
+<form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-3 space-y-3" data-ajax novalidate data-error-message="{{ __('talenma.talent.save_error') }}">
             @csrf
             <input type="hidden" name="section" value="visibility">
 
@@ -272,7 +255,7 @@
                             <p class="text-sm font-medium text-gray-900 truncate">{{ $document->original_name }}</p>
                             <p class="text-xs text-gray-500">
                                 {{ $document->languageLabel() }}
-                                · {{ $document->formattedSize() }}
+                                Â· {{ $document->formattedSize() }}
                             </p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
@@ -332,7 +315,7 @@
                             <option value="">{{ __('talenma.talent.cv_language_placeholder') }}</option>
                             @foreach ($cvLanguageOptions as $code => $label)
                                 <option value="{{ $code }}">
-                                    {{ $label }}@if ($cvByLanguage->has($code)) — {{ __('talenma.talent.cv_replace_hint') }}@endif
+                                    {{ $label }}@if ($cvByLanguage->has($code)) â€” {{ __('talenma.talent.cv_replace_hint') }}@endif
                                 </option>
                             @endforeach
                         </select>
@@ -588,7 +571,4 @@
                 <x-primary-button class="justify-center">{{ __('talenma.talent.save_section') }}</x-primary-button>
             </div>
         </form>
-
-        </div>
-    </div>
-</x-app-layout>
+</div>

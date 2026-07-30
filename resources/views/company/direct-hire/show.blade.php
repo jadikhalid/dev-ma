@@ -16,6 +16,7 @@
                     'error' => __('talenma.home.search_drawer_error'),
                     'composeError' => __('talenma.inbox.error'),
                     'composeMinBody' => __('talenma.inbox.compose_min_body'),
+                    'composeSubjectRequired' => __('talenma.inbox.compose_subject_required'),
                     'directHireDisabled' => __('talenma.direct_hire.cta_disabled_hint'),
                 ]),
             })"

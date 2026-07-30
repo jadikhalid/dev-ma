@@ -38,7 +38,7 @@
                         </div>
                     </div>
                     <div class="flex flex-col items-start gap-2">
-                        <a href="{{ route('profile.details.edit') }}" class="inline-flex items-center justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
+                        <a href="{{ route('profile.edit', ['panel' => 'talent']) }}" class="inline-flex items-center justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
                             {{ ($completion['status'] === 'complete' || $completion['percent'] >= 100) ? __('talenma.dashboard.talent.edit_profile') : __('talenma.dashboard.talent.complete_profile') }}
                         </a>
                     </div>
@@ -97,7 +97,7 @@
                             <p class="text-sm text-slate-500">{{ __('talenma.dashboard.talent.stats.recent_empty') }}</p>
                         </div>
                     @else
-                        <ol class="activity-scroll relative mt-4 max-h-[28.5rem] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+                        <ol class="activity-scroll relative mt-4 max-h-[calc(5*4.35rem+4*0.625rem)] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
                             @foreach ($stats['recent_activity'] as $item)
                                 @php
                                     $label = match ($item['type']) {
@@ -117,6 +117,8 @@
                                         'direct_hire_round_cancelled' => __('talenma.dashboard.talent.stats.activity_direct_hire_round_cancelled', ['actor' => $item['actor'], 'round' => $item['detail'] ?? '']),
                                         'direct_hire_message' => __('talenma.dashboard.talent.stats.activity_direct_hire_message', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_message_sent' => __('talenma.dashboard.talent.stats.activity_direct_hire_message_sent', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'inbox_message' => __('talenma.dashboard.talent.stats.activity_inbox_message', ['actor' => $item['actor']]),
+                                        'inbox_message_sent' => __('talenma.dashboard.talent.stats.activity_inbox_message_sent', ['actor' => $item['actor']]),
                                         default => __('talenma.dashboard.talent.stats.activity_view', ['actor' => $item['actor']]),
                                     };
 
@@ -125,6 +127,11 @@
                                             __('talenma.dashboard.talent.stats.activity_cat_cv'),
                                             'bg-violet-500',
                                             'hover:bg-violet-50/80',
+                                        ],
+                                        str_starts_with((string) ($item['type'] ?? ''), 'inbox_') => [
+                                            __('talenma.dashboard.talent.stats.activity_cat_inbox'),
+                                            'bg-blue-500',
+                                            'hover:bg-blue-50/80',
                                         ],
                                         str_starts_with((string) ($item['type'] ?? ''), 'direct_hire') => [
                                             __('talenma.dashboard.talent.stats.activity_cat_hire'),
@@ -328,7 +335,7 @@
                             </dl>
                         @else
                             <p class="mt-2 text-sm text-gray-500">{{ __('talenma.dashboard.talent.contact_empty') }}</p>
-                            <a href="{{ route('profile.details.edit') }}" class="mt-2 inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+                            <a href="{{ route('profile.edit', ['panel' => 'talent']) }}" class="mt-2 inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-800">
                                 {{ __('talenma.dashboard.talent.edit_profile') }}
                             </a>
                         @endif
@@ -336,7 +343,7 @@
                 @else
                     <div class="bg-white rounded-2xl border p-6 sm:p-8">
                         <p class="text-sm text-gray-500">{{ __('talenma.dashboard.talent.complete_profile') }}</p>
-                        <a href="{{ route('profile.details.edit') }}" class="mt-3 inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">
+                        <a href="{{ route('profile.edit', ['panel' => 'talent']) }}" class="mt-3 inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700">
                             {{ __('talenma.dashboard.talent.complete_profile') }}
                         </a>
                     </div>

@@ -7,7 +7,6 @@ use App\Models\RecruitmentRequestMessage;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -30,12 +29,7 @@ class RecruitmentRequestChatMessageMail extends Mailable
         $senderName = $this->senderDisplayName();
 
         return new Envelope(
-            from: new Address(
-                (string) config('mail.from.address'),
-                $this->recipientIsCompany
-                    ? 'Talents du Maroc'
-                    : 'Talents du Maroc / '.$this->recruitment->companyDisplayName(),
-            ),
+            from: MailSender::from(),
             subject: __('talenma.mail.recruitment_chat.subject', [
                 'name' => $senderName,
             ]),

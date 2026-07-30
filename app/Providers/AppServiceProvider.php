@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Mail\MailSender;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -20,6 +22,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Mail::alwaysFrom(
+            (string) config('mail.from.address'),
+            MailSender::name(),
+        );
+
         Password::defaults(fn () => Password::min(8)
             ->max(128)
             ->letters()

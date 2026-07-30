@@ -5,7 +5,6 @@ namespace App\Mail;
 use App\Models\DirectHireRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -24,10 +23,7 @@ class DirectHireDecisionMail extends Mailable
         $talentName = $this->directHire->talentFormalDisplayName();
 
         return new Envelope(
-            from: new Address(
-                (string) config('mail.from.address'),
-                $this->directHire->mailFromNameAsTalent(),
-            ),
+            from: MailSender::from(),
             subject: __('talenma.mail.direct_hire_decision.subject_'.$this->decision, [
                 'talent' => $talentName,
             ]),

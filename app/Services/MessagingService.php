@@ -104,9 +104,57 @@ class MessagingService
     }
 
     /**
+     * Mark all visible inbox conversations as read for the current viewer.
+     */
+    public function markAllReadFor(User $user): void
+    {
+        $now = now();
+
+        if ($user->isCompany()) {
+            Conversation::query()
+                ->where('company_user_id', $user->id)
+                ->whereNotIn('id', $this->directHireConversationIdsFor($user))
+                ->whereNotNull('last_message_at')
+                ->where(function ($q) {
+                    $q->whereNull('company_last_read_at')
+                        ->orWhereColumn('last_message_at', '>', 'company_last_read_at');
+                })
+                ->update(['company_last_read_at' => $now]);
+
+            return;
+        }
+
+        if ($user->isTalent()) {
+            Conversation::query()
+                ->where('channel', Conversation::CHANNEL_TALENT)
+                ->where('talent_user_id', $user->id)
+                ->whereNotIn('id', $this->directHireConversationIdsFor($user))
+                ->whereNotNull('last_message_at')
+                ->where(function ($q) {
+                    $q->whereNull('talent_last_read_at')
+                        ->orWhereColumn('last_message_at', '>', 'talent_last_read_at');
+                })
+                ->update(['talent_last_read_at' => $now]);
+
+            return;
+        }
+
+        if ($user->isStaff()) {
+            Conversation::query()
+                ->where('channel', Conversation::CHANNEL_STAFF)
+                ->whereNotNull('last_message_at')
+                ->where(function ($q) {
+                    $q->whereNull('talent_last_read_at')
+                        ->orWhereColumn('last_message_at', '>', 'talent_last_read_at');
+                })
+                ->update(['talent_last_read_at' => $now]);
+        }
+    }
+
+    /**
      * @return list<int>
      */
-    private function directHireConversationIdsFor(User $user): array
+    public function directHireConversationIdsFor(User $user): array
     {
         $query = DirectHireRequest::query()->whereNotNull('conversation_id');
 
@@ -125,6 +173,33 @@ class MessagingService
         }
 
         return $query->pluck('conversation_id')->unique()->filter()->values()->all();
+    }
+
+    /**
+     * Label for activity feeds: "Person de Company" when a company user is the sender.
+     */
+    public function companySenderActivityLabel(User $sender): string
+    {
+        if (! $sender->isCompany()) {
+            return $sender->name;
+        }
+
+        $company = $sender->companyOrganization()?->displayName();
+
+        if (! filled($company)) {
+            $company = $sender->companyDisplayName();
+        }
+
+        $person = $sender->companyMailPersonName();
+
+        if ($person !== '' && strcasecmp($person, (string) $company) !== 0) {
+            return __('talenma.mail.inbox_message.sender_with_company', [
+                'person' => $person,
+                'company' => $company,
+            ]);
+        }
+
+        return (string) $company;
     }
 
     public function assertCanAccess(User $user, Conversation $conversation): void

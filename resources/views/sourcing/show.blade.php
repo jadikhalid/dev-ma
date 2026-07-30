@@ -154,11 +154,17 @@
                                 <span class="relative z-[1] mt-1.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white ring-4 ring-white">
                                     <span class="h-2.5 w-2.5 rounded-full {{ $dotClass }}"></span>
                                 </span>
-                                <div class="min-w-0 pt-0.5">
+                                <div class="min-w-0 flex-1 pt-0.5">
                                     <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                                         {{ $event->created_at?->translatedFormat('d M Y, H:i') }}
                                     </p>
                                     <p class="mt-0.5 text-sm leading-snug text-slate-800">{{ $event->label($isStaff, $recruitment->mode) }}</p>
+                                    @if (filled($event->comment))
+                                        <div class="mt-2 rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2.5 text-sm text-indigo-950">
+                                            <p class="text-[10px] font-semibold uppercase tracking-wide text-indigo-700">{{ __('talenma.recruitment.company_comment_label') }}</p>
+                                            <p class="mt-1 whitespace-pre-line leading-relaxed">{{ $event->comment }}</p>
+                                        </div>
+                                    @endif
                                 </div>
                             </li>
                         @empty
@@ -168,27 +174,10 @@
                         @endforelse
                     </ol>
 
-                    @if (filled($recruitment->admin_comment))
-                        <div class="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-slate-50 px-4 py-3.5 text-sm text-indigo-950 shadow-sm shadow-indigo-600/5">
-                            <div class="flex items-center gap-2">
-                                <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white" aria-hidden="true">
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3.75h6m4.5 6.75V6.75A2.25 2.25 0 0015.75 4.5H8.25A2.25 2.25 0 006 6.75v12.75l3.375-2.25H15.75a2.25 2.25 0 002.25-2.25z" />
-                                    </svg>
-                                </span>
-                                <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">{{ __('talenma.recruitment.company_comment_label') }}</p>
-                            </div>
-                            <p class="mt-2 whitespace-pre-line leading-relaxed">{{ $recruitment->admin_comment }}</p>
-                            @if ($recruitment->statusUpdatedBy || $recruitment->status_updated_at)
-                                <p class="mt-2 text-xs text-indigo-700/80">
-                                    {{ $recruitment->statusUpdatedBy?->name }}
-                                    @if ($recruitment->status_updated_at)
-                                        — {{ $recruitment->status_updated_at->translatedFormat('d M Y, H:i') }}
-                                    @endif
-                                </p>
-                            @endif
-                        </div>
-                    @elseif (! $isStaff)
+                    @php
+                        $historyHasComment = $recruitment->statusEvents->contains(fn ($event) => filled($event->comment));
+                    @endphp
+                    @if (! $isStaff && ! $historyHasComment && ! filled($recruitment->admin_comment))
                         <p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-500">
                             {{ __('talenma.recruitment.status_no_comment') }}
                         </p>

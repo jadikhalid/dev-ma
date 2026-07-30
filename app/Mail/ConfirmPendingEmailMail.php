@@ -7,6 +7,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
+
 class ConfirmPendingEmailMail extends Mailable
 {
     public function __construct(
@@ -18,6 +19,7 @@ class ConfirmPendingEmailMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: MailSender::from(),
             subject: __('talenma.mail.confirm_pending_email.subject'),
         );
     }

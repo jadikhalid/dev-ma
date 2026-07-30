@@ -9,7 +9,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
 
 class ProfileDetailsController extends Controller
 {
@@ -20,7 +19,7 @@ class ProfileDetailsController extends Controller
         private ProfileDocumentService $profileDocuments,
     ) {}
 
-    public function edit(): View|RedirectResponse
+    public function edit(): RedirectResponse
     {
         $user = Auth::user();
 
@@ -28,6 +27,14 @@ class ProfileDetailsController extends Controller
             return redirect()->route('dashboard');
         }
 
+        return redirect()->route('profile.edit', ['panel' => 'talent']);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function panelData(\App\Models\User $user): array
+    {
         $profile = $user->profile ?: $user->profile()->create();
         $profile->load(['professionSector', 'profession', 'documents']);
 
@@ -36,8 +43,7 @@ class ProfileDetailsController extends Controller
             $profile->profession_id,
         );
 
-        return view('talent.profile', [
-            'user' => $user,
+        return [
             'profile' => $profile,
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'sectorSlug' => old('sector', $slugs['sector']),
@@ -51,7 +57,7 @@ class ProfileDetailsController extends Controller
             'educationOptions' => $this->educationOptions(),
             'countryOptions' => \App\Models\Profile::countryOptions(),
             'citiesByCountry' => \App\Models\Profile::citiesByCountry(),
-        ]);
+        ];
     }
 
     public function update(Request $request): RedirectResponse|JsonResponse
@@ -116,7 +122,7 @@ class ProfileDetailsController extends Controller
         }
 
         return redirect()
-            ->route('profile.details.edit')
+            ->route('profile.edit', ['panel' => 'talent'])
             ->with('toast_success', $message);
     }
 

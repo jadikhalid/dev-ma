@@ -5,7 +5,6 @@ namespace App\Mail;
 use App\Models\DirectHireRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -21,10 +20,7 @@ class DirectHireDeferralAcknowledgedMail extends Mailable
         $companyName = $this->directHire->companyFormalDisplayName();
 
         return new Envelope(
-            from: new Address(
-                (string) config('mail.from.address'),
-                $this->directHire->mailFromNameAsCompany(),
-            ),
+            from: MailSender::from(),
             subject: __('talenma.mail.direct_hire_deferral_acknowledged.subject', [
                 'company' => $companyName,
             ]),

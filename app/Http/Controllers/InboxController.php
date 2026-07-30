@@ -25,12 +25,15 @@ class InboxController extends Controller
             return redirect()->route('dashboard');
         }
 
+        $this->messaging->markAllReadFor($user);
+
         $conversations = $this->messaging->conversationsFor($user)
             ->map(fn (Conversation $conversation) => $this->messaging->presentConversationSummary($conversation, $user));
 
         return view('inbox.index', [
             'conversations' => $conversations,
-            'unreadCount' => $this->messaging->unreadCountFor($user),
+            'conversation' => null,
+            'unreadCount' => 0,
         ]);
     }
 
@@ -48,13 +51,16 @@ class InboxController extends Controller
         $payload = $this->messaging->presentConversation($conversation->fresh(), $user);
 
         if ($request->wantsJson()) {
-            return response()->json($payload);
+            return response()->json([
+                ...$payload,
+                'unread_count' => $this->messaging->unreadCountFor($user),
+            ]);
         }
 
         $conversations = $this->messaging->conversationsFor($user)
             ->map(fn (Conversation $item) => $this->messaging->presentConversationSummary($item, $user));
 
-        return view('inbox.show', [
+        return view('inbox.index', [
             'conversation' => $payload,
             'conversations' => $conversations,
             'unreadCount' => $this->messaging->unreadCountFor($user),

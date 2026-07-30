@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+
 use Illuminate\Queue\SerializesModels;
 
 class TalentRejectedMail extends Mailable
@@ -21,6 +22,7 @@ class TalentRejectedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: MailSender::from(),
             subject: __('talenma.mail.talent_rejected.subject'),
         );
     }

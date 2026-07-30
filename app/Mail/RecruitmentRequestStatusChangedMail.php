@@ -5,7 +5,6 @@ namespace App\Mail;
 use App\Models\RecruitmentRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -28,10 +27,7 @@ class RecruitmentRequestStatusChangedMail extends Mailable
             : 'subject_'.$this->normalizedStatus().'_'.$mode;
 
         return new Envelope(
-            from: new Address(
-                (string) config('mail.from.address'),
-                'Talents du Maroc',
-            ),
+            from: MailSender::from(),
             subject: __('talenma.mail.recruitment_status.'.$key, [
                 'title' => $this->recruitment->subject,
             ]),

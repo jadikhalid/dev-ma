@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\Conversation;
 use App\Models\DirectHireMessage;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
 use App\Models\JobApplication;
+use App\Models\Message;
 use App\Models\RecruitmentRequest;
 use App\Models\RecruitmentRequestMessage;
 use App\Models\RecruitmentRequestStatusEvent;
@@ -17,12 +19,13 @@ class CompanyDashboardActivityService
 {
     public function __construct(
         private DirectHireService $directHires,
+        private MessagingService $messaging,
     ) {}
 
     /**
      * @return list<array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
      */
-    public function recentActivity(User $company, int $limit = 20): array
+    public function recentActivity(User $company, int $limit = 10): array
     {
         if (! $company->isCompany()) {
             return [];
@@ -34,10 +37,48 @@ class CompanyDashboardActivityService
             ->concat($this->roundEvents($company, $fetch))
             ->concat($this->recruitmentEvents($company, $fetch))
             ->concat($this->jobApplicationEvents($company, $fetch))
+            ->concat($this->inboxMessageEvents($company, $fetch))
             ->sortByDesc(fn (array $item) => $item['at']?->timestamp ?? 0)
             ->take($limit)
             ->values()
             ->all();
+    }
+
+    /**
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
+     */
+    private function inboxMessageEvents(User $company, int $limit): Collection
+    {
+        $excluded = $this->messaging->directHireConversationIdsFor($company);
+
+        return Message::query()
+            ->whereHas('conversation', function ($query) use ($company, $excluded) {
+                $query->where('channel', Conversation::CHANNEL_TALENT)
+                    ->where('company_user_id', $company->id)
+                    ->when($excluded !== [], fn ($q) => $q->whereNotIn('id', $excluded));
+            })
+            ->with(['conversation.talent.profile', 'sender'])
+            ->latest()
+            ->limit($limit)
+            ->get()
+            ->map(function (Message $message) use ($company) {
+                $conversation = $message->conversation;
+                $isCompanyMessage = (int) $message->sender_user_id === (int) $company->id
+                    || ($message->sender?->isCompany() ?? false);
+
+                $talent = $conversation?->talent;
+                $talentName = $talent?->publicDisplayName()
+                    ?: ($talent?->name ?: __('talenma.dashboard.company.activity.unknown_talent'));
+
+                return $this->activityItem(
+                    type: $isCompanyMessage ? 'inbox_message_sent' : 'inbox_message',
+                    actor: $talentName,
+                    at: $message->created_at,
+                    subject: $conversation?->subject,
+                    href: $conversation ? route('inbox.show', $conversation) : route('inbox.index'),
+                    self: $isCompanyMessage,
+                );
+            });
     }
 
     /**

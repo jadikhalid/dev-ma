@@ -7,7 +7,6 @@ use App\Models\DirectHireRequest;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -26,15 +25,8 @@ class DirectHireChatMessageMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $fromName = $this->sender->isCompany()
-            ? $this->directHire->mailFromNameAsCompany()
-            : $this->directHire->mailFromNameAsTalent();
-
         return new Envelope(
-            from: new Address(
-                (string) config('mail.from.address'),
-                $fromName,
-            ),
+            from: MailSender::from(),
             subject: __('talenma.mail.direct_hire_chat.subject', [
                 'name' => $this->senderDisplayName(),
             ]),

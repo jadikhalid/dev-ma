@@ -7,6 +7,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
+
 class VerifyRegistrationMail extends Mailable
 {
     public function __construct(
@@ -17,6 +18,7 @@ class VerifyRegistrationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: MailSender::from(),
             subject: __('talenma.mail.verify_registration.subject'),
         );
     }

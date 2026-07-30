@@ -225,7 +225,21 @@
                         >Portfolio</a>
                     </div>
 
-                    <div class="mt-7 rounded-xl border bg-gray-50 p-5 space-y-4">
+                    <div class="mt-7 relative rounded-xl border bg-gray-50 p-5 space-y-4">
+                        <div
+                            x-show="composeSending"
+                            x-cloak
+                            class="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-white/70 backdrop-blur-[1px]"
+                            aria-hidden="true"
+                        >
+                            <div class="flex flex-col items-center gap-3 rounded-xl bg-white/90 px-5 py-4 shadow-sm ring-1 ring-gray-200">
+                                <svg class="h-7 w-7 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+
                         <div>
                             <h3 class="font-semibold text-gray-900">{{ __('talenma.inbox.compose_title') }}</h3>
                             <p class="mt-1 text-sm text-gray-600">{{ __('talenma.inbox.compose_desc') }}</p>
@@ -249,7 +263,8 @@
                                     x-model="composeSubject"
                                     maxlength="255"
                                     required
-                                    class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    :disabled="composeSending"
+                                    class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-60"
                                     placeholder="{{ __('talenma.inbox.compose_subject_placeholder') }}"
                                 >
                             </div>
@@ -262,13 +277,14 @@
                                     required
                                     minlength="20"
                                     maxlength="5000"
-                                    class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    :disabled="composeSending"
+                                    class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-60"
                                     placeholder="{{ __('talenma.inbox.compose_body_placeholder') }}"
                                 ></textarea>
                             </div>
                             <div>
-                                <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600">
-                                    <input type="file" class="hidden" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*" @change="onComposeFiles($event)">
+                                <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600" :class="composeSending && 'pointer-events-none opacity-60'">
+                                    <input type="file" class="hidden" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*" @change="onComposeFiles($event)" :disabled="composeSending">
                                     <span class="rounded-lg border bg-white px-3 py-1.5 hover:bg-gray-50">{{ __('talenma.inbox.attach') }}</span>
                                 </label>
                                 <p class="mt-1 text-xs text-gray-400">{{ __('talenma.inbox.attachments_hint') }}</p>
@@ -276,7 +292,7 @@
                                     <template x-for="(file, index) in composeFiles" :key="file.name + index">
                                         <li class="flex items-center gap-2">
                                             <span x-text="file.name"></span>
-                                            <button type="button" class="text-red-600" @click="removeComposeFile(index)">×</button>
+                                            <button type="button" class="text-red-600" @click="removeComposeFile(index)" :disabled="composeSending">×</button>
                                         </li>
                                     </template>
                                 </ul>
@@ -291,8 +307,9 @@
                                 ></button>
                                 <button
                                     type="button"
-                                    class="rounded-lg border bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                    class="rounded-lg border bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                                     @click="resetCompose()"
+                                    :disabled="composeSending"
                                 >{{ __('talenma.inbox.compose_cancel') }}</button>
                             </div>
                         </form>

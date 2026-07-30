@@ -5,7 +5,6 @@ namespace App\Mail;
 use App\Models\RecruitmentRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -23,10 +22,7 @@ class RecruitmentRequestSubmittedMail extends Mailable
         $orgName = $this->recruitment->companyDisplayName();
 
         return new Envelope(
-            from: new Address(
-                (string) config('mail.from.address'),
-                'Talents du Maroc / '.$orgName,
-            ),
+            from: MailSender::from(),
             subject: __('talenma.mail.recruitment_submitted.subject_'.$this->recruitment->mode, [
                 'company' => $orgName,
                 'title' => $this->recruitment->subject,

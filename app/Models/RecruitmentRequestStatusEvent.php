@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'recruitment_request_id',
     'event',
     'status',
+    'comment',
     'actor_user_id',
     'created_at',
 ])]

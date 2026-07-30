@@ -335,16 +335,6 @@ class DirectHireRequest extends Model
         return $this->companyDisplayName();
     }
 
-    public function mailFromNameAsCompany(): string
-    {
-        return 'Talents du Maroc / '.$this->companyDisplayName();
-    }
-
-    public function mailFromNameAsTalent(): string
-    {
-        return 'Talents du Maroc / '.$this->talentFormalDisplayName();
-    }
-
     /**
      * Person to greet on company-side mail: initiator user, else primary contact.
      */
