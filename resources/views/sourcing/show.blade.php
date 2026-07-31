@@ -25,7 +25,7 @@
                     <p class="text-sm text-gray-500">{{ $recruitment->companyDisplayName() }}</p>
                 @endif
             </div>
-            <span class="inline-flex items-center rounded-md border px-2 py-1 text-xs font-bold uppercase tracking-wider {{ $statusTone }}">
+            <span id="sourcing-status-badge" class="inline-flex items-center rounded-md border px-2 py-1 text-xs font-bold uppercase tracking-wider {{ $statusTone }}">
                 {{ $recruitment->statusLabel() }}
             </span>
         </div>
@@ -129,46 +129,15 @@
                         </div>
                     </div>
 
-                    <ol class="relative space-y-0 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-slate-200">
+                    <ol id="sourcing-status-history" class="relative space-y-0 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-slate-200">
                         @forelse ($recruitment->statusEvents as $event)
-                            @php
-                                $dotClass = match (true) {
-                                    $event->event === 'submitted' => 'bg-sky-500',
-                                    $event->event === 'comment_updated' => 'bg-indigo-500',
-                                    $event->status === 'in_progress' => 'bg-amber-500',
-                                    in_array($event->status, ['completed_successful', 'completed'], true) => 'bg-emerald-500',
-                                    in_array($event->status, ['completed_unsuccessful', 'cancelled'], true) => 'bg-rose-500',
-                                    $event->status === 'pending' => 'bg-indigo-500',
-                                    default => 'bg-slate-400',
-                                };
-                                $rowClass = match (true) {
-                                    $event->event === 'submitted' => 'hover:bg-sky-50/80',
-                                    $event->event === 'comment_updated' => 'hover:bg-indigo-50/80',
-                                    $event->status === 'in_progress' => 'hover:bg-amber-50/80',
-                                    in_array($event->status, ['completed_successful', 'completed'], true) => 'hover:bg-emerald-50/80',
-                                    in_array($event->status, ['completed_unsuccessful', 'cancelled'], true) => 'hover:bg-rose-50/80',
-                                    default => 'hover:bg-slate-50',
-                                };
-                            @endphp
-                            <li class="relative flex gap-3 rounded-xl px-2 py-2.5 transition {{ $rowClass }}">
-                                <span class="relative z-[1] mt-1.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white ring-4 ring-white">
-                                    <span class="h-2.5 w-2.5 rounded-full {{ $dotClass }}"></span>
-                                </span>
-                                <div class="min-w-0 flex-1 pt-0.5">
-                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                                        {{ $event->created_at?->translatedFormat('d M Y, H:i') }}
-                                    </p>
-                                    <p class="mt-0.5 text-sm leading-snug text-slate-800">{{ $event->label($isStaff, $recruitment->mode) }}</p>
-                                    @if (filled($event->comment))
-                                        <div class="mt-2 rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2.5 text-sm text-indigo-950">
-                                            <p class="text-[10px] font-semibold uppercase tracking-wide text-indigo-700">{{ __('talenma.recruitment.company_comment_label') }}</p>
-                                            <p class="mt-1 whitespace-pre-line leading-relaxed">{{ $event->comment }}</p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </li>
+                            @include('sourcing._status-event', [
+                                'event' => $event,
+                                'recruitment' => $recruitment,
+                                'isStaff' => $isStaff,
+                            ])
                         @empty
-                            <li class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-6 text-center text-sm text-slate-500">
+                            <li data-history-empty class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-6 text-center text-sm text-slate-500">
                                 {{ __('talenma.recruitment.history_empty') }}
                             </li>
                         @endforelse
@@ -183,51 +152,114 @@
                         </p>
                     @endif
 
-                    @if ($isStaff)
-                        <form
-                            method="POST"
-                            action="{{ route('admin.recruitment.status', $recruitment) }}"
-                            class="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4"
+                    @if ($isStaff && count($statuses) > 0)
+                        <div
+                            id="sourcing-status-form-card"
+                            class="relative"
+                            x-data="sourcingStatusForm({
+                                currentStatus: @js($recruitment->normalizeStatus()),
+                                messages: {
+                                    inProgressTitle: @js(__('talenma.recruitment.admin_status_confirm_in_progress_title')),
+                                    inProgressBody: @js(__('talenma.recruitment.admin_status_confirm_in_progress_body')),
+                                    closedSuccessfulTitle: @js(__('talenma.recruitment.admin_status_confirm_closed_successful_title')),
+                                    closedSuccessfulBody: @js(__('talenma.recruitment.admin_status_confirm_closed_successful_body')),
+                                    closedUnsuccessfulTitle: @js(__('talenma.recruitment.admin_status_confirm_closed_unsuccessful_title')),
+                                    closedUnsuccessfulBody: @js(__('talenma.recruitment.admin_status_confirm_closed_unsuccessful_body')),
+                                    confirmBtn: @js(__('talenma.recruitment.admin_status_confirm_btn')),
+                                    confirmCancel: @js(__('talenma.recruitment.admin_status_confirm_cancel')),
+                                    error: @js(__('talenma.recruitment.admin_status_error')),
+                                    networkError: @js(__('talenma.common.network_error')),
+                                    statusRequired: @js(__('talenma.recruitment.admin_status_required')),
+                                    keepInProgress: @js(__('talenma.recruitment.admin_status_keep_in_progress')),
+                                },
+                            })"
                         >
-                            @csrf
-                            @method('PATCH')
-                            <input type="hidden" name="redirect_to" value="show">
+                            <form
+                                method="POST"
+                                action="{{ route('admin.recruitment.status', $recruitment) }}"
+                                class="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4"
+                                @submit.prevent="requestSubmit($event)"
+                                novalidate
+                            >
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="redirect_to" value="show">
 
-                            <div>
-                                <x-input-label for="status-{{ $recruitment->id }}" :value="__('talenma.recruitment.admin_status')" />
-                                <select
-                                    id="status-{{ $recruitment->id }}"
-                                    name="status"
-                                    class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm"
-                                    required
+                                <div>
+                                    <x-input-label for="status-{{ $recruitment->id }}" :value="__('talenma.recruitment.admin_status')" />
+                                    <select
+                                        id="status-{{ $recruitment->id }}"
+                                        name="status"
+                                        x-ref="status"
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm"
+                                        required
+                                    >
+                                        @if ($recruitment->normalizeStatus() === 'in_progress')
+                                            <option value="in_progress" selected>
+                                                {{ __('talenma.recruitment.admin_status_keep_in_progress') }}
+                                            </option>
+                                        @endif
+                                        @foreach ($statuses as $status)
+                                            <option
+                                                value="{{ $status }}"
+                                                @selected($recruitment->normalizeStatus() === $status)
+                                            >
+                                                {{ __('talenma.recruitment.status_'.$status) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <x-input-label for="comment-{{ $recruitment->id }}" :value="__('talenma.recruitment.admin_comment')" />
+                                    <textarea
+                                        id="comment-{{ $recruitment->id }}"
+                                        name="admin_comment"
+                                        rows="3"
+                                        maxlength="2000"
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm"
+                                        placeholder="{{ __('talenma.recruitment.admin_comment_placeholder') }}"
+                                    >{{ old('admin_comment', $recruitment->admin_comment) }}</textarea>
+                                </div>
+
+                                <x-primary-button type="submit" x-bind:disabled="loading">
+                                    {{ __('talenma.recruitment.admin_save') }}
+                                </x-primary-button>
+                            </form>
+
+                            <div
+                                x-show="confirming"
+                                x-cloak
+                                class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+                                @keydown.escape.window="closeConfirm()"
+                            >
+                                <div
+                                    class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200"
+                                    @click.outside="closeConfirm()"
+                                    role="dialog"
+                                    aria-modal="true"
                                 >
-                                    @foreach ($statuses as $status)
-                                        <option
-                                            value="{{ $status }}"
-                                            @selected($recruitment->normalizeStatus() === $status)
-                                        >
-                                            {{ __('talenma.recruitment.status_'.$status) }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                    <h3 class="text-base font-semibold text-slate-900" x-text="confirmTitle"></h3>
+                                    <p class="mt-2 text-sm text-slate-600" x-text="confirmBody"></p>
+                                    <div class="mt-5 flex flex-wrap justify-end gap-2">
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                            @click="closeConfirm()"
+                                            :disabled="loading"
+                                            x-text="messages.confirmCancel"
+                                        ></button>
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center px-4 py-2 rounded-lg border border-transparent bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                                            @click="confirmSubmit()"
+                                            :disabled="loading"
+                                            x-text="messages.confirmBtn"
+                                        ></button>
+                                    </div>
+                                </div>
                             </div>
-
-                            <div>
-                                <x-input-label for="comment-{{ $recruitment->id }}" :value="__('talenma.recruitment.admin_comment')" />
-                                <textarea
-                                    id="comment-{{ $recruitment->id }}"
-                                    name="admin_comment"
-                                    rows="3"
-                                    maxlength="2000"
-                                    class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm"
-                                    placeholder="{{ __('talenma.recruitment.admin_comment_placeholder') }}"
-                                >{{ old('admin_comment', $recruitment->admin_comment) }}</textarea>
-                            </div>
-
-                            <x-primary-button>
-                                {{ __('talenma.recruitment.admin_save') }}
-                            </x-primary-button>
-                        </form>
+                        </div>
                     @endif
                 </section>
             </div>

@@ -77,98 +77,46 @@
                 {{ __('talenma.recruitment.admin_empty') }}
             </div>
         @else
-            <div class="space-y-4">
+            <ul class="space-y-2.5">
                 @foreach ($requests as $req)
-                    <article class="bg-white rounded-2xl border p-5 sm:p-6 space-y-4">
-                        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="text-base font-semibold text-gray-900 truncate">{{ $req->subject }}</h3>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $modeTone[$req->mode] ?? 'bg-gray-50 text-gray-700 border-gray-200' }}">
-                                        {{ $req->modeLabel() }}
-                                    </span>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ $statusTone[$req->status] ?? 'bg-gray-50 text-gray-700 border-gray-200' }}">
-                                        {{ $req->statusLabel() }}
-                                    </span>
-                                </div>
-                                <p class="mt-1 text-sm text-gray-500">
-                                    {{ $req->company?->name ?? '—' }}
-                                    · {{ $req->created_at?->translatedFormat('d M Y, H:i') }}
-                                    @if ($req->isNamed() && $req->talent)
-                                        · {{ __('talenma.recruitment.inbox_talent', ['name' => $req->talent->name]) }}
-                                    @endif
-                                </p>
-                            </div>
-                            <a href="{{ route('admin.recruitment.show', $req) }}" class="inline-flex shrink-0 text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-                                {{ __('talenma.recruitment.admin_open_thread') }} →
-                            </a>
-                        </div>
-
-                        <div class="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-sm text-gray-700 whitespace-pre-line">{{ $req->message }}</div>
-
-                        @if (filled($req->admin_comment))
-                            <div class="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-950">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">{{ __('talenma.recruitment.admin_comment_label') }}</p>
-                                <p class="mt-1 whitespace-pre-line">{{ $req->admin_comment }}</p>
-                                @if ($req->statusUpdatedBy || $req->status_updated_at)
-                                    <p class="mt-2 text-xs text-indigo-700/80">
-                                        {{ $req->statusUpdatedBy?->name }}
-                                        @if ($req->status_updated_at)
-                                            — {{ $req->status_updated_at->translatedFormat('d M Y, H:i') }}
-                                        @endif
-                                    </p>
-                                @endif
-                            </div>
-                        @endif
-
-                        <form
-                            method="POST"
-                            action="{{ route('admin.recruitment.status', $req) }}"
-                            class="grid gap-3 sm:grid-cols-[14rem_1fr_auto] sm:items-end border-t border-gray-100 pt-4"
+                    @php
+                        $reqUnseen = $req->hasUnseenChangesForStaff();
+                    @endphp
+                    <li>
+                        <a
+                            href="{{ route('admin.recruitment.show', $req) }}"
+                            class="group flex items-start gap-3 rounded-xl bg-white px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200"
                         >
-                            @csrf
-                            @method('PATCH')
-                            <input type="hidden" name="filter" value="{{ $filter }}">
-                            <input type="hidden" name="mode" value="{{ $mode }}">
-
-                            <div>
-                                <x-input-label for="status-{{ $req->id }}" :value="__('talenma.recruitment.admin_status')" />
-                                <select
-                                    id="status-{{ $req->id }}"
-                                    name="status"
-                                    class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm"
-                                    required
-                                >
-                                    @foreach ($statuses as $status)
-                                        <option
-                                            value="{{ $status }}"
-                                            @selected($req->normalizeStatus() === $status)
-                                        >
-                                            {{ __('talenma.recruitment.status_'.$status) }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $req->displayTitle() }}</span>
+                                            <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $modeTone[$req->mode] ?? 'bg-gray-50 text-gray-700 border-gray-200' }}">
+                                                {{ $req->modeLabel() }}
+                                            </span>
+                                            <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $statusTone[$req->status] ?? 'bg-gray-50 text-gray-700 border-gray-200' }}">
+                                                {{ $req->statusLabel() }}
+                                            </span>
+                                        </div>
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            {{ $req->companyDisplayName() }}
+                                            · {{ $req->created_at?->translatedFormat('d M Y, H:i') }}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-
-                            <div>
-                                <x-input-label for="comment-{{ $req->id }}" :value="__('talenma.recruitment.admin_comment')" />
-                                <textarea
-                                    id="comment-{{ $req->id }}"
-                                    name="admin_comment"
-                                    rows="2"
-                                    maxlength="2000"
-                                    class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm"
-                                    placeholder="{{ __('talenma.recruitment.admin_comment_placeholder') }}"
-                                >{{ old('admin_comment', $req->admin_comment) }}</textarea>
-                            </div>
-
-                            <x-primary-button class="justify-center sm:mb-0.5">
-                                {{ __('talenma.recruitment.admin_save') }}
-                            </x-primary-button>
-                        </form>
-                    </article>
+                            @if ($reqUnseen)
+                                <span class="relative flex h-2.5 w-2.5 shrink-0 self-center" title="{{ __('talenma.recruitment.nav_new') }}">
+                                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                    <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                </span>
+                                <span class="sr-only">{{ __('talenma.recruitment.nav_new') }}</span>
+                            @endif
+                        </a>
+                    </li>
                 @endforeach
-            </div>
+            </ul>
 
             <div>
                 {{ $requests->links() }}

@@ -12,9 +12,17 @@
 
 <section
     id="sourcing-chat"
-    x-data="directHireChat(@js(old('body', '')))"
+    class="relative bg-white rounded-2xl border border-indigo-100 shadow-sm shadow-indigo-600/5 scroll-mt-24 flex flex-col min-w-0 overflow-hidden {{ $sidebar ? 'lg:sticky lg:top-24 lg:h-[calc(100dvh-7.5rem)]' : '' }}"
+    x-data="sourcingChat({
+        initialBody: @js(old('body', '')),
+        messages: {
+            bodyMin: @js(__('talenma.recruitment.chat_body_min')),
+            bodyMax: @js(__('talenma.recruitment.chat_body_max')),
+            error: @js(__('talenma.recruitment.chat_send_error')),
+            networkError: @js(__('talenma.common.network_error')),
+        },
+    })"
     x-init="scrollToEnd()"
-    class="bg-white rounded-2xl border border-indigo-100 shadow-sm shadow-indigo-600/5 scroll-mt-24 flex flex-col min-w-0 overflow-hidden {{ $sidebar ? 'lg:sticky lg:top-24 lg:h-[calc(100dvh-7.5rem)]' : '' }}"
 >
     <header class="shrink-0 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-slate-50 px-4 sm:px-5 py-3.5">
         <div class="flex items-center gap-3 min-w-0">
@@ -51,7 +59,7 @@
                 'viewer' => $viewer,
             ])
         @empty
-            <div class="flex h-full min-h-[10rem] flex-col items-center justify-center px-4 text-center">
+            <div data-chat-empty class="flex h-full min-h-[10rem] flex-col items-center justify-center px-4 text-center">
                 <span class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-indigo-500 ring-1 ring-indigo-100 shadow-sm" aria-hidden="true">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -69,7 +77,8 @@
                 method="POST"
                 action="{{ $storeRoute }}"
                 class="shrink-0 border-t border-indigo-100 bg-white p-3 sm:p-4 min-w-0"
-                x-on:submit="sending = true"
+                @submit="send($event)"
+                novalidate
             >
                 @csrf
                 <label for="sourcing-chat-body" class="sr-only">{{ __('talenma.recruitment.chat_placeholder') }}</label>

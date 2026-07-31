@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\DirectHireRequest;
+use App\Models\RecruitmentRequest;
 use App\Services\AdminDashboardService;
 use App\Services\CompanyDashboardActivityService;
 use App\Services\CompanyProfileCompletionService;
 use App\Services\DashboardActivityToastService;
 use App\Services\DirectHireService;
+use App\Services\RecruitmentRequestService;
 use App\Services\StaffRecruitmentActivityService;
 use App\Services\TalentDashboardStatsService;
 use App\Services\TalentProfileCompletionService;
@@ -22,6 +24,7 @@ class DashboardController extends Controller
         private TalentDashboardStatsService $talentStats,
         private CompanyDashboardActivityService $companyActivity,
         private StaffRecruitmentActivityService $staffRecruitmentActivity,
+        private RecruitmentRequestService $recruitmentRequests,
         private DashboardActivityToastService $activityToasts,
         private DirectHireService $directHires,
     ) {}
@@ -34,9 +37,18 @@ class DashboardController extends Controller
             $recentActivity = $this->staffRecruitmentActivity->recentActivity($user);
             $this->activityToasts->flashUnseen($user, $recentActivity, 'staff');
 
+            $sourcingRequests = RecruitmentRequest::query()
+                ->with(['company', 'talent'])
+                ->whereIn('status', RecruitmentRequest::openStatuses())
+                ->latest()
+                ->take(20)
+                ->get();
+
             return view('dashboard.admin', [
                 'dashboard' => $this->adminDashboard->build($user),
+                'sourcingRequests' => $sourcingRequests,
                 'recentActivity' => $recentActivity,
+                'sourcingUnseen' => $this->recruitmentRequests->staffHasUnseenChanges($user),
             ]);
         }
 
@@ -44,7 +56,12 @@ class DashboardController extends Controller
             $profile = $user->companyOrganization();
             $completion = $this->companyProfileCompletion->assess($profile);
             $recentRequests = $user->isCompanyOwner()
-                ? $user->recruitmentRequests()->with('talent.profile')->latest()->take(5)->get()
+                ? $user->recruitmentRequests()
+                    ->with('talent.profile')
+                    ->whereIn('status', RecruitmentRequest::openStatuses())
+                    ->latest()
+                    ->take(5)
+                    ->get()
                 : collect();
 
             $directHires = $this->directHires->queryForCompany($user)

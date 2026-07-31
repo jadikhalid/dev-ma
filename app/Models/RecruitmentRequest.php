@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'status_updated_at',
     'status_updated_by',
     'company_seen_at',
+    'staff_seen_at',
 ])]
 class RecruitmentRequest extends Model
 {
@@ -60,7 +61,20 @@ class RecruitmentRequest extends Model
     }
 
     /**
-     * Statuses that close the dossier (chat locked).
+     * Statuses that keep the dossier open (ongoing).
+     *
+     * @return list<string>
+     */
+    public static function openStatuses(): array
+    {
+        return [
+            self::STATUS_PENDING,
+            self::STATUS_IN_PROGRESS,
+        ];
+    }
+
+    /**
+     * Statuses that close the dossier lifecycle (chat stays available).
      *
      * @return list<string>
      */
@@ -105,6 +119,7 @@ class RecruitmentRequest extends Model
         return [
             'status_updated_at' => 'datetime',
             'company_seen_at' => 'datetime',
+            'staff_seen_at' => 'datetime',
         ];
     }
 
@@ -119,6 +134,19 @@ class RecruitmentRequest extends Model
         }
 
         return $this->company_seen_at->lt($this->updated_at);
+    }
+
+    public function hasUnseenChangesForStaff(): bool
+    {
+        if ($this->staff_seen_at === null) {
+            return true;
+        }
+
+        if ($this->updated_at === null) {
+            return false;
+        }
+
+        return $this->staff_seen_at->lt($this->updated_at);
     }
 
     public function company(): BelongsTo
@@ -168,6 +196,35 @@ class RecruitmentRequest extends Model
         return $this->isOpenMode();
     }
 
+    /**
+     * Statuses staff may select on the dossier form (forward-only).
+     *
+     * @return list<string>
+     */
+    public function editableStatuses(): array
+    {
+        return match ($this->normalizeStatus()) {
+            self::STATUS_PENDING => self::statuses(),
+            self::STATUS_IN_PROGRESS => [
+                self::STATUS_COMPLETED_SUCCESSFUL,
+                self::STATUS_COMPLETED_UNSUCCESSFUL,
+            ],
+            default => [],
+        };
+    }
+
+    public function canTransitionTo(string $status): bool
+    {
+        $status = $this->normalizeStatus($status);
+        $current = $this->normalizeStatus();
+
+        if ($status === $current) {
+            return true;
+        }
+
+        return in_array($status, $this->editableStatuses(), true);
+    }
+
     public function isClosed(): bool
     {
         return in_array($this->status, self::closedStatuses(), true);
@@ -191,7 +248,7 @@ class RecruitmentRequest extends Model
 
     public function allowsChat(): bool
     {
-        return ! $this->isClosed();
+        return true;
     }
 
     public function displayTitle(): string

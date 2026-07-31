@@ -3,11 +3,7 @@
 namespace App\Services;
 
 use App\Models\ModerationRequest;
-use App\Models\Profession;
-use App\Models\ProfessionSector;
 use App\Models\RecruitmentRequest;
-use App\Models\SocialFeedItem;
-use App\Models\SocialPost;
 use App\Models\User;
 
 class AdminDashboardService
@@ -22,78 +18,19 @@ class AdminDashboardService
             ->whereNotNull('email_verified_at')
             ->count();
 
-        $talentsApproved = User::query()
-            ->where('role', 'dev')
-            ->where('approval_status', User::APPROVAL_APPROVED)
-            ->count();
-
-        $talentsRejected = User::query()
-            ->where('role', 'dev')
-            ->where('approval_status', User::APPROVAL_REJECTED)
-            ->count();
-
         $companiesPending = User::query()
             ->where('role', 'company')
             ->where('approval_status', User::APPROVAL_PENDING)
             ->whereNotNull('email_verified_at')
             ->count();
 
-        $companiesCount = User::query()->where('role', 'company')->count();
-        $moderatorsCount = User::query()->where('role', 'moderator')->count();
-
-        $registrationsLast7Days = User::query()
-            ->whereIn('role', ['dev', 'company'])
-            ->where('created_at', '>=', now()->subDays(7))
+        $sourcingOpen = RecruitmentRequest::query()
+            ->whereIn('status', RecruitmentRequest::openStatuses())
             ->count();
-
-        $registrationsLast30Days = User::query()
-            ->whereIn('role', ['dev', 'company'])
-            ->where('created_at', '>=', now()->subDays(30))
-            ->count();
-
-        $recruitmentPending = RecruitmentRequest::query()->where('status', 'pending')->count();
-        $recruitmentTotal = RecruitmentRequest::query()->count();
 
         $moderationPending = $isAdmin
             ? ModerationRequest::query()->where('status', ModerationRequest::STATUS_PENDING)->count()
             : 0;
-
-        $recentPendingTalents = User::query()
-            ->whereIn('role', ['dev', 'company'])
-            ->where('approval_status', User::APPROVAL_PENDING)
-            ->whereNotNull('email_verified_at')
-            ->with(['profile.professionSector', 'companyProfile'])
-            ->latest()
-            ->take(6)
-            ->get()
-            ->map(fn (User $user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'role_label' => $user->isCompany()
-                    ? __('talenma.dashboard.admin.role_company')
-                    : __('talenma.dashboard.admin.role_talent'),
-                'sector' => $user->isCompany()
-                    ? ($user->companyProfile?->sector ?? __('talenma.dashboard.admin.role_company'))
-                    : ($user->profile?->sectorLabel() ?? '—'),
-                'registered_at' => $user->created_at?->translatedFormat('d M Y, H:i'),
-                'email_verified' => $user->hasVerifiedEmail(),
-            ]);
-
-        $recentRegistrations = User::query()
-            ->whereIn('role', ['dev', 'company'])
-            ->latest()
-            ->take(6)
-            ->get()
-            ->map(fn (User $user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'approval_status' => $user->approval_status,
-                'registered_at' => $user->created_at?->translatedFormat('d M Y, H:i'),
-            ]);
 
         $pendingModerationRequests = $isAdmin
             ? ModerationRequest::query()
@@ -121,82 +58,15 @@ class AdminDashboardService
                 'member_since' => $actor->created_at?->translatedFormat('d M Y'),
                 'email_verified' => $actor->hasVerifiedEmail(),
             ],
-            'alerts' => $this->alerts($talentsPending, $companiesPending, $moderationPending, $isAdmin, $recruitmentPending),
             'kpis' => $this->kpis(
                 $talentsPending,
-                $talentsApproved,
                 $companiesPending,
-                $companiesCount,
-                $recruitmentPending,
+                $sourcingOpen,
                 $moderationPending,
-                $registrationsLast7Days,
                 $isAdmin,
             ),
-            'user_breakdown' => [
-                'talents_pending' => $talentsPending,
-                'talents_approved' => $talentsApproved,
-                'talents_rejected' => $talentsRejected,
-                'companies_pending' => $companiesPending,
-                'companies' => $companiesCount,
-                'moderators' => $moderatorsCount,
-                'registrations_7d' => $registrationsLast7Days,
-                'registrations_30d' => $registrationsLast30Days,
-            ],
-            'platform' => [
-                'recruitment_pending' => $recruitmentPending,
-                'recruitment_total' => $recruitmentTotal,
-                'news_items' => SocialFeedItem::query()->count(),
-                'social_posts' => SocialPost::query()->count(),
-                'sectors' => ProfessionSector::query()->where('is_active', true)->count(),
-                'professions' => Profession::query()->where('is_active', true)->count(),
-            ],
-            'recent_pending_talents' => $recentPendingTalents,
-            'recent_registrations' => $recentRegistrations,
             'pending_moderation_requests' => $pendingModerationRequests,
-            'quick_actions' => $this->quickActions($isAdmin, $talentsPending + $companiesPending, $moderationPending),
         ];
-    }
-
-    /**
-     * @return list<array{message: string, tone: string, href: string|null}>
-     */
-    private function alerts(int $talentsPending, int $companiesPending, int $moderationPending, bool $isAdmin, int $recruitmentPending = 0): array
-    {
-        $alerts = [];
-
-        if ($talentsPending > 0) {
-            $alerts[] = [
-                'message' => trans_choice('talenma.dashboard.admin.alert_pending_talents', $talentsPending, ['count' => $talentsPending]),
-                'tone' => 'amber',
-                'href' => route('admin.users.index', ['filter' => 'pending']),
-            ];
-        }
-
-        if ($companiesPending > 0) {
-            $alerts[] = [
-                'message' => trans_choice('talenma.dashboard.admin.alert_pending_companies', $companiesPending, ['count' => $companiesPending]),
-                'tone' => 'emerald',
-                'href' => route('admin.users.index', ['filter' => 'pending']),
-            ];
-        }
-
-        if ($recruitmentPending > 0) {
-            $alerts[] = [
-                'message' => trans_choice('talenma.dashboard.admin.alert_pending_recruitment', $recruitmentPending, ['count' => $recruitmentPending]),
-                'tone' => 'amber',
-                'href' => route('admin.recruitment.index', ['filter' => 'pending']),
-            ];
-        }
-
-        if ($isAdmin && $moderationPending > 0) {
-            $alerts[] = [
-                'message' => trans_choice('talenma.dashboard.admin.alert_moderation_requests', $moderationPending, ['count' => $moderationPending]),
-                'tone' => 'violet',
-                'href' => route('admin.users.index', ['filter' => 'pending']),
-            ];
-        }
-
-        return $alerts;
     }
 
     /**
@@ -204,12 +74,9 @@ class AdminDashboardService
      */
     private function kpis(
         int $talentsPending,
-        int $talentsApproved,
         int $companiesPending,
-        int $companiesCount,
-        int $recruitmentPending,
+        int $sourcingOpen,
         int $moderationPending,
-        int $registrationsLast7Days,
         bool $isAdmin,
     ): array {
         $kpis = [
@@ -228,32 +95,11 @@ class AdminDashboardService
                 'tone' => $companiesPending > 0 ? 'amber' : 'slate',
             ],
             [
-                'key' => 'approved_talents',
-                'label' => __('talenma.dashboard.admin.kpi_approved_talents'),
-                'value' => $talentsApproved,
-                'href' => route('admin.users.index', ['filter' => 'talents']),
-                'tone' => 'indigo',
-            ],
-            [
-                'key' => 'companies',
-                'label' => __('talenma.dashboard.admin.kpi_companies'),
-                'value' => $companiesCount,
-                'href' => route('admin.users.index', ['filter' => 'companies']),
-                'tone' => 'emerald',
-            ],
-            [
-                'key' => 'recruitment_pending',
-                'label' => __('talenma.dashboard.admin.kpi_recruitment_pending'),
-                'value' => $recruitmentPending,
-                'href' => route('admin.recruitment.index', ['filter' => 'pending']),
-                'tone' => $recruitmentPending > 0 ? 'sky' : 'slate',
-            ],
-            [
-                'key' => 'registrations_7d',
-                'label' => __('talenma.dashboard.admin.kpi_registrations_7d'),
-                'value' => $registrationsLast7Days,
-                'href' => route('admin.users.index', ['filter' => 'all']),
-                'tone' => 'slate',
+                'key' => 'sourcing_open',
+                'label' => __('talenma.dashboard.admin.kpi_sourcing_open'),
+                'value' => $sourcingOpen,
+                'href' => route('admin.recruitment.index'),
+                'tone' => $sourcingOpen > 0 ? 'sky' : 'slate',
             ],
         ];
 
@@ -268,47 +114,5 @@ class AdminDashboardService
         }
 
         return $kpis;
-    }
-
-    /**
-     * @return list<array{label: string, href: string, tone: string}>
-     */
-    private function quickActions(bool $isAdmin, int $talentsPending, int $moderationPending): array
-    {
-        $actions = [
-            [
-                'label' => __('talenma.dashboard.admin.action_review_pending'),
-                'href' => route('admin.users.index', ['filter' => 'pending']),
-                'tone' => 'indigo',
-                'badge' => $talentsPending > 0 ? (string) $talentsPending : null,
-            ],
-            [
-                'label' => __('talenma.dashboard.admin.action_all_users'),
-                'href' => route('admin.users.index', ['filter' => 'all']),
-                'tone' => 'slate',
-                'badge' => null,
-            ],
-            [
-                'label' => __('talenma.dashboard.admin.action_home'),
-                'href' => route('home'),
-                'tone' => 'slate',
-                'badge' => null,
-            ],
-        ];
-
-        if ($isAdmin) {
-            array_splice($actions, 1, 0, [[
-                'label' => __('talenma.dashboard.admin.action_publications'),
-                'href' => route('admin.publications.index'),
-                'tone' => 'violet',
-                'badge' => null,
-            ]]);
-
-            if ($moderationPending > 0) {
-                $actions[0]['badge'] = (string) ($talentsPending + $moderationPending);
-            }
-        }
-
-        return $actions;
     }
 }

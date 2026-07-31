@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Conversation;
+use App\Models\Message;
 use App\Models\RecruitmentRequest;
 use App\Models\RecruitmentRequestMessage;
 use App\Models\RecruitmentRequestStatusEvent;
@@ -25,6 +27,7 @@ class StaffRecruitmentActivityService
 
         return $this->statusEvents($staff, $fetch)
             ->concat($this->messageEvents($staff, $fetch))
+            ->concat($this->inboxMessageEvents($staff, $fetch))
             ->sortByDesc(fn (array $item) => $item['at']?->timestamp ?? 0)
             ->take($limit)
             ->values()
@@ -120,6 +123,43 @@ class StaffRecruitmentActivityService
                     subject: $this->subjectLabel($request),
                     detail: $request->mode,
                     href: route('admin.recruitment.show', $request).'#sourcing-chat',
+                    self: $isSelf,
+                );
+            })
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self: bool}>
+     */
+    private function inboxMessageEvents(User $staff, int $limit): Collection
+    {
+        return Message::query()
+            ->whereHas('conversation', fn ($query) => $query->where('channel', Conversation::CHANNEL_STAFF))
+            ->with(['conversation.company.companyProfile', 'sender'])
+            ->latest()
+            ->limit($limit)
+            ->get()
+            ->map(function (Message $message) use ($staff) {
+                $conversation = $message->conversation;
+
+                if (! $conversation || ! $message->sender_user_id) {
+                    return null;
+                }
+
+                $fromStaff = $message->sender?->isStaff() ?? false;
+                $isSelf = (int) $message->sender_user_id === (int) $staff->id;
+                $company = $conversation->company;
+                $companyName = $company?->companyDisplayName()
+                    ?: ($company?->name ?: '—');
+
+                return $this->item(
+                    type: $fromStaff ? 'inbox_message_sent' : 'inbox_message',
+                    actor: $companyName,
+                    at: $message->created_at,
+                    subject: $conversation->subject,
+                    href: route('inbox.show', $conversation),
                     self: $isSelf,
                 );
             })

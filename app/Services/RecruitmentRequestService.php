@@ -10,6 +10,7 @@ use App\Models\RecruitmentRequestMessage;
 use App\Models\RecruitmentRequestStatusEvent;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
@@ -106,6 +107,10 @@ class RecruitmentRequestService
 
         $this->flagUnseenForCompany($request);
 
+        if ($actor?->isStaff()) {
+            $this->markSeenForStaff($actor, $request);
+        }
+
         $company = $request->company;
 
         if (! $company || ! filled($company->email)) {
@@ -118,8 +123,13 @@ class RecruitmentRequestService
                 $request->status,
                 commentOnly: ! $statusChanged && $commentChanged,
             ));
-        } catch (\Throwable) {
-            // Never block the process on mail failures.
+        } catch (\Throwable $e) {
+            Log::warning('Recruitment status notification mail failed.', [
+                'recruitment_request_id' => $request->id,
+                'company_user_id' => $company->id,
+                'company_email' => $company->email,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -143,8 +153,10 @@ class RecruitmentRequestService
 
         if ($sender->isCompany()) {
             $this->markSeenForCompany($sender, $request);
+            $this->flagUnseenForStaff($request);
         } elseif ($sender->isStaff()) {
             $this->flagUnseenForCompany($request);
+            $this->markSeenForStaff($sender, $request);
         }
 
         $this->notifyChatRecipient($request->fresh(['company', 'talent']), $message, $sender);
@@ -167,6 +179,20 @@ class RecruitmentRequestService
             ->exists();
     }
 
+    public function staffHasUnseenChanges(User $staff): bool
+    {
+        if (! $staff->isStaff()) {
+            return false;
+        }
+
+        return RecruitmentRequest::query()
+            ->where(function ($inner) {
+                $inner->whereNull('staff_seen_at')
+                    ->orWhereColumn('staff_seen_at', '<', 'updated_at');
+            })
+            ->exists();
+    }
+
     public function markSeenForCompany(User $company, RecruitmentRequest $request): void
     {
         abort_unless($request->canAccess($company) && $company->isCompany(), 403);
@@ -180,6 +206,19 @@ class RecruitmentRequestService
         $request->company_seen_at = now();
     }
 
+    public function markSeenForStaff(User $staff, RecruitmentRequest $request): void
+    {
+        abort_unless($staff->isStaff(), 403);
+
+        RecruitmentRequest::withoutTimestamps(function () use ($request) {
+            RecruitmentRequest::query()
+                ->whereKey($request->id)
+                ->update(['staff_seen_at' => now()]);
+        });
+
+        $request->staff_seen_at = now();
+    }
+
     public function flagUnseenForCompany(RecruitmentRequest $request): void
     {
         RecruitmentRequest::withoutTimestamps(function () use ($request) {
@@ -189,6 +228,18 @@ class RecruitmentRequestService
         });
 
         $request->company_seen_at = null;
+        $request->touch();
+    }
+
+    public function flagUnseenForStaff(RecruitmentRequest $request): void
+    {
+        RecruitmentRequest::withoutTimestamps(function () use ($request) {
+            RecruitmentRequest::query()
+                ->whereKey($request->id)
+                ->update(['staff_seen_at' => null]);
+        });
+
+        $request->staff_seen_at = null;
         $request->touch();
     }
 

@@ -3322,6 +3322,344 @@ Alpine.data('sourcingIndex', () => ({
     },
 }));
 
+Alpine.data('sourcingStatusForm', (config = {}) => ({
+    currentStatus: config.currentStatus ?? 'pending',
+    messages: config.messages ?? {},
+    loading: false,
+    confirming: false,
+    pendingForm: null,
+    pendingStatus: null,
+
+    get confirmTitle() {
+        return this.confirmCopy('title');
+    },
+
+    get confirmBody() {
+        return this.confirmCopy('body');
+    },
+
+    confirmCopy(part) {
+        const status = this.pendingStatus;
+        const key = status === 'in_progress'
+            ? 'inProgress'
+            : (status === 'completed_successful'
+                ? 'closedSuccessful'
+                : (status === 'completed_unsuccessful' ? 'closedUnsuccessful' : null));
+
+        if (! key) {
+            return '';
+        }
+
+        const suffix = part === 'title' ? 'Title' : 'Body';
+
+        return this.messages[`${key}${suffix}`] || '';
+    },
+
+    needsConfirm(fromStatus, toStatus) {
+        if (fromStatus === toStatus) {
+            return false;
+        }
+
+        return toStatus === 'in_progress'
+            || toStatus === 'completed_successful'
+            || toStatus === 'completed_unsuccessful';
+    },
+
+    requestSubmit(event) {
+        if (this.loading) {
+            return;
+        }
+
+        const form = event.target;
+
+        if (! (form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const statusField = form.querySelector('[name="status"]');
+        const status = String(statusField?.value ?? '').trim();
+
+        if (status === '') {
+            pushToast('error', this.messages.statusRequired || 'Error');
+
+            return;
+        }
+
+        if (this.needsConfirm(this.currentStatus, status)) {
+            this.pendingForm = form;
+            this.pendingStatus = status;
+            this.confirming = true;
+            document.documentElement.classList.add('overflow-hidden');
+
+            return;
+        }
+
+        this.submitForm(form);
+    },
+
+    closeConfirm() {
+        if (this.loading) {
+            return;
+        }
+
+        this.confirming = false;
+        this.pendingForm = null;
+        this.pendingStatus = null;
+        document.documentElement.classList.remove('overflow-hidden');
+    },
+
+    confirmSubmit() {
+        if (this.loading || ! this.pendingForm) {
+            return;
+        }
+
+        const form = this.pendingForm;
+        this.confirming = false;
+        this.pendingStatus = null;
+        document.documentElement.classList.remove('overflow-hidden');
+        this.submitForm(form);
+    },
+
+    async submitForm(form) {
+        if (this.loading) {
+            return;
+        }
+
+        this.loading = true;
+        this.pendingForm = null;
+        setPartialLoading('sourcing-status-form-card', true);
+
+        const scrollY = window.scrollY;
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: new FormData(form),
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (! response.ok) {
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [];
+
+                if (messages.length === 0 && payload?.message) {
+                    messages.push(payload.message);
+                }
+
+                pushToast('error', messages[0] || this.messages.error || 'Error');
+
+                return;
+            }
+
+            if (! payload?.unchanged) {
+                this.applySuccess(payload, form);
+            }
+
+            pushToast('success', payload?.message || '');
+            window.scrollTo({ top: scrollY, behavior: 'auto' });
+        } catch {
+            pushToast('error', this.messages.networkError || this.messages.error || 'Error');
+        } finally {
+            this.loading = false;
+            setPartialLoading('sourcing-status-form-card', false);
+            window.scrollTo({ top: scrollY, behavior: 'auto' });
+        }
+    },
+
+    applySuccess(payload, form) {
+        if (! payload) {
+            return;
+        }
+
+        if (payload.status) {
+            this.currentStatus = payload.status;
+        }
+
+        const badge = document.getElementById('sourcing-status-badge');
+
+        if (badge && payload.status_label) {
+            badge.textContent = payload.status_label;
+            badge.className = `inline-flex items-center rounded-md border px-2 py-1 text-xs font-bold uppercase tracking-wider ${payload.status_tone || 'bg-slate-100 text-slate-700 border-slate-200'}`;
+        }
+
+        const history = document.getElementById('sourcing-status-history');
+
+        if (history && payload.history_item_html) {
+            history.querySelector('[data-history-empty]')?.remove();
+            history.insertAdjacentHTML('beforeend', payload.history_item_html);
+        }
+
+        const statusSelect = form.querySelector('[name="status"]');
+
+        if (statusSelect && Array.isArray(payload.statuses)) {
+            const keepLabel = this.messages.keepInProgress || '';
+            statusSelect.innerHTML = '';
+
+            if (payload.status === 'in_progress') {
+                const keep = document.createElement('option');
+                keep.value = 'in_progress';
+                keep.textContent = keepLabel;
+                keep.selected = true;
+                statusSelect.appendChild(keep);
+            }
+
+            payload.statuses.forEach((item) => {
+                if (payload.status === 'in_progress' && item.value === 'in_progress') {
+                    return;
+                }
+
+                const option = document.createElement('option');
+                option.value = item.value;
+                option.textContent = item.label;
+                option.selected = Boolean(item.selected) && payload.status !== 'in_progress';
+                statusSelect.appendChild(option);
+            });
+        }
+
+        if (payload.form_available === false) {
+            form.closest('#sourcing-status-form-card')?.remove();
+        }
+    },
+}));
+
+Alpine.data('sourcingChat', (config = {}) => ({
+    body: config.initialBody ?? '',
+    sending: false,
+    maxLength: 2000,
+    messages: config.messages ?? {},
+
+    get canSend() {
+        const length = this.body.trim().length;
+
+        return length >= 2 && length <= this.maxLength;
+    },
+
+    get characterCount() {
+        return this.body.length;
+    },
+
+    get nearLimit() {
+        return this.characterCount >= this.maxLength - 100;
+    },
+
+    scrollToEnd() {
+        this.$nextTick(() => {
+            const el = this.$refs.messages;
+
+            if (el) {
+                el.scrollTop = el.scrollHeight;
+            }
+        });
+    },
+
+    resizeComposer() {
+        const el = this.$refs.composer;
+
+        if (! el) {
+            return;
+        }
+
+        el.style.height = 'auto';
+        el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+    },
+
+    onKeydown(event) {
+        if (event.key === 'Enter' && ! event.shiftKey) {
+            event.preventDefault();
+
+            if (this.canSend && ! this.sending) {
+                event.target.form?.requestSubmit();
+            }
+        }
+    },
+
+    async send(event) {
+        event.preventDefault();
+
+        if (this.sending || ! this.canSend) {
+            return;
+        }
+
+        const form = event.target;
+
+        if (! (form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const trimmed = this.body.trim();
+
+        if (trimmed.length < 2) {
+            pushToast('error', this.messages.bodyMin || this.messages.error || 'Error');
+
+            return;
+        }
+
+        if (trimmed.length > this.maxLength) {
+            pushToast('error', this.messages.bodyMax || this.messages.error || 'Error');
+
+            return;
+        }
+
+        this.sending = true;
+        setPartialLoading('sourcing-chat', true);
+
+        try {
+            const formData = new FormData(form);
+            formData.set('body', trimmed);
+
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (! response.ok) {
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [];
+
+                if (messages.length === 0 && payload?.message) {
+                    messages.push(payload.message);
+                }
+
+                pushToast('error', messages[0] || this.messages.error || 'Error');
+
+                return;
+            }
+
+            const list = this.$refs.messages;
+
+            if (list && payload?.message_html) {
+                list.querySelector('[data-chat-empty]')?.remove();
+                list.insertAdjacentHTML('beforeend', payload.message_html);
+                this.scrollToEnd();
+            }
+
+            this.body = '';
+            this.resizeComposer();
+            pushToast('success', payload?.message || '');
+        } catch {
+            pushToast('error', this.messages.networkError || this.messages.error || 'Error');
+        } finally {
+            this.sending = false;
+            setPartialLoading('sourcing-chat', false);
+        }
+    },
+}));
+
 Alpine.data('inboxWorkspace', (config) => ({
     conversations: config.conversations ?? [],
     conversation: config.conversation ?? null,

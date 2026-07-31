@@ -55,7 +55,7 @@ class RecruitmentRequestController extends Controller
         ]);
     }
 
-    public function storeMessage(Request $request, RecruitmentRequest $recruitmentRequest): RedirectResponse
+    public function storeMessage(Request $request, RecruitmentRequest $recruitmentRequest): JsonResponse|RedirectResponse
     {
         abort_unless($recruitmentRequest->canAccess($request->user()), 403);
 
@@ -67,11 +67,24 @@ class RecruitmentRequestController extends Controller
             'body.max' => __('talenma.recruitment.chat_body_max'),
         ]);
 
-        $this->recruitmentRequests->postMessage(
+        $message = $this->recruitmentRequests->postMessage(
             $recruitmentRequest,
             $request->user(),
             $data['body'],
         );
+
+        $message->loadMissing('sender');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => __('talenma.recruitment.chat_sent'),
+                'message_html' => view('sourcing._chat-message', [
+                    'msg' => $message,
+                    'recruitment' => $recruitmentRequest,
+                    'viewer' => $request->user(),
+                ])->render(),
+            ]);
+        }
 
         return redirect()
             ->to(route('sourcing.show', $recruitmentRequest).'#sourcing-chat')

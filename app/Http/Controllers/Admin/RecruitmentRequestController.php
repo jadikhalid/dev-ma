@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\RecruitmentRequest;
 use App\Services\RecruitmentRequestService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RecruitmentRequestController extends Controller
@@ -109,14 +111,16 @@ class RecruitmentRequestController extends Controller
     {
         $recruitmentRequest->load(['talent.profile', 'company', 'messages.sender', 'statusUpdatedBy', 'statusEvents.actor']);
 
+        $this->recruitmentRequests->markSeenForStaff($request->user(), $recruitmentRequest);
+
         return view('sourcing.show', [
             'recruitment' => $recruitmentRequest,
             'isStaff' => true,
-            'statuses' => RecruitmentRequest::statuses(),
+            'statuses' => $recruitmentRequest->editableStatuses(),
         ]);
     }
 
-    public function storeMessage(Request $request, RecruitmentRequest $recruitmentRequest): RedirectResponse
+    public function storeMessage(Request $request, RecruitmentRequest $recruitmentRequest): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'body' => ['required', 'string', 'min:2', 'max:2000'],
@@ -126,18 +130,31 @@ class RecruitmentRequestController extends Controller
             'body.max' => __('talenma.recruitment.chat_body_max'),
         ]);
 
-        $this->recruitmentRequests->postMessage(
+        $message = $this->recruitmentRequests->postMessage(
             $recruitmentRequest,
             $request->user(),
             $data['body'],
         );
+
+        $message->loadMissing('sender');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => __('talenma.recruitment.chat_sent'),
+                'message_html' => view('sourcing._chat-message', [
+                    'msg' => $message,
+                    'recruitment' => $recruitmentRequest,
+                    'viewer' => $request->user(),
+                ])->render(),
+            ]);
+        }
 
         return redirect()
             ->to(route('admin.recruitment.show', $recruitmentRequest).'#sourcing-chat')
             ->with('toast_success', __('talenma.recruitment.chat_sent'));
     }
 
-    public function updateStatus(Request $request, RecruitmentRequest $recruitmentRequest): RedirectResponse
+    public function updateStatus(Request $request, RecruitmentRequest $recruitmentRequest): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'status' => ['required', 'in:'.implode(',', RecruitmentRequest::statuses())],
@@ -148,9 +165,29 @@ class RecruitmentRequestController extends Controller
             'admin_comment.max' => __('talenma.recruitment.admin_comment_max'),
         ]);
 
-        $statusChanged = $recruitmentRequest->status !== $data['status'];
+        if (! $recruitmentRequest->canTransitionTo($data['status'])) {
+            throw ValidationException::withMessages([
+                'status' => __('talenma.recruitment.admin_status_irreversible'),
+            ]);
+        }
+
+        $previousStatus = $recruitmentRequest->normalizeStatus();
+        $statusChanged = $previousStatus !== $recruitmentRequest->normalizeStatus($data['status']);
         $newComment = filled($data['admin_comment'] ?? null) ? trim($data['admin_comment']) : null;
         $commentChanged = $newComment !== $recruitmentRequest->admin_comment;
+
+        if (! $statusChanged && ! $commentChanged) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => __('talenma.recruitment.admin_status_updated'),
+                    'unchanged' => true,
+                ]);
+            }
+
+            return redirect()
+                ->route('admin.recruitment.show', $recruitmentRequest)
+                ->with('toast_success', __('talenma.recruitment.admin_status_updated'));
+        }
 
         $payload = [
             'status' => $data['status'],
@@ -171,6 +208,33 @@ class RecruitmentRequestController extends Controller
             $request->user(),
         );
 
+        $recruitmentRequest->refresh()->load(['statusEvents.actor', 'statusUpdatedBy', 'talent', 'company']);
+
+        if ($request->expectsJson()) {
+            $latestEvent = $recruitmentRequest->statusEvents->sortByDesc('id')->first();
+
+            return response()->json([
+                'message' => __('talenma.recruitment.admin_status_updated'),
+                'status' => $recruitmentRequest->normalizeStatus(),
+                'status_label' => $recruitmentRequest->statusLabel(),
+                'status_tone' => $this->statusToneClass($recruitmentRequest->status),
+                'statuses' => collect($recruitmentRequest->editableStatuses())->map(fn (string $status) => [
+                    'value' => $status,
+                    'label' => __('talenma.recruitment.status_'.$status),
+                    'selected' => $recruitmentRequest->normalizeStatus() === $status,
+                ])->values()->all(),
+                'form_available' => $recruitmentRequest->editableStatuses() !== [],
+                'history_item_html' => $latestEvent
+                    ? view('sourcing._status-event', [
+                        'event' => $latestEvent,
+                        'recruitment' => $recruitmentRequest,
+                        'isStaff' => true,
+                    ])->render()
+                    : null,
+                'allows_chat' => $recruitmentRequest->allowsChat(),
+            ]);
+        }
+
         $redirectTo = $request->string('redirect_to')->toString();
 
         if ($redirectTo === 'show') {
@@ -185,5 +249,16 @@ class RecruitmentRequestController extends Controller
                 'mode' => $request->string('mode')->toString() ?: 'all',
             ])
             ->with('toast_success', __('talenma.recruitment.admin_status_updated'));
+    }
+
+    private function statusToneClass(string $status): string
+    {
+        return match ($status) {
+            'pending' => 'bg-sky-50 text-sky-800 border-sky-200',
+            'in_progress' => 'bg-amber-50 text-amber-800 border-amber-200',
+            'completed_successful', 'completed' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+            'completed_unsuccessful', 'cancelled' => 'bg-rose-50 text-rose-800 border-rose-200',
+            default => 'bg-slate-100 text-slate-700 border-slate-200',
+        };
     }
 }

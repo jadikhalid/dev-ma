@@ -9,7 +9,6 @@ use App\Models\DirectHireRound;
 use App\Models\Message;
 use App\Models\ProfileDocumentDownload;
 use App\Models\ProfileView;
-use App\Models\RecruitmentRequest;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -26,7 +25,6 @@ class TalentDashboardStatsService
      *     profile_views_total: int,
      *     cv_downloads_7d: int,
      *     unread_messages: int,
-     *     recruitment_requests_total: int,
      *     recent_activity: list<array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
      * }
      */
@@ -48,16 +46,11 @@ class TalentDashboardStatsService
             ->where('created_at', '>=', $since)
             ->count();
 
-        $recruitmentTotal = RecruitmentRequest::query()
-            ->where('developer_user_id', $talent->id)
-            ->count();
-
         return [
             'profile_views_7d' => $views7d,
             'profile_views_total' => $viewsTotal,
             'cv_downloads_7d' => $downloads7d,
             'unread_messages' => $this->messaging->unreadCountFor($talent),
-            'recruitment_requests_total' => $recruitmentTotal,
             'recent_activity' => $this->recentActivity($talent),
         ];
     }

@@ -123,14 +123,10 @@
                                                         {{ $req->statusLabel() }}
                                                     </span>
                                                 </div>
-                                                @if (filled($req->admin_comment))
-                                                    <p class="mt-1.5 text-sm text-slate-600 whitespace-pre-line">
-                                                        <span class="font-medium text-slate-900">{{ __('talenma.recruitment.company_comment_label') }} :</span>
-                                                        {{ $req->admin_comment }}
-                                                    </p>
-                                                @endif
+                                                <p class="mt-1 text-xs text-slate-500">
+                                                    {{ $req->updated_at?->translatedFormat('d M Y') }}
+                                                </p>
                                             </div>
-                                            <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5">{{ $req->created_at?->translatedFormat('d M Y') }}</time>
                                         </div>
                                     </a>
                                 </li>
@@ -258,13 +254,13 @@
                                         'direct_hire_withdrawn' => __('talenma.dashboard.company.activity.activity_direct_hire_withdrawn', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'job_application' => __('talenma.dashboard.company.activity.activity_job_application', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'recruitment_submitted' => __('talenma.dashboard.company.activity.activity_recruitment_submitted_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
-                                        'recruitment_message' => __('talenma.dashboard.company.activity.activity_recruitment_message'),
-                                        'recruitment_message_sent' => __('talenma.dashboard.company.activity.activity_recruitment_message_sent'),
+                                        'recruitment_message' => __('talenma.dashboard.company.activity.activity_recruitment_message_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
+                                        'recruitment_message_sent' => __('talenma.dashboard.company.activity.activity_recruitment_message_sent_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                         'inbox_message' => __('talenma.dashboard.company.activity.activity_inbox_message', ['actor' => $item['actor']]),
                                         'inbox_message_sent' => __('talenma.dashboard.company.activity.activity_inbox_message_sent', ['actor' => $item['actor']]),
-                                        'recruitment_comment' => __('talenma.dashboard.company.activity.activity_recruitment_comment_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open')),
+                                        'recruitment_comment' => __('talenma.dashboard.company.activity.activity_recruitment_comment_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                         'recruitment_status' => match ($item['result'] ?? '') {
-                                            'in_progress' => __('talenma.dashboard.company.activity.activity_recruitment_taken_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open')),
+                                            'in_progress' => __('talenma.dashboard.company.activity.activity_recruitment_taken_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                             'completed_successful', 'completed' => __('talenma.dashboard.company.activity.activity_recruitment_closed_successful_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                             'completed_unsuccessful', 'cancelled' => __('talenma.dashboard.company.activity.activity_recruitment_closed_unsuccessful_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                             'pending' => __('talenma.dashboard.company.activity.activity_recruitment_reopened_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),

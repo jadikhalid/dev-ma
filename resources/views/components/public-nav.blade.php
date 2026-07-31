@@ -16,15 +16,17 @@
                     <x-locale-switcher />
                 </div>
                 @auth
-                    @if (Auth::user()->isStaff() || Auth::user()->isTalent() || (Auth::user()->isCompany() && Auth::user()->isPendingApproval()))
+                    @php $authUser = Auth::user(); @endphp
+                    @if ($authUser->isTalent())
                         <x-dropdown align="right" width="48" :open-on-hover="true">
                             <x-slot name="trigger">
                                 <button
                                     type="button"
-                                    class="rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                    aria-label="{{ Auth::user()->name }}"
+                                    class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                                    aria-label="{{ $authUser->name }}"
                                 >
-                                    <x-user-avatar :user="Auth::user()" size="sm" />
+                                    <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-gray-200" />
+                                    <span class="hidden xl:inline">{{ $authUser->name }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="content">
@@ -34,20 +36,38 @@
                                 </form>
                             </x-slot>
                         </x-dropdown>
-                    @elseif (Auth::user()->isCompany())
+                    @elseif ($authUser->isStaff() || ($authUser->isCompany() && $authUser->isPendingApproval()))
+                        <x-dropdown align="right" width="48" :open-on-hover="true">
+                            <x-slot name="trigger">
+                                <button
+                                    type="button"
+                                    class="rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                    aria-label="{{ $authUser->name }}"
+                                >
+                                    <x-user-avatar :user="$authUser" size="sm" />
+                                </button>
+                            </x-slot>
+                            <x-slot name="content">
+                                <x-dropdown-link :href="route('dashboard')">{{ __('talenma.nav.dashboard') }}</x-dropdown-link>
+                                <form method="POST" action="{{ route('logout') }}">@csrf
+                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
+                                </form>
+                            </x-slot>
+                        </x-dropdown>
+                    @elseif ($authUser->isCompany())
                         <x-dropdown align="right" width="48" :open-on-hover="true">
                             <x-slot name="trigger">
                                 <button
                                     type="button"
                                     class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
-                                    aria-label="{{ Auth::user()->companyDisplayName() }}"
+                                    aria-label="{{ $authUser->companyDisplayName() }}"
                                 >
                                     <x-company-logo
-                                        :profile="Auth::user()->companyOrganization() ?? Auth::user()->companyProfile"
+                                        :profile="$authUser->companyOrganization() ?? $authUser->companyProfile"
                                         size="xs"
                                         class="ring-1 ring-gray-200"
                                     />
-                                    <span class="hidden xl:inline">{{ Auth::user()->companyDisplayName() }}</span>
+                                    <span class="hidden xl:inline">{{ $authUser->companyDisplayName() }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="content">

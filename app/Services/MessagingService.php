@@ -358,6 +358,7 @@ class MessagingService
                     : ($conversation->isStaffChannel() && $viewer->isCompany()
                         ? __('talenma.inbox.staff_role_label')
                         : null),
+                ...$this->counterpartVisual($conversation, $viewer, $counterpart),
             ],
             'messages' => $conversation->messages->map(fn (Message $message) => $this->presentMessage($message, $viewer))->values(),
             'show_url' => route('inbox.show', $conversation),
@@ -390,6 +391,7 @@ class MessagingService
             'counterpart' => [
                 'id' => $counterpart?->id,
                 'name' => $this->counterpartDisplayName($conversation, $viewer, $counterpart),
+                ...$this->counterpartVisual($conversation, $viewer, $counterpart),
             ],
             'show_url' => route('inbox.show', $conversation),
         ];
@@ -432,6 +434,33 @@ class MessagingService
 
         return $counterpart?->name
             ?: __('talenma.inbox.unknown_counterpart');
+    }
+
+    /**
+     * @return array{avatar_url: ?string, initials: string}
+     */
+    private function counterpartVisual(Conversation $conversation, User $viewer, ?User $counterpart): array
+    {
+        if ($conversation->isStaffChannel()) {
+            return [
+                'avatar_url' => null,
+                'initials' => 'TM',
+            ];
+        }
+
+        if ($viewer->isTalent() && $counterpart?->isCompany()) {
+            $org = $counterpart->companyOrganization() ?? $counterpart->companyProfile;
+
+            return [
+                'avatar_url' => $org?->logoUrl() ?? $counterpart->avatarUrl(),
+                'initials' => $org?->initials() ?? $counterpart->initials(),
+            ];
+        }
+
+        return [
+            'avatar_url' => $counterpart?->avatarUrl(),
+            'initials' => $counterpart?->initials() ?? '?',
+        ];
     }
 
     private function assertCompanyCanMessage(User $company): void

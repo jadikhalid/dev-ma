@@ -47,6 +47,7 @@ php artisan key:generate
 php artisan storage:link
 php artisan migrate --force
 php artisan db:seed --force --class=ProductionDataSeeder
+# Note : AdminUserSeeder crée l’admin seulement s’il n’existe pas (ne réécrit plus le mot de passe).
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
