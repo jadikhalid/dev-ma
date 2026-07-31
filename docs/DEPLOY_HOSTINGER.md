@@ -47,7 +47,8 @@ php artisan key:generate
 php artisan storage:link
 php artisan migrate --force
 php artisan db:seed --force --class=ProductionDataSeeder
-# Note : AdminUserSeeder crée l’admin seulement s’il n’existe pas (ne réécrit plus le mot de passe).
+# Admin : une seule fois si besoin — php artisan db:seed --force --class=AdminUserSeeder
+# (ne pas le relancer à chaque deploy : ça ne doit plus toucher un admin existant).
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
@@ -153,7 +154,7 @@ MAIL_FROM_ADDRESS=…   # même boîte que MAIL_USERNAME chez Hostinger
 MAIL_FROM_NAME="Talents MA"
 
 ADMIN_EMAIL=admin@talentsdumaroc.com
-ADMIN_PASSWORD=…      # utilisé par ProductionDataSeeder (updateOrCreate)
+ADMIN_PASSWORD=…      # utilisé UNIQUEMENT au 1er AdminUserSeeder (pas au redeploy)
 
 # Cloudinary — vidéos de présentation talent (dashboard → carte Présentation vidéo)
 # Compte free OK pour le MVP. Ne jamais committer les secrets.

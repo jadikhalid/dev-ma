@@ -44,6 +44,8 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         $email = Str::lower(trim((string) $this->input('email')));
+        $this->merge(['email' => $email]);
+
         $existingUser = User::query()->where('email', $email)->first();
 
         if ($existingUser && ! $existingUser->hasVerifiedEmail()) {

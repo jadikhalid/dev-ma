@@ -5,24 +5,18 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
+/**
+ * Bootstrap one-shot du compte admin.
+ * Ne doit PAS être appelé à chaque déploiement (voir ProductionDataSeeder).
+ */
 class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $email = env('ADMIN_EMAIL', 'admin@talentsdumaroc.com');
-        $password = env('ADMIN_PASSWORD', 'ChangeMe-Admin-2026!');
+        $email = (string) config('talenma.admin.email', 'admin@talentsdumaroc.com');
+        $password = (string) config('talenma.admin.password', 'ChangeMe-Admin-2026!');
 
-        $existing = User::query()->where('email', $email)->first();
-
-        if ($existing) {
-            // Ne jamais écraser le mot de passe en prod (reset oublié / déploiement).
-            $existing->forceFill([
-                'role' => 'admin',
-                'email_verified_at' => $existing->email_verified_at ?? now(),
-                'approval_status' => null,
-                'approved_at' => null,
-            ])->save();
-
+        if ($email === '' || User::query()->where('email', $email)->exists()) {
             return;
         }
 

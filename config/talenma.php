@@ -43,6 +43,15 @@ return [
     'hero_fallback_photo' => 'images/hero/fallback.jpg',
 
     /*
+    | Compte admin bootstrap (AdminUserSeeder uniquement — jamais au redeploy).
+    | Utiliser config() et non env() dans le seeder (config:cache en prod).
+    */
+    'admin' => [
+        'email' => env('ADMIN_EMAIL', 'admin@talentsdumaroc.com'),
+        'password' => env('ADMIN_PASSWORD', 'ChangeMe-Admin-2026!'),
+    ],
+
+    /*
     | Pays francophones — locale FR sur mobile (détection IP).
     | Codes ISO 3166-1 alpha-2.
     */

@@ -74,6 +74,10 @@ fi
 echo "→ composer install (--no-dev)"
 $COMPOSER_BIN install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
+echo "→ clear caches (évite opcache / config stale pendant migrate & seed)"
+$PHP_BIN -r "if (function_exists('opcache_reset')) { opcache_reset(); }"
+$PHP_BIN artisan optimize:clear
+
 if [ ! -L public/storage ] && [ ! -e public/storage ]; then
     echo "→ storage:link"
     $PHP_BIN artisan storage:link
@@ -86,7 +90,7 @@ fi
 echo "→ migrations"
 $PHP_BIN artisan migrate --force
 
-echo "→ seed (référence prod : services, métiers, social, admin)"
+echo "→ seed (référence prod : services, métiers, social — sans toucher à l'admin)"
 $PHP_BIN artisan db:seed --force --class=ProductionDataSeeder
 
 echo "→ cache"
