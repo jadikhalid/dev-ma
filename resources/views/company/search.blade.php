@@ -11,21 +11,30 @@
         $canProposeDirectHire = $canProposeDirectHire ?? true;
         $hiredTalentIds = $hiredTalentIds ?? [];
         $blockedNamedTalentIds = $blockedNamedTalentIds ?? [];
+        $lockedNamedTalentIds = $lockedNamedTalentIds ?? [];
         $revealedTalentIds = $revealedTalentIds ?? [];
-        $initialTalents = $talents->getCollection()->map(function ($talent) use ($canProposeDirectHire, $hiredTalentIds, $blockedNamedTalentIds, $revealedTalentIds) {
+        $initialTalents = $talents->getCollection()->map(function ($talent) use ($canProposeDirectHire, $hiredTalentIds, $blockedNamedTalentIds, $lockedNamedTalentIds, $revealedTalentIds) {
             $profile = $talent->profile;
             $experienceYears = $profile?->experience_years;
             $forceReveal = in_array($talent->id, $revealedTalentIds, true);
             $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
             $alreadyHired = in_array($talent->id, $hiredTalentIds, true);
-            $canPropose = $canProposeDirectHire && ! $alreadyHired;
-            $disabledHint = $alreadyHired
-                ? __('talenma.direct_hire.cta_disabled_hired_hint')
-                : ($canPropose ? null : __('talenma.direct_hire.cta_disabled_hint'));
-            $canRequestNamed = ! in_array($talent->id, $blockedNamedTalentIds, true);
+            $namedLocked = in_array($talent->id, $lockedNamedTalentIds, true);
+            $talentLocked = $namedLocked || $alreadyHired;
+            $canPropose = $canProposeDirectHire && ! $talentLocked;
+            $disabledHint = $namedLocked
+                ? __('talenma.direct_hire.cta_disabled_locked_intermediation_hint')
+                : ($alreadyHired
+                    ? __('talenma.direct_hire.cta_disabled_locked_hint')
+                    : ($canPropose ? null : __('talenma.direct_hire.cta_disabled_hint')));
+            $canRequestNamed = ! in_array($talent->id, $blockedNamedTalentIds, true) && ! $alreadyHired;
             $namedHint = $canRequestNamed
                 ? null
-                : __('talenma.recruitment.named_blocked_open');
+                : ($namedLocked
+                    ? __('talenma.recruitment.named_blocked_locked')
+                    : ($alreadyHired
+                        ? __('talenma.recruitment.named_blocked_locked_direct_hire')
+                        : __('talenma.recruitment.named_blocked_open')));
 
             return [
                 'id' => $talent->id,
@@ -43,6 +52,7 @@
                     : null,
                 'availability_label' => $profile?->statusLabel(),
                 'availability_tone' => $profile?->statusTone(),
+                'talent_locked' => $talentLocked,
                 'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
                     ? $profile->presentation_video_url
                     : null,
@@ -53,9 +63,11 @@
                 'recruitment_url' => $canRequestNamed ? route('recruitment.create', $talent) : null,
                 'can_request_named' => $canRequestNamed,
                 'named_request_disabled_hint' => $namedHint,
+                'named_unlock_url' => null,
                 'direct_hire_url' => route('company.direct-hire.create', $talent),
                 'can_propose_direct_hire' => $canPropose,
                 'direct_hire_disabled_hint' => $disabledHint,
+                'direct_hire_unlock_url' => null,
             ];
         })->values();
     @endphp
@@ -101,6 +113,8 @@
                 'composeSubjectRequired' => __('talenma.inbox.compose_subject_required'),
                 'directHireDisabled' => __('talenma.direct_hire.cta_disabled_hint'),
                 'namedDisabled' => __('talenma.recruitment.named_blocked_open'),
+                'talentLocked' => __('talenma.recruitment.talent_lock_badge'),
+                'unlockError' => __('talenma.recruitment.talent_unlock_error'),
             ]),
             composeUrl: @js(route('inbox.store')),
             csrf: @js(csrf_token()),
@@ -268,15 +282,7 @@
                             ></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="font-bold text-base text-gray-900 truncate" x-text="talent.name"></h3>
-                                <span
-                                    x-show="talent.availability_label"
-                                    class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                                    :class="profileStatusClass(talent.availability_tone)"
-                                    x-text="talent.availability_label"
-                                ></span>
-                            </div>
+                            <h3 class="font-bold text-base text-gray-900 truncate" x-text="talent.name"></h3>
                             <p class="mt-0.5 text-sm font-medium text-indigo-600 truncate">
                                 <span x-text="talent.profession_label"></span>
                                 <span x-show="talent.profession_label && talent.sector_label"> · </span>
@@ -288,6 +294,20 @@
                                 x-text="talent.employer_label"
                             ></p>
                         </div>
+                        <span
+                            x-show="talent.availability_label"
+                            class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                            :class="profileStatusClass(talent.availability_tone)"
+                            x-text="talent.availability_label"
+                        ></span>
+                        <span
+                            x-show="talent.talent_locked"
+                            class="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200"
+                            :title="labels.talentLocked || ''"
+                        >
+                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+                            {{ __('talenma.recruitment.talent_lock_badge') }}
+                        </span>
                     </div>
 
                     <div class="mt-3 flex flex-wrap items-center gap-1.5">
@@ -465,6 +485,13 @@
                                         :class="profileStatusClass(selectedProfile.availability_tone)"
                                         x-text="selectedProfile.availability_label"
                                     ></span>
+                                    <span
+                                        x-show="selectedProfile.talent_locked"
+                                        class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200"
+                                    >
+                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+                                        {{ __('talenma.recruitment.talent_lock_badge') }}
+                                    </span>
                                 </div>
                             </div>
 
@@ -533,6 +560,14 @@
                                     class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
                                     :title="selectedProfile.direct_hire_disabled_hint || labels.directHireDisabled"
                                 >{{ __('talenma.direct_hire.cta_btn') }}</span>
+                                <button
+                                    type="button"
+                                    x-show="selectedProfile.direct_hire_unlock_url"
+                                    x-cloak
+                                    :disabled="unlockSending"
+                                    @click="unlockTalent(selectedProfile.direct_hire_unlock_url)"
+                                    class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+                                >{{ __('talenma.direct_hire.talent_unlock_btn') }}</button>
                                 <a
                                     x-show="selectedProfile.recruitment_url && selectedProfile.can_request_named !== false"
                                     :href="selectedProfile.recruitment_url"
@@ -543,6 +578,14 @@
                                     class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
                                     :title="selectedProfile.named_request_disabled_hint || labels.namedDisabled"
                                 >{{ __('talenma.talents.inter_btn') }}</span>
+                                <button
+                                    type="button"
+                                    x-show="selectedProfile.named_unlock_url"
+                                    x-cloak
+                                    :disabled="unlockSending"
+                                    @click="unlockTalent(selectedProfile.named_unlock_url)"
+                                    class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+                                >{{ __('talenma.recruitment.talent_unlock_btn') }}</button>
                                 <a
                                     :href="selectedProfile.cv_url || '#'"
                                     :target="selectedProfile.cv_url ? '_blank' : null"

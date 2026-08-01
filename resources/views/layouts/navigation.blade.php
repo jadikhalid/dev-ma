@@ -16,6 +16,7 @@
             $sourcingPending = app(\App\Services\RecruitmentRequestService::class)->companyHasUnseenChanges($authUser);
         } elseif ($authUser->isStaff()) {
             $sourcingPending = app(\App\Services\RecruitmentRequestService::class)->staffHasUnseenChanges($authUser);
+            $directHirePending = app(\App\Services\DirectHireService::class)->staffHasUnseenChanges($authUser);
         }
     }
 @endphp
@@ -43,6 +44,18 @@
                                         <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
                                     </span>
                                     <span class="sr-only">{{ __('talenma.recruitment.nav_new') }}</span>
+                                @endif
+                            </span>
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.direct-hire.index')" :active="request()->routeIs('admin.direct-hire.*')">
+                            <span class="inline-flex items-center gap-1.5">
+                                {{ __('talenma.nav.admin_direct_hire') }}
+                                @if ($directHirePending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                 @endif
                             </span>
                         </x-nav-link>
@@ -117,6 +130,12 @@
                                 @endif
                             </span>
                         </x-nav-link>
+                        <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.search', 'company.talent.*')" :disabled="$pendingAccount">
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-700">
+                                <svg class="h-4 w-4 shrink-0 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
+                                {{ __('talenma.nav.talents') }}
+                            </span>
+                        </x-nav-link>
                     @endif
                 </div>
             </div>
@@ -158,7 +177,7 @@
                         <x-dropdown-link :href="route('profile.edit', ($authUser->canManageCompanyProfile() || $authUser->isTalent()) ? ['panel' => 'account'] : [])" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-2">
                                 <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
-                                {{ $authUser->isTalent() ? __('talenma.nav.my_account') : __('talenma.nav.settings') }}
+                                {{ $authUser->isTalent() ? __('talenma.nav.my_account') : ($authUser->isCompany() ? __('talenma.nav.manage_account') : __('talenma.nav.settings')) }}
                             </span>
                         </x-dropdown-link>
                         <form method="POST" action="{{ route('logout') }}">@csrf
@@ -224,6 +243,18 @@
                                         <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
                                     </span>
                                     <span class="sr-only">{{ __('talenma.recruitment.nav_new') }}</span>
+                                @endif
+                            </span>
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.direct-hire.index')" :active="request()->routeIs('admin.direct-hire.*')">
+                            <span class="inline-flex items-center gap-2">
+                                {{ __('talenma.nav.admin_direct_hire') }}
+                                @if ($directHirePending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                 @endif
                             </span>
                         </x-responsive-nav-link>
@@ -298,6 +329,12 @@
                                 @endif
                             </span>
                         </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('company.search')" :active="request()->routeIs('company.search', 'company.talent.*')">
+                            <span class="inline-flex items-center gap-2 rounded-md bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
+                                <svg class="h-4 w-4 shrink-0 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
+                                {{ __('talenma.nav.talents') }}
+                            </span>
+                        </x-responsive-nav-link>
                     @endif
                 </div>
             @endunless
@@ -310,7 +347,7 @@
             <x-dropdown-link :href="route('profile.edit', ($authUser->canManageCompanyProfile() || $authUser->isTalent()) ? ['panel' => 'account'] : [])" :disabled="$pendingAccount">
                 <span class="inline-flex items-center gap-2">
                     <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
-                    {{ $authUser->isTalent() ? __('talenma.nav.my_account') : __('talenma.nav.settings') }}
+                    {{ $authUser->isTalent() ? __('talenma.nav.my_account') : ($authUser->isCompany() ? __('talenma.nav.manage_account') : __('talenma.nav.settings')) }}
                 </span>
             </x-dropdown-link>
             <form method="POST" action="{{ route('logout') }}">@csrf

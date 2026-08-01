@@ -35,7 +35,7 @@ class DirectHireClosedMail extends Mailable
                 'directHire' => $this->directHire,
                 'outcome' => $this->directHire->status,
                 'talentName' => $this->directHire->talentFormalDisplayName(),
-                'companyName' => $this->directHire->companyRecipientGreetingName(),
+                'companyName' => $this->directHire->companyFormalDisplayName(),
                 'url' => route('talent.direct-hire.show', $this->directHire),
             ],
         );

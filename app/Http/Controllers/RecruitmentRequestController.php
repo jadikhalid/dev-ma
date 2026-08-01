@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RecruitmentRequest;
 use App\Models\User;
+use App\Services\CompanyTalentActionStateService;
 use App\Services\RecruitmentRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +15,7 @@ class RecruitmentRequestController extends Controller
 {
     public function __construct(
         private RecruitmentRequestService $recruitmentRequests,
+        private CompanyTalentActionStateService $talentActions,
     ) {}
 
     public function index(Request $request): View|RedirectResponse
@@ -53,6 +55,29 @@ class RecruitmentRequestController extends Controller
             'isStaff' => $request->user()->isStaff(),
             'statuses' => RecruitmentRequest::statuses(),
         ]);
+    }
+
+    public function unlockTalent(Request $request, RecruitmentRequest $recruitmentRequest): JsonResponse|RedirectResponse
+    {
+        abort_unless($request->user()->isCompany(), 403);
+
+        $this->recruitmentRequests->unlockTalentForCompany($recruitmentRequest, $request->user());
+
+        $talent = $recruitmentRequest->fresh(['talent'])?->talent;
+        $message = __('talenma.recruitment.talent_unlocked');
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            abort_unless($talent, 404);
+
+            return response()->json([
+                'message' => $message,
+                ...$this->talentActions->for($request->user(), $talent),
+            ]);
+        }
+
+        return redirect()
+            ->route('sourcing.show', $recruitmentRequest)
+            ->with('toast_success', $message);
     }
 
     public function storeMessage(Request $request, RecruitmentRequest $recruitmentRequest): JsonResponse|RedirectResponse

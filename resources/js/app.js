@@ -2857,6 +2857,7 @@ Alpine.data('companyTalentCatalog', (config) => ({
     composeError: null,
     composeSuccessUrl: null,
     canProposeDirectHire: config.canProposeDirectHire !== false,
+    unlockSending: false,
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
@@ -3141,6 +3142,85 @@ Alpine.data('companyTalentCatalog', (config) => ({
             if (token === this.profileRequestToken) {
                 this.profileLoading = false;
             }
+        }
+    },
+
+    applyTalentActionState(payload = {}) {
+        const talentId = Number(payload.talent_id ?? this.selectedProfile?.talent_id ?? this.selectedProfile?.id);
+        const patch = {
+            talent_locked: Boolean(payload.talent_locked),
+            can_request_named: payload.can_request_named !== false,
+            named_request_disabled_hint: payload.named_request_disabled_hint ?? null,
+            recruitment_url: payload.recruitment_url ?? null,
+            named_unlock_url: payload.named_unlock_url ?? null,
+            direct_hire_url: payload.direct_hire_url ?? null,
+            can_propose_direct_hire: payload.can_propose_direct_hire !== false,
+            direct_hire_disabled_hint: payload.direct_hire_disabled_hint ?? null,
+            direct_hire_unlock_url: payload.direct_hire_unlock_url ?? null,
+        };
+
+        if (this.selectedProfile && Number(this.selectedProfile.talent_id ?? this.selectedProfile.id) === talentId) {
+            this.selectedProfile = {
+                ...this.selectedProfile,
+                ...patch,
+                talent_id: talentId,
+            };
+        }
+
+        this.talents = this.talents.map((talent) => {
+            if (Number(talent.id) !== talentId) {
+                return talent;
+            }
+
+            return {
+                ...talent,
+                ...patch,
+            };
+        });
+
+        if (typeof payload.can_propose_direct_hire_globally === 'boolean') {
+            this.canProposeDirectHire = payload.can_propose_direct_hire_globally;
+        }
+    },
+
+    async unlockTalent(url) {
+        if (! url || this.unlockSending) {
+            return;
+        }
+
+        this.unlockSending = true;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrf,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({}),
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                throw new Error(payload.message || 'unlock_failed');
+            }
+
+            this.applyTalentActionState(payload);
+            this.$dispatch('toast-push', {
+                type: 'success',
+                message: payload.message || this.labels.unlockSuccess || '',
+            });
+        } catch (error) {
+            this.$dispatch('toast-push', {
+                type: 'error',
+                message: this.labels.unlockError || this.labels.error || 'Une erreur est survenue.',
+            });
+        } finally {
+            this.unlockSending = false;
         }
     },
 
@@ -4279,6 +4359,126 @@ Alpine.data('directHireRoundCreate', (config = {}) => ({
             pushToast('error', this.messages.networkError || this.messages.error || 'Error');
         } finally {
             this.loading = false;
+        }
+    },
+}));
+
+Alpine.data('adminDirectHireTalentSearch', (config = {}) => ({
+    url: config.url,
+    query: '',
+    results: [],
+    open: false,
+    loading: false,
+    activeIndex: -1,
+    debounceTimer: null,
+    selectedId: null,
+    selectedLabel: '',
+    selectedUrl: null,
+    minChars: config.minChars ?? 2,
+    loadingLabel: config.loadingLabel ?? '',
+    emptyLabel: config.emptyLabel ?? '',
+
+    onInput() {
+        this.selectedId = null;
+        this.selectedLabel = '';
+        this.selectedUrl = null;
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => this.fetchResults(), 220);
+    },
+
+    onFocus() {
+        if (this.query.trim().length >= this.minChars) {
+            this.fetchResults();
+        }
+    },
+
+    async fetchResults() {
+        const term = this.query.trim();
+
+        if (term.length < this.minChars) {
+            this.results = [];
+            this.open = false;
+            this.activeIndex = -1;
+
+            return;
+        }
+
+        this.loading = true;
+        this.open = true;
+
+        try {
+            const params = new URLSearchParams({ q: term });
+            const response = await fetch(`${this.url}?${params.toString()}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                throw new Error('talent search failed');
+            }
+
+            const data = await response.json();
+            this.results = data.results ?? [];
+            this.activeIndex = this.results.length ? 0 : -1;
+        } catch {
+            this.results = [];
+            this.activeIndex = -1;
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    select(item) {
+        this.selectedId = item.id;
+        this.selectedLabel = item.label;
+        this.selectedUrl = item.create_url;
+        this.query = item.label;
+        this.open = false;
+        this.results = [];
+        this.activeIndex = -1;
+        this.$refs.input?.focus();
+    },
+
+    continueSelected() {
+        if (this.selectedUrl) {
+            window.location = this.selectedUrl;
+        }
+    },
+
+    close() {
+        this.open = false;
+        this.activeIndex = -1;
+    },
+
+    onKeydown(event) {
+        if (event.key === 'Escape') {
+            this.close();
+
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+
+            if (this.open && this.activeIndex >= 0 && this.results[this.activeIndex]) {
+                this.select(this.results[this.activeIndex]);
+            } else if (this.selectedUrl) {
+                this.continueSelected();
+            }
+
+            return;
+        }
+
+        if (! this.open || ! this.results.length) {
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            this.activeIndex = Math.min(this.activeIndex + 1, this.results.length - 1);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            this.activeIndex = Math.max(this.activeIndex - 1, 0);
         }
     },
 }));

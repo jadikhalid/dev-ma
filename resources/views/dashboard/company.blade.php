@@ -258,6 +258,7 @@
                                         'recruitment_message_sent' => __('talenma.dashboard.company.activity.activity_recruitment_message_sent_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                         'inbox_message' => __('talenma.dashboard.company.activity.activity_inbox_message', ['actor' => $item['actor']]),
                                         'inbox_message_sent' => __('talenma.dashboard.company.activity.activity_inbox_message_sent', ['actor' => $item['actor']]),
+                                        'talent_unlocked' => __('talenma.dashboard.company.activity.activity_talent_unlocked', ['actor' => $item['actor']]),
                                         'recruitment_comment' => __('talenma.dashboard.company.activity.activity_recruitment_comment_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                         'recruitment_status' => match ($item['result'] ?? '') {
                                             'in_progress' => __('talenma.dashboard.company.activity.activity_recruitment_taken_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
@@ -289,6 +290,11 @@
                                             __('talenma.dashboard.company.activity.activity_cat_inbox'),
                                             'bg-blue-500',
                                             'hover:bg-blue-50/80',
+                                        ],
+                                        ($item['type'] ?? '') === 'talent_unlocked' => [
+                                            __('talenma.dashboard.company.activity.activity_cat_lock'),
+                                            'bg-amber-500',
+                                            'hover:bg-amber-50/80',
                                         ],
                                         str_starts_with((string) ($item['type'] ?? ''), 'recruitment_') => [
                                             __('talenma.dashboard.company.activity.activity_cat_sourcing'),

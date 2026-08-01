@@ -201,6 +201,9 @@ class RecruitmentRequestController extends Controller
 
         $recruitmentRequest->update($payload);
 
+        $recruitmentRequest->refresh();
+        $this->recruitmentRequests->syncTalentLockAfterStatusChange($recruitmentRequest, $statusChanged);
+
         $this->recruitmentRequests->notifyStatusOrComment(
             $recruitmentRequest->fresh(['company', 'talent']),
             $statusChanged,

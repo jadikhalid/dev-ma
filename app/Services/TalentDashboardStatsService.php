@@ -9,6 +9,7 @@ use App\Models\DirectHireRound;
 use App\Models\Message;
 use App\Models\ProfileDocumentDownload;
 use App\Models\ProfileView;
+use App\Models\RecruitmentRequest;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -65,6 +66,7 @@ class TalentDashboardStatsService
         return $this->profileViewEvents($talent, $fetch)
             ->concat($this->cvDownloadEvents($talent, $fetch))
             ->concat($this->directHireEvents($talent, $fetch))
+            ->concat($this->talentUnlockEvents($talent, $fetch))
             ->concat($this->inboxMessageEvents($talent, $fetch))
             ->sortByDesc(fn (array $item) => $item['at']?->timestamp ?? 0)
             ->take($limit)
@@ -166,7 +168,7 @@ class TalentDashboardStatsService
             ->get();
 
         foreach ($requests as $request) {
-            $actor = $request->companyDisplayName()
+            $actor = $request->talentFacingCompanyName()
                 ?: $this->actorName($request->company);
             $subject = $request->shortSubject();
             $href = route('talent.direct-hire.show', $request);
@@ -247,7 +249,7 @@ class TalentDashboardStatsService
                 continue;
             }
 
-            $actor = $request->companyDisplayName()
+            $actor = $request->talentFacingCompanyName()
                 ?: $this->actorName($request->company);
             $subject = $request->shortSubject();
             $href = route('talent.direct-hire.show', $request);
@@ -299,7 +301,7 @@ class TalentDashboardStatsService
                 continue;
             }
 
-            $actor = $request->companyDisplayName() ?: $this->actorName($request->company);
+            $actor = $request->talentFacingCompanyName() ?: $this->actorName($request->company);
             $isTalentMessage = (int) $message->sender_user_id === (int) $talent->id;
 
             $events->push($this->activityItem(
@@ -310,6 +312,56 @@ class TalentDashboardStatsService
                 href: route('talent.direct-hire.show', $request),
             ));
         }
+
+        return $events;
+    }
+
+    /**
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
+     */
+    private function talentUnlockEvents(User $talent, int $limit): Collection
+    {
+        $events = collect();
+
+        DirectHireRequest::query()
+            ->where('talent_user_id', $talent->id)
+            ->where('status', DirectHireRequest::STATUS_HIRED)
+            ->whereNotNull('talent_unlocked_at')
+            ->with(['companyProfile', 'company'])
+            ->latest('talent_unlocked_at')
+            ->limit($limit)
+            ->get()
+            ->each(function (DirectHireRequest $request) use ($events) {
+                $events->push($this->activityItem(
+                    type: 'talent_unlocked',
+                    actor: $request->talentFacingCompanyName()
+                        ?: $this->actorName($request->company),
+                    at: $request->talent_unlocked_at,
+                    subject: $request->shortSubject(),
+                    detail: 'direct_hire',
+                    href: route('talent.direct-hire.show', $request),
+                ));
+            });
+
+        RecruitmentRequest::query()
+            ->where('developer_user_id', $talent->id)
+            ->where('mode', RecruitmentRequest::MODE_NAMED)
+            ->whereNotNull('talent_unlocked_at')
+            ->with(['company'])
+            ->latest('talent_unlocked_at')
+            ->limit($limit)
+            ->get()
+            ->each(function (RecruitmentRequest $request) use ($events) {
+                $events->push($this->activityItem(
+                    type: 'talent_unlocked',
+                    actor: $request->companyDisplayName()
+                        ?: $this->actorName($request->company),
+                    at: $request->talent_unlocked_at,
+                    subject: $request->talent?->name,
+                    detail: 'named',
+                    href: null,
+                ));
+            });
 
         return $events;
     }

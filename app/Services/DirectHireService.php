@@ -55,6 +55,8 @@ class DirectHireService
                 'talent_name_snapshot' => $talent->name,
                 'company_profile_id' => $org?->id,
                 'company_name_snapshot' => $org?->displayName() ?: $company->name,
+                'hire_origin' => DirectHireRequest::ORIGIN_COMPANY,
+                'initiated_by_user_id' => null,
                 'subject' => $subject,
                 'message' => $message,
                 'status' => DirectHireRequest::STATUS_PENDING_RESPONSE,
@@ -120,8 +122,9 @@ class DirectHireService
                 'talent_decision_at' => $now,
                 'talent_decision_note' => filled($note) ? trim($note) : null,
                 'talent_seen_at' => $now,
-                // Talent acted: force company unseen indicators (nav + dashboard dots).
+                // Talent acted: force hiring-side unseen indicators (company + staff).
                 'company_seen_at' => null,
+                'staff_seen_at' => null,
                 'closed_at' => $newStatus === DirectHireRequest::STATUS_DECLINED ? $now : null,
                 'closed_by' => $newStatus === DirectHireRequest::STATUS_DECLINED ? $talent->id : null,
                 // closure_note is reserved for company close messages — do not mirror talent notes.
@@ -133,11 +136,16 @@ class DirectHireService
         });
 
         $request->refresh();
-        $request->load(['company', 'companyProfile', 'talent']);
+        $request->load(['company', 'companyProfile', 'talent', 'initiatedBy']);
 
         try {
-            if (filled($request->company?->email)) {
-                Mail::to($request->company->email)->send(new DirectHireDecisionMail($request, $decision));
+            $hiringRecipient = $request->company;
+            if (! $hiringRecipient && $request->isStaffInternal()) {
+                $hiringRecipient = $request->initiatedBy;
+            }
+
+            if (filled($hiringRecipient?->email)) {
+                Mail::to($hiringRecipient->email)->send(new DirectHireDecisionMail($request, $decision));
             }
         } catch (\Throwable) {
             // Never block the hire process on mail failures.
@@ -146,13 +154,158 @@ class DirectHireService
         return $request;
     }
 
+    public function createByStaff(
+        User $staff,
+        User $talent,
+        string $subject,
+        string $message,
+        string $origin,
+        ?User $beneficiaryCompany = null,
+    ): DirectHireRequest {
+        if (! $staff->isStaff()) {
+            throw ValidationException::withMessages([
+                'talent_id' => __('talenma.direct_hire.error_staff_only'),
+            ]);
+        }
+
+        if (! in_array($origin, DirectHireRequest::staffHireOrigins(), true)) {
+            throw ValidationException::withMessages([
+                'hire_origin' => __('talenma.direct_hire.error_origin_invalid'),
+            ]);
+        }
+
+        if (! $talent->isTalent() || $talent->approval_status !== 'approved') {
+            throw ValidationException::withMessages([
+                'talent_id' => __('talenma.direct_hire.error_talent_invalid'),
+            ]);
+        }
+
+        $companyUserId = null;
+        $companyProfileId = null;
+        $companyNameSnapshot = __('talenma.direct_hire.platform_employer_name');
+
+        if ($origin === DirectHireRequest::ORIGIN_STAFF_ON_BEHALF) {
+            if (! $beneficiaryCompany || ! $beneficiaryCompany->isCompany()) {
+                throw ValidationException::withMessages([
+                    'company_id' => __('talenma.direct_hire.error_beneficiary_required'),
+                ]);
+            }
+
+            if ($beneficiaryCompany->approval_status !== 'approved') {
+                throw ValidationException::withMessages([
+                    'company_id' => __('talenma.direct_hire.error_beneficiary_invalid'),
+                ]);
+            }
+
+            if ($this->companyHasHiredTalent($beneficiaryCompany, $talent)) {
+                throw ValidationException::withMessages([
+                    'talent_id' => __('talenma.direct_hire.error_already_hired'),
+                ]);
+            }
+
+            if ($this->companyHasOpenRequest($beneficiaryCompany)) {
+                throw ValidationException::withMessages([
+                    'talent_id' => __('talenma.direct_hire.error_process_open'),
+                ]);
+            }
+
+            if (app(RecruitmentRequestService::class)->activeNamedLockForTalent($beneficiaryCompany, $talent)) {
+                throw ValidationException::withMessages([
+                    'talent_id' => __('talenma.direct_hire.error_intermediation_locked'),
+                ]);
+            }
+
+            $org = $beneficiaryCompany->companyOrganization();
+            $companyUserId = $beneficiaryCompany->id;
+            $companyProfileId = $org?->id;
+            $companyNameSnapshot = $org?->displayName() ?: $beneficiaryCompany->name;
+        } else {
+            if ($this->staffHasOpenInternalRequest()) {
+                throw ValidationException::withMessages([
+                    'talent_id' => __('talenma.direct_hire.error_staff_internal_open'),
+                ]);
+            }
+        }
+
+        $request = DB::transaction(function () use (
+            $staff,
+            $talent,
+            $subject,
+            $message,
+            $origin,
+            $companyUserId,
+            $companyProfileId,
+            $companyNameSnapshot,
+        ) {
+            return DirectHireRequest::create([
+                'company_user_id' => $companyUserId,
+                'talent_user_id' => $talent->id,
+                'talent_name_snapshot' => $talent->name,
+                'company_profile_id' => $companyProfileId,
+                'company_name_snapshot' => $companyNameSnapshot,
+                'hire_origin' => $origin,
+                'initiated_by_user_id' => $staff->id,
+                'subject' => $subject,
+                'message' => $message,
+                'status' => DirectHireRequest::STATUS_PENDING_RESPONSE,
+                'conversation_id' => null,
+                'company_seen_at' => now(),
+                'staff_seen_at' => now(),
+            ]);
+        });
+
+        $request->load(['company', 'companyProfile', 'talent', 'initiatedBy']);
+
+        try {
+            Mail::to($talent->email)->send(new DirectHireProposalMail($request));
+        } catch (\Throwable) {
+            // Never block the hire process on mail failures (e.g. Mailpit down).
+        }
+
+        return $request;
+    }
+
+    public function staffHasOpenInternalRequest(): bool
+    {
+        return DirectHireRequest::query()
+            ->where('hire_origin', DirectHireRequest::ORIGIN_STAFF_INTERNAL)
+            ->whereIn('status', DirectHireRequest::openStatuses())
+            ->exists();
+    }
+
+    /**
+     * @return 'open'|'hired'|'intermediation_locked'|null
+     */
+    public function staffProposeBlockReason(User $talent, string $origin, ?User $beneficiaryCompany = null): ?string
+    {
+        if (! $talent->isTalent() || $talent->approval_status !== 'approved') {
+            return 'open';
+        }
+
+        if ($origin === DirectHireRequest::ORIGIN_STAFF_INTERNAL) {
+            return $this->staffHasOpenInternalRequest() ? 'open' : null;
+        }
+
+        if (! $beneficiaryCompany || ! $beneficiaryCompany->isCompany()) {
+            return 'open';
+        }
+
+        return $this->companyProposeBlockReason($beneficiaryCompany, $talent);
+    }
+
+    public function queryForStaff(): \Illuminate\Database\Eloquent\Builder
+    {
+        return DirectHireRequest::query()
+            ->whereIn('hire_origin', DirectHireRequest::staffHireOrigins());
+    }
+
     public function respondToDeferral(
         DirectHireRequest $request,
         User $actor,
         string $action,
         ?string $note = null,
     ): DirectHireRequest {
-        $this->assertCompanyCanManage($request, $actor);
+        $this->assertHiringSideCanManage($request, $actor);
 
         if (! $request->awaitsCompanyDeferralReply()) {
             throw ValidationException::withMessages([
@@ -184,7 +337,7 @@ class DirectHireService
         User $actor,
         ?string $note = null,
     ): DirectHireRequest {
-        $this->assertCompanyCanManage($request, $actor);
+        $this->assertHiringSideCanManage($request, $actor);
 
         if (! $request->awaitsCompanyDeferralReply()) {
             throw ValidationException::withMessages([
@@ -194,13 +347,11 @@ class DirectHireService
 
         $now = now();
 
-        DirectHireRequest::withoutTimestamps(function () use ($request, $note, $now) {
+        DirectHireRequest::withoutTimestamps(function () use ($request, $note, $now, $actor) {
             $request->update([
                 'company_deferral_note' => filled($note) ? trim($note) : null,
                 'company_deferral_responded_at' => $now,
-                'company_seen_at' => $now,
-                'talent_seen_at' => null,
-                'updated_at' => $now,
+                ...$this->hiringSideActionSeenFields($request, $actor, $now),
             ]);
         });
 
@@ -234,21 +385,36 @@ class DirectHireService
 
         $now = now();
 
-        if ($sender->isCompany()) {
-            $this->writeRequestTimestamps($request->id, [
+        if ($sender->isStaff()) {
+            $payload = [
+                'updated_at' => $now,
+                'staff_seen_at' => $now,
+                'talent_seen_at' => null,
+            ];
+            if ($request->isStaffOnBehalf()) {
+                $payload['company_seen_at'] = null;
+            }
+            $this->writeRequestTimestamps($request->id, $payload);
+        } elseif ($sender->isCompany()) {
+            $payload = [
                 'updated_at' => $now,
                 'company_seen_at' => $now,
                 'talent_seen_at' => null,
-            ]);
+            ];
+            if ($request->isStaffInitiated()) {
+                $payload['staff_seen_at'] = null;
+            }
+            $this->writeRequestTimestamps($request->id, $payload);
         } else {
             $this->writeRequestTimestamps($request->id, [
                 'updated_at' => $now,
                 'talent_seen_at' => $now,
                 'company_seen_at' => null,
+                'staff_seen_at' => null,
             ]);
         }
 
-        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
+        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile', 'initiatedBy']);
         $this->notifyChatRecipient($request, $message, $sender);
 
         return $message;
@@ -271,7 +437,7 @@ class DirectHireService
         ?string $note = null,
         ?string $meetingUrl = null,
     ): DirectHireRound {
-        $this->assertCompanyCanManage($request, $actor);
+        $this->assertHiringSideCanManage($request, $actor);
 
         if ($request->status !== DirectHireRequest::STATUS_IN_PROCESS) {
             throw ValidationException::withMessages([
@@ -290,7 +456,7 @@ class DirectHireService
             'company_note' => filled($note) ? trim($note) : null,
         ]);
 
-        $this->markCompanyChangeForBothParties($request);
+        $this->markHiringSideChangeForTalent($request, $actor);
         $this->notifyTalentRoundChanged($request, $round->fresh(), 'created');
 
         return $round;
@@ -304,7 +470,7 @@ class DirectHireService
     public function updateRound(DirectHireRound $round, User $actor, array $data): DirectHireRound
     {
         $request = $round->request;
-        $this->assertCompanyCanManage($request, $actor);
+        $this->assertHiringSideCanManage($request, $actor);
 
         if ($request->status !== DirectHireRequest::STATUS_IN_PROCESS) {
             throw ValidationException::withMessages([
@@ -380,7 +546,7 @@ class DirectHireService
 
         $round->update($updates);
 
-        $this->markCompanyChangeForBothParties($request);
+        $this->markHiringSideChangeForTalent($request, $actor);
 
         $round = $round->fresh();
         $this->notifyTalentRoundChanged($request, $round, 'updated');
@@ -395,7 +561,7 @@ class DirectHireService
     public function cancelRound(DirectHireRound $round, User $actor, string $reason): DirectHireRound
     {
         $request = $round->request;
-        $this->assertCompanyCanManage($request, $actor);
+        $this->assertHiringSideCanManage($request, $actor);
 
         if ($request->status !== DirectHireRequest::STATUS_IN_PROCESS) {
             throw ValidationException::withMessages([
@@ -425,7 +591,7 @@ class DirectHireService
 
         $round = $round->fresh();
 
-        $this->markCompanyChangeForBothParties($request);
+        $this->markHiringSideChangeForTalent($request, $actor);
 
         $request->loadMissing(['talent', 'company']);
 
@@ -453,18 +619,57 @@ class DirectHireService
     }
 
     /**
-     * Company action: bump activity for the talent (blue dots) while keeping
-     * the company side marked as already seen.
+     * Hiring-side action: bump activity for the talent (blue dots) while marking
+     * the actor's side as seen and flagging the other hiring party when relevant.
      */
-    private function markCompanyChangeForBothParties(DirectHireRequest $request): void
+    private function markHiringSideChangeForTalent(DirectHireRequest $request, User $actor): void
     {
         $now = now();
-
-        $this->writeRequestTimestamps($request->id, [
+        $payload = [
             'updated_at' => $now,
-            'company_seen_at' => $now,
             'talent_seen_at' => null,
-        ]);
+        ];
+
+        if ($actor->isStaff()) {
+            $payload['staff_seen_at'] = $now;
+            if ($request->isStaffOnBehalf()) {
+                $payload['company_seen_at'] = null;
+            }
+        } else {
+            $payload['company_seen_at'] = $now;
+            if ($request->isStaffInitiated()) {
+                $payload['staff_seen_at'] = null;
+            }
+        }
+
+        $this->writeRequestTimestamps($request->id, $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function hiringSideActionSeenFields(DirectHireRequest $request, User $actor, $now): array
+    {
+        $fields = [
+            'talent_seen_at' => null,
+            'updated_at' => $now,
+        ];
+
+        if ($actor->isStaff()) {
+            $fields['staff_seen_at'] = $now;
+            if ($request->isStaffOnBehalf()) {
+                $fields['company_seen_at'] = null;
+            } else {
+                $fields['company_seen_at'] = $now;
+            }
+        } else {
+            $fields['company_seen_at'] = $now;
+            if ($request->isStaffInitiated()) {
+                $fields['staff_seen_at'] = null;
+            }
+        }
+
+        return $fields;
     }
 
     /**
@@ -521,8 +726,18 @@ class DirectHireService
         DirectHireMessage $message,
         User $sender,
     ): void {
-        $recipientIsCompany = $sender->isTalent();
-        $recipient = $recipientIsCompany ? $request->company : $request->talent;
+        if ($sender->isTalent()) {
+            $recipientIsCompany = true;
+            $recipient = $request->company;
+
+            if (! $recipient && $request->isStaffInternal()) {
+                $request->loadMissing('initiatedBy');
+                $recipient = $request->initiatedBy;
+            }
+        } else {
+            $recipientIsCompany = false;
+            $recipient = $request->talent;
+        }
 
         if (! $recipient || ! filled($recipient->email)) {
             return;
@@ -556,7 +771,7 @@ class DirectHireService
 
     public function close(DirectHireRequest $request, User $actor, string $outcome, ?string $note = null): DirectHireRequest
     {
-        $this->assertCompanyCanManage($request, $actor);
+        $this->assertHiringSideCanManage($request, $actor);
 
         if ($request->status !== DirectHireRequest::STATUS_IN_PROCESS) {
             throw ValidationException::withMessages([
@@ -576,15 +791,20 @@ class DirectHireService
         $now = now();
 
         DirectHireRequest::withoutTimestamps(function () use ($request, $outcome, $actor, $note, $now) {
-            $request->update([
+            $payload = [
                 'status' => $outcome,
                 'closed_at' => $now,
                 'closed_by' => $actor->id,
                 'closure_note' => filled($note) ? trim($note) : null,
-                'company_seen_at' => $now,
-                'talent_seen_at' => null,
-                'updated_at' => $now,
-            ]);
+                ...$this->hiringSideActionSeenFields($request, $actor, $now),
+            ];
+
+            if ($outcome === DirectHireRequest::STATUS_HIRED) {
+                $payload['talent_locked_at'] = $now;
+                $payload['talent_unlocked_at'] = null;
+            }
+
+            $request->update($payload);
         });
 
         $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
@@ -593,9 +813,24 @@ class DirectHireService
         return $request;
     }
 
+    public function unlockTalentForCompany(DirectHireRequest $request, User $company): DirectHireRequest
+    {
+        $this->assertHiringSideCanManage($request, $company);
+
+        if ($request->status !== DirectHireRequest::STATUS_HIRED || ! $request->hasActiveTalentLock()) {
+            throw ValidationException::withMessages([
+                'lock' => __('talenma.direct_hire.unlock_unavailable'),
+            ]);
+        }
+
+        $request->releaseTalentLock();
+
+        return $request->refresh();
+    }
+
     public function withdraw(DirectHireRequest $request, User $actor, ?string $note = null): DirectHireRequest
     {
-        $this->assertCompanyCanManage($request, $actor);
+        $this->assertHiringSideCanManage($request, $actor);
 
         if (! in_array($request->status, DirectHireRequest::openStatuses(), true)) {
             throw ValidationException::withMessages([
@@ -611,9 +846,7 @@ class DirectHireService
                 'closed_at' => $now,
                 'closed_by' => $actor->id,
                 'closure_note' => filled($note) ? trim($note) : null,
-                'company_seen_at' => $now,
-                'talent_seen_at' => null,
-                'updated_at' => $now,
+                ...$this->hiringSideActionSeenFields($request, $actor, $now),
             ]);
         });
 
@@ -713,14 +946,26 @@ class DirectHireService
             return false;
         }
 
+        return $this->activeHireLockForTalent($company, $talent) !== null;
+    }
+
+    public function activeHireLockForTalent(User $company, User $talent): ?DirectHireRequest
+    {
+        if (! $company->isCompany() || ! $talent->isTalent()) {
+            return null;
+        }
+
         return $this->queryForCompany($company)
             ->where('talent_user_id', $talent->id)
             ->where('status', DirectHireRequest::STATUS_HIRED)
-            ->exists();
+            ->whereNotNull('talent_locked_at')
+            ->whereNull('talent_unlocked_at')
+            ->latest()
+            ->first();
     }
 
     /**
-     * Talent user IDs already hired by this company (successful direct hire).
+     * Talent user IDs still locked after a successful direct hire by this company.
      *
      * @return list<int>
      */
@@ -733,6 +978,8 @@ class DirectHireService
         return $this->queryForCompany($company)
             ->where('status', DirectHireRequest::STATUS_HIRED)
             ->whereNotNull('talent_user_id')
+            ->whereNotNull('talent_locked_at')
+            ->whereNull('talent_unlocked_at')
             ->pluck('talent_user_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
@@ -750,7 +997,7 @@ class DirectHireService
     }
 
     /**
-     * @return 'hired'|'open'|null
+     * @return 'hired'|'open'|'intermediation_locked'|null
      */
     public function companyProposeBlockReason(User $company, User $talent): ?string
     {
@@ -760,6 +1007,10 @@ class DirectHireService
 
         if ($this->companyHasHiredTalent($company, $talent)) {
             return 'hired';
+        }
+
+        if (app(RecruitmentRequestService::class)->activeNamedLockForTalent($company, $talent)) {
+            return 'intermediation_locked';
         }
 
         if ($this->companyHasOpenRequest($company)) {
@@ -772,7 +1023,8 @@ class DirectHireService
     public function companyProposeDisabledHint(User $company, User $talent): ?string
     {
         return match ($this->companyProposeBlockReason($company, $talent)) {
-            'hired' => __('talenma.direct_hire.cta_disabled_hired_hint'),
+            'hired' => __('talenma.direct_hire.cta_disabled_locked_hint'),
+            'intermediation_locked' => __('talenma.direct_hire.cta_disabled_locked_intermediation_hint'),
             'open' => __('talenma.direct_hire.cta_disabled_hint'),
             default => null,
         };
@@ -782,12 +1034,22 @@ class DirectHireService
      * Resolve propose flag + hint without N+1 when IDs are preloaded.
      *
      * @param  list<int>  $hiredTalentIds
+     * @param  list<int>  $lockedNamedTalentIds
      * @return array{0: bool, 1: string|null}
      */
-    public function resolveProposeForTalent(User $company, User $talent, bool $canProposeGlobally, array $hiredTalentIds): array
-    {
+    public function resolveProposeForTalent(
+        User $company,
+        User $talent,
+        bool $canProposeGlobally,
+        array $hiredTalentIds,
+        array $lockedNamedTalentIds = [],
+    ): array {
         if (in_array((int) $talent->id, $hiredTalentIds, true)) {
-            return [false, __('talenma.direct_hire.cta_disabled_hired_hint')];
+            return [false, __('talenma.direct_hire.cta_disabled_locked_hint')];
+        }
+
+        if (in_array((int) $talent->id, $lockedNamedTalentIds, true)) {
+            return [false, __('talenma.direct_hire.cta_disabled_locked_intermediation_hint')];
         }
 
         if (! $canProposeGlobally) {
@@ -858,6 +1120,21 @@ class DirectHireService
         }
 
         return $query->exists();
+    }
+
+    public function staffHasUnseenChanges(User $staff): bool
+    {
+        if (! $staff->isStaff()) {
+            return false;
+        }
+
+        return DirectHireRequest::query()
+            ->whereIn('hire_origin', DirectHireRequest::staffHireOrigins())
+            ->where(function ($inner) {
+                $inner->whereNull('staff_seen_at')
+                    ->orWhereColumn('staff_seen_at', '<', 'updated_at');
+            })
+            ->exists();
     }
 
     /**
@@ -1003,6 +1280,20 @@ class DirectHireService
         abort_unless($sameCreator || $sameOrg, 403);
     }
 
+    public function assertStaffCanManage(DirectHireRequest $request, User $actor): void
+    {
+        abort_unless($actor->isStaff() && $request->isStaffInitiated(), 403);
+    }
+
+    public function assertHiringSideCanManage(DirectHireRequest $request, User $actor): void
+    {
+        if ($actor->isStaff() && $request->isStaffInitiated()) {
+            return;
+        }
+
+        $this->assertCompanyCanManage($request, $actor);
+    }
+
     public function assertTalentCanView(DirectHireRequest $request, User $talent): void
     {
         abort_unless($talent->isTalent() && $request->talent_user_id === $talent->id, 403);
@@ -1016,6 +1307,21 @@ class DirectHireService
             return;
         }
 
-        $this->assertCompanyCanManage($request, $user);
+        $this->assertHiringSideCanManage($request, $user);
+    }
+
+    public function markSeenForHiringSide(User $actor, DirectHireRequest $directHire): void
+    {
+        $this->assertHiringSideCanManage($directHire, $actor);
+
+        $fields = $actor->isStaff()
+            ? ['staff_seen_at' => now()]
+            : ['company_seen_at' => now()];
+
+        DirectHireRequest::withoutTimestamps(function () use ($directHire, $fields) {
+            DirectHireRequest::query()
+                ->whereKey($directHire->id)
+                ->update($fields);
+        });
     }
 }

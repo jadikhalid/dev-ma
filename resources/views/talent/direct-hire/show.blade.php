@@ -13,7 +13,7 @@
             <div class="min-w-0">
                 <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.show_title') }}</h2>
                 <p class="text-sm text-gray-500 truncate">{{ __('talenma.direct_hire.title_prefix') }} {{ $directHire->shortSubject() }}</p>
-                <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.with_company', ['name' => $directHire->companyDisplayName()]) }}</p>
+                <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.with_company', ['name' => $directHire->talentFacingCompanyName()]) }}</p>
             </div>
             <div class="inline-flex items-center gap-2 shrink-0">
                 <span class="text-sm text-gray-500">{{ __('talenma.direct_hire.status_prefix') }}</span>

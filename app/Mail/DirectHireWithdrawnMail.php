@@ -34,7 +34,7 @@ class DirectHireWithdrawnMail extends Mailable
             with: [
                 'directHire' => $this->directHire,
                 'talentName' => $this->directHire->talentFormalDisplayName(),
-                'companyName' => $this->directHire->companyRecipientGreetingName(),
+                'companyName' => $this->directHire->companyFormalDisplayName(),
                 'url' => route('talent.direct-hire.show', $this->directHire),
             ],
         );

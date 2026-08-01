@@ -42,10 +42,14 @@ class DirectHireRoundCancelledMail extends Mailable
                 'greetingName' => $isTalent
                     ? $this->directHire->talentFormalDisplayName()
                     : $this->directHire->companyRecipientGreetingName(),
-                'companyName' => $this->directHire->companyRecipientGreetingName(),
+                'companyName' => $isTalent
+                    ? $this->directHire->companyFormalDisplayName()
+                    : $this->directHire->companyDisplayName(),
                 'url' => $isTalent
                     ? route('talent.direct-hire.show', $this->directHire)
-                    : route('company.direct-hire.show', $this->directHire),
+                    : ($this->directHire->isStaffInternal()
+                        ? route('admin.direct-hire.show', $this->directHire)
+                        : route('company.direct-hire.show', $this->directHire)),
             ],
         );
     }

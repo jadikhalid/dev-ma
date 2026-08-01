@@ -1,4 +1,5 @@
 @php
+    $hireRoute = $hireRoute ?? 'admin.direct-hire';
     $talent = $directHire->talent;
     $canManageRounds = $directHire->status === \App\Models\DirectHireRequest::STATUS_IN_PROCESS;
     $canRespondToDeferral = $directHire->awaitsCompanyDeferralReply();
@@ -7,20 +8,7 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <div
-            x-data="companyTalentProfileDrawer({
-                composeUrl: @js(route('inbox.store')),
-                csrf: @js(csrf_token()),
-                labels: @js([
-                    'profileError' => __('talenma.home.search_drawer_error'),
-                    'error' => __('talenma.home.search_drawer_error'),
-                    'composeError' => __('talenma.inbox.error'),
-                    'composeMinBody' => __('talenma.inbox.compose_min_body'),
-                    'composeSubjectRequired' => __('talenma.inbox.compose_subject_required'),
-                    'directHireDisabled' => __('talenma.direct_hire.cta_disabled_hint'),
-                ]),
-            })"
-        >
+        <div>
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0">
                     <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.show_title') }}</h2>
@@ -29,18 +17,18 @@
                         {{ __('talenma.direct_hire.with_talent', ['name' => $directHire->talentDisplayName()]) }}
                         @if ($talent)
                             —
-                            <button
-                                type="button"
-                                class="text-indigo-600 hover:text-indigo-800 underline underline-offset-2"
-                                @click="openProfile(@js(route('company.talent.show', $talent)))"
-                            >{{ __('talenma.direct_hire.view_talent') }}</button>
+                            <a href="{{ route('admin.users.registration', $talent) }}" class="text-indigo-600 hover:text-indigo-800 underline underline-offset-2">{{ __('talenma.direct_hire.view_talent') }}</a>
                         @endif
                     </p>
-                    @if ($directHire->isStaffOnBehalf())
-                        <p class="mt-1 inline-flex items-center rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-800 ring-1 ring-violet-200">
-                            {{ __('talenma.direct_hire.managed_by_platform_badge') }}
-                        </p>
-                    @endif
+                    <p class="text-sm text-gray-500">
+                        {{ __('talenma.direct_hire.admin_origin_label') }} :
+                        <span class="font-medium text-slate-700">{{ $directHire->hireOriginLabel() }}</span>
+                        @if ($directHire->isStaffOnBehalf())
+                            <span class="text-slate-300"> · </span>
+                            {{ __('talenma.direct_hire.admin_beneficiary_label') }} :
+                            <span class="font-medium text-slate-700">{{ $directHire->companyDisplayName() }}</span>
+                        @endif
+                    </p>
                 </div>
                 <div class="inline-flex items-center gap-2 shrink-0">
                     <span class="text-sm text-gray-500">{{ __('talenma.direct_hire.status_prefix') }}</span>
@@ -48,11 +36,9 @@
                 </div>
             </div>
 
-            @include('company._talent-profile-drawer', ['hideHireActions' => true])
-
             <div class="mt-2">
                 <a
-                    href="{{ route('company.direct-hire.index') }}"
+                    href="{{ route($hireRoute.'.index') }}"
                     class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800"
                 >
                     {{ __('talenma.direct_hire.show_back_to_list') }}
@@ -117,6 +103,7 @@
                                 'directHire' => $directHire,
                                 'canManageRounds' => $canManageRounds,
                                 'roundStatuses' => $roundStatuses,
+                                'hireRoute' => $hireRoute,
                             ])
                         </div>
 
@@ -124,10 +111,10 @@
                             <form
                                 id="direct-hire-round-create"
                                 method="POST"
-                                action="{{ route('company.direct-hire.rounds.store', $directHire) }}"
+                                action="{{ route($hireRoute.'.rounds.store', $directHire) }}"
                                 class="relative mt-2 rounded-lg border border-dashed border-slate-200 bg-slate-50/40 px-3.5 py-3 space-y-2.5"
                                 x-data="directHireRoundCreate({
-                                    storeUrl: @js(route('company.direct-hire.rounds.store', $directHire)),
+                                    storeUrl: @js(route($hireRoute.'.rounds.store', $directHire)),
                                     messages: @js([
                                         'titleRequired' => __('talenma.direct_hire.round_title_required'),
                                         'titleMin' => __('talenma.direct_hire.round_title_min'),
@@ -234,7 +221,7 @@
                                 id="direct-hire-close-actions"
                                 class="relative grid sm:grid-cols-2 gap-4 pt-2"
                                 x-data="directHireCompanyClose({
-                                    url: @js(route('company.direct-hire.close', $directHire)),
+                                    url: @js(route($hireRoute.'.close', $directHire)),
                                     messages: @js([
                                         'error' => __('talenma.direct_hire.close_error'),
                                         'networkError' => __('talenma.direct_hire.network_error'),
@@ -250,14 +237,14 @@
                                     ]),
                                 })"
                             >
-                                <form method="POST" action="{{ route('company.direct-hire.close', $directHire) }}" class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-3" @submit.prevent="requestConfirm">
+                                <form method="POST" action="{{ route($hireRoute.'.close', $directHire) }}" class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-3" @submit.prevent="requestConfirm">
                                     @csrf
                                     <input type="hidden" name="outcome" value="hired">
                                     <p class="text-sm font-semibold text-emerald-900">{{ __('talenma.direct_hire.close_hired') }}</p>
                                     <textarea name="closure_note" rows="2" maxlength="2000" class="block w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.direct_hire.closure_note_placeholder') }}" x-bind:disabled="loading"></textarea>
                                     <button type="submit" class="inline-flex px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-60" x-bind:disabled="loading">{{ __('talenma.direct_hire.close_hired_btn') }}</button>
                                 </form>
-                                <form method="POST" action="{{ route('company.direct-hire.close', $directHire) }}" class="rounded-xl border border-rose-100 bg-rose-50/40 p-4 space-y-3" @submit.prevent="requestConfirm">
+                                <form method="POST" action="{{ route($hireRoute.'.close', $directHire) }}" class="rounded-xl border border-rose-100 bg-rose-50/40 p-4 space-y-3" @submit.prevent="requestConfirm">
                                     @csrf
                                     <input type="hidden" name="outcome" value="closed_negative">
                                     <p class="text-sm font-semibold text-rose-900">{{ __('talenma.direct_hire.close_negative') }}</p>
@@ -301,7 +288,7 @@
                         id="direct-hire-deferral-reply"
                         class="relative bg-white rounded-2xl border p-6"
                         x-data="directHireDeferralReply({
-                            url: @js(route('company.direct-hire.deferral', $directHire)),
+                            url: @js(route($hireRoute.'.deferral', $directHire)),
                             messages: @js([
                                 'error' => __('talenma.direct_hire.deferral_reply_error'),
                                 'networkError' => __('talenma.direct_hire.network_error'),
@@ -312,7 +299,7 @@
                             ]),
                         })"
                     >
-                        <form method="POST" action="{{ route('company.direct-hire.deferral', $directHire) }}" class="space-y-4" @submit.prevent>
+                        <form method="POST" action="{{ route($hireRoute.'.deferral', $directHire) }}" class="space-y-4" @submit.prevent>
                             @csrf
                             <div>
                                 <p class="text-sm font-semibold text-gray-900">{{ __('talenma.direct_hire.deferral_reply_title') }}</p>
@@ -354,7 +341,7 @@
                 @endif
 
                 @if ($canWithdraw)
-                    @include('company.direct-hire._withdraw', ['directHire' => $directHire])
+                    @include('company.direct-hire._withdraw', ['directHire' => $directHire, 'hireRoute' => $hireRoute])
                 @endif
             </div>
 

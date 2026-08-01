@@ -196,6 +196,58 @@
                                             'talenma.dashboard.admin.activity_recruitment_comment'.($self ? '_self' : ''),
                                             ['actor' => $item['actor']],
                                         ),
+                                        'direct_hire_proposed' => __(
+                                            'talenma.dashboard.admin.activity_direct_hire_proposed'.($self ? '_self' : ''),
+                                            ['actor' => $item['actor'], 'subject' => $item['subject'] ?? ''],
+                                        ),
+                                        'direct_hire_accepted' => __('talenma.dashboard.admin.activity_direct_hire_accepted', [
+                                            'actor' => $item['actor'],
+                                            'subject' => $item['subject'] ?? '',
+                                        ]),
+                                        'direct_hire_declined' => __('talenma.dashboard.admin.activity_direct_hire_declined', [
+                                            'actor' => $item['actor'],
+                                            'subject' => $item['subject'] ?? '',
+                                        ]),
+                                        'direct_hire_deferred' => __('talenma.dashboard.admin.activity_direct_hire_deferred', [
+                                            'actor' => $item['actor'],
+                                            'subject' => $item['subject'] ?? '',
+                                        ]),
+                                        'direct_hire_hired' => __(
+                                            'talenma.dashboard.admin.activity_direct_hire_hired'.($self ? '_self' : ''),
+                                            ['actor' => $item['actor'], 'subject' => $item['subject'] ?? ''],
+                                        ),
+                                        'direct_hire_closed_negative' => __(
+                                            'talenma.dashboard.admin.activity_direct_hire_closed_negative'.($self ? '_self' : ''),
+                                            ['actor' => $item['actor'], 'subject' => $item['subject'] ?? ''],
+                                        ),
+                                        'direct_hire_withdrawn' => __(
+                                            'talenma.dashboard.admin.activity_direct_hire_withdrawn'.($self ? '_self' : ''),
+                                            ['actor' => $item['actor'], 'subject' => $item['subject'] ?? ''],
+                                        ),
+                                        'direct_hire_message' => __('talenma.dashboard.admin.activity_direct_hire_message', [
+                                            'actor' => $item['actor'],
+                                            'subject' => $item['subject'] ?? '',
+                                        ]),
+                                        'direct_hire_message_sent' => __(
+                                            'talenma.dashboard.admin.activity_direct_hire_message_sent'.($self ? '_self' : ''),
+                                            ['actor' => $item['actor'], 'subject' => $item['subject'] ?? ''],
+                                        ),
+                                        'direct_hire_round_added' => __('talenma.dashboard.admin.activity_direct_hire_round_added', [
+                                            'actor' => $item['actor'],
+                                            'subject' => $item['subject'] ?? '',
+                                            'round' => $item['detail'] ?? '',
+                                        ]),
+                                        'direct_hire_round_cancelled' => __('talenma.dashboard.admin.activity_direct_hire_round_cancelled', [
+                                            'actor' => $item['actor'],
+                                            'subject' => $item['subject'] ?? '',
+                                            'round' => $item['detail'] ?? '',
+                                        ]),
+                                        'direct_hire_round_result' => __('talenma.dashboard.admin.activity_direct_hire_round_result', [
+                                            'actor' => $item['actor'],
+                                            'subject' => $item['subject'] ?? '',
+                                            'round' => $item['detail'] ?? '',
+                                            'result' => $item['result'] ?? '',
+                                        ]),
                                         'recruitment_status' => match ($item['result'] ?? '') {
                                             'in_progress' => __(
                                                 'talenma.dashboard.admin.activity_recruitment_taken_'.$mode.($self ? '_self' : ''),
@@ -222,8 +274,12 @@
                                         default => $item['actor'],
                                     };
                                     $dotClass = match ($item['type'] ?? '') {
-                                        'recruitment_message', 'recruitment_message_sent', 'inbox_message', 'inbox_message_sent' => 'bg-violet-500',
-                                        'recruitment_submitted' => 'bg-sky-500',
+                                        'recruitment_message', 'recruitment_message_sent', 'inbox_message', 'inbox_message_sent',
+                                        'direct_hire_message', 'direct_hire_message_sent' => 'bg-violet-500',
+                                        'recruitment_submitted', 'direct_hire_proposed',
+                                        'direct_hire_accepted', 'direct_hire_declined', 'direct_hire_deferred' => 'bg-sky-500',
+                                        'direct_hire_hired' => 'bg-emerald-500',
+                                        'direct_hire_closed_negative', 'direct_hire_withdrawn' => 'bg-rose-500',
                                         default => 'bg-amber-500',
                                     };
                                 @endphp

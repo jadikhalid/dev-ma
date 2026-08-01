@@ -1,13 +1,20 @@
 @php
     $mine = (int) $msg->sender_user_id === (int) $viewer->id;
-    $senderLabel = $mine
-        ? __('talenma.direct_hire.chat_you')
-        : ($msg->sender?->isCompany()
-            ? $directHire->companyDisplayName()
-            : ($msg->sender?->name
-                ?? ($msg->sender_user_id === null
-                    ? __('talenma.direct_hire.party_deleted')
-                    : $directHire->talentDisplayName())));
+    $senderIsHiringSide = $msg->sender?->isCompany() || $msg->sender?->isStaff();
+    if ($mine) {
+        $senderLabel = __('talenma.direct_hire.chat_you');
+    } elseif ($viewer->isTalent() && $senderIsHiringSide) {
+        $senderLabel = $directHire->talentFacingCompanyName();
+    } elseif ($senderIsHiringSide) {
+        $senderLabel = $msg->sender?->isStaff()
+            ? ($msg->sender->name ?: __('talenma.direct_hire.platform_employer_name'))
+            : $directHire->companyDisplayName();
+    } else {
+        $senderLabel = $msg->sender?->name
+            ?? ($msg->sender_user_id === null
+                ? __('talenma.direct_hire.party_deleted')
+                : $directHire->talentDisplayName());
+    }
 @endphp
 <div
     @class([

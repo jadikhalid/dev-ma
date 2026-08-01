@@ -35,9 +35,7 @@ class DirectHireChatMessageMail extends Mailable
 
     public function content(): Content
     {
-        $url = $this->recipientIsCompany
-            ? route('company.direct-hire.show', $this->directHire)
-            : route('talent.direct-hire.show', $this->directHire);
+        $url = $this->showUrl();
 
         return new Content(
             view: 'emails.direct-hire-chat',
@@ -51,18 +49,43 @@ class DirectHireChatMessageMail extends Mailable
         );
     }
 
-    private function senderDisplayName(): string
+    private function showUrl(): string
     {
-        if ($this->sender->isCompany()) {
-            return $this->directHire->companyRecipientGreetingName();
+        if (! $this->recipientIsCompany) {
+            return route('talent.direct-hire.show', $this->directHire);
         }
 
-        return $this->directHire->talentFormalDisplayName();
+        if ($this->recipient->isStaff()) {
+            return route('admin.direct-hire.show', $this->directHire);
+        }
+
+        return route('company.direct-hire.show', $this->directHire);
+    }
+
+    private function senderDisplayName(): string
+    {
+        if ($this->sender->isTalent()) {
+            return $this->directHire->talentFormalDisplayName();
+        }
+
+        if (! $this->recipientIsCompany) {
+            return $this->directHire->talentFacingCompanyName();
+        }
+
+        if ($this->sender->isStaff()) {
+            return $this->sender->name ?: __('talenma.direct_hire.platform_employer_name');
+        }
+
+        return $this->directHire->companyRecipientGreetingName();
     }
 
     private function recipientGreetingName(): string
     {
         if ($this->recipientIsCompany) {
+            if ($this->recipient->isStaff()) {
+                return $this->recipient->name ?: __('talenma.direct_hire.platform_employer_name');
+            }
+
             return $this->directHire->companyRecipientGreetingName();
         }
 

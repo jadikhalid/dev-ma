@@ -33,7 +33,7 @@ class DirectHireProposalMail extends Mailable
             view: 'emails.direct-hire-proposal',
             with: [
                 'directHire' => $this->directHire,
-                'companyName' => $this->directHire->companyRecipientGreetingName(),
+                'companyName' => $this->directHire->companyFormalDisplayName(),
                 'talent' => $this->directHire->talent,
                 'url' => route('talent.direct-hire.show', $this->directHire),
             ],

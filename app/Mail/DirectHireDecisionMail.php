@@ -32,6 +32,10 @@ class DirectHireDecisionMail extends Mailable
 
     public function content(): Content
     {
+        $url = $this->directHire->isStaffInternal()
+            ? route('admin.direct-hire.show', $this->directHire)
+            : route('company.direct-hire.show', $this->directHire);
+
         return new Content(
             view: 'emails.direct-hire-decision',
             with: [
@@ -39,7 +43,7 @@ class DirectHireDecisionMail extends Mailable
                 'decision' => $this->decision,
                 'greetingName' => $this->directHire->companyRecipientGreetingName(),
                 'talentName' => $this->directHire->talentFormalDisplayName(),
-                'url' => route('company.direct-hire.show', $this->directHire),
+                'url' => $url,
             ],
         );
     }

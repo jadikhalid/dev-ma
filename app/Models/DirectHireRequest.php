@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'talent_name_snapshot',
     'company_profile_id',
     'company_name_snapshot',
+    'hire_origin',
+    'initiated_by_user_id',
     'subject',
     'message',
     'status',
@@ -27,6 +29,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'closure_note',
     'talent_seen_at',
     'company_seen_at',
+    'staff_seen_at',
+    'talent_locked_at',
+    'talent_unlocked_at',
 ])]
 class DirectHireRequest extends Model
 {
@@ -45,6 +50,12 @@ class DirectHireRequest extends Model
     public const STATUS_CLOSED_NEGATIVE = 'closed_negative';
 
     public const STATUS_WITHDRAWN = 'withdrawn';
+
+    public const ORIGIN_COMPANY = 'company';
+
+    public const ORIGIN_STAFF_INTERNAL = 'staff_internal';
+
+    public const ORIGIN_STAFF_ON_BEHALF = 'staff_on_behalf';
 
     public const DECISION_ACCEPT = 'accept';
 
@@ -112,6 +123,29 @@ class DirectHireRequest extends Model
     /**
      * @return list<string>
      */
+    public static function hireOrigins(): array
+    {
+        return [
+            self::ORIGIN_COMPANY,
+            self::ORIGIN_STAFF_INTERNAL,
+            self::ORIGIN_STAFF_ON_BEHALF,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function staffHireOrigins(): array
+    {
+        return [
+            self::ORIGIN_STAFF_INTERNAL,
+            self::ORIGIN_STAFF_ON_BEHALF,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
     public static function companyDeferralActions(): array
     {
         return [
@@ -128,7 +162,34 @@ class DirectHireRequest extends Model
             'closed_at' => 'datetime',
             'talent_seen_at' => 'datetime',
             'company_seen_at' => 'datetime',
+            'staff_seen_at' => 'datetime',
+            'talent_locked_at' => 'datetime',
+            'talent_unlocked_at' => 'datetime',
         ];
+    }
+
+    public function hasActiveTalentLock(): bool
+    {
+        return $this->talent_locked_at !== null && $this->talent_unlocked_at === null;
+    }
+
+    public function activateTalentLock(): void
+    {
+        $this->forceFill([
+            'talent_locked_at' => $this->talent_locked_at ?? now(),
+            'talent_unlocked_at' => null,
+        ])->save();
+    }
+
+    public function releaseTalentLock(): void
+    {
+        if (! $this->hasActiveTalentLock()) {
+            return;
+        }
+
+        $this->forceFill([
+            'talent_unlocked_at' => now(),
+        ])->save();
     }
 
     public function awaitsCompanyDeferralReply(): bool
@@ -147,9 +208,50 @@ class DirectHireRequest extends Model
         return $this->belongsTo(User::class, 'talent_user_id');
     }
 
+    public function initiatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'initiated_by_user_id');
+    }
+
     public function companyProfile(): BelongsTo
     {
         return $this->belongsTo(CompanyProfile::class);
+    }
+
+    public function isStaffInitiated(): bool
+    {
+        return in_array($this->hire_origin, self::staffHireOrigins(), true);
+    }
+
+    public function isStaffInternal(): bool
+    {
+        return $this->hire_origin === self::ORIGIN_STAFF_INTERNAL;
+    }
+
+    public function isStaffOnBehalf(): bool
+    {
+        return $this->hire_origin === self::ORIGIN_STAFF_ON_BEHALF;
+    }
+
+    /**
+     * Counterparty label shown to the talent (never the client company for staff-led hires).
+     */
+    public function talentFacingCompanyName(): string
+    {
+        if ($this->isStaffInitiated()) {
+            return __('talenma.direct_hire.platform_employer_name');
+        }
+
+        return $this->companyDisplayName();
+    }
+
+    public function hireOriginLabel(): string
+    {
+        return match ($this->hire_origin) {
+            self::ORIGIN_STAFF_INTERNAL => __('talenma.direct_hire.origin_staff_internal'),
+            self::ORIGIN_STAFF_ON_BEHALF => __('talenma.direct_hire.origin_staff_on_behalf'),
+            default => __('talenma.direct_hire.origin_company'),
+        };
     }
 
     public function conversation(): BelongsTo
@@ -269,6 +371,14 @@ class DirectHireRequest extends Model
 
     public function companyDisplayName(): string
     {
+        if ($this->isStaffInternal()) {
+            $snapshot = trim((string) ($this->company_name_snapshot ?? ''));
+
+            return $snapshot !== ''
+                ? $snapshot
+                : __('talenma.direct_hire.platform_employer_name');
+        }
+
         $this->loadMissing(['companyProfile.user', 'company']);
 
         $live = trim((string) (
@@ -328,11 +438,11 @@ class DirectHireRequest extends Model
     }
 
     /**
-     * Company name for outbound mail (From / subject) — preserve original casing.
+     * Company name for talent-facing outbound mail (subject / body) — masked when staff-led.
      */
     public function companyFormalDisplayName(): string
     {
-        return $this->companyDisplayName();
+        return $this->talentFacingCompanyName();
     }
 
     /**
@@ -340,7 +450,20 @@ class DirectHireRequest extends Model
      */
     public function companyRecipientGreetingName(): string
     {
-        $this->loadMissing(['company', 'companyProfile']);
+        $this->loadMissing(['company', 'companyProfile', 'initiatedBy']);
+
+        if ($this->isStaffInternal()) {
+            $staff = $this->initiatedBy;
+            $person = trim((string) (($staff?->first_name ?? '').' '.($staff?->last_name ?? '')));
+
+            if ($person === '') {
+                $person = trim((string) ($staff?->name ?? ''));
+            }
+
+            return $person !== ''
+                ? $this->titleCasePersonName($person)
+                : __('talenma.direct_hire.platform_employer_name');
+        }
 
         $initiator = $this->company;
 
@@ -390,6 +513,10 @@ class DirectHireRequest extends Model
 
     public function hasCompanyParty(): bool
     {
+        if ($this->isStaffInternal()) {
+            return true;
+        }
+
         return $this->company_user_id !== null || $this->company_profile_id !== null;
     }
 
@@ -442,5 +569,22 @@ class DirectHireRequest extends Model
         }
 
         return $this->talent_seen_at->getTimestamp() < $this->updated_at->getTimestamp();
+    }
+
+    public function hasUnseenChangesForStaff(): bool
+    {
+        if (! $this->isStaffInitiated()) {
+            return false;
+        }
+
+        if ($this->staff_seen_at === null) {
+            return true;
+        }
+
+        if (! $this->updated_at) {
+            return false;
+        }
+
+        return $this->staff_seen_at->getTimestamp() < $this->updated_at->getTimestamp();
     }
 }

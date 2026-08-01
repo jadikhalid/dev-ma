@@ -6,6 +6,7 @@ use App\Models\Profession;
 use App\Models\Profile;
 use App\Models\ProfileDocument;
 use App\Models\User;
+use App\Services\CompanyTalentActionStateService;
 use App\Services\DirectHireService;
 use App\Services\ProfessionCatalogService;
 use App\Services\RecruitmentRequestService;
@@ -24,6 +25,7 @@ class CompanySearchController extends Controller
         private TalentActivityTracker $activityTracker,
         private DirectHireService $directHires,
         private RecruitmentRequestService $recruitmentRequests,
+        private CompanyTalentActionStateService $talentActions,
     ) {}
 
     public function index(Request $request): View|JsonResponse|RedirectResponse
@@ -36,6 +38,7 @@ class CompanySearchController extends Controller
         $canProposeDirectHire = $this->directHires->companyCanPropose($company);
         $hiredTalentIds = $this->directHires->hiredTalentIdsForCompany($company);
         $blockedNamedTalentIds = $this->recruitmentRequests->blockedNamedTalentIdsForCompany($company);
+        $lockedNamedTalentIds = $this->recruitmentRequests->lockedNamedTalentIdsForCompany($company);
         $revealedTalentIds = $this->directHires->openTalentIdsForCompany($company);
 
         $talents = $this->filteredTalentsQuery($request)
@@ -53,6 +56,7 @@ class CompanySearchController extends Controller
                         $hiredTalentIds,
                         in_array($talent->id, $revealedTalentIds, true),
                         $blockedNamedTalentIds,
+                        $lockedNamedTalentIds,
                     ))
                     ->values(),
                 'meta' => [
@@ -75,6 +79,7 @@ class CompanySearchController extends Controller
             'canProposeDirectHire' => $canProposeDirectHire,
             'hiredTalentIds' => $hiredTalentIds,
             'blockedNamedTalentIds' => $blockedNamedTalentIds,
+            'lockedNamedTalentIds' => $lockedNamedTalentIds,
             'revealedTalentIds' => $revealedTalentIds,
             'filters' => [
                 'sector' => (string) $request->input('sector', ''),
@@ -106,6 +111,7 @@ class CompanySearchController extends Controller
         $canRequestNamed = $this->recruitmentRequests->companyCanRequestNamedForTalent($company, $talent);
         $namedRequestDisabledHint = $this->recruitmentRequests->namedRequestDisabledHint($company, $talent);
         $existingNamedRequest = $this->recruitmentRequests->existingNamedRequestForCompanyTalent($company, $talent);
+        $lockedDirectHire = $this->directHires->activeHireLockForTalent($company, $talent);
         $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($company, $talent);
 
         if ($request->wantsJson()) {
@@ -116,6 +122,7 @@ class CompanySearchController extends Controller
                 $this->directHires->hiredTalentIdsForCompany($company),
                 $forceReveal,
                 $this->recruitmentRequests->blockedNamedTalentIdsForCompany($company),
+                $this->recruitmentRequests->lockedNamedTalentIdsForCompany($company),
             ));
         }
 
@@ -126,6 +133,7 @@ class CompanySearchController extends Controller
             'canRequestNamed' => $canRequestNamed,
             'namedRequestDisabledHint' => $namedRequestDisabledHint,
             'existingNamedRequest' => $existingNamedRequest,
+            'lockedDirectHire' => $lockedDirectHire,
             'forceRevealProfile' => $forceReveal,
         ]);
     }
@@ -240,6 +248,7 @@ class CompanySearchController extends Controller
     /**
      * @param  list<int>  $hiredTalentIds
      * @param  list<int>  $blockedNamedTalentIds
+     * @param  list<int>  $lockedNamedTalentIds
      * @return array<string, mixed>
      */
     private function presentTalent(
@@ -249,24 +258,12 @@ class CompanySearchController extends Controller
         array $hiredTalentIds = [],
         bool $forceReveal = false,
         array $blockedNamedTalentIds = [],
+        array $lockedNamedTalentIds = [],
     ): array {
         $profile = $talent->profile;
         $experienceYears = $profile?->experience_years;
         $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
-        [$canPropose, $disabledHint] = $this->directHires->resolveProposeForTalent(
-            $company,
-            $talent,
-            $canProposeGlobally,
-            $hiredTalentIds,
-        );
-        $canRequestNamed = ! in_array((int) $talent->id, $blockedNamedTalentIds, true);
-        $namedHint = $canRequestNamed
-            ? null
-            : ($this->recruitmentRequests->namedRequestDisabledHint($company, $talent)
-                ?: __('talenma.recruitment.named_blocked_open'));
-        $existingNamed = $canRequestNamed
-            ? null
-            : $this->recruitmentRequests->existingNamedRequestForCompanyTalent($company, $talent);
+        $actions = $this->talentActions->for($company, $talent);
 
         return [
             'id' => $talent->id,
@@ -291,20 +288,14 @@ class CompanySearchController extends Controller
                 ? route('company.talent.cv', $talent)
                 : null,
             'profile_url' => route('company.talent.show', $talent),
-            'recruitment_url' => $canRequestNamed
-                ? route('recruitment.create', $talent)
-                : ($existingNamed ? route('sourcing.show', $existingNamed) : null),
-            'can_request_named' => $canRequestNamed,
-            'named_request_disabled_hint' => $namedHint,
-            'direct_hire_url' => route('company.direct-hire.create', $talent),
-            'can_propose_direct_hire' => $canPropose,
-            'direct_hire_disabled_hint' => $disabledHint,
+            ...$actions,
         ];
     }
 
     /**
      * @param  list<int>  $hiredTalentIds
      * @param  list<int>  $blockedNamedTalentIds
+     * @param  list<int>  $lockedNamedTalentIds
      * @return array<string, mixed>
      */
     private function presentTalentProfile(
@@ -314,6 +305,7 @@ class CompanySearchController extends Controller
         array $hiredTalentIds = [],
         bool $forceReveal = false,
         array $blockedNamedTalentIds = [],
+        array $lockedNamedTalentIds = [],
     ): array {
         $profile = $talent->profile;
         $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
@@ -323,20 +315,7 @@ class CompanySearchController extends Controller
             ->unique()
             ->values();
         $cv = $profile?->cvDocument();
-        [$canPropose, $disabledHint] = $this->directHires->resolveProposeForTalent(
-            $company,
-            $talent,
-            $canProposeGlobally,
-            $hiredTalentIds,
-        );
-        $canRequestNamed = ! in_array((int) $talent->id, $blockedNamedTalentIds, true);
-        $namedHint = $canRequestNamed
-            ? null
-            : ($this->recruitmentRequests->namedRequestDisabledHint($company, $talent)
-                ?: __('talenma.recruitment.named_blocked_open'));
-        $existingNamed = $canRequestNamed
-            ? null
-            : $this->recruitmentRequests->existingNamedRequestForCompanyTalent($company, $talent);
+        $actions = $this->talentActions->for($company, $talent);
 
         return [
             'name' => $profile?->visibleDisplayName($talent, $forceReveal) ?? $talent->publicDisplayName(),
@@ -364,16 +343,8 @@ class CompanySearchController extends Controller
             'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
                 ? $profile->presentation_video_url
                 : null,
-            'talent_id' => $talent->id,
             'compose_url' => route('inbox.store'),
-            'direct_hire_url' => route('company.direct-hire.create', $talent),
-            'can_propose_direct_hire' => $canPropose,
-            'direct_hire_disabled_hint' => $disabledHint,
-            'recruitment_url' => $canRequestNamed
-                ? route('recruitment.create', $talent)
-                : ($existingNamed ? route('sourcing.show', $existingNamed) : null),
-            'can_request_named' => $canRequestNamed,
-            'named_request_disabled_hint' => $namedHint,
+            ...$actions,
         ];
     }
 }

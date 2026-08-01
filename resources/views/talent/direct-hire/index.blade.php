@@ -85,7 +85,7 @@
                                             </span>
                                         </div>
                                         <p class="truncate text-xs text-slate-600">
-                                            <span class="font-medium text-slate-800">{{ $hire->companyDisplayName() }}</span>
+                                            <span class="font-medium text-slate-800">{{ $hire->talentFacingCompanyName() }}</span>
                                             <span class="text-slate-300"> · </span>
                                             {{ __('talenma.direct_hire.talent_index_opened', ['date' => $hire->created_at?->translatedFormat('d M Y') ?? '—']) }}
                                         </p>
@@ -143,7 +143,7 @@
                                             </span>
                                         </div>
                                         <p class="truncate text-xs text-slate-600">
-                                            <span class="font-medium text-slate-800">{{ $hire->companyDisplayName() }}</span>
+                                            <span class="font-medium text-slate-800">{{ $hire->talentFacingCompanyName() }}</span>
                                         </p>
                                         <p class="truncate text-[11px] text-slate-500">
                                             {{ __('talenma.direct_hire.talent_index_opened', ['date' => $hire->created_at?->translatedFormat('d M Y') ?? '—']) }}

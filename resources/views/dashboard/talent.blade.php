@@ -165,6 +165,7 @@
                                         'direct_hire_message_sent' => __('talenma.dashboard.talent.stats.activity_direct_hire_message_sent', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'inbox_message' => __('talenma.dashboard.talent.stats.activity_inbox_message', ['actor' => $item['actor']]),
                                         'inbox_message_sent' => __('talenma.dashboard.talent.stats.activity_inbox_message_sent', ['actor' => $item['actor']]),
+                                        'talent_unlocked' => __('talenma.dashboard.talent.stats.activity_talent_unlocked', ['actor' => $item['actor']]),
                                         default => __('talenma.dashboard.talent.stats.activity_view', ['actor' => $item['actor']]),
                                     };
 
@@ -180,6 +181,12 @@
                                             'bg-blue-500',
                                             'bg-blue-50 text-blue-700 ring-blue-100',
                                             'hover:bg-blue-50/80',
+                                        ],
+                                        ($item['type'] ?? '') === 'talent_unlocked' => [
+                                            __('talenma.dashboard.talent.stats.activity_cat_lock'),
+                                            'bg-amber-500',
+                                            'bg-amber-50 text-amber-800 ring-amber-100',
+                                            'hover:bg-amber-50/80',
                                         ],
                                         str_starts_with((string) ($item['type'] ?? ''), 'direct_hire') => [
                                             __('talenma.dashboard.talent.stats.activity_cat_hire'),

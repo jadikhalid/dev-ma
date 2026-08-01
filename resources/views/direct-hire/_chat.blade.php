@@ -4,9 +4,11 @@
     $sidebar = $sidebar ?? false;
     $storeRoute = $viewer->isTalent()
         ? route('talent.direct-hire.messages.store', $directHire)
-        : route('company.direct-hire.messages.store', $directHire);
+        : ($viewer->isStaff()
+            ? route('admin.direct-hire.messages.store', $directHire)
+            : route('company.direct-hire.messages.store', $directHire));
     $peerName = $viewer->isTalent()
-        ? $directHire->companyDisplayName()
+        ? $directHire->talentFacingCompanyName()
         : $directHire->talentDisplayName();
 @endphp
 

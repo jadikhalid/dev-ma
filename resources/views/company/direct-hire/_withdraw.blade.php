@@ -1,5 +1,8 @@
+@php
+    $hireRoute = $hireRoute ?? 'company.direct-hire';
+@endphp
 <div id="direct-hire-withdraw" class="bg-white rounded-2xl border p-6">
-    <form method="POST" action="{{ route('company.direct-hire.withdraw', $directHire) }}" class="space-y-3" onsubmit="return confirm(@js(__('talenma.direct_hire.withdraw_confirm')))">
+    <form method="POST" action="{{ route($hireRoute.'.withdraw', $directHire) }}" class="space-y-3" onsubmit="return confirm(@js(__('talenma.direct_hire.withdraw_confirm')))">
         @csrf
         <p class="text-sm font-semibold text-gray-900">{{ __('talenma.direct_hire.withdraw_title') }}</p>
         <textarea name="closure_note" rows="2" maxlength="2000" class="block w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.direct_hire.closure_note_placeholder') }}"></textarea>

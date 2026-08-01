@@ -1,159 +1,219 @@
 <?php
 
-namespace App\Http\Controllers\Company;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
 use App\Models\User;
-use App\Services\CompanyTalentActionStateService;
 use App\Services\DirectHireService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DirectHireController extends Controller
 {
     public function __construct(
         private DirectHireService $directHires,
-        private CompanyTalentActionStateService $talentActions,
     ) {}
 
     public function index(Request $request): View
     {
-        $user = $request->user();
-        abort_unless($user->isCompany(), 403);
+        abort_unless($request->user()?->isStaff(), 403);
 
-        $open = $this->directHires->queryForCompany($user)
-            ->with(['talent', 'rounds'])
-            ->whereIn('status', DirectHireRequest::openStatuses())
-            ->latest()
-            ->get();
+        $filter = $request->string('filter')->toString() ?: 'open';
+        if (! in_array($filter, ['open', 'closed', 'all'], true)) {
+            $filter = 'open';
+        }
 
-        $closed = $this->directHires->queryForCompany($user)
-            ->with(['talent', 'rounds'])
-            ->whereIn('status', DirectHireRequest::terminalStatuses())
-            ->latest()
-            ->get();
+        $origin = $request->string('origin')->toString() ?: 'all';
+        if (! in_array($origin, ['all', ...DirectHireRequest::staffHireOrigins()], true)) {
+            $origin = 'all';
+        }
 
-        return view('company.direct-hire.index', [
-            'openRequests' => $open,
-            'closedRequests' => $closed,
+        $query = $this->directHires->queryForStaff()
+            ->with(['talent', 'company', 'companyProfile', 'initiatedBy', 'rounds'])
+            ->latest();
+
+        if ($filter === 'open') {
+            $query->whereIn('status', DirectHireRequest::openStatuses());
+        } elseif ($filter === 'closed') {
+            $query->whereIn('status', DirectHireRequest::terminalStatuses());
+        }
+
+        if ($origin !== 'all') {
+            $query->where('hire_origin', $origin);
+        }
+
+        $requests = $query->paginate(20)->withQueryString();
+
+        $baseCounts = $this->directHires->queryForStaff();
+        if ($origin !== 'all') {
+            $baseCounts->where('hire_origin', $origin);
+        }
+
+        $counts = [
+            'open' => (clone $baseCounts)->whereIn('status', DirectHireRequest::openStatuses())->count(),
+            'closed' => (clone $baseCounts)->whereIn('status', DirectHireRequest::terminalStatuses())->count(),
+            'all' => (clone $baseCounts)->count(),
+        ];
+
+        $originCounts = [
+            'all' => $this->directHires->queryForStaff()->count(),
+            DirectHireRequest::ORIGIN_STAFF_INTERNAL => $this->directHires->queryForStaff()
+                ->where('hire_origin', DirectHireRequest::ORIGIN_STAFF_INTERNAL)
+                ->count(),
+            DirectHireRequest::ORIGIN_STAFF_ON_BEHALF => $this->directHires->queryForStaff()
+                ->where('hire_origin', DirectHireRequest::ORIGIN_STAFF_ON_BEHALF)
+                ->count(),
+        ];
+
+        return view('admin.direct-hire.index', [
+            'requests' => $requests,
+            'filter' => $filter,
+            'origin' => $origin,
+            'counts' => $counts,
+            'originCounts' => $originCounts,
+        ]);
+    }
+
+    public function searchTalents(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->isStaff(), 403);
+
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:1', 'max:100'],
+        ]);
+
+        $term = trim($data['q']);
+        $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+
+        $results = User::query()
+            ->where('role', 'dev')
+            ->where('approval_status', 'approved')
+            ->where(function ($query) use ($like) {
+                $query->where('name', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhere('first_name', 'like', $like)
+                    ->orWhere('last_name', 'like', $like);
+            })
+            ->orderBy('name')
+            ->limit(12)
+            ->get(['id', 'name', 'email', 'first_name', 'last_name'])
+            ->map(fn (User $talent) => [
+                'id' => $talent->id,
+                'label' => $talent->name,
+                'email' => $talent->email,
+                'create_url' => route('admin.direct-hire.create', $talent),
+            ])
+            ->values()
+            ->all();
+
+        return response()->json([
+            'results' => $results,
         ]);
     }
 
     public function create(Request $request, User $talent): View|RedirectResponse
     {
-        if (! $request->user()->isCompany()) {
-            return redirect()->route('dashboard');
-        }
-
+        abort_unless($request->user()?->isStaff(), 403);
         abort_unless($talent->isTalent() && $talent->approval_status === 'approved', 404);
 
-        $blockReason = $this->directHires->companyProposeBlockReason($request->user(), $talent);
+        $companies = User::query()
+            ->where('role', 'company')
+            ->where('approval_status', 'approved')
+            ->where(function ($query) {
+                $query->whereNull('company_seat')
+                    ->orWhere('company_seat', User::SEAT_OWNER);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
 
-        if ($blockReason !== null) {
-            $message = $blockReason === 'hired'
-                ? __('talenma.direct_hire.error_already_hired')
-                : __('talenma.direct_hire.error_process_open');
-
-            return redirect()
-                ->route('company.search')
-                ->with('toast_error', $message);
-        }
-
-        return view('company.direct-hire.create', [
+        return view('admin.direct-hire.create', [
             'talent' => $talent->load('profile'),
+            'companies' => $companies,
+            'staffInternalOpen' => $this->directHires->staffHasOpenInternalRequest(),
         ]);
     }
 
     public function store(Request $request, User $talent): RedirectResponse|JsonResponse
     {
-        if (! $request->user()->isCompany()) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => __('talenma.direct_hire.create_error'),
-                ], 403);
-            }
-
-            return redirect()->route('dashboard');
-        }
-
+        abort_unless($request->user()?->isStaff(), 403);
         abort_unless($talent->isTalent() && $talent->approval_status === 'approved', 404);
 
         $data = $request->validate([
+            'hire_origin' => ['required', Rule::in(DirectHireRequest::staffHireOrigins())],
+            'company_id' => [
+                'nullable',
+                'integer',
+                Rule::requiredIf(fn () => $request->input('hire_origin') === DirectHireRequest::ORIGIN_STAFF_ON_BEHALF),
+                'exists:users,id',
+            ],
             'subject' => ['required', 'string', 'min:5', 'max:120'],
             'message' => ['required', 'string', 'min:40', 'max:5000'],
         ], [
+            'hire_origin.required' => __('talenma.direct_hire.origin_required'),
+            'hire_origin.in' => __('talenma.direct_hire.error_origin_invalid'),
+            'company_id.required' => __('talenma.direct_hire.error_beneficiary_required'),
+            'company_id.exists' => __('talenma.direct_hire.error_beneficiary_invalid'),
             'subject.required' => __('talenma.direct_hire.subject_required'),
             'subject.min' => __('talenma.direct_hire.subject_min'),
             'message.required' => __('talenma.direct_hire.message_required'),
             'message.min' => __('talenma.direct_hire.message_min'),
         ]);
 
-        $directHire = $this->directHires->create(
+        $beneficiary = null;
+        if ($data['hire_origin'] === DirectHireRequest::ORIGIN_STAFF_ON_BEHALF) {
+            $beneficiary = User::query()->findOrFail($data['company_id']);
+        }
+
+        $directHire = $this->directHires->createByStaff(
             $request->user(),
             $talent,
             $data['subject'],
             $data['message'],
+            $data['hire_origin'],
+            $beneficiary,
         );
 
         $message = __('talenma.direct_hire.sent');
 
         if ($request->expectsJson()) {
-            // On affiche le toast uniquement après le chargement de la page cible.
             session()->flash('toast_success', $message);
 
             return response()->json([
                 'message' => $message,
-                'show_url' => route('company.direct-hire.show', $directHire),
+                'show_url' => route('admin.direct-hire.show', $directHire),
             ]);
         }
 
         return redirect()
-            ->route('company.direct-hire.show', $directHire)
+            ->route('admin.direct-hire.show', $directHire)
             ->with('toast_success', $message);
     }
 
     public function show(Request $request, DirectHireRequest $directHire): View
     {
-        $this->directHires->assertCompanyCanManage($directHire, $request->user());
+        $this->directHires->assertStaffCanManage($directHire, $request->user());
         $this->directHires->ensureThreadSeeded($directHire);
-        $this->directHires->markSeenForCompany($request->user(), $directHire);
+        $this->directHires->markSeenForHiringSide($request->user(), $directHire);
 
         $directHire->load([
             'talent.profile',
+            'company',
             'companyProfile',
+            'initiatedBy',
             'rounds',
             'messages.sender',
         ]);
 
-        return view('company.direct-hire.show', [
+        return view('admin.direct-hire.show', [
             'directHire' => $directHire,
             'roundStatuses' => DirectHireRound::outcomeStatuses(),
+            'hireRoute' => 'admin.direct-hire',
         ]);
-    }
-
-    public function unlockTalent(Request $request, DirectHireRequest $directHire): RedirectResponse|JsonResponse
-    {
-        $this->directHires->unlockTalentForCompany($directHire, $request->user());
-
-        $talent = $directHire->fresh(['talent'])?->talent;
-        $message = __('talenma.direct_hire.talent_unlocked');
-
-        if ($request->expectsJson() || $request->wantsJson()) {
-            abort_unless($talent, 404);
-
-            return response()->json([
-                'message' => $message,
-                ...$this->talentActions->for($request->user(), $talent),
-            ]);
-        }
-
-        return redirect()
-            ->route('company.direct-hire.show', $directHire)
-            ->with('toast_success', $message);
     }
 
     public function storeMessage(Request $request, DirectHireRequest $directHire): RedirectResponse
@@ -169,7 +229,7 @@ class DirectHireController extends Controller
         $this->directHires->postMessage($directHire, $request->user(), $data['body']);
 
         return redirect()
-            ->route('company.direct-hire.show', $directHire)
+            ->route('admin.direct-hire.show', $directHire)
             ->withFragment('direct-hire-chat')
             ->with('toast_success', __('talenma.direct_hire.chat_sent'));
     }
@@ -217,6 +277,7 @@ class DirectHireController extends Controller
                     'round' => $round,
                     'canManageRounds' => true,
                     'roundStatuses' => DirectHireRound::outcomeStatuses(),
+                    'hireRoute' => 'admin.direct-hire',
                 ])->render(),
             ]);
         }
@@ -259,7 +320,6 @@ class DirectHireController extends Controller
             'status.in' => __('talenma.direct_hire.error_round_status_invalid'),
         ]);
 
-        // Ensure optional clears are passed through when the edit form is submitted.
         if ($request->exists('meeting_url')) {
             $data['meeting_url'] = $request->input('meeting_url');
         }
@@ -269,7 +329,6 @@ class DirectHireController extends Controller
         }
 
         $round = $this->directHires->updateRound($round, $request->user(), $data);
-
         $message = __('talenma.direct_hire.round_updated');
 
         if ($request->wantsJson()) {
@@ -331,7 +390,7 @@ class DirectHireController extends Controller
             'can_edit' => $round->isEditable(),
             'can_cancel' => $canCancel,
             'cancel_url' => $canCancel
-                ? route('company.direct-hire.rounds.cancel', [$directHire, $round])
+                ? route('admin.direct-hire.rounds.cancel', [$directHire, $round])
                 : null,
             'scheduled_at_local' => $round->scheduled_at
                 ?->timezone(config('app.timezone'))
@@ -359,7 +418,6 @@ class DirectHireController extends Controller
         );
 
         $directHire->refresh()->load(['rounds', 'talent', 'companyProfile']);
-
         $message = __('talenma.direct_hire.closed');
 
         if ($request->expectsJson()) {
@@ -381,6 +439,7 @@ class DirectHireController extends Controller
                     'directHire' => $directHire,
                     'canManageRounds' => $canManageRounds,
                     'roundStatuses' => $roundStatuses,
+                    'hireRoute' => 'admin.direct-hire',
                 ])->render(),
             ]);
         }
@@ -434,12 +493,16 @@ class DirectHireController extends Controller
                     'directHire' => $directHire,
                 ])->render(),
                 'withdraw_html' => $canWithdraw
-                    ? view('company.direct-hire._withdraw', ['directHire' => $directHire])->render()
+                    ? view('company.direct-hire._withdraw', [
+                        'directHire' => $directHire,
+                        'hireRoute' => 'admin.direct-hire',
+                    ])->render()
                     : null,
                 'rounds_list_html' => view('company.direct-hire._rounds-list', [
                     'directHire' => $directHire,
                     'canManageRounds' => $canManageRounds,
                     'roundStatuses' => $roundStatuses,
+                    'hireRoute' => 'admin.direct-hire',
                 ])->render(),
             ]);
         }
@@ -460,5 +523,20 @@ class DirectHireController extends Controller
         );
 
         return back()->with('toast_success', __('talenma.direct_hire.withdrawn'));
+    }
+
+    public function unlockTalent(Request $request, DirectHireRequest $directHire): RedirectResponse|JsonResponse
+    {
+        $this->directHires->unlockTalentForCompany($directHire, $request->user());
+
+        $message = __('talenma.direct_hire.talent_unlocked');
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json(['message' => $message]);
+        }
+
+        return redirect()
+            ->route('admin.direct-hire.show', $directHire)
+            ->with('toast_success', $message);
     }
 }

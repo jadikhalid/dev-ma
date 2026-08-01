@@ -36,6 +36,7 @@ class CompanyDashboardActivityService
         return $this->directHireEvents($company, $fetch)
             ->concat($this->roundEvents($company, $fetch))
             ->concat($this->recruitmentEvents($company, $fetch))
+            ->concat($this->talentUnlockEvents($company, $fetch))
             ->concat($this->jobApplicationEvents($company, $fetch))
             ->concat($this->inboxMessageEvents($company, $fetch))
             ->sortByDesc(fn (array $item) => $item['at']?->timestamp ?? 0)
@@ -364,6 +365,61 @@ class CompanyDashboardActivityService
             ->values();
 
         return $statusEvents->concat($messageEvents);
+    }
+
+    /**
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
+     */
+    private function talentUnlockEvents(User $company, int $limit): Collection
+    {
+        $events = collect();
+
+        if ($company->isCompanyOwner()) {
+            RecruitmentRequest::query()
+                ->where('company_user_id', $company->id)
+                ->where('mode', RecruitmentRequest::MODE_NAMED)
+                ->whereNotNull('developer_user_id')
+                ->whereNotNull('talent_unlocked_at')
+                ->with('talent')
+                ->latest('talent_unlocked_at')
+                ->limit($limit)
+                ->get()
+                ->each(function (RecruitmentRequest $request) use ($events) {
+                    $events->push($this->activityItem(
+                        type: 'talent_unlocked',
+                        actor: $request->talent?->name
+                            ?: __('talenma.dashboard.company.activity.unknown_talent'),
+                        at: $request->talent_unlocked_at,
+                        subject: $request->talent?->name,
+                        detail: 'named',
+                        href: route('sourcing.show', $request),
+                        self: true,
+                    ));
+                });
+        }
+
+        $this->directHires->queryForCompany($company)
+            ->where('status', DirectHireRequest::STATUS_HIRED)
+            ->whereNotNull('talent_user_id')
+            ->whereNotNull('talent_unlocked_at')
+            ->with('talent')
+            ->latest('talent_unlocked_at')
+            ->limit($limit)
+            ->get()
+            ->each(function (DirectHireRequest $request) use ($events) {
+                $events->push($this->activityItem(
+                    type: 'talent_unlocked',
+                    actor: $request->talentDisplayName()
+                        ?: __('talenma.dashboard.company.activity.unknown_talent'),
+                    at: $request->talent_unlocked_at,
+                    subject: $request->shortSubject(),
+                    detail: 'direct_hire',
+                    href: route('company.direct-hire.show', $request),
+                    self: true,
+                ));
+            });
+
+        return $events;
     }
 
     /**

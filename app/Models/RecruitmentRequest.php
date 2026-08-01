@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'status_updated_by',
     'company_seen_at',
     'staff_seen_at',
+    'talent_locked_at',
+    'talent_unlocked_at',
 ])]
 class RecruitmentRequest extends Model
 {
@@ -89,7 +91,19 @@ class RecruitmentRequest extends Model
     }
 
     /**
-     * Statuses that block a new named intermediation for the same talent.
+     * Statuses that keep the dossier open (ongoing) — always block a new named request.
+     * Successful closures block only while the company talent lock is active
+     * (see hasActiveTalentLock()).
+     *
+     * @return list<string>
+     */
+    public static function namedOpenBlockingStatuses(): array
+    {
+        return self::openStatuses();
+    }
+
+    /**
+     * @deprecated Prefer namedOpenBlockingStatuses() + hasActiveTalentLock()
      *
      * @return list<string>
      */
@@ -120,6 +134,8 @@ class RecruitmentRequest extends Model
             'status_updated_at' => 'datetime',
             'company_seen_at' => 'datetime',
             'staff_seen_at' => 'datetime',
+            'talent_locked_at' => 'datetime',
+            'talent_unlocked_at' => 'datetime',
         ];
     }
 
@@ -244,6 +260,30 @@ class RecruitmentRequest extends Model
             self::STATUS_COMPLETED_UNSUCCESSFUL,
             self::STATUS_CANCELLED,
         ], true);
+    }
+
+    public function hasActiveTalentLock(): bool
+    {
+        return $this->talent_locked_at !== null && $this->talent_unlocked_at === null;
+    }
+
+    public function activateTalentLock(): void
+    {
+        $this->forceFill([
+            'talent_locked_at' => $this->talent_locked_at ?? now(),
+            'talent_unlocked_at' => null,
+        ])->save();
+    }
+
+    public function releaseTalentLock(): void
+    {
+        if (! $this->hasActiveTalentLock()) {
+            return;
+        }
+
+        $this->forceFill([
+            'talent_unlocked_at' => now(),
+        ])->save();
     }
 
     public function allowsChat(): bool

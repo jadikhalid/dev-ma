@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\Conversation;
+use App\Models\DirectHireMessage;
+use App\Models\DirectHireRequest;
+use App\Models\DirectHireRound;
 use App\Models\Message;
 use App\Models\RecruitmentRequest;
 use App\Models\RecruitmentRequestMessage;
@@ -28,6 +31,7 @@ class StaffRecruitmentActivityService
         return $this->statusEvents($staff, $fetch)
             ->concat($this->messageEvents($staff, $fetch))
             ->concat($this->inboxMessageEvents($staff, $fetch))
+            ->concat($this->directHireEvents($staff, $fetch))
             ->sortByDesc(fn (array $item) => $item['at']?->timestamp ?? 0)
             ->take($limit)
             ->values()
@@ -165,6 +169,176 @@ class StaffRecruitmentActivityService
             })
             ->filter()
             ->values();
+    }
+
+    /**
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self: bool}>
+     */
+    private function directHireEvents(User $staff, int $limit): Collection
+    {
+        $events = collect();
+
+        $requests = DirectHireRequest::query()
+            ->whereIn('hire_origin', DirectHireRequest::staffHireOrigins())
+            ->with(['talent', 'company', 'companyProfile', 'initiatedBy'])
+            ->latest('updated_at')
+            ->limit($limit)
+            ->get();
+
+        foreach ($requests as $request) {
+            $href = route('admin.direct-hire.show', $request);
+            $subject = $request->shortSubject();
+            $talentName = $request->talentDisplayName();
+            $detail = $request->hire_origin;
+
+            if ($request->created_at) {
+                $isSelf = (int) $request->initiated_by_user_id === (int) $staff->id;
+                $events->push($this->item(
+                    type: 'direct_hire_proposed',
+                    actor: $talentName,
+                    at: $request->created_at,
+                    subject: $subject,
+                    detail: $detail,
+                    href: $href,
+                    self: $isSelf,
+                ));
+            }
+
+            if ($request->talent_decision_at) {
+                $decisionType = match ($request->status) {
+                    DirectHireRequest::STATUS_IN_PROCESS,
+                    DirectHireRequest::STATUS_HIRED,
+                    DirectHireRequest::STATUS_CLOSED_NEGATIVE => 'direct_hire_accepted',
+                    DirectHireRequest::STATUS_DECLINED => 'direct_hire_declined',
+                    DirectHireRequest::STATUS_DEFERRED => 'direct_hire_deferred',
+                    default => null,
+                };
+
+                if ($decisionType !== null) {
+                    $events->push($this->item(
+                        type: $decisionType,
+                        actor: $talentName,
+                        at: $request->talent_decision_at,
+                        subject: $subject,
+                        detail: $detail,
+                        href: $href,
+                        self: false,
+                    ));
+                }
+            }
+
+            if ($request->closed_at && in_array($request->status, [
+                DirectHireRequest::STATUS_HIRED,
+                DirectHireRequest::STATUS_CLOSED_NEGATIVE,
+                DirectHireRequest::STATUS_WITHDRAWN,
+            ], true)) {
+                $type = match ($request->status) {
+                    DirectHireRequest::STATUS_HIRED => 'direct_hire_hired',
+                    DirectHireRequest::STATUS_WITHDRAWN => 'direct_hire_withdrawn',
+                    default => 'direct_hire_closed_negative',
+                };
+                $isSelf = (int) $request->closed_by === (int) $staff->id;
+
+                $events->push($this->item(
+                    type: $type,
+                    actor: $talentName,
+                    at: $request->closed_at,
+                    subject: $subject,
+                    detail: $detail,
+                    href: $href,
+                    self: $isSelf,
+                ));
+            }
+        }
+
+        $messages = DirectHireMessage::query()
+            ->whereHas('request', fn ($query) => $query->whereIn('hire_origin', DirectHireRequest::staffHireOrigins()))
+            ->with(['request.talent', 'request.company', 'request.companyProfile', 'sender'])
+            ->latest()
+            ->limit($limit)
+            ->get();
+
+        foreach ($messages as $message) {
+            $request = $message->request;
+
+            if (! $request || ! $message->sender_user_id) {
+                continue;
+            }
+
+            $fromStaff = $message->sender?->isStaff() ?? false;
+            $isSelf = (int) $message->sender_user_id === (int) $staff->id;
+            $actor = $fromStaff
+                ? ($message->sender?->name ?: __('talenma.direct_hire.platform_employer_name'))
+                : ($message->sender?->isCompany()
+                    ? $request->companyDisplayName()
+                    : $request->talentDisplayName());
+
+            $events->push($this->item(
+                type: $fromStaff ? 'direct_hire_message_sent' : 'direct_hire_message',
+                actor: $actor,
+                at: $message->created_at,
+                subject: $request->shortSubject(),
+                detail: $request->hire_origin,
+                href: route('admin.direct-hire.show', $request).'#direct-hire-chat',
+                self: $isSelf,
+            ));
+        }
+
+        $rounds = DirectHireRound::query()
+            ->whereHas('request', fn ($query) => $query->whereIn('hire_origin', DirectHireRequest::staffHireOrigins()))
+            ->with(['request.talent', 'request.company', 'request.companyProfile'])
+            ->latest('updated_at')
+            ->limit($limit)
+            ->get();
+
+        foreach ($rounds as $round) {
+            $request = $round->request;
+
+            if (! $request) {
+                continue;
+            }
+
+            $href = route('admin.direct-hire.show', $request);
+            $subject = $request->shortSubject();
+            $talentName = $request->talentDisplayName();
+
+            if ($round->created_at) {
+                $events->push($this->item(
+                    type: 'direct_hire_round_added',
+                    actor: $talentName,
+                    at: $round->created_at,
+                    subject: $subject,
+                    detail: $round->title,
+                    href: $href,
+                    self: false,
+                ));
+            }
+
+            if ($round->isCancelled()) {
+                $events->push($this->item(
+                    type: 'direct_hire_round_cancelled',
+                    actor: $talentName,
+                    at: $round->updated_at ?? $round->completed_at ?? $round->created_at,
+                    subject: $subject,
+                    detail: $round->title,
+                    href: $href,
+                    self: false,
+                ));
+            } elseif ($round->completed_at && in_array($round->status, DirectHireRound::outcomeStatuses(), true)) {
+                $events->push($this->item(
+                    type: 'direct_hire_round_result',
+                    actor: $talentName,
+                    at: $round->completed_at,
+                    subject: $subject,
+                    detail: $round->title,
+                    result: $round->statusLabel(),
+                    href: $href,
+                    self: false,
+                ));
+            }
+        }
+
+        return $events->filter()->values();
     }
 
     private function subjectLabel(RecruitmentRequest $request): string

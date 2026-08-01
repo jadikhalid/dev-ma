@@ -21,6 +21,7 @@
     $canCancel = $canManage && $round->isCancellable();
     $scheduledLocal = $round->scheduled_at?->timezone(config('app.timezone'))->format('Y-m-d\TH:i') ?? '';
     $scheduledLabel = $round->scheduled_at?->translatedFormat('d M Y H:i') ?? '';
+    $hireRoute = $hireRoute ?? 'company.direct-hire';
 @endphp
 
 <div
@@ -32,8 +33,8 @@
     @if ($canManage)
         x-bind:class="{ 'opacity-80': isCancelled }"
         x-data="directHireRoundManage({
-            updateUrl: @js(route('company.direct-hire.rounds.update', [$directHire, $round])),
-            cancelUrl: @js($canCancel ? route('company.direct-hire.rounds.cancel', [$directHire, $round]) : null),
+            updateUrl: @js(route($hireRoute.'.rounds.update', [$directHire, $round])),
+            cancelUrl: @js($canCancel ? route($hireRoute.'.rounds.cancel', [$directHire, $round]) : null),
             canEdit: @js($canEdit),
             canCancel: @js($canCancel),
             initial: @js([

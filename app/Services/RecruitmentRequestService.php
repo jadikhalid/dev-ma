@@ -244,7 +244,8 @@ class RecruitmentRequestService
     }
 
     /**
-     * Talent IDs blocked for a new named intermediation (open, in progress, or closed successfully).
+     * Talent IDs blocked for a new named intermediation:
+     * open/in progress, or successfully closed while company lock is active.
      *
      * @return list<int>
      */
@@ -258,7 +259,17 @@ class RecruitmentRequestService
             ->whereIn('company_user_id', $this->companyActorIds($company))
             ->where('mode', RecruitmentRequest::MODE_NAMED)
             ->whereNotNull('developer_user_id')
-            ->whereIn('status', RecruitmentRequest::namedBlockingStatuses())
+            ->where(function ($query) {
+                $query->whereIn('status', RecruitmentRequest::namedOpenBlockingStatuses())
+                    ->orWhere(function ($locked) {
+                        $locked->whereIn('status', [
+                            RecruitmentRequest::STATUS_COMPLETED_SUCCESSFUL,
+                            RecruitmentRequest::STATUS_COMPLETED,
+                        ])
+                            ->whereNotNull('talent_locked_at')
+                            ->whereNull('talent_unlocked_at');
+                    });
+            })
             ->pluck('developer_user_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
@@ -276,29 +287,129 @@ class RecruitmentRequestService
             ->whereIn('company_user_id', $this->companyActorIds($company))
             ->where('mode', RecruitmentRequest::MODE_NAMED)
             ->where('developer_user_id', $talent->id)
-            ->whereIn('status', RecruitmentRequest::namedBlockingStatuses())
+            ->where(function ($query) {
+                $query->whereIn('status', RecruitmentRequest::namedOpenBlockingStatuses())
+                    ->orWhere(function ($locked) {
+                        $locked->whereIn('status', [
+                            RecruitmentRequest::STATUS_COMPLETED_SUCCESSFUL,
+                            RecruitmentRequest::STATUS_COMPLETED,
+                        ])
+                            ->whereNotNull('talent_locked_at')
+                            ->whereNull('talent_unlocked_at');
+                    });
+            })
             ->latest()
             ->first();
     }
 
     public function companyCanRequestNamedForTalent(User $company, User $talent): bool
     {
-        return $this->existingNamedRequestForCompanyTalent($company, $talent) === null;
+        if ($this->existingNamedRequestForCompanyTalent($company, $talent) !== null) {
+            return false;
+        }
+
+        return app(DirectHireService::class)->activeHireLockForTalent($company, $talent) === null;
+    }
+
+    /**
+     * Talent IDs with an active company lock after successful named intermediation.
+     *
+     * @return list<int>
+     */
+    public function lockedNamedTalentIdsForCompany(User $company): array
+    {
+        if (! $company->isCompany()) {
+            return [];
+        }
+
+        return RecruitmentRequest::query()
+            ->whereIn('company_user_id', $this->companyActorIds($company))
+            ->where('mode', RecruitmentRequest::MODE_NAMED)
+            ->whereNotNull('developer_user_id')
+            ->whereIn('status', [
+                RecruitmentRequest::STATUS_COMPLETED_SUCCESSFUL,
+                RecruitmentRequest::STATUS_COMPLETED,
+            ])
+            ->whereNotNull('talent_locked_at')
+            ->whereNull('talent_unlocked_at')
+            ->pluck('developer_user_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function activeNamedLockForTalent(User $company, User $talent): ?RecruitmentRequest
+    {
+        if (! $company->isCompany() || ! $talent->isTalent()) {
+            return null;
+        }
+
+        return RecruitmentRequest::query()
+            ->whereIn('company_user_id', $this->companyActorIds($company))
+            ->where('mode', RecruitmentRequest::MODE_NAMED)
+            ->where('developer_user_id', $talent->id)
+            ->whereIn('status', [
+                RecruitmentRequest::STATUS_COMPLETED_SUCCESSFUL,
+                RecruitmentRequest::STATUS_COMPLETED,
+            ])
+            ->whereNotNull('talent_locked_at')
+            ->whereNull('talent_unlocked_at')
+            ->latest()
+            ->first();
     }
 
     public function namedRequestDisabledHint(User $company, User $talent): ?string
     {
         $existing = $this->existingNamedRequestForCompanyTalent($company, $talent);
 
-        if (! $existing) {
-            return null;
+        if ($existing) {
+            if ($existing->isClosedSuccessful() && $existing->hasActiveTalentLock()) {
+                return __('talenma.recruitment.named_blocked_locked');
+            }
+
+            return __('talenma.recruitment.named_blocked_open');
         }
 
-        if ($existing->isClosedSuccessful()) {
-            return __('talenma.recruitment.named_blocked_closed_successful');
+        if (app(DirectHireService::class)->activeHireLockForTalent($company, $talent)) {
+            return __('talenma.recruitment.named_blocked_locked_direct_hire');
         }
 
-        return __('talenma.recruitment.named_blocked_open');
+        return null;
+    }
+
+    public function syncTalentLockAfterStatusChange(RecruitmentRequest $request, bool $statusChanged): void
+    {
+        if (! $statusChanged || ! $request->isNamed()) {
+            return;
+        }
+
+        if ($request->isClosedSuccessful()) {
+            $request->activateTalentLock();
+
+            return;
+        }
+
+        if ($request->isClosedUnsuccessful() && $request->hasActiveTalentLock()) {
+            $request->releaseTalentLock();
+        }
+    }
+
+    public function unlockTalentForCompany(RecruitmentRequest $request, User $company): RecruitmentRequest
+    {
+        if (! $company->isCompany()) {
+            abort(403);
+        }
+
+        $actorIds = $this->companyActorIds($company);
+        abort_unless(in_array((int) $request->company_user_id, $actorIds, true), 403);
+        abort_unless($request->isNamed(), 404);
+        abort_unless($request->isClosedSuccessful(), 422);
+        abort_unless($request->hasActiveTalentLock(), 422);
+
+        $request->releaseTalentLock();
+
+        return $request->refresh();
     }
 
     /**
