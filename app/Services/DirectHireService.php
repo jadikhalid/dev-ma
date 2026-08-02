@@ -13,6 +13,7 @@ use App\Mail\DirectHireWithdrawnMail;
 use App\Models\DirectHireMessage;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
+use App\Models\DirectHireStatusEvent;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -63,6 +64,15 @@ class DirectHireService
                 'conversation_id' => null,
                 'company_seen_at' => now(),
             ]);
+
+            $this->recordStatusEvent(
+                $request,
+                DirectHireStatusEvent::EVENT_PROPOSED,
+                DirectHireRequest::STATUS_PENDING_RESPONSE,
+                $company,
+                null,
+                $request->created_at,
+            );
 
             return $request;
         });
@@ -117,13 +127,11 @@ class DirectHireService
         $now = now();
 
         DirectHireRequest::withoutTimestamps(function () use ($request, $newStatus, $talent, $note, $now) {
-            $request->update([
+            $payload = [
                 'status' => $newStatus,
                 'talent_decision_at' => $now,
                 'talent_decision_note' => filled($note) ? trim($note) : null,
                 'talent_seen_at' => $now,
-                // Talent acted: force hiring-side unseen indicators (company + staff).
-                'company_seen_at' => null,
                 'staff_seen_at' => null,
                 'closed_at' => $newStatus === DirectHireRequest::STATUS_DECLINED ? $now : null,
                 'closed_by' => $newStatus === DirectHireRequest::STATUS_DECLINED ? $talent->id : null,
@@ -132,17 +140,30 @@ class DirectHireService
                     ? null
                     : $request->closure_note,
                 'updated_at' => $now,
-            ]);
+            ];
+
+            // Staff-on-behalf dossiers must never light up the beneficiary company account.
+            if (! $request->isStaffInitiated()) {
+                $payload['company_seen_at'] = null;
+            }
+
+            $request->update($payload);
         });
+
+        $this->recordStatusEvent(
+            $request,
+            DirectHireStatusEvent::EVENT_TALENT_DECISION,
+            $newStatus,
+            $talent,
+            filled($note) ? trim($note) : null,
+            $now,
+        );
 
         $request->refresh();
         $request->load(['company', 'companyProfile', 'talent', 'initiatedBy']);
 
         try {
-            $hiringRecipient = $request->company;
-            if (! $hiringRecipient && $request->isStaffInternal()) {
-                $hiringRecipient = $request->initiatedBy;
-            }
+            $hiringRecipient = $this->hiringSideMailRecipient($request);
 
             if (filled($hiringRecipient?->email)) {
                 Mail::to($hiringRecipient->email)->send(new DirectHireDecisionMail($request, $decision));
@@ -197,21 +218,10 @@ class DirectHireService
                 ]);
             }
 
-            if ($this->companyHasHiredTalent($beneficiaryCompany, $talent)) {
-                throw ValidationException::withMessages([
-                    'talent_id' => __('talenma.direct_hire.error_already_hired'),
-                ]);
-            }
-
-            if ($this->companyHasOpenRequest($beneficiaryCompany)) {
+            // Independent from the company account: no company open-slot / hire-lock / intermediation coupling.
+            if ($this->staffHasOpenOnBehalfRequestFor($beneficiaryCompany, $talent)) {
                 throw ValidationException::withMessages([
                     'talent_id' => __('talenma.direct_hire.error_process_open'),
-                ]);
-            }
-
-            if (app(RecruitmentRequestService::class)->activeNamedLockForTalent($beneficiaryCompany, $talent)) {
-                throw ValidationException::withMessages([
-                    'talent_id' => __('talenma.direct_hire.error_intermediation_locked'),
                 ]);
             }
 
@@ -237,7 +247,7 @@ class DirectHireService
             $companyProfileId,
             $companyNameSnapshot,
         ) {
-            return DirectHireRequest::create([
+            $request = DirectHireRequest::create([
                 'company_user_id' => $companyUserId,
                 'talent_user_id' => $talent->id,
                 'talent_name_snapshot' => $talent->name,
@@ -249,9 +259,20 @@ class DirectHireService
                 'message' => $message,
                 'status' => DirectHireRequest::STATUS_PENDING_RESPONSE,
                 'conversation_id' => null,
-                'company_seen_at' => now(),
+                'company_seen_at' => null,
                 'staff_seen_at' => now(),
             ]);
+
+            $this->recordStatusEvent(
+                $request,
+                DirectHireStatusEvent::EVENT_PROPOSED,
+                DirectHireRequest::STATUS_PENDING_RESPONSE,
+                $staff,
+                null,
+                $request->created_at,
+            );
+
+            return $request;
         });
 
         $request->load(['company', 'companyProfile', 'talent', 'initiatedBy']);
@@ -274,6 +295,46 @@ class DirectHireService
     }
 
     /**
+     * Open staff-on-behalf dossier for the same beneficiary company + talent (admin-only capacity).
+     */
+    public function staffHasOpenOnBehalfRequestFor(User $beneficiaryCompany, User $talent): bool
+    {
+        if (! $beneficiaryCompany->isCompany() || ! $talent->isTalent()) {
+            return false;
+        }
+
+        $org = $beneficiaryCompany->companyOrganization();
+        $query = DirectHireRequest::query()
+            ->where('hire_origin', DirectHireRequest::ORIGIN_STAFF_ON_BEHALF)
+            ->where('talent_user_id', $talent->id)
+            ->whereIn('status', DirectHireRequest::openStatuses());
+
+        if ($org) {
+            $query->where('company_profile_id', $org->id);
+        } else {
+            $query->where('company_user_id', $beneficiaryCompany->id);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * Hiring-side mailbox for staff-led dossiers (never the beneficiary company).
+     */
+    public function hiringSideMailRecipient(DirectHireRequest $request): ?User
+    {
+        if ($request->isStaffInitiated()) {
+            $request->loadMissing('initiatedBy');
+
+            return $request->initiatedBy;
+        }
+
+        $request->loadMissing('company');
+
+        return $request->company;
+    }
+
+    /**
      * @return 'open'|'hired'|'intermediation_locked'|null
      */
     public function staffProposeBlockReason(User $talent, string $origin, ?User $beneficiaryCompany = null): ?string
@@ -290,7 +351,7 @@ class DirectHireService
             return 'open';
         }
 
-        return $this->companyProposeBlockReason($beneficiaryCompany, $talent);
+        return $this->staffHasOpenOnBehalfRequestFor($beneficiaryCompany, $talent) ? 'open' : null;
     }
 
     public function queryForStaff(): \Illuminate\Database\Eloquent\Builder
@@ -355,6 +416,15 @@ class DirectHireService
             ]);
         });
 
+        $this->recordStatusEvent(
+            $request,
+            DirectHireStatusEvent::EVENT_DEFERRAL_ACKNOWLEDGED,
+            DirectHireRequest::STATUS_DEFERRED,
+            $actor,
+            filled($note) ? trim($note) : null,
+            $now,
+        );
+
         $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
 
         try {
@@ -391,9 +461,6 @@ class DirectHireService
                 'staff_seen_at' => $now,
                 'talent_seen_at' => null,
             ];
-            if ($request->isStaffOnBehalf()) {
-                $payload['company_seen_at'] = null;
-            }
             $this->writeRequestTimestamps($request->id, $payload);
         } elseif ($sender->isCompany()) {
             $payload = [
@@ -406,12 +473,15 @@ class DirectHireService
             }
             $this->writeRequestTimestamps($request->id, $payload);
         } else {
-            $this->writeRequestTimestamps($request->id, [
+            $payload = [
                 'updated_at' => $now,
                 'talent_seen_at' => $now,
-                'company_seen_at' => null,
                 'staff_seen_at' => null,
-            ]);
+            ];
+            if (! $request->isStaffInitiated()) {
+                $payload['company_seen_at'] = null;
+            }
+            $this->writeRequestTimestamps($request->id, $payload);
         }
 
         $request->refresh()->loadMissing(['talent', 'company', 'companyProfile', 'initiatedBy']);
@@ -605,9 +675,10 @@ class DirectHireService
             }
         }
 
-        if (filled($request->company?->email)) {
+        $hiringRecipient = $this->hiringSideMailRecipient($request);
+        if (filled($hiringRecipient?->email)) {
             try {
-                Mail::to($request->company->email)->send(
+                Mail::to($hiringRecipient->email)->send(
                     new DirectHireRoundCancelledMail($request, $round, 'company')
                 );
             } catch (\Throwable) {
@@ -632,9 +703,6 @@ class DirectHireService
 
         if ($actor->isStaff()) {
             $payload['staff_seen_at'] = $now;
-            if ($request->isStaffOnBehalf()) {
-                $payload['company_seen_at'] = null;
-            }
         } else {
             $payload['company_seen_at'] = $now;
             if ($request->isStaffInitiated()) {
@@ -657,11 +725,6 @@ class DirectHireService
 
         if ($actor->isStaff()) {
             $fields['staff_seen_at'] = $now;
-            if ($request->isStaffOnBehalf()) {
-                $fields['company_seen_at'] = null;
-            } else {
-                $fields['company_seen_at'] = $now;
-            }
         } else {
             $fields['company_seen_at'] = $now;
             if ($request->isStaffInitiated()) {
@@ -727,13 +790,8 @@ class DirectHireService
         User $sender,
     ): void {
         if ($sender->isTalent()) {
-            $recipientIsCompany = true;
-            $recipient = $request->company;
-
-            if (! $recipient && $request->isStaffInternal()) {
-                $request->loadMissing('initiatedBy');
-                $recipient = $request->initiatedBy;
-            }
+            $recipient = $this->hiringSideMailRecipient($request);
+            $recipientIsCompany = (bool) $recipient;
         } else {
             $recipientIsCompany = false;
             $recipient = $request->talent;
@@ -767,6 +825,23 @@ class DirectHireService
         DirectHireRequest::withoutTimestamps(function () use ($requestId, $values) {
             DirectHireRequest::query()->whereKey($requestId)->update($values);
         });
+    }
+
+    private function recordStatusEvent(
+        DirectHireRequest $request,
+        string $event,
+        string $status,
+        ?User $actor = null,
+        ?string $comment = null,
+        mixed $at = null,
+    ): DirectHireStatusEvent {
+        return $request->statusEvents()->create([
+            'event' => $event,
+            'status' => $status,
+            'comment' => filled($comment) ? trim($comment) : null,
+            'actor_user_id' => $actor?->id,
+            'created_at' => $at ?? now(),
+        ]);
     }
 
     public function close(DirectHireRequest $request, User $actor, string $outcome, ?string $note = null): DirectHireRequest
@@ -806,6 +881,15 @@ class DirectHireService
 
             $request->update($payload);
         });
+
+        $this->recordStatusEvent(
+            $request,
+            DirectHireStatusEvent::EVENT_CLOSED,
+            $outcome,
+            $actor,
+            filled($note) ? trim($note) : null,
+            $now,
+        );
 
         $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
         $this->notifyTalentClosed($request);
@@ -850,6 +934,15 @@ class DirectHireService
             ]);
         });
 
+        $this->recordStatusEvent(
+            $request,
+            DirectHireStatusEvent::EVENT_WITHDRAWN,
+            DirectHireRequest::STATUS_WITHDRAWN,
+            $actor,
+            filled($note) ? trim($note) : null,
+            $now,
+        );
+
         $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
         $this->notifyTalentWithdrawn($request);
 
@@ -858,10 +951,12 @@ class DirectHireService
 
     /**
      * Base query of direct-hire requests visible to this company account.
+     * Staff-on-behalf dossiers are admin-only and must never appear here.
      */
     public function queryForCompany(User $company): \Illuminate\Database\Eloquent\Builder
     {
-        $query = DirectHireRequest::query();
+        $query = DirectHireRequest::query()
+            ->where('hire_origin', DirectHireRequest::ORIGIN_COMPANY);
 
         if (! $company->isCompany()) {
             return $query->whereRaw('0 = 1');
@@ -891,18 +986,10 @@ class DirectHireService
             return false;
         }
 
-        $org = $company->companyOrganization();
-        $query = DirectHireRequest::query()
+        return $this->queryForCompany($company)
             ->where('talent_user_id', $talent->id)
-            ->whereIn('status', DirectHireRequest::openStatuses());
-
-        if ($org) {
-            $query->where('company_profile_id', $org->id);
-        } else {
-            $query->where('company_user_id', $company->id);
-        }
-
-        return $query->exists();
+            ->whereIn('status', DirectHireRequest::openStatuses())
+            ->exists();
     }
 
     /**
@@ -916,17 +1003,8 @@ class DirectHireService
             return [];
         }
 
-        $org = $company->companyOrganization();
-        $query = DirectHireRequest::query()
-            ->whereIn('status', DirectHireRequest::openStatuses());
-
-        if ($org) {
-            $query->where('company_profile_id', $org->id);
-        } else {
-            $query->where('company_user_id', $company->id);
-        }
-
-        return $query
+        return $this->queryForCompany($company)
+            ->whereIn('status', DirectHireRequest::openStatuses())
             ->pluck('talent_user_id')
             ->filter()
             ->map(fn ($id) => (int) $id)
@@ -1106,20 +1184,12 @@ class DirectHireService
             return false;
         }
 
-        $org = $company->companyOrganization();
-        $query = DirectHireRequest::query()
+        return $this->queryForCompany($company)
             ->where(function ($inner) {
                 $inner->whereNull('company_seen_at')
                     ->orWhereColumn('company_seen_at', '<', 'updated_at');
-            });
-
-        if ($org) {
-            $query->where('company_profile_id', $org->id);
-        } else {
-            $query->where('company_user_id', $company->id);
-        }
-
-        return $query->exists();
+            })
+            ->exists();
     }
 
     public function staffHasUnseenChanges(User $staff): bool
@@ -1174,6 +1244,7 @@ class DirectHireService
         // Seat removal: reassign creator to the owner so org history stays intact.
         if ($user->isCompanyMember() && $org && (int) $org->user_id !== (int) $user->id) {
             DirectHireRequest::query()
+                ->where('hire_origin', DirectHireRequest::ORIGIN_COMPANY)
                 ->where('company_user_id', $user->id)
                 ->update(['company_user_id' => $org->user_id]);
 
@@ -1212,7 +1283,7 @@ class DirectHireService
 
     private function detachCompanyParty(User $company, ?\App\Models\CompanyProfile $org): void
     {
-        $query = DirectHireRequest::query()->with(['companyProfile.user', 'company', 'talent']);
+        $query = DirectHireRequest::query()->with(['companyProfile.user', 'company', 'talent', 'initiatedBy']);
 
         if ($org) {
             $actorIds = $org->memberships()->pluck('user_id')
@@ -1240,6 +1311,16 @@ class DirectHireService
             $hire->talent_name_snapshot = filled($hire->talent_name_snapshot)
                 ? $hire->talent_name_snapshot
                 : ($hire->talent?->name ?? $hire->talent_name_snapshot);
+
+            // Staff-on-behalf stays an admin process: keep snapshot, drop company FKs, do not close.
+            if ($hire->isStaffOnBehalf()) {
+                $hire->company_user_id = null;
+                $hire->company_profile_id = null;
+                $hire->save();
+
+                continue;
+            }
+
             // Company profile is deleted next — treat company side as leaving now.
             $hire->company_user_id = null;
 
@@ -1269,6 +1350,11 @@ class DirectHireService
     public function assertCompanyCanManage(DirectHireRequest $request, User $actor): void
     {
         if (! $actor->isCompany()) {
+            abort(403);
+        }
+
+        // Staff-led dossiers (internal or on behalf) are invisible to the company account.
+        if ($request->isStaffInitiated()) {
             abort(403);
         }
 

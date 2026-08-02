@@ -8,15 +8,19 @@
         : 0;
     $directHirePending = false;
     $sourcingPending = false;
+    $jobsPending = false;
     if (! $pendingAccount) {
         if ($authUser->isTalent()) {
             $directHirePending = app(\App\Services\DirectHireService::class)->talentHasUnseenChanges($authUser);
+            $jobsPending = app(\App\Services\JobPostingService::class)->talentHasUnseenChanges($authUser);
         } elseif ($authUser->isCompany()) {
             $directHirePending = app(\App\Services\DirectHireService::class)->companyHasUnseenChanges($authUser);
             $sourcingPending = app(\App\Services\RecruitmentRequestService::class)->companyHasUnseenChanges($authUser);
+            $jobsPending = app(\App\Services\JobPostingService::class)->companyHasUnseenChanges($authUser);
         } elseif ($authUser->isStaff()) {
             $sourcingPending = app(\App\Services\RecruitmentRequestService::class)->staffHasUnseenChanges($authUser);
             $directHirePending = app(\App\Services\DirectHireService::class)->staffHasUnseenChanges($authUser);
+            $jobsPending = app(\App\Services\JobPostingService::class)->staffHasUnseenChanges($authUser);
         }
     }
 @endphp
@@ -28,10 +32,14 @@
                 <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" />
                 <div class="hidden lg:flex items-center gap-1 min-w-0">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingAccount">
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 8.25 20.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>
+                        @if ($authUser->isStaff())
                             {{ __('talenma.nav.dashboard') }}
-                        </span>
+                        @else
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 8.25 20.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>
+                                {{ __('talenma.nav.dashboard') }}
+                            </span>
+                        @endif
                     </x-nav-link>
                     @if ($authUser->isStaff())
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
@@ -59,12 +67,23 @@
                                 @endif
                             </span>
                         </x-nav-link>
+                        <x-nav-link :href="route('admin.jobs.index')" :active="request()->routeIs('admin.jobs.*')">
+                            <span class="inline-flex items-center gap-1.5">
+                                {{ __('talenma.nav.admin_jobs') }}
+                                @if ($jobsPending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                @endif
+                            </span>
+                        </x-nav-link>
                         @if ($authUser->isAdmin())
                             <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
                         @endif
                         <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
                             <span class="inline-flex items-center gap-1.5">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
                                 {{ __('talenma.nav.messages') }}
                                 @if ($inboxUnread > 0)
                                     <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
@@ -78,6 +97,19 @@
                                 {{ __('talenma.nav.messages') }}
                                 @if ($inboxUnread > 0)
                                     <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                                @endif
+                            </span>
+                        </x-nav-link>
+                        <x-nav-link :href="route('talent.jobs.index')" :active="request()->routeIs('talent.jobs.*')" :disabled="$pendingAccount">
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6"/></svg>
+                                {{ __('talenma.nav.jobs') }}
+                                @if ($jobsPending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
                                 @endif
                             </span>
                         </x-nav-link>
@@ -130,6 +162,19 @@
                                 @endif
                             </span>
                         </x-nav-link>
+                        <x-nav-link :href="route('company.jobs.index')" :active="request()->routeIs('company.jobs.*')" :disabled="$pendingAccount">
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6"/></svg>
+                                {{ __('talenma.nav.jobs') }}
+                                @if ($jobsPending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                @endif
+                            </span>
+                        </x-nav-link>
                         <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.search', 'company.talent.*')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-700">
                                 <svg class="h-4 w-4 shrink-0 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
@@ -177,7 +222,7 @@
                         <x-dropdown-link :href="route('profile.edit', ($authUser->canManageCompanyProfile() || $authUser->isTalent()) ? ['panel' => 'account'] : [])" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-2">
                                 <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
-                                {{ $authUser->isTalent() ? __('talenma.nav.my_account') : ($authUser->isCompany() ? __('talenma.nav.manage_account') : __('talenma.nav.settings')) }}
+                                {{ $authUser->isCompany() ? __('talenma.nav.manage_account') : __('talenma.nav.my_account') }}
                             </span>
                         </x-dropdown-link>
                         <form method="POST" action="{{ route('logout') }}">@csrf
@@ -227,10 +272,14 @@
             @unless ($pendingAccount)
                 <div class="border-b border-gray-100 pb-2 mb-2">
                     <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        <span class="inline-flex items-center gap-2">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 8.25 20.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>
+                        @if ($authUser->isStaff())
                             {{ __('talenma.nav.dashboard') }}
-                        </span>
+                        @else
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 8.25 20.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>
+                                {{ __('talenma.nav.dashboard') }}
+                            </span>
+                        @endif
                     </x-responsive-nav-link>
                     @if ($authUser->isStaff())
                         <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-responsive-nav-link>
@@ -258,12 +307,23 @@
                                 @endif
                             </span>
                         </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.jobs.index')" :active="request()->routeIs('admin.jobs.*')">
+                            <span class="inline-flex items-center gap-2">
+                                {{ __('talenma.nav.admin_jobs') }}
+                                @if ($jobsPending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                @endif
+                            </span>
+                        </x-responsive-nav-link>
                         @if ($authUser->isAdmin())
                             <x-responsive-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
                         @endif
                         <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
                             <span class="inline-flex items-center gap-2">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
                                 {{ __('talenma.nav.messages') }}
                                 @if ($inboxUnread > 0)
                                     <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
@@ -277,6 +337,19 @@
                                 {{ __('talenma.nav.messages') }}
                                 @if ($inboxUnread > 0)
                                     <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                                @endif
+                            </span>
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('talent.jobs.index')" :active="request()->routeIs('talent.jobs.*')">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6"/></svg>
+                                {{ __('talenma.nav.jobs') }}
+                                @if ($jobsPending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
                                 @endif
                             </span>
                         </x-responsive-nav-link>
@@ -329,6 +402,19 @@
                                 @endif
                             </span>
                         </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('company.jobs.index')" :active="request()->routeIs('company.jobs.*')">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6"/></svg>
+                                {{ __('talenma.nav.jobs') }}
+                                @if ($jobsPending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                @endif
+                            </span>
+                        </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.search')" :active="request()->routeIs('company.search', 'company.talent.*')">
                             <span class="inline-flex items-center gap-2 rounded-md bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
                                 <svg class="h-4 w-4 shrink-0 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
@@ -347,7 +433,7 @@
             <x-dropdown-link :href="route('profile.edit', ($authUser->canManageCompanyProfile() || $authUser->isTalent()) ? ['panel' => 'account'] : [])" :disabled="$pendingAccount">
                 <span class="inline-flex items-center gap-2">
                     <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
-                    {{ $authUser->isTalent() ? __('talenma.nav.my_account') : ($authUser->isCompany() ? __('talenma.nav.manage_account') : __('talenma.nav.settings')) }}
+                    {{ $authUser->isCompany() ? __('talenma.nav.manage_account') : __('talenma.nav.my_account') }}
                 </span>
             </x-dropdown-link>
             <form method="POST" action="{{ route('logout') }}">@csrf

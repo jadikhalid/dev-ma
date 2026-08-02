@@ -32,7 +32,7 @@ class DirectHireDecisionMail extends Mailable
 
     public function content(): Content
     {
-        $url = $this->directHire->isStaffInternal()
+        $url = $this->directHire->isStaffInitiated()
             ? route('admin.direct-hire.show', $this->directHire)
             : route('company.direct-hire.show', $this->directHire);
 

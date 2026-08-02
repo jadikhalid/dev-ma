@@ -47,11 +47,11 @@ class ServiceSeeder extends Seeder
                 'slug' => 'ressources-humaines',
                 'icon' => '👥',
                 'title' => 'Ressources humaines',
-                'summary' => 'Recrutement local, gestion des équipes et conformité sociale marocaine.',
+                'summary' => 'Candidature locale, gestion des équipes et conformité sociale marocaine.',
                 'content' => '<p>Constituez et managez vos équipes au Maroc.</p>',
                 'sort_order' => 4,
                 'translations' => [
-                    'en' => ['title' => 'Human resources', 'summary' => 'Local recruitment, team management and Moroccan labour compliance.', 'content' => '<p>Build and manage your teams in Morocco.</p>'],
+                    'en' => ['title' => 'Human resources', 'summary' => 'Local applications, team management and Moroccan labour compliance.', 'content' => '<p>Build and manage your teams in Morocco.</p>'],
                 ],
             ],
             [

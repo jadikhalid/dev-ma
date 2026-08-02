@@ -46,16 +46,7 @@
                             <p class="relative text-[0.95rem] sm:text-base text-slate-800 whitespace-pre-line leading-relaxed font-medium">{{ $directHire->message }}</p>
                         </blockquote>
 
-                        @include('talent.direct-hire._decision-note', ['directHire' => $directHire])
-
-                        @include('talent.direct-hire._company-deferral-note', ['directHire' => $directHire])
-
-                        @if (filled($directHire->closure_note) && $directHire->isTerminal())
-                            <div class="rounded-lg bg-slate-50/80 border border-slate-100 px-3.5 py-3">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('talenma.direct_hire.closure_note_label') }}</p>
-                                <p class="mt-1 text-sm text-slate-800 whitespace-pre-line">{{ $directHire->closure_note }}</p>
-                            </div>
-                        @endif
+                        @include('direct-hire._proposal-history', ['directHire' => $directHire])
                     </div>
                 </section>
 
@@ -74,6 +65,12 @@
                                 'decisionRequired' => __('talenma.direct_hire.decision_required'),
                                 'chatClosedBadge' => __('talenma.direct_hire.chat_closed_badge'),
                                 'chatClosed' => __('talenma.direct_hire.chat_closed'),
+                                'acceptConfirmTitle' => __('talenma.direct_hire.accept_confirm_title'),
+                                'acceptConfirmBody' => __('talenma.direct_hire.accept_confirm_body'),
+                                'acceptConfirmBtn' => __('talenma.direct_hire.accept_confirm_btn'),
+                                'declineConfirmTitle' => __('talenma.direct_hire.decline_confirm_title'),
+                                'declineConfirmBody' => __('talenma.direct_hire.decline_confirm_body'),
+                                'declineConfirmBtn' => __('talenma.direct_hire.decline_confirm_btn'),
                                 'deferConfirmTitle' => __('talenma.direct_hire.defer_confirm_title'),
                                 'deferConfirmBody' => __('talenma.direct_hire.defer_confirm_body'),
                                 'deferConfirmBtn' => __('talenma.direct_hire.defer_confirm_btn'),
@@ -113,7 +110,7 @@
                                     type="button"
                                     class="inline-flex justify-center px-4 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-60"
                                     x-bind:disabled="loading"
-                                    @click="submitDecision('accept')"
+                                    @click="requestDecision('accept')"
                                 >
                                     {{ __('talenma.direct_hire.decide_accept') }}
                                 </button>
@@ -125,7 +122,7 @@
                                         ? 'bg-amber-100 text-amber-700/70 opacity-60'
                                         : 'bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60'"
                                     x-bind:disabled="loading || deferLocked"
-                                    @click="requestDefer()"
+                                    @click="requestDecision('defer')"
                                 >
                                     {{ __('talenma.direct_hire.decide_defer') }}
                                 </button>
@@ -133,7 +130,7 @@
                                     type="button"
                                     class="inline-flex justify-center px-4 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-60"
                                     x-bind:disabled="loading"
-                                    @click="submitDecision('decline')"
+                                    @click="requestDecision('decline')"
                                 >
                                     {{ __('talenma.direct_hire.decide_decline') }}
                                 </button>
@@ -141,27 +138,27 @@
                         </form>
 
                         <div
-                            x-show="confirmingDefer"
+                            x-show="pendingDecision"
                             x-cloak
                             class="fixed inset-0 z-50 flex items-center justify-center p-4"
                             role="dialog"
                             aria-modal="true"
-                            x-on:keydown.escape.window="closeDeferConfirm"
+                            x-on:keydown.escape.window="closeDecisionConfirm"
                         >
-                            <div class="absolute inset-0 bg-slate-900/40" x-on:click="closeDeferConfirm" aria-hidden="true"></div>
+                            <div class="absolute inset-0 bg-slate-900/40" x-on:click="closeDecisionConfirm" aria-hidden="true"></div>
                             <div class="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
-                                <p class="text-base font-semibold text-slate-900" x-text="messages.deferConfirmTitle"></p>
-                                <p class="mt-2 text-sm text-slate-600" x-text="messages.deferConfirmBody"></p>
+                                <p class="text-base font-semibold text-slate-900" x-text="confirmTitle()"></p>
+                                <p class="mt-2 text-sm text-slate-600" x-text="confirmBody()"></p>
                                 <div class="mt-5 flex flex-wrap justify-end gap-3">
-                                    <x-secondary-button type="button" x-on:click="closeDeferConfirm" x-bind:disabled="loading">
+                                    <x-secondary-button type="button" x-on:click="closeDecisionConfirm" x-bind:disabled="loading">
                                         <span x-text="messages.deferConfirmCancel"></span>
                                     </x-secondary-button>
                                     <button
                                         type="button"
-                                        class="inline-flex items-center px-4 py-2 bg-amber-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-600 focus:bg-amber-600 active:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-60"
-                                        x-on:click="confirmDefer"
+                                        x-bind:class="confirmBtnClass()"
+                                        x-on:click="confirmDecision"
                                         x-bind:disabled="loading"
-                                        x-text="messages.deferConfirmBtn"
+                                        x-text="confirmBtnLabel()"
                                     ></button>
                                 </div>
                             </div>

@@ -6,10 +6,22 @@
 
     <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         @forelse ($jobs as $job)
+            @php
+                $application = $applications[$job->id] ?? null;
+            @endphp
             <a href="{{ route('talent.jobs.show', $job) }}" class="block rounded-xl border bg-white p-5 hover:border-indigo-300 transition">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                     <div class="min-w-0">
-                        <h3 class="text-base font-semibold text-gray-900">{{ $job->title }}</h3>
+                        <h3 class="inline-flex items-center gap-2 text-base font-semibold text-gray-900">
+                            {{ $job->title }}
+                            @if ($application?->hasUnseenChangesForTalent())
+                                <span class="relative flex h-2.5 w-2.5 shrink-0" title="{{ __('talenma.jobs.nav_new') }}">
+                                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                    <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                </span>
+                                <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                            @endif
+                        </h3>
                         <p class="mt-1 text-sm text-gray-500">{{ $job->companyProfile?->displayName() }}</p>
                         <p class="mt-1 text-sm text-gray-600 line-clamp-2">{{ Str::limit(strip_tags($job->description), 140) }}</p>
                     </div>

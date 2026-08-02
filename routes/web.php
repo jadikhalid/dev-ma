@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountStatusController;
 use App\Http\Controllers\Admin\CompanyProfileDocumentController;
 use App\Http\Controllers\Admin\DirectHireController as AdminDirectHireController;
+use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
 use App\Http\Controllers\Admin\ProfileDocumentController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\RecruitmentRequestController as AdminRecruitmentRequestController;
@@ -86,7 +87,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/direct-hire', [AdminDirectHireController::class, 'index'])->name('direct-hire.index');
         Route::get('/direct-hire/talent-search', [AdminDirectHireController::class, 'searchTalents'])->name('direct-hire.talent-search');
+        Route::get('/direct-hire/company-search', [AdminDirectHireController::class, 'searchCompanies'])->name('direct-hire.company-search');
         Route::get('/direct-hire/talents/{talent}/create', [AdminDirectHireController::class, 'create'])->name('direct-hire.create');
+        Route::get('/direct-hire/talents/{talent}/profile', [AdminDirectHireController::class, 'showTalentProfile'])->name('direct-hire.talent-profile');
         Route::post('/direct-hire/talents/{talent}', [AdminDirectHireController::class, 'store'])->name('direct-hire.store');
         Route::get('/direct-hire/{directHire}', [AdminDirectHireController::class, 'show'])->name('direct-hire.show');
         Route::post('/direct-hire/{directHire}/messages', [AdminDirectHireController::class, 'storeMessage'])->name('direct-hire.messages.store');
@@ -97,6 +100,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/direct-hire/{directHire}/unlock-talent', [AdminDirectHireController::class, 'unlockTalent'])->name('direct-hire.unlock-talent');
         Route::post('/direct-hire/{directHire}/deferral', [AdminDirectHireController::class, 'respondToDeferral'])->name('direct-hire.deferral');
         Route::post('/direct-hire/{directHire}/withdraw', [AdminDirectHireController::class, 'withdraw'])->name('direct-hire.withdraw');
+
+        Route::get('/jobs', [AdminJobPostingController::class, 'index'])->name('jobs.index');
+        Route::get('/jobs/{job}', [AdminJobPostingController::class, 'show'])->name('jobs.show');
+        Route::get('/jobs/{job}/edit', [AdminJobPostingController::class, 'edit'])->name('jobs.edit');
+        Route::put('/jobs/{job}', [AdminJobPostingController::class, 'update'])->name('jobs.update');
+        Route::post('/jobs/{job}/publish', [AdminJobPostingController::class, 'publish'])->name('jobs.publish');
+        Route::post('/jobs/{job}/close', [AdminJobPostingController::class, 'close'])->name('jobs.close');
+        Route::post('/jobs/{job}/hide', [AdminJobPostingController::class, 'hide'])->name('jobs.hide');
+        Route::post('/jobs/{job}/postpone', [AdminJobPostingController::class, 'postpone'])->name('jobs.postpone');
+        Route::delete('/jobs/{job}', [AdminJobPostingController::class, 'destroy'])->name('jobs.destroy');
+        Route::patch('/jobs/{job}/applications/{application}', [AdminJobPostingController::class, 'updateApplication'])->name('jobs.applications.update');
 
         Route::middleware('admin')->group(function () {
             Route::post('/users/{user}/moderator', [UserManagementController::class, 'grantModerator'])->name('users.moderator.grant');
@@ -188,6 +202,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/{job}', [CompanyJobController::class, 'update'])->name('update');
             Route::post('/{job}/publish', [CompanyJobController::class, 'publish'])->name('publish');
             Route::post('/{job}/close', [CompanyJobController::class, 'close'])->name('close');
+            Route::post('/{job}/hide', [CompanyJobController::class, 'hide'])->name('hide');
+            Route::post('/{job}/postpone', [CompanyJobController::class, 'postpone'])->name('postpone');
+            Route::delete('/{job}', [CompanyJobController::class, 'destroy'])->name('destroy');
             Route::patch('/{job}/applications/{application}', [CompanyJobController::class, 'updateApplication'])->name('applications.update');
         });
     });

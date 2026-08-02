@@ -84,9 +84,6 @@
                                                 @endif
                                             </span>
                                         </div>
-                                        @if ($hire->isStaffOnBehalf())
-                                            <p class="truncate text-[11px] font-medium text-violet-700">{{ __('talenma.direct_hire.managed_by_platform_badge') }}</p>
-                                        @endif
                                         <p class="truncate text-xs text-slate-600">
                                             <span class="font-medium text-slate-800">{{ $hire->talentDisplayName() }}</span>
                                             <span class="text-slate-300"> · </span>
@@ -145,9 +142,6 @@
                                                 @endif
                                             </span>
                                         </div>
-                                        @if ($hire->isStaffOnBehalf())
-                                            <p class="truncate text-[11px] font-medium text-violet-700">{{ __('talenma.direct_hire.managed_by_platform_badge') }}</p>
-                                        @endif
                                         <p class="truncate text-xs text-slate-600">
                                             <span class="font-medium text-slate-800">{{ $hire->talentDisplayName() }}</span>
                                         </p>

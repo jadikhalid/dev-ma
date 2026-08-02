@@ -175,7 +175,7 @@
     </div>
 </form>
 
-{{-- Section C : Besoins de recrutement --}}
+{{-- Section C : Besoins de candidature --}}
 <form
     id="company-hiring-card"
     method="POST"

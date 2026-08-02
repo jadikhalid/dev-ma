@@ -1,28 +1,16 @@
-@php
-    $isEdit = $job->exists;
-@endphp
-
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="text-xl font-bold text-gray-900">
-                {{ $isEdit ? __('talenma.jobs.edit') : __('talenma.jobs.create') }}
-            </h2>
-            <a
-                href="{{ $isEdit ? route('company.jobs.show', $job) : route('company.jobs.index') }}"
-                class="mt-1 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-900"
-            >← {{ __('talenma.jobs.back') }}</a>
-        </div>
+        <h2 class="text-xl font-bold text-gray-900">{{ __('talenma.jobs.edit') }}</h2>
     </x-slot>
 
     <div class="py-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div id="company-job-form-card" class="relative bg-white rounded-2xl border p-6 sm:p-8">
+        <div id="admin-job-form-card" class="relative bg-white rounded-2xl border p-6 sm:p-8">
             <form
                 method="POST"
-                action="{{ $isEdit ? route('company.jobs.update', $job) : route('company.jobs.store') }}"
+                action="{{ route('admin.jobs.update', $job) }}"
                 class="space-y-5"
                 data-ajax
-                data-loading-target="company-job-form-card"
+                data-loading-target="admin-job-form-card"
                 data-error-message="{{ __('talenma.jobs.save_error') }}"
                 data-network-error-message="{{ __('talenma.jobs.network_error') }}"
                 novalidate
@@ -33,9 +21,7 @@
                 })"
             >
                 @csrf
-                @if ($isEdit)
-                    @method('PUT')
-                @endif
+                @method('PUT')
 
                 <div>
                     <x-input-label for="title" :value="__('talenma.jobs.field_title')" />
@@ -106,7 +92,7 @@
                 </div>
 
                 <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                    <input type="checkbox" name="remote_ok" value="1" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" @checked(old('remote_ok', $job->remote_ok))>
+                    <input type="checkbox" name="remote_ok" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" @checked(old('remote_ok', $job->remote_ok))>
                     {{ __('talenma.jobs.field_remote') }}
                 </label>
 

@@ -29,7 +29,17 @@
                 data-loading-target="direct-hire-create-card"
                 data-error-message="{{ __('talenma.direct_hire.create_error') }}"
                 data-network-error-message="{{ __('talenma.direct_hire.network_error') }}"
-                x-data="{ origin: @js(old('hire_origin', \App\Models\DirectHireRequest::ORIGIN_STAFF_INTERNAL)) }"
+                x-data="adminDirectHireCreateForm({
+                    origin: @js(old('hire_origin', \App\Models\DirectHireRequest::ORIGIN_STAFF_INTERNAL)),
+                    onBehalf: @js(\App\Models\DirectHireRequest::ORIGIN_STAFF_ON_BEHALF),
+                    companySearchUrl: @js(route('admin.direct-hire.company-search')),
+                    initialCompanyId: @js(old('company_id')),
+                    initialCompanyLabel: @js(old('company_label', '')),
+                    loadingLabel: @js(__('talenma.direct_hire.admin_company_search_loading')),
+                    emptyLabel: @js(__('talenma.direct_hire.admin_company_search_empty')),
+                    minChars: 2,
+                })"
+                @click.outside="closeCompanyResults()"
                 novalidate
             >
                 @csrf
@@ -45,6 +55,7 @@
                                 value="{{ \App\Models\DirectHireRequest::ORIGIN_STAFF_INTERNAL }}"
                                 class="mt-1 text-indigo-600"
                                 x-model="origin"
+                                @change="onOriginChange()"
                                 @checked(old('hire_origin', \App\Models\DirectHireRequest::ORIGIN_STAFF_INTERNAL) === \App\Models\DirectHireRequest::ORIGIN_STAFF_INTERNAL)
                             >
                             <span>
@@ -62,6 +73,7 @@
                                 value="{{ \App\Models\DirectHireRequest::ORIGIN_STAFF_ON_BEHALF }}"
                                 class="mt-1 text-indigo-600"
                                 x-model="origin"
+                                @change="onOriginChange()"
                                 @checked(old('hire_origin') === \App\Models\DirectHireRequest::ORIGIN_STAFF_ON_BEHALF)
                             >
                             <span>
@@ -72,22 +84,60 @@
                     </div>
                 </div>
 
-                <div x-show="origin === @js(\App\Models\DirectHireRequest::ORIGIN_STAFF_ON_BEHALF)" x-cloak>
-                    <x-input-label for="company_id" :value="__('talenma.direct_hire.beneficiary_company')" />
-                    <select
-                        id="company_id"
-                        name="company_id"
+                <div x-show="origin === onBehalf" x-cloak class="relative">
+                    <x-input-label for="admin-dh-company-query" :value="__('talenma.direct_hire.beneficiary_company')" />
+                    <input type="hidden" name="company_id" :value="selectedCompanyId ?? ''">
+                    <input type="hidden" name="company_label" :value="selectedCompanyLabel || companyQuery">
+                    <input
+                        id="admin-dh-company-query"
+                        type="search"
+                        x-model="companyQuery"
+                        x-ref="companyInput"
+                        @input="onCompanyInput()"
+                        @keydown="onCompanyKeydown($event)"
+                        @focus="onCompanyFocus()"
+                        placeholder="{{ __('talenma.direct_hire.admin_company_search_placeholder') }}"
+                        maxlength="100"
+                        autocomplete="off"
+                        role="combobox"
+                        aria-controls="admin-dh-company-listbox"
+                        :aria-expanded="companyOpen"
+                        aria-autocomplete="list"
                         class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        x-bind:required="origin === @js(\App\Models\DirectHireRequest::ORIGIN_STAFF_ON_BEHALF)"
+                        x-bind:required="origin === onBehalf && !selectedCompanyId"
                     >
-                        <option value="">{{ __('talenma.direct_hire.admin_select_company') }}</option>
-                        @foreach ($companies as $company)
-                            <option value="{{ $company->id }}" @selected((string) old('company_id') === (string) $company->id)>
-                                {{ $company->name }} — {{ $company->email }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div
+                        id="admin-dh-company-listbox"
+                        x-show="companyOpen && (companyLoading || companyResults.length > 0 || (companyQuery.trim().length >= minChars && !companyLoading))"
+                        x-cloak
+                        role="listbox"
+                        class="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-slate-900/5"
+                    >
+                        <p x-show="companyLoading" class="px-3 py-2 text-sm text-slate-500" x-text="loadingLabel"></p>
+                        <p
+                            x-show="!companyLoading && companyResults.length === 0 && companyQuery.trim().length >= minChars"
+                            class="px-3 py-2 text-sm text-slate-500"
+                            x-text="emptyLabel"
+                        ></p>
+                        <template x-for="(item, index) in companyResults" :key="item.id">
+                            <button
+                                type="button"
+                                role="option"
+                                class="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-indigo-50"
+                                :class="{ 'bg-indigo-50': index === companyActiveIndex }"
+                                @mousedown.prevent="selectCompany(item)"
+                                @mouseenter="companyActiveIndex = index"
+                            >
+                                <span class="text-sm font-semibold text-slate-900" x-text="item.label"></span>
+                                <span class="text-xs text-slate-500" x-text="item.email"></span>
+                            </button>
+                        </template>
+                    </div>
                     <p class="mt-1 text-xs text-slate-500">{{ __('talenma.direct_hire.beneficiary_company_hint') }}</p>
+                    <p x-show="selectedCompanyId" x-cloak class="mt-1 text-xs text-emerald-700">
+                        {{ __('talenma.direct_hire.admin_company_selected_prefix') }}
+                        <span class="font-semibold" x-text="selectedCompanyLabel"></span>
+                    </p>
                 </div>
 
                 <div>

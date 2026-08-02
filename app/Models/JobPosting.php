@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'status',
     'published_at',
     'closed_at',
+    'company_seen_at',
+    'staff_seen_at',
 ])]
 class JobPosting extends Model
 {
@@ -30,6 +32,18 @@ class JobPosting extends Model
     public const STATUS_PUBLISHED = 'published';
 
     public const STATUS_CLOSED = 'closed';
+
+    public const STATUS_HIDDEN = 'hidden';
+
+    public const STATUS_POSTPONED = 'postponed';
+
+    public const STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_PUBLISHED,
+        self::STATUS_CLOSED,
+        self::STATUS_HIDDEN,
+        self::STATUS_POSTPONED,
+    ];
 
     public const CONTRACT_TYPES = [
         'cdi',
@@ -45,6 +59,8 @@ class JobPosting extends Model
             'remote_ok' => 'boolean',
             'published_at' => 'datetime',
             'closed_at' => 'datetime',
+            'company_seen_at' => 'datetime',
+            'staff_seen_at' => 'datetime',
         ];
     }
 
@@ -63,6 +79,11 @@ class JobPosting extends Model
         return $this->hasMany(JobApplication::class);
     }
 
+    public function activityEvents(): HasMany
+    {
+        return $this->hasMany(JobPostingActivityEvent::class);
+    }
+
     public function isPublished(): bool
     {
         return $this->status === self::STATUS_PUBLISHED;
@@ -76,6 +97,16 @@ class JobPosting extends Model
     public function isClosed(): bool
     {
         return $this->status === self::STATUS_CLOSED;
+    }
+
+    public function isHidden(): bool
+    {
+        return $this->status === self::STATUS_HIDDEN;
+    }
+
+    public function isPostponed(): bool
+    {
+        return $this->status === self::STATUS_POSTPONED;
     }
 
     public function locationLabel(): string
@@ -98,5 +129,31 @@ class JobPosting extends Model
     public function statusLabel(): string
     {
         return __('talenma.jobs.status_'.$this->status);
+    }
+
+    public function hasUnseenChangesForCompany(): bool
+    {
+        if ($this->company_seen_at === null) {
+            return true;
+        }
+
+        if ($this->updated_at === null) {
+            return false;
+        }
+
+        return $this->company_seen_at->getTimestamp() < $this->updated_at->getTimestamp();
+    }
+
+    public function hasUnseenChangesForStaff(): bool
+    {
+        if ($this->staff_seen_at === null) {
+            return true;
+        }
+
+        if ($this->updated_at === null) {
+            return false;
+        }
+
+        return $this->staff_seen_at->getTimestamp() < $this->updated_at->getTimestamp();
     }
 }

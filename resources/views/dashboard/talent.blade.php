@@ -166,6 +166,12 @@
                                         'inbox_message' => __('talenma.dashboard.talent.stats.activity_inbox_message', ['actor' => $item['actor']]),
                                         'inbox_message_sent' => __('talenma.dashboard.talent.stats.activity_inbox_message_sent', ['actor' => $item['actor']]),
                                         'talent_unlocked' => __('talenma.dashboard.talent.stats.activity_talent_unlocked', ['actor' => $item['actor']]),
+                                        'job_application_submitted' => __('talenma.dashboard.talent.stats.activity_job_application_submitted', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'job_application_status' => __('talenma.dashboard.talent.stats.activity_job_application_status', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '', 'result' => $item['result'] ?? '']),
+                                        'job_closed' => __('talenma.dashboard.talent.stats.activity_job_closed', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'job_hidden' => __('talenma.dashboard.talent.stats.activity_job_hidden', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'job_postponed' => __('talenma.dashboard.talent.stats.activity_job_postponed', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'job_deleted' => __('talenma.dashboard.talent.stats.activity_job_deleted', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         default => __('talenma.dashboard.talent.stats.activity_view', ['actor' => $item['actor']]),
                                     };
 
@@ -187,6 +193,12 @@
                                             'bg-amber-500',
                                             'bg-amber-50 text-amber-800 ring-amber-100',
                                             'hover:bg-amber-50/80',
+                                        ],
+                                        str_starts_with((string) ($item['type'] ?? ''), 'job_') => [
+                                            __('talenma.dashboard.talent.stats.activity_cat_jobs'),
+                                            'bg-emerald-500',
+                                            'bg-emerald-50 text-emerald-700 ring-emerald-100',
+                                            'hover:bg-emerald-50/80',
                                         ],
                                         str_starts_with((string) ($item['type'] ?? ''), 'direct_hire') => [
                                             __('talenma.dashboard.talent.stats.activity_cat_hire'),

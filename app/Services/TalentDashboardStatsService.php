@@ -6,6 +6,8 @@ use App\Models\Conversation;
 use App\Models\DirectHireMessage;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
+use App\Models\JobApplication;
+use App\Models\JobPostingActivityEvent;
 use App\Models\Message;
 use App\Models\ProfileDocumentDownload;
 use App\Models\ProfileView;
@@ -68,10 +70,118 @@ class TalentDashboardStatsService
             ->concat($this->directHireEvents($talent, $fetch))
             ->concat($this->talentUnlockEvents($talent, $fetch))
             ->concat($this->inboxMessageEvents($talent, $fetch))
+            ->concat($this->jobApplicationEvents($talent, $fetch))
+            ->concat($this->jobPostingActivityEvents($talent, $fetch))
             ->sortByDesc(fn (array $item) => $item['at']?->timestamp ?? 0)
             ->take($limit)
             ->values()
             ->all();
+    }
+
+    /**
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
+     */
+    private function jobApplicationEvents(User $talent, int $limit): Collection
+    {
+        return JobApplication::query()
+            ->where('talent_user_id', $talent->id)
+            ->with(['jobPosting.companyProfile'])
+            ->latest('submitted_at')
+            ->limit($limit)
+            ->get()
+            ->map(function (JobApplication $application) {
+                $job = $application->jobPosting;
+                $actor = $job?->companyProfile?->displayName()
+                    ?: __('talenma.dashboard.talent.stats.unknown_actor');
+
+                return $this->activityItem(
+                    type: 'job_application_submitted',
+                    actor: $actor,
+                    at: $application->submitted_at ?? $application->created_at,
+                    subject: $job?->title,
+                    href: $job ? route('talent.jobs.show', $job) : route('talent.jobs.index'),
+                    self: true,
+                );
+            });
+    }
+
+    /**
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
+     */
+    private function jobPostingActivityEvents(User $talent, int $limit): Collection
+    {
+        $appliedJobIds = JobApplication::query()
+            ->where('talent_user_id', $talent->id)
+            ->pluck('job_posting_id')
+            ->all();
+
+        return JobPostingActivityEvent::query()
+            ->where(function ($query) use ($talent, $appliedJobIds) {
+                $query->where('talent_user_id', $talent->id);
+
+                if ($appliedJobIds !== []) {
+                    $query->orWhere(function ($inner) use ($appliedJobIds) {
+                        $inner->whereNull('talent_user_id')
+                            ->whereIn('job_posting_id', $appliedJobIds)
+                            ->whereIn('event', [
+                                JobPostingActivityEvent::EVENT_CLOSED,
+                                JobPostingActivityEvent::EVENT_HIDDEN,
+                                JobPostingActivityEvent::EVENT_POSTPONED,
+                                JobPostingActivityEvent::EVENT_DELETED,
+                            ]);
+                    });
+                }
+            })
+            ->whereIn('event', [
+                JobPostingActivityEvent::EVENT_CLOSED,
+                JobPostingActivityEvent::EVENT_HIDDEN,
+                JobPostingActivityEvent::EVENT_POSTPONED,
+                JobPostingActivityEvent::EVENT_DELETED,
+                JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+            ])
+            ->with(['jobPosting.companyProfile', 'companyProfile'])
+            ->latest('created_at')
+            ->limit($limit)
+            ->get()
+            ->map(function (JobPostingActivityEvent $event) {
+                $type = match ($event->event) {
+                    JobPostingActivityEvent::EVENT_CLOSED => 'job_closed',
+                    JobPostingActivityEvent::EVENT_HIDDEN => 'job_hidden',
+                    JobPostingActivityEvent::EVENT_POSTPONED => 'job_postponed',
+                    JobPostingActivityEvent::EVENT_DELETED => 'job_deleted',
+                    JobPostingActivityEvent::EVENT_APPLICATION_STATUS => 'job_application_status',
+                    default => null,
+                };
+
+                if ($type === null) {
+                    return null;
+                }
+
+                $actor = $event->jobPosting?->companyProfile?->displayName()
+                    ?: $event->companyProfile?->displayName()
+                    ?: __('talenma.dashboard.talent.stats.unknown_actor');
+
+                $href = $event->event === JobPostingActivityEvent::EVENT_DELETED || ! $event->job_posting_id
+                    ? route('talent.jobs.index')
+                    : route('talent.jobs.show', $event->job_posting_id);
+
+                $result = null;
+
+                if ($event->event === JobPostingActivityEvent::EVENT_APPLICATION_STATUS && filled($event->status)) {
+                    $result = __('talenma.jobs.application_status_'.$event->status);
+                }
+
+                return $this->activityItem(
+                    type: $type,
+                    actor: $actor,
+                    at: $event->created_at,
+                    subject: $event->job_title,
+                    result: $result,
+                    href: $href,
+                );
+            })
+            ->filter()
+            ->values();
     }
 
     /**
@@ -367,7 +477,7 @@ class TalentDashboardStatsService
     }
 
     /**
-     * @return array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}
+     * @return array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}
      */
     private function activityItem(
         string $type,
@@ -377,8 +487,9 @@ class TalentDashboardStatsService
         ?string $subject = null,
         ?string $result = null,
         ?string $href = null,
+        bool $self = false,
     ): array {
-        return [
+        $item = [
             'type' => $type,
             'actor' => $actor,
             'detail' => $detail,
@@ -387,6 +498,12 @@ class TalentDashboardStatsService
             'href' => $href,
             'at' => $at,
         ];
+
+        if ($self) {
+            $item['self'] = true;
+        }
+
+        return $item;
     }
 
     private function actorName(?User $user): string

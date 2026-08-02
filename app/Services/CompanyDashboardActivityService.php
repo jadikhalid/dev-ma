@@ -7,6 +7,7 @@ use App\Models\DirectHireMessage;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
 use App\Models\JobApplication;
+use App\Models\JobPostingActivityEvent;
 use App\Models\Message;
 use App\Models\RecruitmentRequest;
 use App\Models\RecruitmentRequestMessage;
@@ -38,6 +39,7 @@ class CompanyDashboardActivityService
             ->concat($this->recruitmentEvents($company, $fetch))
             ->concat($this->talentUnlockEvents($company, $fetch))
             ->concat($this->jobApplicationEvents($company, $fetch))
+            ->concat($this->jobPostingActivityEvents($company, $fetch))
             ->concat($this->inboxMessageEvents($company, $fetch))
             ->sortByDesc(fn (array $item) => $item['at']?->timestamp ?? 0)
             ->take($limit)
@@ -458,10 +460,83 @@ class CompanyDashboardActivityService
     }
 
     /**
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
+     */
+    private function jobPostingActivityEvents(User $company, int $limit): Collection
+    {
+        $org = $company->companyOrganization();
+
+        if (! $org) {
+            return collect();
+        }
+
+        return JobPostingActivityEvent::query()
+            ->where('company_profile_id', $org->id)
+            ->whereIn('event', [
+                JobPostingActivityEvent::EVENT_CREATED,
+                JobPostingActivityEvent::EVENT_PUBLISHED,
+                JobPostingActivityEvent::EVENT_CLOSED,
+                JobPostingActivityEvent::EVENT_HIDDEN,
+                JobPostingActivityEvent::EVENT_POSTPONED,
+                JobPostingActivityEvent::EVENT_DELETED,
+                JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+            ])
+            // Per-applicant deleted copies are for the talent feed only.
+            ->where(function ($query) {
+                $query->whereNull('talent_user_id')
+                    ->orWhere('event', JobPostingActivityEvent::EVENT_APPLICATION_STATUS);
+            })
+            ->latest('created_at')
+            ->limit($limit)
+            ->get()
+            ->map(function (JobPostingActivityEvent $event) {
+                $type = match ($event->event) {
+                    JobPostingActivityEvent::EVENT_CREATED => 'job_created',
+                    JobPostingActivityEvent::EVENT_PUBLISHED => 'job_published',
+                    JobPostingActivityEvent::EVENT_CLOSED => 'job_closed',
+                    JobPostingActivityEvent::EVENT_HIDDEN => 'job_hidden',
+                    JobPostingActivityEvent::EVENT_POSTPONED => 'job_postponed',
+                    JobPostingActivityEvent::EVENT_DELETED => 'job_deleted',
+                    JobPostingActivityEvent::EVENT_APPLICATION_STATUS => 'job_application_status',
+                    default => null,
+                };
+
+                if ($type === null) {
+                    return null;
+                }
+
+                $href = $event->job_posting_id
+                    ? route('company.jobs.show', $event->job_posting_id)
+                    : route('company.jobs.index');
+
+                $result = null;
+
+                if ($event->event === JobPostingActivityEvent::EVENT_APPLICATION_STATUS && filled($event->status)) {
+                    $result = __('talenma.jobs.application_status_'.$event->status);
+                }
+
+                return $this->activityItem(
+                    type: $type,
+                    actor: $event->actor_label
+                        ?: __('talenma.dashboard.company.activity.team_actor'),
+                    at: $event->created_at,
+                    subject: $event->job_title,
+                    result: $result,
+                    href: $href,
+                    self: (bool) $event->is_self,
+                );
+            })
+            ->filter()
+            ->values();
+    }
+
+    /**
      * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\DirectHireRequest>  $query
      */
     private function scopeDirectHireQuery($query, User $company): void
     {
+        $query->where('hire_origin', \App\Models\DirectHireRequest::ORIGIN_COMPANY);
+
         $org = $company->companyOrganization();
 
         if ($org) {

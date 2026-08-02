@@ -116,24 +116,60 @@ class DirectHireController extends Controller
         ]);
     }
 
-    public function create(Request $request, User $talent): View|RedirectResponse
+    public function searchCompanies(Request $request): JsonResponse
     {
         abort_unless($request->user()?->isStaff(), 403);
-        abort_unless($talent->isTalent() && $talent->approval_status === 'approved', 404);
 
-        $companies = User::query()
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:1', 'max:100'],
+        ]);
+
+        $term = trim($data['q']);
+        $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+
+        $results = User::query()
             ->where('role', 'company')
             ->where('approval_status', 'approved')
             ->where(function ($query) {
                 $query->whereNull('company_seat')
                     ->orWhere('company_seat', User::SEAT_OWNER);
             })
+            ->where(function ($query) use ($like) {
+                $query->where('name', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhereHas('companyProfile', function ($profile) use ($like) {
+                        $profile->where('representative_name', 'like', $like);
+                    });
+            })
+            ->with('companyProfile')
             ->orderBy('name')
-            ->get(['id', 'name', 'email']);
+            ->limit(12)
+            ->get()
+            ->map(function (User $company) {
+                $org = $company->companyProfile;
+                $label = $org?->displayName() ?: $company->name;
+
+                return [
+                    'id' => $company->id,
+                    'label' => $label,
+                    'email' => $company->email,
+                ];
+            })
+            ->values()
+            ->all();
+
+        return response()->json([
+            'results' => $results,
+        ]);
+    }
+
+    public function create(Request $request, User $talent): View|RedirectResponse
+    {
+        abort_unless($request->user()?->isStaff(), 403);
+        abort_unless($talent->isTalent() && $talent->approval_status === 'approved', 404);
 
         return view('admin.direct-hire.create', [
             'talent' => $talent->load('profile'),
-            'companies' => $companies,
             'staffInternalOpen' => $this->directHires->staffHasOpenInternalRequest(),
         ]);
     }
@@ -194,6 +230,67 @@ class DirectHireController extends Controller
             ->with('toast_success', $message);
     }
 
+    public function showTalentProfile(Request $request, User $talent): JsonResponse
+    {
+        abort_unless($request->user()?->isStaff(), 403);
+
+        if ($talent->role !== 'dev' || $talent->approval_status !== User::APPROVAL_APPROVED) {
+            abort(404);
+        }
+
+        $talent->load(['profile.profession', 'profile.professionSector', 'profile.documents']);
+
+        $profile = $talent->profile;
+        $forceReveal = true;
+        $isPublic = $profile?->isRevealedAsPublic($forceReveal) ?? false;
+        $keywords = collect(explode(',', (string) $profile?->specialization))
+            ->map(fn (string $item) => trim($item))
+            ->filter()
+            ->unique()
+            ->values();
+        $cv = $profile?->cvDocument();
+
+        return response()->json([
+            'talent_id' => (int) $talent->id,
+            'name' => $profile?->visibleDisplayName($talent, $forceReveal) ?? $talent->publicDisplayName(),
+            'avatar_url' => $profile?->visibleAvatarUrl($talent, $forceReveal),
+            'initials' => $talent->initials(),
+            'is_public' => $isPublic,
+            'employer_label' => $profile?->employerLabel($forceReveal),
+            'profession_label' => $profile?->professionLabel(),
+            'sector_label' => $profile?->sectorLabel(),
+            'experience_label' => $profile?->experience_years !== null
+                ? __('talenma.talents.experience', ['years' => $profile->experience_years])
+                : null,
+            'availability_label' => $profile?->statusLabel(),
+            'availability_tone' => $profile?->statusTone(),
+            'keywords' => $keywords,
+            'work_modes' => $profile?->workModeLabels() ?? [],
+            'languages' => $profile?->languageLabels() ?? [],
+            'bio' => $profile?->bio,
+            'education_label' => $profile?->educationLabel(),
+            'certifications' => $isPublic ? $profile?->certifications : null,
+            'linkedin_url' => $isPublic ? $profile?->linkedin_url : null,
+            'github_url' => $isPublic ? $profile?->github_url : null,
+            'portfolio_url' => $isPublic ? $profile?->portfolio_url : null,
+            'cv_url' => ($isPublic && $cv) ? route('admin.profile-documents.show', $cv) : null,
+            'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
+                ? $profile->presentation_video_url
+                : null,
+            'compose_url' => null,
+            'talent_locked' => false,
+            'can_request_named' => false,
+            'named_request_disabled_hint' => null,
+            'recruitment_url' => null,
+            'named_unlock_url' => null,
+            'direct_hire_url' => null,
+            'can_propose_direct_hire' => false,
+            'direct_hire_disabled_hint' => null,
+            'direct_hire_unlock_url' => null,
+            'can_propose_direct_hire_globally' => false,
+        ]);
+    }
+
     public function show(Request $request, DirectHireRequest $directHire): View
     {
         $this->directHires->assertStaffCanManage($directHire, $request->user());
@@ -207,6 +304,7 @@ class DirectHireController extends Controller
             'initiatedBy',
             'rounds',
             'messages.sender',
+            'statusEvents.actor',
         ]);
 
         return view('admin.direct-hire.show', [
@@ -417,7 +515,7 @@ class DirectHireController extends Controller
             $data['closure_note'] ?? null,
         );
 
-        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile']);
+        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile', 'statusEvents.actor']);
         $message = __('talenma.direct_hire.closed');
 
         if ($request->expectsJson()) {
@@ -432,7 +530,7 @@ class DirectHireController extends Controller
                 'status_badge_html' => view('company.direct-hire._status-badge', [
                     'directHire' => $directHire,
                 ])->render(),
-                'closure_note_html' => view('company.direct-hire._closure-note', [
+                'history_html' => view('direct-hire._proposal-history', [
                     'directHire' => $directHire,
                 ])->render(),
                 'rounds_list_html' => view('company.direct-hire._rounds-list', [
@@ -465,7 +563,7 @@ class DirectHireController extends Controller
             $data['note'] ?? null,
         );
 
-        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile']);
+        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile', 'statusEvents.actor']);
 
         $message = $data['action'] === DirectHireRequest::DEFERRAL_ACCEPT
             ? __('talenma.direct_hire.deferral_accepted')
@@ -486,10 +584,7 @@ class DirectHireController extends Controller
                 'status_badge_html' => view('company.direct-hire._status-badge', [
                     'directHire' => $directHire,
                 ])->render(),
-                'deferral_note_html' => view('company.direct-hire._deferral-note', [
-                    'directHire' => $directHire,
-                ])->render(),
-                'closure_note_html' => view('company.direct-hire._closure-note', [
+                'history_html' => view('direct-hire._proposal-history', [
                     'directHire' => $directHire,
                 ])->render(),
                 'withdraw_html' => $canWithdraw

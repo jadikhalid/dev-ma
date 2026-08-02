@@ -17,7 +17,7 @@ class SocialPostSeeder extends Seeder
                 'network' => 'linkedin',
             ],
             [
-                'title' => 'Recruter des talents marocains à distance',
+                'title' => 'Proposer des candidatures à des talents marocains à distance',
                 'subtitle' => 'Nos conseils pour les entreprises européennes',
                 'url' => 'https://x.com/talentsdumaroc',
                 'network' => 'x',
@@ -29,7 +29,7 @@ class SocialPostSeeder extends Seeder
                 'network' => 'instagram',
             ],
             [
-                'title' => 'Pourquoi les recruteurs misent sur le Maroc',
+                'title' => 'Pourquoi les entreprises misent sur le Maroc',
                 'subtitle' => 'Tendances RH et mobilité internationale',
                 'url' => 'https://www.linkedin.com/pulse/talents-du-maroc-recrutement',
                 'network' => 'linkedin',

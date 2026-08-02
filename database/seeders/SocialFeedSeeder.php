@@ -27,7 +27,7 @@ class SocialFeedSeeder extends Seeder
                 'source' => 'article',
             ],
             [
-                'title' => 'Pourquoi recruter des talents marocains ?',
+                'title' => 'Pourquoi proposer des candidatures à des talents marocains ?',
                 'subtitle' => 'Qualité, coût et proximité culturelle',
                 'url' => 'https://www.talentsdumaroc.com/actualites/recruter-talents-marocains',
                 'source' => 'article',

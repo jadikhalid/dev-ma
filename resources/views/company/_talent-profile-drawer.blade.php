@@ -225,7 +225,10 @@
                         >Portfolio</a>
                     </div>
 
-                    <div class="mt-7 relative rounded-xl border bg-gray-50 p-5 space-y-4">
+                    <div
+                        x-show="composeUrl"
+                        class="mt-7 relative rounded-xl border bg-gray-50 p-5 space-y-4"
+                    >
                         <div
                             x-show="composeSending"
                             x-cloak

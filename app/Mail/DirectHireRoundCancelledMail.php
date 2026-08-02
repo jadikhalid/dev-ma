@@ -47,7 +47,7 @@ class DirectHireRoundCancelledMail extends Mailable
                     : $this->directHire->companyDisplayName(),
                 'url' => $isTalent
                     ? route('talent.direct-hire.show', $this->directHire)
-                    : ($this->directHire->isStaffInternal()
+                    : ($this->directHire->isStaffInitiated()
                         ? route('admin.direct-hire.show', $this->directHire)
                         : route('company.direct-hire.show', $this->directHire)),
             ],

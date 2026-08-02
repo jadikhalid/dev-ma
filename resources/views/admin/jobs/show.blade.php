@@ -15,6 +15,7 @@
                 <h2 class="text-xl font-bold text-gray-900">{{ $job->title }}</h2>
                 <p class="mt-1 text-sm text-gray-500">
                     <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold {{ $statusBadge }}">{{ $job->statusLabel() }}</span>
+                    · {{ $job->companyProfile?->displayName() ?? '—' }}
                     @if ($job->locationLabel() !== '')
                         · {{ $job->locationLabel() }}
                     @endif
@@ -24,13 +25,13 @@
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('company.jobs.edit', $job) }}" class="inline-flex px-4 py-2 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.jobs.edit') }}</a>
+                <a href="{{ route('admin.jobs.edit', $job) }}" class="inline-flex px-4 py-2 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.jobs.edit') }}</a>
                 @if (! $job->isPublished())
                     <form
                         method="POST"
-                        action="{{ route('company.jobs.publish', $job) }}"
+                        action="{{ route('admin.jobs.publish', $job) }}"
                         data-ajax
-                        data-loading-target="company-job-show-page"
+                        data-loading-target="admin-job-show-page"
                         data-error-message="{{ __('talenma.jobs.save_error') }}"
                         data-network-error-message="{{ __('talenma.jobs.network_error') }}"
                     >
@@ -41,9 +42,9 @@
                 @if (! $job->isHidden())
                     <form
                         method="POST"
-                        action="{{ route('company.jobs.hide', $job) }}"
+                        action="{{ route('admin.jobs.hide', $job) }}"
                         data-ajax
-                        data-loading-target="company-job-show-page"
+                        data-loading-target="admin-job-show-page"
                         data-error-message="{{ __('talenma.jobs.save_error') }}"
                         data-network-error-message="{{ __('talenma.jobs.network_error') }}"
                     >
@@ -54,9 +55,9 @@
                 @if (! $job->isPostponed())
                     <form
                         method="POST"
-                        action="{{ route('company.jobs.postpone', $job) }}"
+                        action="{{ route('admin.jobs.postpone', $job) }}"
                         data-ajax
-                        data-loading-target="company-job-show-page"
+                        data-loading-target="admin-job-show-page"
                         data-error-message="{{ __('talenma.jobs.save_error') }}"
                         data-network-error-message="{{ __('talenma.jobs.network_error') }}"
                     >
@@ -67,9 +68,9 @@
                 @if (! $job->isClosed())
                     <form
                         method="POST"
-                        action="{{ route('company.jobs.close', $job) }}"
+                        action="{{ route('admin.jobs.close', $job) }}"
                         data-ajax
-                        data-loading-target="company-job-show-page"
+                        data-loading-target="admin-job-show-page"
                         data-error-message="{{ __('talenma.jobs.save_error') }}"
                         data-network-error-message="{{ __('talenma.jobs.network_error') }}"
                     >
@@ -79,10 +80,10 @@
                 @endif
                 <form
                     method="POST"
-                    action="{{ route('company.jobs.destroy', $job) }}"
+                    action="{{ route('admin.jobs.destroy', $job) }}"
                     data-ajax
                     data-confirm="{{ __('talenma.jobs.delete_confirm') }}"
-                    data-loading-target="company-job-show-page"
+                    data-loading-target="admin-job-show-page"
                     data-error-message="{{ __('talenma.jobs.save_error') }}"
                     data-network-error-message="{{ __('talenma.jobs.network_error') }}"
                 >
@@ -94,9 +95,30 @@
         </div>
     </x-slot>
 
-    <div id="company-job-show-page" class="relative py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div id="admin-job-show-page" class="relative py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <dl class="rounded-2xl border bg-white p-5 sm:p-6 grid sm:grid-cols-2 gap-4 text-sm">
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('talenma.jobs.admin_company') }}</dt>
+                <dd class="mt-1 text-gray-900 font-medium">{{ $job->companyProfile?->displayName() ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('talenma.jobs.admin_creator') }}</dt>
+                <dd class="mt-1 text-gray-900">{{ $job->creator?->name ?? '—' }} @if ($job->creator?->email)<span class="text-gray-500">({{ $job->creator->email }})</span>@endif</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('talenma.jobs.field_contract') }}</dt>
+                <dd class="mt-1 text-gray-900">{{ $job->contractTypeLabel() }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('talenma.jobs.admin_dates') }}</dt>
+                <dd class="mt-1 text-gray-900">
+                    {{ __('talenma.jobs.admin_published_at') }}: {{ $job->published_at?->translatedFormat('d M Y, H:i') ?? '—' }}
+                    · {{ __('talenma.jobs.admin_closed_at') }}: {{ $job->closed_at?->translatedFormat('d M Y, H:i') ?? '—' }}
+                </dd>
+            </div>
+        </dl>
+
         <article class="rounded-2xl border bg-white p-6 sm:p-8 space-y-3">
-            <p class="text-sm text-gray-500">{{ $job->contractTypeLabel() }}</p>
             <div class="prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">{{ $job->description }}</div>
         </article>
 
@@ -112,10 +134,10 @@
                         </div>
                         <form
                             method="POST"
-                            action="{{ route('company.jobs.applications.update', [$job, $application]) }}"
+                            action="{{ route('admin.jobs.applications.update', [$job, $application]) }}"
                             class="flex items-center gap-2"
                             data-ajax
-                            data-loading-target="company-job-show-page"
+                            data-loading-target="admin-job-show-page"
                             data-error-message="{{ __('talenma.jobs.save_error') }}"
                             data-network-error-message="{{ __('talenma.jobs.network_error') }}"
                         >
@@ -126,7 +148,7 @@
                                     <option value="{{ $status }}" @selected($application->status === $status)>{{ __('talenma.jobs.application_status_'.$status) }}</option>
                                 @endforeach
                             </select>
-                            <button type="submit" class="px-3 py-2 text-sm font-semibold text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-50">{{ __('talenma.jobs.save_status') }}</button>
+                            <button type="submit" class="px-3 py-2 text-sm font-semibold text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-50">{{ __('talenma.jobs.save_status') }}</button>
                         </form>
                     </div>
                     @if ($application->cover_message)
@@ -138,6 +160,6 @@
             @endforelse
         </section>
 
-        <a href="{{ route('company.jobs.index') }}" class="inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-900">← {{ __('talenma.jobs.back') }}</a>
+        <a href="{{ route('admin.jobs.index') }}" class="inline-flex text-sm font-medium text-indigo-700 hover:text-indigo-900">← {{ __('talenma.jobs.back') }}</a>
     </div>
 </x-app-layout>

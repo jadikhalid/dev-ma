@@ -4363,6 +4363,131 @@ Alpine.data('directHireRoundCreate', (config = {}) => ({
     },
 }));
 
+Alpine.data('adminDirectHireCreateForm', (config = {}) => ({
+    origin: config.origin,
+    onBehalf: config.onBehalf,
+    companySearchUrl: config.companySearchUrl,
+    companyQuery: config.initialCompanyLabel ?? '',
+    companyResults: [],
+    companyOpen: false,
+    companyLoading: false,
+    companyActiveIndex: -1,
+    companyDebounceTimer: null,
+    selectedCompanyId: config.initialCompanyId ? Number(config.initialCompanyId) : null,
+    selectedCompanyLabel: config.initialCompanyLabel ?? '',
+    minChars: config.minChars ?? 2,
+    loadingLabel: config.loadingLabel ?? '',
+    emptyLabel: config.emptyLabel ?? '',
+
+    onOriginChange() {
+        if (this.origin !== this.onBehalf) {
+            this.clearCompanySelection();
+        }
+    },
+
+    clearCompanySelection() {
+        this.selectedCompanyId = null;
+        this.selectedCompanyLabel = '';
+        this.companyQuery = '';
+        this.companyResults = [];
+        this.companyOpen = false;
+        this.companyActiveIndex = -1;
+    },
+
+    onCompanyInput() {
+        this.selectedCompanyId = null;
+        this.selectedCompanyLabel = '';
+        clearTimeout(this.companyDebounceTimer);
+        this.companyDebounceTimer = setTimeout(() => this.fetchCompanies(), 220);
+    },
+
+    onCompanyFocus() {
+        if (this.companyQuery.trim().length >= this.minChars) {
+            this.fetchCompanies();
+        }
+    },
+
+    async fetchCompanies() {
+        const term = this.companyQuery.trim();
+
+        if (term.length < this.minChars) {
+            this.companyResults = [];
+            this.companyOpen = false;
+            this.companyActiveIndex = -1;
+
+            return;
+        }
+
+        this.companyLoading = true;
+        this.companyOpen = true;
+
+        try {
+            const params = new URLSearchParams({ q: term });
+            const response = await fetch(`${this.companySearchUrl}?${params.toString()}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                throw new Error('company search failed');
+            }
+
+            const data = await response.json();
+            this.companyResults = data.results ?? [];
+            this.companyActiveIndex = this.companyResults.length ? 0 : -1;
+        } catch {
+            this.companyResults = [];
+            this.companyActiveIndex = -1;
+        } finally {
+            this.companyLoading = false;
+        }
+    },
+
+    selectCompany(item) {
+        this.selectedCompanyId = item.id;
+        this.selectedCompanyLabel = item.label;
+        this.companyQuery = item.label;
+        this.companyOpen = false;
+        this.companyResults = [];
+        this.companyActiveIndex = -1;
+        this.$refs.companyInput?.focus();
+    },
+
+    closeCompanyResults() {
+        this.companyOpen = false;
+        this.companyActiveIndex = -1;
+    },
+
+    onCompanyKeydown(event) {
+        if (event.key === 'Escape') {
+            this.closeCompanyResults();
+
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            if (this.companyOpen && this.companyActiveIndex >= 0 && this.companyResults[this.companyActiveIndex]) {
+                event.preventDefault();
+                this.selectCompany(this.companyResults[this.companyActiveIndex]);
+            }
+
+            return;
+        }
+
+        if (! this.companyOpen || ! this.companyResults.length) {
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            this.companyActiveIndex = Math.min(this.companyActiveIndex + 1, this.companyResults.length - 1);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            this.companyActiveIndex = Math.max(this.companyActiveIndex - 1, 0);
+        }
+    },
+}));
+
 Alpine.data('adminDirectHireTalentSearch', (config = {}) => ({
     url: config.url,
     query: '',
@@ -4539,27 +4664,103 @@ Alpine.data('directHireTalentDecide', (config = {}) => ({
     messages: config.messages ?? {},
     loading: false,
     deferLocked: Boolean(config.deferLocked),
-    confirmingDefer: false,
+    pendingDecision: null,
 
-    requestDefer() {
-        if (this.loading || this.deferLocked) {
-            return;
-        }
-
-        this.confirmingDefer = true;
-    },
-
-    closeDeferConfirm() {
+    requestDecision(decision) {
         if (this.loading) {
             return;
         }
 
-        this.confirmingDefer = false;
+        const allowed = ['accept', 'defer', 'decline'];
+
+        if (! allowed.includes(decision)) {
+            pushToast('error', this.messages.decisionRequired || this.messages.error || 'Error');
+
+            return;
+        }
+
+        if (decision === 'defer' && this.deferLocked) {
+            return;
+        }
+
+        const note = (this.$refs.note?.value || '').trim();
+
+        if (note.length > 2000) {
+            pushToast('error', this.messages.noteMax || this.messages.error || 'Error');
+
+            return;
+        }
+
+        this.pendingDecision = decision;
     },
 
-    confirmDefer() {
-        this.confirmingDefer = false;
-        this.submitDecision('defer');
+    closeDecisionConfirm() {
+        if (this.loading) {
+            return;
+        }
+
+        this.pendingDecision = null;
+    },
+
+    confirmDecision() {
+        const decision = this.pendingDecision;
+
+        if (! decision) {
+            return;
+        }
+
+        this.pendingDecision = null;
+        this.submitDecision(decision);
+    },
+
+    confirmTitle() {
+        switch (this.pendingDecision) {
+            case 'accept':
+                return this.messages.acceptConfirmTitle ?? '';
+            case 'decline':
+                return this.messages.declineConfirmTitle ?? '';
+            case 'defer':
+                return this.messages.deferConfirmTitle ?? '';
+            default:
+                return '';
+        }
+    },
+
+    confirmBody() {
+        switch (this.pendingDecision) {
+            case 'accept':
+                return this.messages.acceptConfirmBody ?? '';
+            case 'decline':
+                return this.messages.declineConfirmBody ?? '';
+            case 'defer':
+                return this.messages.deferConfirmBody ?? '';
+            default:
+                return '';
+        }
+    },
+
+    confirmBtnLabel() {
+        switch (this.pendingDecision) {
+            case 'accept':
+                return this.messages.acceptConfirmBtn ?? '';
+            case 'decline':
+                return this.messages.declineConfirmBtn ?? '';
+            case 'defer':
+                return this.messages.deferConfirmBtn ?? '';
+            default:
+                return '';
+        }
+    },
+
+    confirmBtnClass() {
+        switch (this.pendingDecision) {
+            case 'accept':
+                return 'inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 focus:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-60';
+            case 'decline':
+                return 'inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-rose-700 focus:bg-rose-700 active:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-60';
+            default:
+                return 'inline-flex items-center px-4 py-2 bg-amber-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-600 focus:bg-amber-600 active:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-60';
+        }
     },
 
     async submitDecision(decision) {
@@ -4645,24 +4846,24 @@ Alpine.data('directHireTalentDecide', (config = {}) => ({
             }
         }
 
-        if (typeof payload.decision_note_html === 'string') {
-            const existingNote = document.getElementById('direct-hire-talent-note');
+        if (typeof payload.history_html === 'string') {
+            const existingHistory = document.getElementById('direct-hire-proposal-history');
             const proposalBody = document.getElementById('direct-hire-proposal-body');
 
-            if (payload.decision_note_html.trim() !== '') {
-                if (existingNote) {
-                    existingNote.outerHTML = payload.decision_note_html;
+            if (payload.history_html.trim() !== '') {
+                if (existingHistory) {
+                    existingHistory.outerHTML = payload.history_html;
                 } else if (proposalBody) {
                     const blockquote = proposalBody.querySelector('blockquote');
 
                     if (blockquote) {
-                        blockquote.insertAdjacentHTML('afterend', payload.decision_note_html);
+                        blockquote.insertAdjacentHTML('afterend', payload.history_html);
                     } else {
-                        proposalBody.insertAdjacentHTML('beforeend', payload.decision_note_html);
+                        proposalBody.insertAdjacentHTML('beforeend', payload.history_html);
                     }
                 }
-            } else if (existingNote) {
-                existingNote.remove();
+            } else if (existingHistory) {
+                existingHistory.remove();
             }
         }
 
@@ -4725,6 +4926,98 @@ Alpine.data('directHireDeferralReply', (config = {}) => ({
     url: config.url ?? '',
     messages: config.messages ?? {},
     loading: false,
+    pendingAction: null,
+
+    requestAction(action) {
+        if (this.loading) {
+            return;
+        }
+
+        if (! ['accept', 'refuse'].includes(action)) {
+            pushToast('error', this.messages.error || 'Error');
+
+            return;
+        }
+
+        const note = (this.$refs.note?.value || '').trim();
+
+        if (note.length > 2000) {
+            pushToast('error', this.messages.noteMax || this.messages.error || 'Error');
+
+            return;
+        }
+
+        if (action === 'refuse' && note.length === 0) {
+            pushToast('error', this.messages.refuseNoteRequired || this.messages.error || 'Error');
+
+            return;
+        }
+
+        this.pendingAction = action;
+    },
+
+    closeActionConfirm() {
+        if (this.loading) {
+            return;
+        }
+
+        this.pendingAction = null;
+    },
+
+    confirmAction() {
+        const action = this.pendingAction;
+
+        if (! action) {
+            return;
+        }
+
+        this.pendingAction = null;
+        this.submitAction(action);
+    },
+
+    confirmTitle() {
+        switch (this.pendingAction) {
+            case 'accept':
+                return this.messages.acceptConfirmTitle ?? '';
+            case 'refuse':
+                return this.messages.refuseConfirmTitle ?? '';
+            default:
+                return '';
+        }
+    },
+
+    confirmBody() {
+        switch (this.pendingAction) {
+            case 'accept':
+                return this.messages.acceptConfirmBody ?? '';
+            case 'refuse':
+                return this.messages.refuseConfirmBody ?? '';
+            default:
+                return '';
+        }
+    },
+
+    confirmBtnLabel() {
+        switch (this.pendingAction) {
+            case 'accept':
+                return this.messages.acceptConfirmBtn ?? '';
+            case 'refuse':
+                return this.messages.refuseConfirmBtn ?? '';
+            default:
+                return '';
+        }
+    },
+
+    confirmBtnClass() {
+        switch (this.pendingAction) {
+            case 'accept':
+                return 'inline-flex items-center px-4 py-2 bg-violet-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-violet-700 focus:bg-violet-700 active:bg-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-60';
+            case 'refuse':
+                return 'inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-rose-700 focus:bg-rose-700 active:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-60';
+            default:
+                return 'inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-60';
+        }
+    },
 
     async submitAction(action) {
         if (this.loading) {
@@ -4809,35 +5102,15 @@ Alpine.data('directHireDeferralReply', (config = {}) => ({
             }
         }
 
-        if (typeof payload.deferral_note_html === 'string') {
-            const existing = document.getElementById('direct-hire-company-deferral-note');
+        if (typeof payload.history_html === 'string') {
+            const existingHistory = document.getElementById('direct-hire-proposal-history');
             const proposalCard = document.getElementById('direct-hire-proposal-card');
 
-            if (payload.deferral_note_html.trim() !== '') {
-                if (existing) {
-                    existing.outerHTML = payload.deferral_note_html;
+            if (payload.history_html.trim() !== '') {
+                if (existingHistory) {
+                    existingHistory.outerHTML = payload.history_html;
                 } else if (proposalCard) {
-                    const closure = proposalCard.querySelector('#direct-hire-closure-note');
-                    if (closure) {
-                        closure.insertAdjacentHTML('beforebegin', payload.deferral_note_html);
-                    } else {
-                        proposalCard.insertAdjacentHTML('beforeend', payload.deferral_note_html);
-                    }
-                }
-            } else if (existing) {
-                existing.remove();
-            }
-        }
-
-        if (typeof payload.closure_note_html === 'string') {
-            const existingClosure = document.getElementById('direct-hire-closure-note');
-            const proposalCard = document.getElementById('direct-hire-proposal-card');
-
-            if (payload.closure_note_html.trim() !== '') {
-                if (existingClosure) {
-                    existingClosure.outerHTML = payload.closure_note_html;
-                } else if (proposalCard) {
-                    proposalCard.insertAdjacentHTML('beforeend', payload.closure_note_html);
+                    proposalCard.insertAdjacentHTML('beforeend', payload.history_html);
                 }
             }
         }
@@ -5008,14 +5281,14 @@ Alpine.data('directHireCompanyClose', (config = {}) => ({
             }
         }
 
-        if (typeof payload.closure_note_html === 'string') {
-            const existing = document.getElementById('direct-hire-closure-note');
+        if (typeof payload.history_html === 'string') {
+            const existing = document.getElementById('direct-hire-proposal-history');
             const proposalCard = document.getElementById('direct-hire-proposal-card');
 
             if (existing) {
-                existing.outerHTML = payload.closure_note_html;
+                existing.outerHTML = payload.history_html;
             } else if (proposalCard) {
-                proposalCard.insertAdjacentHTML('beforeend', payload.closure_note_html);
+                proposalCard.insertAdjacentHTML('beforeend', payload.history_html);
             }
         }
 

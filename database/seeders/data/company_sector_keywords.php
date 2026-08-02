@@ -13,7 +13,7 @@ return [
         ['label_fr' => 'Télémédecine', 'label_en' => 'Telemedicine'],
         ['label_fr' => 'Dispositifs médicaux', 'label_en' => 'Medical devices'],
         ['label_fr' => 'Laboratoire d\'analyses', 'label_en' => 'Medical laboratory'],
-        ['label_fr' => 'Recrutement soignants', 'label_en' => 'Healthcare staffing'],
+        ['label_fr' => 'Candidature soignants', 'label_en' => 'Healthcare staffing'],
         ['label_fr' => 'Ouverture de service', 'label_en' => 'New care unit opening'],
         ['label_fr' => 'Sous-traitance médicale', 'label_en' => 'Medical outsourcing'],
     ],
@@ -98,7 +98,7 @@ return [
     'consulting' => [
         ['label_fr' => 'Cabinet de conseil', 'label_en' => 'Consulting firm'],
         ['label_fr' => 'Cabinet d\'avocats', 'label_en' => 'Law firm'],
-        ['label_fr' => 'Cabinet RH / recrutement', 'label_en' => 'HR / recruitment firm'],
+        ['label_fr' => 'Cabinet RH / candidatures', 'label_en' => 'HR / application firm'],
         ['label_fr' => 'Transformation organisationnelle', 'label_en' => 'Organizational transformation'],
         ['label_fr' => 'Mission longue durée', 'label_en' => 'Long-term engagement'],
         ['label_fr' => 'Externalisation de fonctions', 'label_en' => 'Function outsourcing'],

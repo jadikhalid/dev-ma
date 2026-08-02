@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'cover_message',
     'status',
     'submitted_at',
+    'talent_seen_at',
 ])]
 class JobApplication extends Model
 {
@@ -40,6 +41,7 @@ class JobApplication extends Model
     {
         return [
             'submitted_at' => 'datetime',
+            'talent_seen_at' => 'datetime',
         ];
     }
 
@@ -56,5 +58,18 @@ class JobApplication extends Model
     public function statusLabel(): string
     {
         return __('talenma.jobs.application_status_'.$this->status);
+    }
+
+    public function hasUnseenChangesForTalent(): bool
+    {
+        if ($this->talent_seen_at === null) {
+            return true;
+        }
+
+        if ($this->updated_at === null) {
+            return false;
+        }
+
+        return $this->talent_seen_at->getTimestamp() < $this->updated_at->getTimestamp();
     }
 }

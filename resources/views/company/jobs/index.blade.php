@@ -16,12 +16,21 @@
             <a href="{{ route('company.jobs.show', $job) }}" class="block rounded-xl border bg-white p-5 hover:border-emerald-300 transition">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                     <div class="min-w-0">
-                        <h3 class="text-base font-semibold text-gray-900">{{ $job->title }}</h3>
+                        <h3 class="inline-flex items-center gap-2 text-base font-semibold text-gray-900">
+                            {{ $job->title }}
+                            @if ($job->hasUnseenChangesForCompany())
+                                <span class="relative flex h-2.5 w-2.5 shrink-0" title="{{ __('talenma.jobs.nav_new') }}">
+                                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                    <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                </span>
+                                <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                            @endif
+                        </h3>
                         <p class="mt-1 text-sm text-gray-500 line-clamp-2">{{ Str::limit(strip_tags($job->description), 140) }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 shrink-0">
                         <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold
-                            {{ $job->isPublished() ? 'bg-emerald-50 text-emerald-700' : ($job->isClosed() ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-800') }}">
+                            {{ $job->isPublished() ? 'bg-emerald-50 text-emerald-700' : ($job->isClosed() ? 'bg-gray-100 text-gray-600' : ($job->isHidden() ? 'bg-slate-100 text-slate-700' : ($job->isPostponed() ? 'bg-violet-50 text-violet-800' : 'bg-amber-50 text-amber-800'))) }}">
                             {{ $job->statusLabel() }}
                         </span>
                         <span class="text-xs text-gray-500">{{ __('talenma.jobs.applications_count', ['count' => $job->applications_count]) }}</span>

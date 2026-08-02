@@ -30,6 +30,7 @@ class DashboardActivityToastService
         'direct_hire_deferred',
         'direct_hire_message_sent',
         'inbox_message_sent',
+        'job_application_submitted',
     ];
 
     /**

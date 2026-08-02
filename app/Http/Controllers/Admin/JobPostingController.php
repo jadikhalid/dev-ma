@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\CompanyProfile;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
@@ -13,7 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
-class CompanyJobController extends Controller
+class JobPostingController extends Controller
 {
     public function __construct(
         private JobPostingService $jobs,
@@ -21,76 +22,50 @@ class CompanyJobController extends Controller
 
     public function index(Request $request): View
     {
-        $user = $request->user();
-        abort_unless($user->canManageJobs(), 403);
-
-        $org = $user->companyOrganization();
-        abort_unless($org, 404);
+        $status = $request->string('status')->toString();
+        $q = trim($request->string('q')->toString());
 
         $jobs = JobPosting::query()
-            ->where('company_profile_id', $org->id)
+            ->with(['companyProfile.user', 'creator'])
             ->withCount('applications')
+            ->when(
+                $status !== '' && in_array($status, JobPosting::STATUSES, true),
+                fn ($query) => $query->where('status', $status)
+            )
+            ->when($q !== '', function ($query) use ($q): void {
+                $query->where(function ($inner) use ($q): void {
+                    $inner->where('title', 'like', '%'.$q.'%')
+                        ->orWhere('description', 'like', '%'.$q.'%')
+                        ->orWhereHas('companyProfile', function ($company) use ($q): void {
+                            $company->where('representative_name', 'like', '%'.$q.'%')
+                                ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$q.'%')
+                                    ->orWhere('email', 'like', '%'.$q.'%'));
+                        });
+                });
+            })
             ->latest()
-            ->paginate(15);
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('company.jobs.index', compact('jobs', 'org'));
-    }
-
-    public function create(Request $request): View
-    {
-        abort_unless($request->user()->canManageJobs(), 403);
-
-        return view('company.jobs.form', [
-            'job' => new JobPosting([
-                'status' => JobPosting::STATUS_DRAFT,
-                'remote_ok' => false,
-                'location_country' => CompanyProfile::DEFAULT_COUNTRY,
-            ]),
-            'countryOptions' => CompanyProfile::countryOptions(),
-            'citiesByCountry' => CompanyProfile::citiesByCountry(),
+        return view('admin.jobs.index', [
+            'jobs' => $jobs,
+            'status' => $status,
+            'q' => $q,
+            'statuses' => JobPosting::STATUSES,
         ]);
-    }
-
-    public function store(Request $request): JsonResponse|RedirectResponse
-    {
-        $user = $request->user();
-        abort_unless($user->canManageJobs(), 403);
-        $org = $user->companyOrganization();
-        abort_unless($org, 404);
-
-        $data = $this->validated($request);
-
-        $job = JobPosting::create([
-            ...$data,
-            'company_profile_id' => $org->id,
-            'created_by' => $user->id,
-            'status' => JobPosting::STATUS_DRAFT,
-            'company_seen_at' => now(),
-            'staff_seen_at' => now(),
-        ]);
-
-        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_CREATED, $user, JobPosting::STATUS_DRAFT);
-
-        $message = __('talenma.jobs.created');
-
-        return $this->respond($request, $message, route('company.jobs.show', $job));
     }
 
     public function show(Request $request, JobPosting $job): View
     {
-        $this->authorizeJob($request, $job);
-        $this->jobs->markSeenForCompany($request->user(), $job);
+        $this->jobs->markSeenForStaff($request->user(), $job);
+        $job->load(['applications.talent.profile', 'creator', 'companyProfile.user']);
 
-        $job->load(['applications.talent.profile', 'creator']);
-
-        return view('company.jobs.show', compact('job'));
+        return view('admin.jobs.show', compact('job'));
     }
 
-    public function edit(Request $request, JobPosting $job): View
+    public function edit(JobPosting $job): View
     {
-        $this->authorizeJob($request, $job);
-
-        return view('company.jobs.form', [
+        return view('admin.jobs.form', [
             'job' => $job,
             'countryOptions' => CompanyProfile::countryOptions(),
             'citiesByCountry' => CompanyProfile::citiesByCountry(),
@@ -99,95 +74,84 @@ class CompanyJobController extends Controller
 
     public function update(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
-        $this->authorizeJob($request, $job);
-
         $job->update($this->validated($request));
-        $this->jobs->acknowledgeForCompany($job);
+        $this->jobs->flagUnseenForCompanyFromStaff($job);
 
         $message = __('talenma.jobs.updated');
 
-        return $this->respond($request, $message, route('company.jobs.show', $job));
+        return $this->respond($request, $message, route('admin.jobs.show', $job));
     }
 
     public function publish(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
-        $this->authorizeJob($request, $job);
-
         $job->update([
             'status' => JobPosting::STATUS_PUBLISHED,
             'published_at' => $job->published_at ?? now(),
             'closed_at' => null,
         ]);
 
-        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_PUBLISHED, $request->user(), JobPosting::STATUS_PUBLISHED);
-        $this->jobs->acknowledgeForCompany($job);
+        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_PUBLISHED, $request->user(), JobPosting::STATUS_PUBLISHED, null, false);
+        $this->jobs->flagUnseenForCompanyFromStaff($job);
 
         return $this->respond($request, __('talenma.jobs.published'), reload: true);
     }
 
     public function close(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
-        $this->authorizeJob($request, $job);
-
         $job->update([
             'status' => JobPosting::STATUS_CLOSED,
             'closed_at' => now(),
         ]);
 
-        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_CLOSED, $request->user(), JobPosting::STATUS_CLOSED);
+        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_CLOSED, $request->user(), JobPosting::STATUS_CLOSED, null, false);
         $this->jobs->flagApplicantsUnseen($job);
-        $this->jobs->acknowledgeForCompany($job);
+        $this->jobs->flagUnseenForCompanyFromStaff($job);
 
         return $this->respond($request, __('talenma.jobs.closed'), reload: true);
     }
 
     public function hide(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
-        $this->authorizeJob($request, $job);
-
         $job->update([
             'status' => JobPosting::STATUS_HIDDEN,
             'closed_at' => null,
         ]);
 
-        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_HIDDEN, $request->user(), JobPosting::STATUS_HIDDEN);
+        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_HIDDEN, $request->user(), JobPosting::STATUS_HIDDEN, null, false);
         $this->jobs->flagApplicantsUnseen($job);
-        $this->jobs->acknowledgeForCompany($job);
+        $this->jobs->flagUnseenForCompanyFromStaff($job);
 
         return $this->respond($request, __('talenma.jobs.hidden'), reload: true);
     }
 
     public function postpone(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
-        $this->authorizeJob($request, $job);
-
         $job->update([
             'status' => JobPosting::STATUS_POSTPONED,
             'closed_at' => null,
         ]);
 
-        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_POSTPONED, $request->user(), JobPosting::STATUS_POSTPONED);
+        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_POSTPONED, $request->user(), JobPosting::STATUS_POSTPONED, null, false);
         $this->jobs->flagApplicantsUnseen($job);
-        $this->jobs->acknowledgeForCompany($job);
+        $this->jobs->flagUnseenForCompanyFromStaff($job);
 
         return $this->respond($request, __('talenma.jobs.postponed'), reload: true);
     }
 
     public function destroy(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
-        $this->authorizeJob($request, $job);
-
-        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_DELETED, $request->user(), $job->status);
+        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_DELETED, $request->user(), $job->status, null, false);
         $this->jobs->recordDeletedForApplicants($job, $request->user());
 
         $job->delete();
 
-        return $this->respond($request, __('talenma.jobs.deleted'), route('company.jobs.index'));
+        $message = __('talenma.jobs.deleted');
+
+        return $this->respond($request, $message, route('admin.jobs.index'));
     }
 
     public function updateApplication(Request $request, JobPosting $job, JobApplication $application): JsonResponse|RedirectResponse
     {
-        $this->authorizeJob($request, $job);
         abort_unless($application->job_posting_id === $job->id, 404);
 
         $data = $request->validate([
@@ -203,11 +167,11 @@ class CompanyJobController extends Controller
             $request->user(),
             $data['status'],
             $application->talent?->name,
-            true,
+            false,
             (int) $application->talent_user_id,
         );
         $this->jobs->flagUnseenForTalentApplication($application);
-        $this->jobs->acknowledgeForCompany($job);
+        $this->jobs->flagUnseenForCompanyFromStaff($job);
 
         return $this->respond($request, __('talenma.jobs.application_updated'));
     }
@@ -245,15 +209,6 @@ class CompanyJobController extends Controller
         $data['remote_ok'] = $request->boolean('remote_ok');
 
         return $data;
-    }
-
-    private function authorizeJob(Request $request, JobPosting $job): void
-    {
-        $user = $request->user();
-        abort_unless($user->canManageJobs(), 403);
-
-        $org = $user->companyOrganization();
-        abort_unless($org && $job->company_profile_id === $org->id, 403);
     }
 
     private function respond(Request $request, string $message, ?string $showUrl = null, bool $reload = false): JsonResponse|RedirectResponse

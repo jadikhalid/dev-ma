@@ -253,6 +253,13 @@
                                         'direct_hire_closed_negative' => __('talenma.dashboard.company.activity.activity_direct_hire_closed_negative', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'direct_hire_withdrawn' => __('talenma.dashboard.company.activity.activity_direct_hire_withdrawn', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                                         'job_application' => __('talenma.dashboard.company.activity.activity_job_application', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
+                                        'job_created' => __('talenma.dashboard.company.activity.activity_job_created', ['subject' => $item['subject'] ?? '']),
+                                        'job_published' => __('talenma.dashboard.company.activity.activity_job_published', ['subject' => $item['subject'] ?? '']),
+                                        'job_closed' => __('talenma.dashboard.company.activity.activity_job_closed', ['subject' => $item['subject'] ?? '']),
+                                        'job_hidden' => __('talenma.dashboard.company.activity.activity_job_hidden', ['subject' => $item['subject'] ?? '']),
+                                        'job_postponed' => __('talenma.dashboard.company.activity.activity_job_postponed', ['subject' => $item['subject'] ?? '']),
+                                        'job_deleted' => __('talenma.dashboard.company.activity.activity_job_deleted', ['subject' => $item['subject'] ?? '']),
+                                        'job_application_status' => __('talenma.dashboard.company.activity.activity_job_application_status', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '', 'result' => $item['result'] ?? '']),
                                         'recruitment_submitted' => __('talenma.dashboard.company.activity.activity_recruitment_submitted_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                         'recruitment_message' => __('talenma.dashboard.company.activity.activity_recruitment_message_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
                                         'recruitment_message_sent' => __('talenma.dashboard.company.activity.activity_recruitment_message_sent_'.(($item['detail'] ?? 'open') === 'named' ? 'named' : 'open'), ['subject' => $item['subject'] ?? '']),
@@ -281,7 +288,7 @@
                                     ], true);
 
                                     [$category, $dotClass, $rowClass] = match (true) {
-                                        ($item['type'] ?? '') === 'job_application' => [
+                                        str_starts_with((string) ($item['type'] ?? ''), 'job_') => [
                                             __('talenma.dashboard.company.activity.activity_cat_jobs'),
                                             'bg-emerald-500',
                                             'hover:bg-emerald-50/80',
@@ -379,8 +386,16 @@
                     <h3 class="text-sm font-bold text-gray-900">{{ __('talenma.dashboard.company.jobs_title') }}</h3>
                     <p class="mt-1.5 text-xs text-gray-600 leading-relaxed flex-1">{{ __('talenma.dashboard.company.jobs_desc') }}</p>
                     <div class="mt-3 flex flex-col gap-2">
-                        <a href="{{ route('company.jobs.index') }}" class="px-3 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 text-center">{{ __('talenma.dashboard.company.jobs_manage') }}</a>
-                        <a href="{{ route('company.jobs.create') }}" class="px-3 py-2 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-lg hover:bg-emerald-50 text-center">{{ __('talenma.dashboard.company.jobs_create') }}</a>
+                        <a
+                            href="{{ route('company.jobs.index') }}"
+                            class="group relative inline-flex items-center justify-center gap-2 overflow-hidden px-3 py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-md shadow-emerald-600/30 ring-2 ring-emerald-300 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/40 transition"
+                        >
+                            <span class="absolute inset-0 animate-pulse bg-white/10" aria-hidden="true"></span>
+                            <span class="relative">{{ __('talenma.dashboard.company.jobs_manage') }}</span>
+                            <svg class="relative h-3.5 w-3.5 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                            </svg>
+                        </a>
                     </div>
                 </div>
             </aside>

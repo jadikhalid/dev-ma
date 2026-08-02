@@ -162,12 +162,13 @@ class MessagingService
             $query->where('talent_user_id', $user->id);
         } elseif ($user->isCompany()) {
             $org = $user->companyOrganization();
-            $query->where(function ($q) use ($user, $org) {
-                $q->where('company_user_id', $user->id);
-                if ($org) {
-                    $q->orWhere('company_profile_id', $org->id);
-                }
-            });
+            $query->where('hire_origin', DirectHireRequest::ORIGIN_COMPANY)
+                ->where(function ($q) use ($user, $org) {
+                    $q->where('company_user_id', $user->id);
+                    if ($org) {
+                        $q->orWhere('company_profile_id', $org->id);
+                    }
+                });
         } else {
             return [];
         }

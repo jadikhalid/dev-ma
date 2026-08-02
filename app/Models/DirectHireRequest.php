@@ -274,6 +274,11 @@ class DirectHireRequest extends Model
         return $this->hasMany(DirectHireMessage::class)->orderBy('created_at')->orderBy('id');
     }
 
+    public function statusEvents(): HasMany
+    {
+        return $this->hasMany(DirectHireStatusEvent::class)->orderBy('created_at')->orderBy('id');
+    }
+
     public function statusLabel(): string
     {
         return __('talenma.direct_hire.status_'.$this->status);
@@ -452,7 +457,7 @@ class DirectHireRequest extends Model
     {
         $this->loadMissing(['company', 'companyProfile', 'initiatedBy']);
 
-        if ($this->isStaffInternal()) {
+        if ($this->isStaffInitiated()) {
             $staff = $this->initiatedBy;
             $person = trim((string) (($staff?->first_name ?? '').' '.($staff?->last_name ?? '')));
 
@@ -513,7 +518,7 @@ class DirectHireRequest extends Model
 
     public function hasCompanyParty(): bool
     {
-        if ($this->isStaffInternal()) {
+        if ($this->isStaffInitiated()) {
             return true;
         }
 
@@ -526,7 +531,7 @@ class DirectHireRequest extends Model
     }
 
     /**
-     * Subject without the redundant "Proposition de recrutement :" prefix
+     * Subject without the redundant "Proposition de candidature :" prefix
      * (kept when the title is already shown separately in the page header).
      */
     public function shortSubject(): string
@@ -534,7 +539,7 @@ class DirectHireRequest extends Model
         $subject = trim((string) $this->subject);
 
         $stripped = preg_replace(
-            '/^(proposition de recrutement|hire proposal|recruitment proposal)\s*[:—\-–]\s*/iu',
+            '/^(proposition de candidature|proposition de recrutement|application proposal|hire proposal|recruitment proposal)\s*[:—\-–]\s*/iu',
             '',
             $subject
         );

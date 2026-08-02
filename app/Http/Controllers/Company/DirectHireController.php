@@ -127,6 +127,7 @@ class DirectHireController extends Controller
             'companyProfile',
             'rounds',
             'messages.sender',
+            'statusEvents.actor',
         ]);
 
         return view('company.direct-hire.show', [
@@ -358,7 +359,7 @@ class DirectHireController extends Controller
             $data['closure_note'] ?? null,
         );
 
-        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile']);
+        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile', 'statusEvents.actor']);
 
         $message = __('talenma.direct_hire.closed');
 
@@ -374,7 +375,7 @@ class DirectHireController extends Controller
                 'status_badge_html' => view('company.direct-hire._status-badge', [
                     'directHire' => $directHire,
                 ])->render(),
-                'closure_note_html' => view('company.direct-hire._closure-note', [
+                'history_html' => view('direct-hire._proposal-history', [
                     'directHire' => $directHire,
                 ])->render(),
                 'rounds_list_html' => view('company.direct-hire._rounds-list', [
@@ -406,7 +407,7 @@ class DirectHireController extends Controller
             $data['note'] ?? null,
         );
 
-        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile']);
+        $directHire->refresh()->load(['rounds', 'talent', 'companyProfile', 'statusEvents.actor']);
 
         $message = $data['action'] === DirectHireRequest::DEFERRAL_ACCEPT
             ? __('talenma.direct_hire.deferral_accepted')
@@ -427,10 +428,7 @@ class DirectHireController extends Controller
                 'status_badge_html' => view('company.direct-hire._status-badge', [
                     'directHire' => $directHire,
                 ])->render(),
-                'deferral_note_html' => view('company.direct-hire._deferral-note', [
-                    'directHire' => $directHire,
-                ])->render(),
-                'closure_note_html' => view('company.direct-hire._closure-note', [
+                'history_html' => view('direct-hire._proposal-history', [
                     'directHire' => $directHire,
                 ])->render(),
                 'withdraw_html' => $canWithdraw

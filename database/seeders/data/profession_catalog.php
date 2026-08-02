@@ -431,7 +431,7 @@ return [
                 'name_fr' => 'Ressources humaines',
                 'name_en' => 'Human resources',
                 'suggestions' => [
-                    ['label_fr' => 'Chargé(e) de recrutement', 'label_en' => 'Recruiter', 'keywords' => 'sourcing talent acquisition'],
+                    ['label_fr' => 'Chargé(e) de candidatures', 'label_en' => 'Talent acquisition specialist', 'keywords' => 'sourcing talent acquisition'],
                     ['label_fr' => 'Responsable RH', 'label_en' => 'HR manager', 'keywords' => 'rh administration'],
                     ['label_fr' => 'Responsable formation', 'label_en' => 'L&D manager', 'keywords' => 'formation developpement'],
                 ],

@@ -50,6 +50,7 @@ class DirectHireController extends Controller
             'company',
             'rounds',
             'messages.sender',
+            'statusEvents.actor',
         ]);
 
         return view('talent.direct-hire.show', [
@@ -92,7 +93,7 @@ class DirectHireController extends Controller
             $data['talent_decision_note'] ?? null,
         );
 
-        $directHire->load(['rounds', 'companyProfile', 'company']);
+        $directHire->load(['rounds', 'companyProfile', 'company', 'statusEvents.actor']);
 
         $message = match ($data['decision']) {
             DirectHireRequest::DECISION_ACCEPT => __('talenma.direct_hire.decision_accepted'),
@@ -118,7 +119,7 @@ class DirectHireController extends Controller
                 'status_badge_html' => view('talent.direct-hire._status-badge', [
                     'directHire' => $directHire,
                 ])->render(),
-                'decision_note_html' => view('talent.direct-hire._decision-note', [
+                'history_html' => view('direct-hire._proposal-history', [
                     'directHire' => $directHire,
                 ])->render(),
                 'rounds_html' => $showRounds

@@ -8,7 +8,16 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <div>
+        <div
+            x-data="companyTalentProfileDrawer({
+                composeUrl: '',
+                csrf: @js(csrf_token()),
+                labels: @js([
+                    'profileError' => __('talenma.home.search_drawer_error'),
+                    'error' => __('talenma.home.search_drawer_error'),
+                ]),
+            })"
+        >
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0">
                     <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.show_title') }}</h2>
@@ -17,7 +26,11 @@
                         {{ __('talenma.direct_hire.with_talent', ['name' => $directHire->talentDisplayName()]) }}
                         @if ($talent)
                             —
-                            <a href="{{ route('admin.users.registration', $talent) }}" class="text-indigo-600 hover:text-indigo-800 underline underline-offset-2">{{ __('talenma.direct_hire.view_talent') }}</a>
+                            <button
+                                type="button"
+                                class="text-indigo-600 hover:text-indigo-800 underline underline-offset-2"
+                                @click="openProfile(@js(route('admin.direct-hire.talent-profile', $talent)))"
+                            >{{ __('talenma.direct_hire.view_talent') }}</button>
                         @endif
                     </p>
                     <p class="text-sm text-gray-500">
@@ -35,6 +48,8 @@
                     @include('company.direct-hire._status-badge', ['directHire' => $directHire])
                 </div>
             </div>
+
+            @include('company._talent-profile-drawer', ['hideHireActions' => true])
 
             <div class="mt-2">
                 <a
@@ -64,34 +79,7 @@
                         </blockquote>
                     </div>
 
-                    @if ($directHire->talent_decision_at)
-                        <div class="rounded-lg border border-slate-100 bg-slate-50/80 px-3.5 py-3">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('talenma.direct_hire.talent_decision') }}</p>
-                            <p class="mt-1 text-sm text-slate-900">
-                                @php
-                                    $decisionLabel = match ($directHire->status) {
-                                        \App\Models\DirectHireRequest::STATUS_IN_PROCESS,
-                                        \App\Models\DirectHireRequest::STATUS_HIRED,
-                                        \App\Models\DirectHireRequest::STATUS_CLOSED_NEGATIVE => __('talenma.direct_hire.decision_label_accepted'),
-                                        \App\Models\DirectHireRequest::STATUS_DECLINED => __('talenma.direct_hire.decision_label_declined'),
-                                        \App\Models\DirectHireRequest::STATUS_DEFERRED => __('talenma.direct_hire.decision_label_deferred'),
-                                        default => $directHire->statusLabel(),
-                                    };
-                                @endphp
-                                {{ $decisionLabel }} — {{ $directHire->talent_decision_at->translatedFormat('d M Y H:i') }}
-                            </p>
-                            @if (filled($directHire->talent_decision_note))
-                                <p class="mt-2 text-sm text-slate-700 whitespace-pre-line">
-                                    <span class="font-medium text-slate-900">{{ __('talenma.direct_hire.decision_comment_label') }} :</span>
-                                    {{ $directHire->talent_decision_note }}
-                                </p>
-                            @endif
-                        </div>
-                    @endif
-
-                    @include('company.direct-hire._deferral-note', ['directHire' => $directHire])
-
-                    @include('company.direct-hire._closure-note', ['directHire' => $directHire])
+                    @include('direct-hire._proposal-history', ['directHire' => $directHire])
                 </div>
 
                 @if ($canManageRounds || $directHire->rounds->isNotEmpty())
@@ -296,6 +284,13 @@
                                 'refuseNoteRequired' => __('talenma.direct_hire.deferral_refuse_note_required'),
                                 'chatClosedBadge' => __('talenma.direct_hire.chat_closed_badge'),
                                 'chatClosed' => __('talenma.direct_hire.chat_closed'),
+                                'acceptConfirmTitle' => __('talenma.direct_hire.deferral_accept_confirm_title'),
+                                'acceptConfirmBody' => __('talenma.direct_hire.deferral_accept_confirm_body'),
+                                'acceptConfirmBtn' => __('talenma.direct_hire.deferral_accept_confirm_btn'),
+                                'refuseConfirmTitle' => __('talenma.direct_hire.deferral_refuse_confirm_title'),
+                                'refuseConfirmBody' => __('talenma.direct_hire.deferral_refuse_confirm_body'),
+                                'refuseConfirmBtn' => __('talenma.direct_hire.deferral_refuse_confirm_btn'),
+                                'confirmCancel' => __('talenma.direct_hire.defer_confirm_cancel'),
                             ]),
                         })"
                     >
@@ -323,7 +318,7 @@
                                     type="button"
                                     class="inline-flex justify-center px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-60"
                                     x-bind:disabled="loading"
-                                    @click="submitAction('accept')"
+                                    @click="requestAction('accept')"
                                 >
                                     {{ __('talenma.direct_hire.deferral_accept_btn') }}
                                 </button>
@@ -331,12 +326,39 @@
                                     type="button"
                                     class="inline-flex justify-center px-4 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-60"
                                     x-bind:disabled="loading"
-                                    @click="submitAction('refuse')"
+                                    @click="requestAction('refuse')"
                                 >
                                     {{ __('talenma.direct_hire.deferral_refuse_btn') }}
                                 </button>
                             </div>
                         </form>
+
+                        <div
+                            x-show="pendingAction"
+                            x-cloak
+                            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                            role="dialog"
+                            aria-modal="true"
+                            x-on:keydown.escape.window="closeActionConfirm"
+                        >
+                            <div class="absolute inset-0 bg-slate-900/40" x-on:click="closeActionConfirm" aria-hidden="true"></div>
+                            <div class="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
+                                <p class="text-base font-semibold text-slate-900" x-text="confirmTitle()"></p>
+                                <p class="mt-2 text-sm text-slate-600" x-text="confirmBody()"></p>
+                                <div class="mt-5 flex flex-wrap justify-end gap-3">
+                                    <x-secondary-button type="button" x-on:click="closeActionConfirm" x-bind:disabled="loading">
+                                        <span x-text="messages.confirmCancel"></span>
+                                    </x-secondary-button>
+                                    <button
+                                        type="button"
+                                        x-bind:class="confirmBtnClass()"
+                                        x-on:click="confirmAction"
+                                        x-bind:disabled="loading"
+                                        x-text="confirmBtnLabel()"
+                                    ></button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 @endif
 
