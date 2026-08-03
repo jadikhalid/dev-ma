@@ -50,11 +50,52 @@ class JobPostingService
             return false;
         }
 
-        return JobApplication::query()
+        $applications = JobApplication::query()
             ->where('talent_user_id', $talent->id)
-            ->where(function ($inner) {
-                $inner->whereNull('talent_seen_at')
-                    ->orWhereColumn('talent_seen_at', '<', 'updated_at');
+            ->get(['id', 'job_posting_id', 'talent_seen_at', 'updated_at']);
+
+        if ($applications->isEmpty()) {
+            return false;
+        }
+
+        foreach ($applications as $application) {
+            if ($application->hasUnseenChangesForTalent()) {
+                return true;
+            }
+        }
+
+        $jobIds = $applications->pluck('job_posting_id')->filter()->values()->all();
+
+        if ($jobIds === []) {
+            return false;
+        }
+
+        // Job-level events (close / hide / status…) after the talent last opened the application.
+        return JobPostingActivityEvent::query()
+            ->whereIn('job_posting_id', $jobIds)
+            ->whereIn('event', [
+                JobPostingActivityEvent::EVENT_CLOSED,
+                JobPostingActivityEvent::EVENT_HIDDEN,
+                JobPostingActivityEvent::EVENT_POSTPONED,
+                JobPostingActivityEvent::EVENT_DELETED,
+                JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+            ])
+            ->where(function ($query) use ($talent) {
+                $query->where('talent_user_id', $talent->id)
+                    ->orWhereNull('talent_user_id');
+            })
+            ->where(function ($query) use ($applications) {
+                foreach ($applications as $application) {
+                    $query->orWhere(function ($inner) use ($application) {
+                        $inner->where('job_posting_id', $application->job_posting_id);
+
+                        if ($application->talent_seen_at === null) {
+                            return;
+                        }
+
+                        $inner->where('created_at', '>', $application->talent_seen_at);
+                    });
+                }
             })
             ->exists();
     }
@@ -163,6 +204,41 @@ class JobPostingService
 
         $application->talent_seen_at = null;
         $application->updated_at = now();
+    }
+
+    public function closeAllApplications(JobPosting $job, ?User $actor = null): int
+    {
+        $job->loadMissing('applications.talent');
+
+        $closedCount = 0;
+
+        foreach ($job->applications as $application) {
+            if ($application->normalizedStatus() === JobApplication::STATUS_CLOSED) {
+                continue;
+            }
+
+            $application->update([
+                'status' => JobApplication::STATUS_CLOSED,
+                'talent_seen_at' => null,
+            ]);
+
+            JobPostingActivityEvent::record(
+                $job,
+                JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+                $actor,
+                JobApplication::STATUS_CLOSED,
+                $application->talent?->name,
+                $actor?->isCompany() ?? false,
+                (int) $application->talent_user_id,
+            );
+
+            $closedCount++;
+        }
+
+        // Always surface the job closure in the talent nav, even if apps were already closed.
+        $this->flagApplicantsUnseen($job);
+
+        return $closedCount;
     }
 
     public function flagApplicantsUnseen(JobPosting $job): void

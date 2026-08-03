@@ -106,31 +106,37 @@ class TalentDashboardStatsService
     }
 
     /**
-     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
+     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool, unseen?: bool}>
      */
     private function jobPostingActivityEvents(User $talent, int $limit): Collection
     {
-        $appliedJobIds = JobApplication::query()
+        $applications = JobApplication::query()
             ->where('talent_user_id', $talent->id)
-            ->pluck('job_posting_id')
-            ->all();
+            ->get()
+            ->keyBy('job_posting_id');
+
+        $appliedJobIds = $applications->keys()->all();
+
+        if ($appliedJobIds === []) {
+            return collect();
+        }
 
         return JobPostingActivityEvent::query()
             ->where(function ($query) use ($talent, $appliedJobIds) {
-                $query->where('talent_user_id', $talent->id);
-
-                if ($appliedJobIds !== []) {
-                    $query->orWhere(function ($inner) use ($appliedJobIds) {
-                        $inner->whereNull('talent_user_id')
-                            ->whereIn('job_posting_id', $appliedJobIds)
-                            ->whereIn('event', [
-                                JobPostingActivityEvent::EVENT_CLOSED,
-                                JobPostingActivityEvent::EVENT_HIDDEN,
-                                JobPostingActivityEvent::EVENT_POSTPONED,
-                                JobPostingActivityEvent::EVENT_DELETED,
-                            ]);
-                    });
-                }
+                $query->where(function ($owned) use ($talent, $appliedJobIds) {
+                    $owned->where('talent_user_id', $talent->id)
+                        ->whereIn('job_posting_id', $appliedJobIds);
+                })->orWhere(function ($orphan) use ($appliedJobIds) {
+                    $orphan->whereNull('talent_user_id')
+                        ->whereIn('job_posting_id', $appliedJobIds)
+                        ->whereIn('event', [
+                            JobPostingActivityEvent::EVENT_CLOSED,
+                            JobPostingActivityEvent::EVENT_HIDDEN,
+                            JobPostingActivityEvent::EVENT_POSTPONED,
+                            JobPostingActivityEvent::EVENT_DELETED,
+                            JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+                        ]);
+                });
             })
             ->whereIn('event', [
                 JobPostingActivityEvent::EVENT_CLOSED,
@@ -143,7 +149,7 @@ class TalentDashboardStatsService
             ->latest('created_at')
             ->limit($limit)
             ->get()
-            ->map(function (JobPostingActivityEvent $event) {
+            ->map(function (JobPostingActivityEvent $event) use ($talent, $applications) {
                 $type = match ($event->event) {
                     JobPostingActivityEvent::EVENT_CLOSED => 'job_closed',
                     JobPostingActivityEvent::EVENT_HIDDEN => 'job_hidden',
@@ -154,6 +160,15 @@ class TalentDashboardStatsService
                 };
 
                 if ($type === null) {
+                    return null;
+                }
+
+                if (
+                    $event->event === JobPostingActivityEvent::EVENT_APPLICATION_STATUS
+                    && $event->talent_user_id === null
+                    && filled($event->actor_label)
+                    && $event->actor_label !== $talent->name
+                ) {
                     return null;
                 }
 
@@ -171,6 +186,16 @@ class TalentDashboardStatsService
                     $result = __('talenma.jobs.application_status_'.$event->status);
                 }
 
+                $application = $applications->get($event->job_posting_id);
+
+                $unseen = false;
+
+                if ($application !== null) {
+                    $unseen = $application->hasUnseenChangesForTalent()
+                        || $application->talent_seen_at === null
+                        || $application->talent_seen_at->lt($event->created_at);
+                }
+
                 return $this->activityItem(
                     type: $type,
                     actor: $actor,
@@ -178,6 +203,7 @@ class TalentDashboardStatsService
                     subject: $event->job_title,
                     result: $result,
                     href: $href,
+                    unseen: $unseen,
                 );
             })
             ->filter()
@@ -477,7 +503,7 @@ class TalentDashboardStatsService
     }
 
     /**
-     * @return array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}
+     * @return array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool, unseen?: bool}
      */
     private function activityItem(
         string $type,
@@ -488,6 +514,7 @@ class TalentDashboardStatsService
         ?string $result = null,
         ?string $href = null,
         bool $self = false,
+        bool $unseen = false,
     ): array {
         $item = [
             'type' => $type,
@@ -501,6 +528,10 @@ class TalentDashboardStatsService
 
         if ($self) {
             $item['self'] = true;
+        }
+
+        if ($unseen) {
+            $item['unseen'] = true;
         }
 
         return $item;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\JobApplication;
 use App\Models\Profession;
 use App\Models\Profile;
 use App\Models\ProfileDocument;
@@ -112,7 +113,8 @@ class CompanySearchController extends Controller
         $namedRequestDisabledHint = $this->recruitmentRequests->namedRequestDisabledHint($company, $talent);
         $existingNamedRequest = $this->recruitmentRequests->existingNamedRequestForCompanyTalent($company, $talent);
         $lockedDirectHire = $this->directHires->activeHireLockForTalent($company, $talent);
-        $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($company, $talent);
+        $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($company, $talent)
+            || $this->companyHasJobApplicationFromTalent($company, $talent);
 
         if ($request->wantsJson()) {
             return response()->json($this->presentTalentProfile(
@@ -150,7 +152,8 @@ class CompanySearchController extends Controller
 
         $talent->loadMissing('profile.documents');
 
-        $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($user, $talent);
+        $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($user, $talent)
+            || $this->companyHasJobApplicationFromTalent($user, $talent);
         abort_unless(
             $talent->profile?->isRevealedAsPublic($forceReveal) ?? false,
             403
@@ -346,5 +349,22 @@ class CompanySearchController extends Controller
             'compose_url' => route('inbox.store'),
             ...$actions,
         ];
+    }
+
+    private function companyHasJobApplicationFromTalent(User $company, User $talent): bool
+    {
+        $org = $company->companyOrganization();
+
+        if (! $org) {
+            return false;
+        }
+
+        return JobApplication::query()
+            ->where('talent_user_id', $talent->id)
+            ->whereHas(
+                'jobPosting',
+                fn ($query) => $query->where('company_profile_id', $org->id)
+            )
+            ->exists();
     }
 }

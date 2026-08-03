@@ -19,22 +19,16 @@ class JobApplication extends Model
 {
     use HasFactory;
 
-    public const STATUS_SUBMITTED = 'submitted';
+    public const STATUS_RECEIVED = 'received';
 
-    public const STATUS_REVIEWED = 'reviewed';
+    public const STATUS_VIEWED = 'viewed';
 
-    public const STATUS_SHORTLISTED = 'shortlisted';
-
-    public const STATUS_REJECTED = 'rejected';
-
-    public const STATUS_WITHDRAWN = 'withdrawn';
+    public const STATUS_CLOSED = 'closed';
 
     public const STATUSES = [
-        self::STATUS_SUBMITTED,
-        self::STATUS_REVIEWED,
-        self::STATUS_SHORTLISTED,
-        self::STATUS_REJECTED,
-        self::STATUS_WITHDRAWN,
+        self::STATUS_RECEIVED,
+        self::STATUS_VIEWED,
+        self::STATUS_CLOSED,
     ];
 
     protected function casts(): array
@@ -57,7 +51,53 @@ class JobApplication extends Model
 
     public function statusLabel(): string
     {
-        return __('talenma.jobs.application_status_'.$this->status);
+        return __('talenma.jobs.application_status_'.$this->normalizedStatus());
+    }
+
+    public function normalizedStatus(): string
+    {
+        return match ($this->status) {
+            'submitted' => self::STATUS_RECEIVED,
+            'reviewed', 'shortlisted' => self::STATUS_VIEWED,
+            'rejected', 'withdrawn' => self::STATUS_CLOSED,
+            default => in_array($this->status, self::STATUSES, true)
+                ? $this->status
+                : self::STATUS_RECEIVED,
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function availableNextStatuses(): array
+    {
+        return match ($this->normalizedStatus()) {
+            self::STATUS_RECEIVED => [self::STATUS_VIEWED, self::STATUS_CLOSED],
+            self::STATUS_VIEWED => [self::STATUS_CLOSED],
+            default => [],
+        };
+    }
+
+    public function canTransitionTo(string $status): bool
+    {
+        return in_array($status, $this->availableNextStatuses(), true);
+    }
+
+    public function isClosed(): bool
+    {
+        return $this->normalizedStatus() === self::STATUS_CLOSED;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function closedStorageStatuses(): array
+    {
+        return [
+            self::STATUS_CLOSED,
+            'rejected',
+            'withdrawn',
+        ];
     }
 
     public function hasUnseenChangesForTalent(): bool

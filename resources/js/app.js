@@ -2341,6 +2341,583 @@ Alpine.data('talentLocationSelect', (config = {}) => ({
     },
 }));
 
+Alpine.data('companyJobConfirmAction', (config = {}) => ({
+    messages: config.messages ?? {},
+    loading: false,
+    confirming: false,
+    pendingForm: null,
+
+    requestConfirm(event) {
+        if (this.loading) {
+            return;
+        }
+
+        const form = event.target;
+
+        if (! (form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        this.pendingForm = form;
+        this.confirming = true;
+        document.documentElement.classList.add('overflow-hidden');
+    },
+
+    closeConfirm() {
+        if (this.loading) {
+            return;
+        }
+
+        this.confirming = false;
+        this.pendingForm = null;
+        document.documentElement.classList.remove('overflow-hidden');
+    },
+
+    confirmSubmit() {
+        if (this.loading || ! this.pendingForm) {
+            return;
+        }
+
+        const form = this.pendingForm;
+        this.confirming = false;
+        this.pendingForm = null;
+        document.documentElement.classList.remove('overflow-hidden');
+        this.submitForm(form);
+    },
+
+    async submitForm(form) {
+        if (this.loading) {
+            return;
+        }
+
+        this.loading = true;
+        const loadingTargetId = form.dataset.loadingTarget || null;
+        const genericError = form.dataset.errorMessage || this.messages.error || 'Error';
+        const networkError = form.dataset.networkErrorMessage || genericError;
+
+        if (loadingTargetId) {
+            setPartialLoading(loadingTargetId, true);
+        }
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: new FormData(form),
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (! response.ok) {
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [];
+
+                if (messages.length === 0 && payload?.message) {
+                    messages.push(payload.message);
+                }
+
+                pushToast('error', messages[0] || genericError);
+
+                return;
+            }
+
+            if (payload?.reload) {
+                if (! payload.show_url) {
+                    pushToast('success', payload.message || '');
+                }
+
+                window.setTimeout(() => {
+                    window.location.reload();
+                }, 400);
+
+                return;
+            }
+
+            pushToast('success', payload?.message || '');
+            window.location.reload();
+        } catch {
+            pushToast('error', networkError);
+        } finally {
+            this.loading = false;
+
+            if (loadingTargetId) {
+                setPartialLoading(loadingTargetId, false);
+            }
+        }
+    },
+}));
+
+Alpine.data('companyJobApplicationStatus', (config = {}) => ({
+    current: config.current ?? 'received',
+    selectedStatus: config.current ?? 'received',
+    messages: config.messages ?? {},
+    loading: false,
+    confirming: false,
+    pendingForm: null,
+    pendingStatus: null,
+
+    get confirmTitle() {
+        return this.pendingStatus === 'closed'
+            ? (this.messages.closedTitle || '')
+            : (this.messages.viewedTitle || '');
+    },
+
+    get confirmBody() {
+        return this.pendingStatus === 'closed'
+            ? (this.messages.closedBody || '')
+            : (this.messages.viewedBody || '');
+    },
+
+    get confirmButtonLabel() {
+        return this.pendingStatus === 'closed'
+            ? (this.messages.closedBtn || '')
+            : (this.messages.viewedBtn || '');
+    },
+
+    get confirmButtonClass() {
+        return this.pendingStatus === 'closed'
+            ? 'bg-amber-600 hover:bg-amber-700'
+            : 'bg-emerald-600 hover:bg-emerald-700';
+    },
+
+    requestUpdate(event) {
+        if (this.loading) {
+            return;
+        }
+
+        const form = event.target;
+
+        if (! (form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const status = String(this.selectedStatus || '').trim();
+
+        if (status === '' || status === this.current) {
+            return;
+        }
+
+        this.pendingForm = form;
+        this.pendingStatus = status;
+        this.confirming = true;
+        document.documentElement.classList.add('overflow-hidden');
+    },
+
+    closeConfirm() {
+        if (this.loading) {
+            return;
+        }
+
+        this.confirming = false;
+        this.pendingForm = null;
+        this.pendingStatus = null;
+        document.documentElement.classList.remove('overflow-hidden');
+    },
+
+    confirmSubmit() {
+        if (this.loading || ! this.pendingForm) {
+            return;
+        }
+
+        const form = this.pendingForm;
+        this.confirming = false;
+        this.pendingStatus = null;
+        document.documentElement.classList.remove('overflow-hidden');
+        this.submitForm(form);
+    },
+
+    async submitForm(form) {
+        if (this.loading) {
+            return;
+        }
+
+        this.loading = true;
+        this.pendingForm = null;
+        const loadingTargetId = form.dataset.loadingTarget || null;
+        const genericError = form.dataset.errorMessage || this.messages.error || 'Error';
+        const networkError = form.dataset.networkErrorMessage || genericError;
+
+        if (loadingTargetId) {
+            setPartialLoading(loadingTargetId, true);
+        }
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: new FormData(form),
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (! response.ok) {
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [];
+
+                if (messages.length === 0 && payload?.message) {
+                    messages.push(payload.message);
+                }
+
+                pushToast('error', messages[0] || genericError);
+
+                return;
+            }
+
+            pushToast('success', payload?.message || '');
+            window.setTimeout(() => {
+                window.location.reload();
+            }, 400);
+        } catch {
+            pushToast('error', networkError);
+        } finally {
+            this.loading = false;
+
+            if (loadingTargetId) {
+                setPartialLoading(loadingTargetId, false);
+            }
+        }
+    },
+}));
+
+Alpine.data('companyJobsIndex', (config = {}) => ({
+    searchUrl: config.searchUrl ?? '',
+    scope: config.initialScope ?? 'all',
+    sectorSlug: config.initialSector ?? '',
+    defaultSector: config.defaultSector ?? '',
+    query: config.initialQuery ?? '',
+    counts: config.initialCounts ?? { all: 0, mine: 0, closed: 0 },
+    jobs: Array.isArray(config.initialJobs) ? config.initialJobs : [],
+    total: Array.isArray(config.initialJobs) ? config.initialJobs.length : 0,
+    labels: config.labels ?? {},
+    loading: false,
+    error: null,
+    requestToken: 0,
+
+    get emptyMessage() {
+        if (this.scope === 'all' && (this.sectorSlug || (this.query ?? '').trim() !== '')) {
+            return this.labels.emptyFiltered ?? this.labels.empty ?? '';
+        }
+
+        if (this.scope === 'mine') {
+            return this.labels.emptyMine ?? this.labels.empty ?? '';
+        }
+
+        if (this.scope === 'closed') {
+            return this.labels.emptyClosed ?? this.labels.empty ?? '';
+        }
+
+        return this.labels.empty ?? '';
+    },
+
+    setScope(scope) {
+        if (this.scope === scope) {
+            return;
+        }
+
+        this.scope = scope;
+
+        if (scope === 'mine' || scope === 'closed') {
+            this.query = '';
+        } else if (! this.sectorSlug && this.defaultSector) {
+            this.sectorSlug = this.defaultSector;
+        }
+
+        this.refresh();
+    },
+
+    onSectorChange() {
+        if (this.scope !== 'all') {
+            return;
+        }
+
+        this.refresh();
+    },
+
+    syncUrl() {
+        if (! this.searchUrl) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        if (this.scope && this.scope !== 'all') {
+            params.set('scope', this.scope);
+        }
+
+        if (this.scope === 'all') {
+            params.set('sector', this.sectorSlug ?? '');
+
+            if ((this.query ?? '').trim() !== '') {
+                params.set('q', this.query.trim());
+            }
+        }
+
+        const query = params.toString();
+        const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+
+        window.history.replaceState({}, '', url);
+    },
+
+    async refresh() {
+        if (! this.searchUrl) {
+            return;
+        }
+
+        const token = ++this.requestToken;
+        const params = new URLSearchParams();
+
+        params.set('scope', this.scope || 'all');
+
+        if (this.scope === 'all') {
+            params.set('sector', this.sectorSlug ?? '');
+
+            if ((this.query ?? '').trim() !== '') {
+                params.set('q', this.query.trim());
+            }
+        }
+
+        this.loading = true;
+        this.error = null;
+        this.syncUrl();
+
+        try {
+            const response = await fetch(`${this.searchUrl}?${params.toString()}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                throw new Error('request_failed');
+            }
+
+            const payload = await response.json();
+
+            if (token !== this.requestToken) {
+                return;
+            }
+
+            this.jobs = Array.isArray(payload.jobs) ? payload.jobs : [];
+            this.total = Number(payload.total ?? this.jobs.length);
+            this.counts = payload.counts ?? this.counts;
+            this.scope = payload.scope ?? this.scope;
+
+            if (this.scope === 'all') {
+                this.sectorSlug = payload.sector ?? this.sectorSlug;
+            }
+        } catch (error) {
+            if (token !== this.requestToken) {
+                return;
+            }
+
+            this.error = this.labels.networkError ?? 'Network error';
+        } finally {
+            if (token === this.requestToken) {
+                this.loading = false;
+            }
+        }
+    },
+}));
+
+Alpine.data('talentJobsIndex', (config = {}) => ({
+    searchUrl: config.searchUrl ?? '',
+    scope: config.initialScope ?? 'all',
+    sectorSlug: config.initialSector ?? '',
+    professionSlug: config.initialProfession ?? '',
+    defaultSector: config.defaultSector ?? '',
+    sectors: Array.isArray(config.sectors) ? config.sectors : [],
+    counts: config.initialCounts ?? { all: 0, applied: 0, closed: 0 },
+    jobs: Array.isArray(config.initialJobs) ? config.initialJobs : [],
+    total: Array.isArray(config.initialJobs) ? config.initialJobs.length : 0,
+    labels: config.labels ?? {},
+    loading: false,
+    error: null,
+    requestToken: 0,
+
+    init() {
+        if (this.scope === 'all' && ! this.sectorSlug && this.defaultSector) {
+            this.sectorSlug = this.defaultSector;
+        }
+    },
+
+    get filteredProfessions() {
+        if (! this.sectorSlug) {
+            return [];
+        }
+
+        const sector = this.sectors.find((item) => item.slug === this.sectorSlug);
+
+        return sector?.professions ?? [];
+    },
+
+    get scopeHeading() {
+        if (this.scope === 'applied') {
+            return this.labels.applied ?? '';
+        }
+
+        if (this.scope === 'closed') {
+            return this.labels.closed ?? '';
+        }
+
+        return this.labels.all ?? '';
+    },
+
+    get emptyMessage() {
+        if (this.scope === 'applied') {
+            return this.labels.emptyApplied ?? this.labels.empty ?? '';
+        }
+
+        if (this.scope === 'closed') {
+            return this.labels.emptyClosed ?? this.labels.empty ?? '';
+        }
+
+        if (this.sectorSlug || this.professionSlug) {
+            return this.labels.emptyFiltered ?? this.labels.empty ?? '';
+        }
+
+        return this.labels.empty ?? '';
+    },
+
+    setScope(scope) {
+        if (this.scope === scope) {
+            return;
+        }
+
+        this.scope = scope;
+
+        if (scope === 'applied' || scope === 'closed') {
+            this.professionSlug = '';
+        } else if (! this.sectorSlug && this.defaultSector) {
+            this.sectorSlug = this.defaultSector;
+        }
+
+        this.refresh();
+    },
+
+    onSectorChange() {
+        if (this.scope !== 'all') {
+            return;
+        }
+
+        const isValidProfession = this.filteredProfessions.some(
+            (profession) => profession.slug === this.professionSlug,
+        );
+
+        if (! isValidProfession) {
+            this.professionSlug = '';
+        }
+
+        this.refresh();
+    },
+
+    onProfessionChange() {
+        if (this.scope !== 'all') {
+            return;
+        }
+
+        this.refresh();
+    },
+
+    syncUrl() {
+        if (! this.searchUrl) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        if (this.scope && this.scope !== 'all') {
+            params.set('scope', this.scope);
+        }
+
+        if (this.scope === 'all') {
+            params.set('sector', this.sectorSlug ?? '');
+
+            if (this.professionSlug) {
+                params.set('profession', this.professionSlug);
+            }
+        }
+
+        const query = params.toString();
+        const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+
+        window.history.replaceState({}, '', url);
+    },
+
+    async refresh() {
+        if (! this.searchUrl) {
+            return;
+        }
+
+        const token = ++this.requestToken;
+        const params = new URLSearchParams();
+        params.set('scope', this.scope || 'all');
+
+        if (this.scope === 'all') {
+            params.set('sector', this.sectorSlug ?? '');
+
+            if (this.professionSlug) {
+                params.set('profession', this.professionSlug);
+            }
+        }
+
+        this.loading = true;
+        this.error = null;
+        this.syncUrl();
+
+        try {
+            const response = await fetch(`${this.searchUrl}?${params.toString()}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                throw new Error('request_failed');
+            }
+
+            const payload = await response.json();
+
+            if (token !== this.requestToken) {
+                return;
+            }
+
+            this.jobs = Array.isArray(payload.jobs) ? payload.jobs : [];
+            this.total = Number(payload.total ?? this.jobs.length);
+            this.counts = payload.counts ?? this.counts;
+            this.scope = payload.scope ?? this.scope;
+
+            if (this.scope === 'all') {
+                this.sectorSlug = payload.sector ?? this.sectorSlug;
+                this.professionSlug = payload.profession ?? this.professionSlug;
+            }
+        } catch (error) {
+            if (token !== this.requestToken) {
+                return;
+            }
+
+            this.error = this.labels.networkError ?? 'Network error';
+        } finally {
+            if (token === this.requestToken) {
+                this.loading = false;
+            }
+        }
+    },
+}));
+
 Alpine.data('talentDocumentsPicker', (config = {}) => ({
     savedOtherCount: config.savedOtherCount ?? 0,
     savedFileNames: (config.savedFileNames ?? []).map((name) => String(name).trim().toLowerCase()),
@@ -2611,6 +3188,7 @@ Alpine.data('companyTalentProfileDrawer', (config = {}) => ({
     composeSending: false,
     composeError: null,
     composeSuccessUrl: null,
+    unlockSending: false,
 
     async openProfile(url) {
         if (! url) {
@@ -2810,6 +3388,70 @@ Alpine.data('companyTalentProfileDrawer', (config = {}) => ({
         }
 
         return 'bg-emerald-100 text-emerald-800';
+    },
+
+    applyTalentActionState(payload = {}) {
+        const talentId = Number(payload.talent_id ?? this.selectedProfile?.talent_id ?? this.selectedProfile?.id);
+        const patch = {
+            talent_locked: Boolean(payload.talent_locked),
+            can_request_named: payload.can_request_named !== false,
+            named_request_disabled_hint: payload.named_request_disabled_hint ?? null,
+            recruitment_url: payload.recruitment_url ?? null,
+            named_unlock_url: payload.named_unlock_url ?? null,
+            direct_hire_url: payload.direct_hire_url ?? null,
+            can_propose_direct_hire: payload.can_propose_direct_hire !== false,
+            direct_hire_disabled_hint: payload.direct_hire_disabled_hint ?? null,
+            direct_hire_unlock_url: payload.direct_hire_unlock_url ?? null,
+        };
+
+        if (this.selectedProfile && Number(this.selectedProfile.talent_id ?? this.selectedProfile.id) === talentId) {
+            this.selectedProfile = {
+                ...this.selectedProfile,
+                ...patch,
+                talent_id: talentId,
+            };
+        }
+    },
+
+    async unlockTalent(url) {
+        if (! url || this.unlockSending) {
+            return;
+        }
+
+        this.unlockSending = true;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrf,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({}),
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                throw new Error(payload.message || 'unlock_failed');
+            }
+
+            this.applyTalentActionState(payload);
+            this.$dispatch('toast-push', {
+                type: 'success',
+                message: payload.message || this.labels.unlockSuccess || '',
+            });
+        } catch (error) {
+            this.$dispatch('toast-push', {
+                type: 'error',
+                message: this.labels.unlockError || this.labels.error || 'Une erreur est survenue.',
+            });
+        } finally {
+            this.unlockSending = false;
+        }
     },
 }));
 

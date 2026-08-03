@@ -108,8 +108,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/jobs/{job}/publish', [AdminJobPostingController::class, 'publish'])->name('jobs.publish');
         Route::post('/jobs/{job}/close', [AdminJobPostingController::class, 'close'])->name('jobs.close');
         Route::post('/jobs/{job}/hide', [AdminJobPostingController::class, 'hide'])->name('jobs.hide');
-        Route::post('/jobs/{job}/postpone', [AdminJobPostingController::class, 'postpone'])->name('jobs.postpone');
-        Route::delete('/jobs/{job}', [AdminJobPostingController::class, 'destroy'])->name('jobs.destroy');
         Route::patch('/jobs/{job}/applications/{application}', [AdminJobPostingController::class, 'updateApplication'])->name('jobs.applications.update');
 
         Route::middleware('admin')->group(function () {
@@ -203,8 +201,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/{job}/publish', [CompanyJobController::class, 'publish'])->name('publish');
             Route::post('/{job}/close', [CompanyJobController::class, 'close'])->name('close');
             Route::post('/{job}/hide', [CompanyJobController::class, 'hide'])->name('hide');
-            Route::post('/{job}/postpone', [CompanyJobController::class, 'postpone'])->name('postpone');
-            Route::delete('/{job}', [CompanyJobController::class, 'destroy'])->name('destroy');
             Route::patch('/{job}/applications/{application}', [CompanyJobController::class, 'updateApplication'])->name('applications.update');
         });
     });

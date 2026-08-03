@@ -142,15 +142,43 @@ class CompanyMultiUserAndJobsTest extends TestCase
 
         $application = JobApplication::query()->first();
         $this->assertNotNull($application);
-        $this->assertSame(JobApplication::STATUS_SUBMITTED, $application->status);
+        $this->assertSame(JobApplication::STATUS_RECEIVED, $application->status);
 
         $this->actingAs($member)
             ->patch(route('company.jobs.applications.update', [$job, $application]), [
-                'status' => JobApplication::STATUS_SHORTLISTED,
+                'status' => JobApplication::STATUS_VIEWED,
             ])
             ->assertRedirect();
 
-        $this->assertSame(JobApplication::STATUS_SHORTLISTED, $application->fresh()->status);
+        $this->assertSame(JobApplication::STATUS_VIEWED, $application->fresh()->status);
+
+        $this->actingAs($member)
+            ->from(route('company.jobs.show', $job))
+            ->patch(route('company.jobs.applications.update', [$job, $application]), [
+                'status' => JobApplication::STATUS_RECEIVED,
+            ])
+            ->assertRedirect(route('company.jobs.show', $job))
+            ->assertSessionHas('toast_error');
+
+        $this->assertSame(JobApplication::STATUS_VIEWED, $application->fresh()->status);
+
+        $this->actingAs($member)
+            ->patch(route('company.jobs.applications.update', [$job, $application]), [
+                'status' => JobApplication::STATUS_CLOSED,
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(JobApplication::STATUS_CLOSED, $application->fresh()->status);
+
+        $this->actingAs($member)
+            ->from(route('company.jobs.show', $job))
+            ->patch(route('company.jobs.applications.update', [$job, $application]), [
+                'status' => JobApplication::STATUS_VIEWED,
+            ])
+            ->assertRedirect(route('company.jobs.show', $job))
+            ->assertSessionHas('toast_error');
+
+        $this->assertSame(JobApplication::STATUS_CLOSED, $application->fresh()->status);
     }
 
     public function test_member_cannot_apply_to_jobs_as_talent_route(): void

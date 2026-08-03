@@ -9,6 +9,7 @@ use App\Services\CompanyDashboardActivityService;
 use App\Services\CompanyProfileCompletionService;
 use App\Services\DashboardActivityToastService;
 use App\Services\DirectHireService;
+use App\Services\JobPostingService;
 use App\Services\RecruitmentRequestService;
 use App\Services\StaffRecruitmentActivityService;
 use App\Services\TalentDashboardStatsService;
@@ -27,6 +28,7 @@ class DashboardController extends Controller
         private RecruitmentRequestService $recruitmentRequests,
         private DashboardActivityToastService $activityToasts,
         private DirectHireService $directHires,
+        private JobPostingService $jobs,
     ) {}
 
     public function index(Request $request)
@@ -93,7 +95,8 @@ class DashboardController extends Controller
             ->where('talent_user_id', $user->id)
             ->whereIn('status', DirectHireRequest::openStatuses())
             ->count();
+        $jobsUnseen = $this->jobs->talentHasUnseenChanges($user);
 
-        return view('dashboard.talent', compact('profile', 'completion', 'stats', 'openDirectHires'));
+        return view('dashboard.talent', compact('profile', 'completion', 'stats', 'openDirectHires', 'jobsUnseen'));
     }
 }

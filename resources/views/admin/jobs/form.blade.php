@@ -54,15 +54,42 @@
                     <x-input-error :messages="$errors->get('description')" class="mt-2" />
                 </div>
 
-                <div>
-                    <x-input-label for="contract_type" :value="__('talenma.jobs.field_contract')" />
-                    <select id="contract_type" name="contract_type" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm">
-                        <option value="">—</option>
-                        @foreach (\App\Models\JobPosting::CONTRACT_TYPES as $type)
-                            <option value="{{ $type }}" @selected(old('contract_type', $job->contract_type) === $type)>{{ __('talenma.jobs.contract_'.$type) }}</option>
-                        @endforeach
-                    </select>
-                    <x-input-error :messages="$errors->get('contract_type')" class="mt-2" />
+                <x-job-profession-fields
+                    :sectors="$professionSectors"
+                    :sector="$sectorSlug"
+                    :profession="$professionSlug"
+                    accent="indigo"
+                />
+
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <x-input-label for="experience_level" :value="__('talenma.jobs.field_experience')" />
+                        <select
+                            id="experience_level"
+                            name="experience_level"
+                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm"
+                            data-required
+                            data-required-message="{{ __('talenma.jobs.experience_required') }}"
+                        >
+                            <option value="">{{ __('talenma.jobs.experience_placeholder') }}</option>
+                            @foreach (\App\Models\JobPosting::EXPERIENCE_LEVELS as $level)
+                                <option value="{{ $level }}" @selected(old('experience_level', $job->experience_level) === $level)>
+                                    {{ __('talenma.jobs.experience_'.$level) }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('experience_level')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="contract_type" :value="__('talenma.jobs.field_contract')" />
+                        <select id="contract_type" name="contract_type" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm">
+                            <option value="">—</option>
+                            @foreach (\App\Models\JobPosting::CONTRACT_TYPES as $type)
+                                <option value="{{ $type }}" @selected(old('contract_type', $job->contract_type) === $type)>{{ __('talenma.jobs.contract_'.$type) }}</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('contract_type')" class="mt-2" />
+                    </div>
                 </div>
 
                 <div class="grid sm:grid-cols-2 gap-4">

@@ -101,6 +101,13 @@
                                 :class="profileStatusClass(selectedProfile.availability_tone)"
                                 x-text="selectedProfile.availability_label"
                             ></span>
+                            <span
+                                x-show="selectedProfile.talent_locked"
+                                class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200"
+                            >
+                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+                                {{ __('talenma.recruitment.talent_lock_badge') }}
+                            </span>
                         </div>
                     </div>
 
@@ -159,28 +166,42 @@
                     </section>
 
                     <div class="mt-8 flex flex-wrap gap-3 border-t pt-6">
-                        @unless ($hideHireActions ?? false)
-                            <a
-                                x-show="selectedProfile.direct_hire_url && selectedProfile.can_propose_direct_hire !== false"
-                                :href="selectedProfile.direct_hire_url"
-                                class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-                            >{{ __('talenma.direct_hire.cta_btn') }}</a>
-                            <span
-                                x-show="selectedProfile.direct_hire_url && selectedProfile.can_propose_direct_hire === false"
-                                class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
-                                :title="selectedProfile.direct_hire_disabled_hint || labels.directHireDisabled"
-                            >{{ __('talenma.direct_hire.cta_btn') }}</span>
-                            <a
-                                x-show="selectedProfile.recruitment_url && selectedProfile.can_request_named !== false"
-                                :href="selectedProfile.recruitment_url"
-                                class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-                            >{{ __('talenma.talents.inter_btn') }}</a>
-                            <span
-                                x-show="selectedProfile.can_request_named === false"
-                                class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
-                                :title="selectedProfile.named_request_disabled_hint || '{{ __('talenma.recruitment.named_blocked_open') }}'"
-                            >{{ __('talenma.talents.inter_btn') }}</span>
-                        @endunless
+                        <a
+                            x-show="selectedProfile.direct_hire_url && selectedProfile.can_propose_direct_hire !== false"
+                            :href="selectedProfile.direct_hire_url"
+                            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                        >{{ __('talenma.direct_hire.cta_btn') }}</a>
+                        <span
+                            x-show="selectedProfile.direct_hire_url && selectedProfile.can_propose_direct_hire === false"
+                            class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
+                            :title="selectedProfile.direct_hire_disabled_hint || labels.directHireDisabled"
+                        >{{ __('talenma.direct_hire.cta_btn') }}</span>
+                        <button
+                            type="button"
+                            x-show="selectedProfile.direct_hire_unlock_url"
+                            x-cloak
+                            :disabled="unlockSending"
+                            @click="unlockTalent(selectedProfile.direct_hire_unlock_url)"
+                            class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+                        >{{ __('talenma.direct_hire.talent_unlock_btn') }}</button>
+                        <a
+                            x-show="selectedProfile.recruitment_url && selectedProfile.can_request_named !== false"
+                            :href="selectedProfile.recruitment_url"
+                            class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                        >{{ __('talenma.talents.inter_btn') }}</a>
+                        <span
+                            x-show="selectedProfile.can_request_named === false"
+                            class="inline-flex cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400"
+                            :title="selectedProfile.named_request_disabled_hint || labels.namedDisabled || '{{ __('talenma.recruitment.named_blocked_open') }}'"
+                        >{{ __('talenma.talents.inter_btn') }}</span>
+                        <button
+                            type="button"
+                            x-show="selectedProfile.named_unlock_url"
+                            x-cloak
+                            :disabled="unlockSending"
+                            @click="unlockTalent(selectedProfile.named_unlock_url)"
+                            class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+                        >{{ __('talenma.recruitment.talent_unlock_btn') }}</button>
                         <a
                             :href="selectedProfile.cv_url || '#'"
                             :target="selectedProfile.cv_url ? '_blank' : null"

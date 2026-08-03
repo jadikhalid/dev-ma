@@ -6,7 +6,6 @@ use App\Models\Conversation;
 use App\Models\DirectHireMessage;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
-use App\Models\JobApplication;
 use App\Models\JobPostingActivityEvent;
 use App\Models\Message;
 use App\Models\RecruitmentRequest;
@@ -38,7 +37,6 @@ class CompanyDashboardActivityService
             ->concat($this->roundEvents($company, $fetch))
             ->concat($this->recruitmentEvents($company, $fetch))
             ->concat($this->talentUnlockEvents($company, $fetch))
-            ->concat($this->jobApplicationEvents($company, $fetch))
             ->concat($this->jobPostingActivityEvents($company, $fetch))
             ->concat($this->inboxMessageEvents($company, $fetch))
             ->sortByDesc(fn (array $item) => $item['at']?->timestamp ?? 0)
@@ -422,41 +420,6 @@ class CompanyDashboardActivityService
             });
 
         return $events;
-    }
-
-    /**
-     * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
-     */
-    private function jobApplicationEvents(User $company, int $limit): Collection
-    {
-        $org = $company->companyOrganization();
-
-        if (! $org) {
-            return collect();
-        }
-
-        return JobApplication::query()
-            ->whereHas('jobPosting', fn ($query) => $query->where('company_profile_id', $org->id))
-            ->with(['talent', 'jobPosting'])
-            ->latest('submitted_at')
-            ->limit($limit)
-            ->get()
-            ->map(function (JobApplication $application) {
-                $talentName = $application->talent?->name
-                    ?: __('talenma.dashboard.company.activity.unknown_talent');
-                $jobTitle = $application->jobPosting?->title ?? '—';
-                $href = $application->jobPosting
-                    ? route('company.jobs.show', $application->jobPosting)
-                    : null;
-
-                return $this->activityItem(
-                    type: 'job_application',
-                    actor: $talentName,
-                    at: $application->submitted_at ?? $application->created_at,
-                    subject: $jobTitle,
-                    href: $href,
-                );
-            });
     }
 
     /**

@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'company_profile_id',
     'created_by',
+    'profession_sector_id',
+    'profession_id',
+    'experience_level',
     'title',
     'description',
     'contract_type',
@@ -53,6 +56,18 @@ class JobPosting extends Model
         'other',
     ];
 
+    public const EXPERIENCE_BEGINNER = 'beginner';
+
+    public const EXPERIENCE_JUNIOR = 'junior';
+
+    public const EXPERIENCE_SENIOR = 'senior';
+
+    public const EXPERIENCE_LEVELS = [
+        self::EXPERIENCE_BEGINNER,
+        self::EXPERIENCE_JUNIOR,
+        self::EXPERIENCE_SENIOR,
+    ];
+
     protected function casts(): array
     {
         return [
@@ -72,6 +87,16 @@ class JobPosting extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function professionSector(): BelongsTo
+    {
+        return $this->belongsTo(ProfessionSector::class);
+    }
+
+    public function profession(): BelongsTo
+    {
+        return $this->belongsTo(Profession::class);
     }
 
     public function applications(): HasMany
@@ -99,6 +124,11 @@ class JobPosting extends Model
         return $this->status === self::STATUS_CLOSED;
     }
 
+    public function isMutable(): bool
+    {
+        return ! $this->isClosed();
+    }
+
     public function isHidden(): bool
     {
         return $this->status === self::STATUS_HIDDEN;
@@ -115,6 +145,132 @@ class JobPosting extends Model
         $parts = array_filter([$this->location_city, $country]);
 
         return implode(', ', $parts);
+    }
+
+    public function sectorLabel(?string $locale = null): string
+    {
+        return $this->professionSector?->localizedName($locale) ?? '';
+    }
+
+    public function professionLabel(?string $locale = null): string
+    {
+        return $this->profession?->localizedName($locale) ?? '';
+    }
+
+    public function professionSummary(?string $locale = null): string
+    {
+        return implode(' · ', array_filter([
+            $this->sectorLabel($locale),
+            $this->professionLabel($locale),
+        ]));
+    }
+
+    public function experienceLabel(): string
+    {
+        if (! filled($this->experience_level) || ! in_array($this->experience_level, self::EXPERIENCE_LEVELS, true)) {
+            return '';
+        }
+
+        return __('talenma.jobs.experience_'.$this->experience_level);
+    }
+
+    /**
+     * Exact profile match: sector, profession and experience range.
+     */
+    public function matchesTalentProfile(?User $talent): bool
+    {
+        if (! $talent || ! $talent->isTalent()) {
+            return false;
+        }
+
+        $talent->loadMissing('profile');
+        $profile = $talent->profile;
+
+        if (! $profile) {
+            return false;
+        }
+
+        if (! $this->profession_sector_id
+            || (int) $profile->profession_sector_id !== (int) $this->profession_sector_id) {
+            return false;
+        }
+
+        if (! $this->profession_id
+            || (int) $profile->profession_id !== (int) $this->profession_id) {
+            return false;
+        }
+
+        return $this->experienceLevelMatchesYears(
+            $profile->experience_years !== null ? (int) $profile->experience_years : null
+        );
+    }
+
+    public function experienceLevelMatchesYears(?int $years): bool
+    {
+        if ($years === null || ! filled($this->experience_level)) {
+            return false;
+        }
+
+        return match ($this->experience_level) {
+            self::EXPERIENCE_BEGINNER => $years >= 0 && $years <= 3,
+            self::EXPERIENCE_JUNIOR => $years >= 3 && $years <= 7,
+            self::EXPERIENCE_SENIOR => $years > 7,
+            default => false,
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function experienceLevelsForYears(?int $years): array
+    {
+        if ($years === null) {
+            return [];
+        }
+
+        $levels = [];
+
+        if ($years >= 0 && $years <= 3) {
+            $levels[] = self::EXPERIENCE_BEGINNER;
+        }
+
+        if ($years >= 3 && $years <= 7) {
+            $levels[] = self::EXPERIENCE_JUNIOR;
+        }
+
+        if ($years > 7) {
+            $levels[] = self::EXPERIENCE_SENIOR;
+        }
+
+        return $levels;
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeMatchingTalentProfile($query, User $talent)
+    {
+        $talent->loadMissing('profile');
+        $profile = $talent->profile;
+
+        if (! $profile
+            || ! $profile->profession_sector_id
+            || ! $profile->profession_id
+            || $profile->experience_years === null) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        $levels = self::experienceLevelsForYears((int) $profile->experience_years);
+
+        if ($levels === []) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query
+            ->where('profession_sector_id', $profile->profession_sector_id)
+            ->where('profession_id', $profile->profession_id)
+            ->whereIn('experience_level', $levels);
     }
 
     public function contractTypeLabel(): string

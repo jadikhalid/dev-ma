@@ -8,6 +8,7 @@ use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\JobPostingActivityEvent;
 use App\Services\JobPostingService;
+use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class JobPostingController extends Controller
 {
     public function __construct(
         private JobPostingService $jobs,
+        private ProfessionCatalogService $professions,
     ) {}
 
     public function index(Request $request): View
@@ -26,7 +28,7 @@ class JobPostingController extends Controller
         $q = trim($request->string('q')->toString());
 
         $jobs = JobPosting::query()
-            ->with(['companyProfile.user', 'creator'])
+            ->with(['companyProfile.user', 'creator', 'professionSector', 'profession'])
             ->withCount('applications')
             ->when(
                 $status !== '' && in_array($status, JobPosting::STATUSES, true),
@@ -58,22 +60,37 @@ class JobPostingController extends Controller
     public function show(Request $request, JobPosting $job): View
     {
         $this->jobs->markSeenForStaff($request->user(), $job);
-        $job->load(['applications.talent.profile', 'creator', 'companyProfile.user']);
+        $job->load(['applications.talent.profile', 'creator', 'companyProfile.user', 'professionSector', 'profession']);
 
         return view('admin.jobs.show', compact('job'));
     }
 
-    public function edit(JobPosting $job): View
+    public function edit(JobPosting $job): View|RedirectResponse
     {
+        if ($job->isClosed()) {
+            return redirect()
+                ->route('admin.jobs.show', $job)
+                ->with('toast_error', __('talenma.jobs.closed_immutable'));
+        }
+
+        $slugs = $this->professions->slugsFromProfile($job->profession_sector_id, $job->profession_id);
+
         return view('admin.jobs.form', [
             'job' => $job,
             'countryOptions' => CompanyProfile::countryOptions(),
             'citiesByCountry' => CompanyProfile::citiesByCountry(),
+            'professionSectors' => $this->professions->sectorsForLocale(),
+            'sectorSlug' => old('sector', $slugs['sector']),
+            'professionSlug' => old('profession', $slugs['profession']),
         ]);
     }
 
     public function update(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
+        if ($response = $this->rejectIfClosed($request, $job)) {
+            return $response;
+        }
+
         $job->update($this->validated($request));
         $this->jobs->flagUnseenForCompanyFromStaff($job);
 
@@ -84,6 +101,10 @@ class JobPostingController extends Controller
 
     public function publish(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
+        if ($response = $this->rejectIfClosed($request, $job)) {
+            return $response;
+        }
+
         $job->update([
             'status' => JobPosting::STATUS_PUBLISHED,
             'published_at' => $job->published_at ?? now(),
@@ -98,13 +119,17 @@ class JobPostingController extends Controller
 
     public function close(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
+        if ($response = $this->rejectIfClosed($request, $job)) {
+            return $response;
+        }
+
         $job->update([
             'status' => JobPosting::STATUS_CLOSED,
             'closed_at' => now(),
         ]);
 
         JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_CLOSED, $request->user(), JobPosting::STATUS_CLOSED, null, false);
-        $this->jobs->flagApplicantsUnseen($job);
+        $this->jobs->closeAllApplications($job, $request->user());
         $this->jobs->flagUnseenForCompanyFromStaff($job);
 
         return $this->respond($request, __('talenma.jobs.closed'), reload: true);
@@ -112,6 +137,10 @@ class JobPostingController extends Controller
 
     public function hide(Request $request, JobPosting $job): JsonResponse|RedirectResponse
     {
+        if ($response = $this->rejectIfClosed($request, $job)) {
+            return $response;
+        }
+
         $job->update([
             'status' => JobPosting::STATUS_HIDDEN,
             'closed_at' => null,
@@ -124,48 +153,43 @@ class JobPostingController extends Controller
         return $this->respond($request, __('talenma.jobs.hidden'), reload: true);
     }
 
-    public function postpone(Request $request, JobPosting $job): JsonResponse|RedirectResponse
-    {
-        $job->update([
-            'status' => JobPosting::STATUS_POSTPONED,
-            'closed_at' => null,
-        ]);
-
-        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_POSTPONED, $request->user(), JobPosting::STATUS_POSTPONED, null, false);
-        $this->jobs->flagApplicantsUnseen($job);
-        $this->jobs->flagUnseenForCompanyFromStaff($job);
-
-        return $this->respond($request, __('talenma.jobs.postponed'), reload: true);
-    }
-
-    public function destroy(Request $request, JobPosting $job): JsonResponse|RedirectResponse
-    {
-        JobPostingActivityEvent::record($job, JobPostingActivityEvent::EVENT_DELETED, $request->user(), $job->status, null, false);
-        $this->jobs->recordDeletedForApplicants($job, $request->user());
-
-        $job->delete();
-
-        $message = __('talenma.jobs.deleted');
-
-        return $this->respond($request, $message, route('admin.jobs.index'));
-    }
-
     public function updateApplication(Request $request, JobPosting $job, JobApplication $application): JsonResponse|RedirectResponse
     {
         abort_unless($application->job_posting_id === $job->id, 404);
+
+        if ($response = $this->rejectIfClosed($request, $job)) {
+            return $response;
+        }
 
         $data = $request->validate([
             'status' => ['required', 'string', Rule::in(JobApplication::STATUSES)],
         ]);
 
-        $application->update(['status' => $data['status']]);
+        $current = $application->normalizedStatus();
+        $next = $data['status'];
+
+        if ($next === $current) {
+            return $this->respond($request, __('talenma.jobs.application_updated'));
+        }
+
+        if (! $application->canTransitionTo($next)) {
+            $message = __('talenma.jobs.application_status_irreversible');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return back()->with('toast_error', $message);
+        }
+
+        $application->update(['status' => $next]);
         $application->loadMissing('talent');
 
         JobPostingActivityEvent::record(
             $job,
             JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
             $request->user(),
-            $data['status'],
+            $next,
             $application->talent?->name,
             false,
             (int) $application->talent_user_id,
@@ -173,7 +197,7 @@ class JobPostingController extends Controller
         $this->jobs->flagUnseenForTalentApplication($application);
         $this->jobs->flagUnseenForCompanyFromStaff($job);
 
-        return $this->respond($request, __('talenma.jobs.application_updated'));
+        return $this->respond($request, __('talenma.jobs.application_updated'), reload: true);
     }
 
     /**
@@ -184,6 +208,9 @@ class JobPostingController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'min:50', 'max:10000'],
+            'sector' => ['required', 'string', 'max:100'],
+            'profession' => ['required', 'string', 'max:100'],
+            'experience_level' => ['required', 'string', Rule::in(JobPosting::EXPERIENCE_LEVELS)],
             'contract_type' => ['nullable', 'string', Rule::in(JobPosting::CONTRACT_TYPES)],
             'location_country' => ['nullable', 'string', Rule::in(CompanyProfile::COUNTRY_CODES)],
             'location_city' => [
@@ -206,9 +233,34 @@ class JobPostingController extends Controller
             'remote_ok' => ['nullable', 'boolean'],
         ]);
 
+        $resolved = $this->professions->resolveSelection(
+            $data['sector'],
+            $data['profession'],
+            null,
+        );
+
+        unset($data['sector'], $data['profession']);
+
+        $data['profession_sector_id'] = $resolved['profession_sector_id'];
+        $data['profession_id'] = $resolved['profession_id'];
         $data['remote_ok'] = $request->boolean('remote_ok');
 
         return $data;
+    }
+
+    private function rejectIfClosed(Request $request, JobPosting $job): JsonResponse|RedirectResponse|null
+    {
+        if ($job->isMutable()) {
+            return null;
+        }
+
+        $message = __('talenma.jobs.closed_immutable');
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message], 422);
+        }
+
+        return back()->with('toast_error', $message);
     }
 
     private function respond(Request $request, string $message, ?string $showUrl = null, bool $reload = false): JsonResponse|RedirectResponse

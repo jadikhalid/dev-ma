@@ -187,7 +187,7 @@ class Profile extends Model
         }
 
         return $this->isRevealedAsPublic($forceReveal)
-            ? $user->name
+            ? $user->formalDisplayName()
             : $user->publicDisplayName();
     }
 

@@ -62,6 +62,9 @@
                             </h3>
                             <p class="mt-1 text-sm text-gray-600">
                                 {{ $job->companyProfile?->displayName() ?? '—' }}
+                                @if ($job->professionSummary() !== '')
+                                    · {{ $job->professionSummary() }}
+                                @endif
                                 @if ($job->locationLabel() !== '')
                                     · {{ $job->locationLabel() }}
                                 @endif

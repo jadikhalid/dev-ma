@@ -130,7 +130,18 @@
                             </svg>
                         </span>
                         <div class="min-w-0">
-                            <p class="text-sm font-bold tracking-tight text-slate-900">{{ __('talenma.dashboard.talent.stats.recent_title') }}</p>
+                            <p class="inline-flex items-center gap-2 text-sm font-bold tracking-tight text-slate-900">
+                                {{ __('talenma.dashboard.talent.stats.recent_title') }}
+                                @if ($jobsUnseen ?? false)
+                                    @foreach (range(1, 3) as $dot)
+                                        <span class="relative flex h-2.5 w-2.5" @if ($loop->first) title="{{ __('talenma.jobs.nav_new') }}" @endif>
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                    @endforeach
+                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                @endif
+                            </p>
                             <p class="text-xs text-slate-500">{{ __('talenma.dashboard.talent.stats.recent_subtitle') }}</p>
                         </div>
                     </div>
@@ -225,7 +236,16 @@
                                                 <span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ring-1 {{ $badgeClass }}">{{ $category }}</span>
                                                 <p class="mt-1 text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $label }}</p>
                                             </div>
-                                            <time class="shrink-0 pt-0.5 text-[11px] font-medium tabular-nums text-slate-400" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
+                                            <div class="flex shrink-0 items-center gap-2 pt-0.5">
+                                                <time class="text-[11px] font-medium tabular-nums text-slate-400" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
+                                                @if (! empty($item['unseen']))
+                                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                                    </span>
+                                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                                @endif
+                                            </div>
                                         </a>
                                     @else
                                         <div class="flex items-start justify-between gap-3 rounded-xl bg-white/95 px-3 py-2.5 ring-1 ring-slate-200/70 shadow-sm">
@@ -233,7 +253,16 @@
                                                 <span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ring-1 {{ $badgeClass }}">{{ $category }}</span>
                                                 <p class="mt-1 text-sm font-medium leading-snug text-slate-900">{{ $label }}</p>
                                             </div>
-                                            <time class="shrink-0 pt-0.5 text-[11px] font-medium tabular-nums text-slate-400" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
+                                            <div class="flex shrink-0 items-center gap-2 pt-0.5">
+                                                <time class="text-[11px] font-medium tabular-nums text-slate-400" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
+                                                @if (! empty($item['unseen']))
+                                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                                    </span>
+                                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                                @endif
+                                            </div>
                                         </div>
                                     @endif
                                 </li>

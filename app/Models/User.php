@@ -300,6 +300,22 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Nom complet : prénom + nom, sinon name.
+     */
+    public function formalDisplayName(): string
+    {
+        $person = trim((string) (($this->first_name ?? '').' '.($this->last_name ?? '')));
+
+        if ($person !== '') {
+            return $person;
+        }
+
+        $name = trim((string) $this->name);
+
+        return $name !== '' ? $name : __('talenma.talent.anonymous');
+    }
+
+    /**
      * Affichage entreprise : raison sociale pour owner, « Entreprise / Prénom Nom » pour membre.
      */
     public function companyDisplayName(): string
