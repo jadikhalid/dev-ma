@@ -26,9 +26,7 @@ class RecruitmentRequestController extends Controller
 
         $user = $request->user();
 
-        $all = $user->isCompanyOwner()
-            ? $user->recruitmentRequests()->with('talent')->latest()->get()
-            : collect();
+        $all = $user->recruitmentRequests()->with('talent')->latest()->get();
 
         return view('sourcing.index', [
             'openRequests' => $all->where('mode', RecruitmentRequest::MODE_OPEN)->values(),

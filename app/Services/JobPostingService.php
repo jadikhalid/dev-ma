@@ -23,6 +23,7 @@ class JobPostingService
 
         return JobPosting::query()
             ->where('company_profile_id', $org->id)
+            ->where('created_by', $company->id)
             ->where(function ($inner) {
                 $inner->whereNull('company_seen_at')
                     ->orWhereColumn('company_seen_at', '<', 'updated_at');
@@ -266,5 +267,24 @@ class JobPostingService
                 (int) $application->talent_user_id,
             );
         }
+    }
+
+    /**
+     * Permanently remove a job posting and every related process trace
+     * (applications + activity/notification events).
+     */
+    public function purgeCompletely(JobPosting $job): void
+    {
+        $jobId = (int) $job->id;
+
+        JobApplication::query()
+            ->where('job_posting_id', $jobId)
+            ->delete();
+
+        JobPostingActivityEvent::query()
+            ->where('job_posting_id', $jobId)
+            ->delete();
+
+        $job->delete();
     }
 }

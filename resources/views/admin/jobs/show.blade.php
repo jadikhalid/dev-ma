@@ -6,28 +6,23 @@
         'postponed' => 'bg-violet-50 text-violet-800',
         default => 'bg-amber-50 text-amber-800',
     };
+    $creatorAttribution = $job->creatorAttribution();
 @endphp
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-                <h2 class="text-xl font-bold text-gray-900">{{ $job->title }}</h2>
-                <p class="mt-1 text-sm text-gray-500">
-                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold {{ $statusBadge }}">{{ $job->statusLabel() }}</span>
-                    · {{ $job->companyProfile?->displayName() ?? '—' }}
-                    @if ($job->professionSummary() !== '')
-                        · {{ $job->professionSummary() }}
-                    @endif
-                    @if ($job->locationLabel() !== '')
-                        · {{ $job->locationLabel() }}
-                    @endif
-                    @if ($job->remote_ok)
-                        · {{ __('talenma.jobs.remote') }}
-                    @endif
-                </p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div class="min-w-0 sm:w-1/2 sm:max-w-[50%] sm:shrink-0">
+                @include('jobs._show-header-meta', [
+                    'job' => $job,
+                    'statusBadge' => $statusBadge,
+                    'creatorAttribution' => $creatorAttribution,
+                    'showCompanyInMeta' => true,
+                    'backUrl' => route('admin.jobs.index'),
+                    'backLinkClass' => 'text-indigo-700 hover:text-indigo-900',
+                ])
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2 sm:w-1/2 sm:justify-end">
                 @if ($job->isClosed())
                     <p class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                         {{ __('talenma.jobs.closed_readonly_notice') }}
@@ -113,11 +108,80 @@
                         </div>
                     </div>
                 @endif
+                <div
+                    class="inline-flex"
+                    x-data="companyJobConfirmAction({
+                        messages: @js([
+                            'badge' => __('talenma.jobs.delete_confirm_badge'),
+                            'title' => __('talenma.jobs.delete_confirm_title'),
+                            'body' => __('talenma.jobs.delete_confirm_body'),
+                            'confirm' => __('talenma.jobs.delete_confirm_btn'),
+                            'cancel' => __('talenma.jobs.delete_confirm_cancel'),
+                        ]),
+                    })"
+                >
+                    <form
+                        method="POST"
+                        action="{{ route('admin.jobs.destroy', $job) }}"
+                        data-loading-target="admin-job-show-page"
+                        data-error-message="{{ __('talenma.jobs.save_error') }}"
+                        data-network-error-message="{{ __('talenma.jobs.network_error') }}"
+                        @submit.prevent="requestConfirm($event)"
+                    >
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="inline-flex px-4 py-2 border border-rose-300 text-rose-700 text-sm font-semibold rounded-lg hover:bg-rose-50">{{ __('talenma.jobs.delete') }}</button>
+                    </form>
+
+                    <template x-teleport="body">
+                        <div
+                            x-show="confirming"
+                            x-cloak
+                            class="fixed inset-0 z-[80] flex items-center justify-center p-4"
+                            role="alertdialog"
+                            aria-modal="true"
+                            aria-labelledby="admin-job-delete-title"
+                            @keydown.escape.window="closeConfirm"
+                        >
+                            <div class="absolute inset-0 bg-slate-900/50" @click="closeConfirm" aria-hidden="true"></div>
+                            <div class="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl ring-2 ring-rose-200">
+                                <p class="inline-flex items-center rounded-md bg-rose-50 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-100" x-text="messages.badge"></p>
+                                <p id="admin-job-delete-title" class="mt-3 text-base font-semibold text-slate-900" x-text="messages.title"></p>
+                                <p class="mt-2 text-sm leading-relaxed text-slate-600" x-text="messages.body"></p>
+                                <div class="mt-5 flex flex-wrap justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-gray-700 hover:bg-gray-50"
+                                        @click="closeConfirm"
+                                        x-text="messages.cancel"
+                                    ></button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-lg font-semibold text-sm text-white hover:bg-rose-700"
+                                        @click="confirmSubmit"
+                                        x-text="messages.confirm"
+                                    ></button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
     </x-slot>
 
-    <div id="admin-job-show-page" class="relative py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div
+        id="admin-job-show-page"
+        class="relative py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
+        x-data="companyTalentProfileDrawer({
+            composeUrl: '',
+            csrf: @js(csrf_token()),
+            labels: @js([
+                'profileError' => __('talenma.home.search_drawer_error'),
+                'error' => __('talenma.home.search_drawer_error'),
+            ]),
+        })"
+    >
         @if ($job->isClosed())
             <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                 {{ __('talenma.jobs.closed_readonly_body') }}
@@ -130,7 +194,18 @@
             </div>
             <div>
                 <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('talenma.jobs.admin_creator') }}</dt>
-                <dd class="mt-1 text-gray-900">{{ $job->creator?->name ?? '—' }} @if ($job->creator?->email)<span class="text-gray-500">({{ $job->creator->email }})</span>@endif</dd>
+                <dd class="mt-1 text-gray-900">
+                    {{ $creatorAttribution['company'] }}
+                    @if (filled($creatorAttribution['person']))
+                        · {{ $creatorAttribution['person'] }}
+                        @if (filled($creatorAttribution['role']))
+                            <span class="text-gray-500">({{ $creatorAttribution['role'] }})</span>
+                        @endif
+                    @endif
+                    @if ($job->creator?->email)
+                        <span class="text-gray-500">— {{ $job->creator->email }}</span>
+                    @endif
+                </dd>
             </div>
             <div>
                 <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('talenma.jobs.field_sector') }}</dt>
@@ -149,6 +224,10 @@
                 <dd class="mt-1 text-gray-900">{{ $job->contractTypeLabel() }}</dd>
             </div>
             <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('talenma.jobs.field_work_modes') }}</dt>
+                <dd class="mt-1 text-gray-900">{{ $job->workModesSummary() !== '' ? $job->workModesSummary() : '—' }}</dd>
+            </div>
+            <div>
                 <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('talenma.jobs.admin_dates') }}</dt>
                 <dd class="mt-1 text-gray-900">
                     {{ __('talenma.jobs.admin_published_at') }}: {{ $job->published_at?->translatedFormat('d M Y, H:i') ?? '—' }}
@@ -165,11 +244,24 @@
             <h3 class="text-lg font-semibold text-gray-900">{{ __('talenma.jobs.applications') }}</h3>
 
             @forelse ($job->applications as $application)
+                @php
+                    $talent = $application->talent;
+                    $talentName = $talent?->formalDisplayName() ?? '—';
+                    $profileUrl = $talent ? route('admin.direct-hire.talent-profile', $talent) : null;
+                @endphp
                 <div class="border rounded-xl p-4 space-y-3">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div>
-                            <p class="font-semibold text-gray-900">{{ $application->talent?->publicDisplayName() ?? '—' }}</p>
-                            <p class="text-xs text-gray-500">{{ $application->submitted_at?->translatedFormat('d M Y, H:i') }}</p>
+                        <div class="min-w-0">
+                            @if ($profileUrl)
+                                <button
+                                    type="button"
+                                    class="text-left text-sm font-semibold text-indigo-700 hover:text-indigo-900 underline underline-offset-2"
+                                    @click="openProfile(@js($profileUrl))"
+                                >{{ $talentName }}</button>
+                            @else
+                                <p class="text-sm font-semibold text-gray-900">{{ $talentName }}</p>
+                            @endif
+                            <p class="mt-0.5 text-xs text-gray-500">{{ $application->submitted_at?->translatedFormat('d M Y, H:i') }}</p>
                         </div>
                         @php
                             $currentStatus = $application->normalizedStatus();
@@ -261,5 +353,7 @@
         </section>
 
         <a href="{{ route('admin.jobs.index') }}" class="inline-flex text-sm font-medium text-indigo-700 hover:text-indigo-900">← {{ __('talenma.jobs.back') }}</a>
+
+        @include('company._talent-profile-drawer', ['hideHireActions' => true])
     </div>
 </x-app-layout>

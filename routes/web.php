@@ -108,6 +108,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/jobs/{job}/publish', [AdminJobPostingController::class, 'publish'])->name('jobs.publish');
         Route::post('/jobs/{job}/close', [AdminJobPostingController::class, 'close'])->name('jobs.close');
         Route::post('/jobs/{job}/hide', [AdminJobPostingController::class, 'hide'])->name('jobs.hide');
+        Route::delete('/jobs/{job}', [AdminJobPostingController::class, 'destroy'])->name('jobs.destroy');
         Route::patch('/jobs/{job}/applications/{application}', [AdminJobPostingController::class, 'updateApplication'])->name('jobs.applications.update');
 
         Route::middleware('admin')->group(function () {
@@ -162,6 +163,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/company/profile', [CompanyProfileController::class, 'edit'])->name('company.profile.edit');
             Route::post('/company/profile', [CompanyProfileController::class, 'update'])->name('company.profile.update');
             Route::post('/company/users', [CompanyUserController::class, 'store'])->name('company.users.store');
+            Route::put('/company/users/{member}', [CompanyUserController::class, 'update'])->name('company.users.update');
             Route::delete('/company/users/{member}', [CompanyUserController::class, 'destroy'])->name('company.users.destroy');
             Route::post('/services/accompagnement', [CompanyAccompanimentController::class, 'store'])
                 ->name('company.accompagnement.store');

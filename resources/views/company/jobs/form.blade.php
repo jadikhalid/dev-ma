@@ -132,10 +132,28 @@
                     </div>
                 </div>
 
-                <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                    <input type="checkbox" name="remote_ok" value="1" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" @checked(old('remote_ok', $job->remote_ok))>
-                    {{ __('talenma.jobs.field_remote') }}
-                </label>
+                <div
+                    data-required-group
+                    data-required-message="{{ __('talenma.jobs.work_modes_required') }}"
+                >
+                    <x-input-label :value="__('talenma.jobs.field_work_modes')" />
+                    <div class="mt-3 grid sm:grid-cols-3 gap-3">
+                        @php $selectedModes = old('work_modes', $job->work_modes ?? []); @endphp
+                        @foreach ($workModeOptions as $value => $label)
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-emerald-200 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    name="work_modes[]"
+                                    value="{{ $value }}"
+                                    class="mt-0.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                    @checked(in_array($value, $selectedModes, true))
+                                >
+                                <span class="text-sm text-gray-700">{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <x-input-error :messages="$errors->get('work_modes')" class="mt-2" />
+                </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
                     <button type="button" data-reset class="inline-flex justify-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.jobs.cancel') }}</button>

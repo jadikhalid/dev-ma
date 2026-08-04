@@ -950,10 +950,24 @@ class DirectHireService
     }
 
     /**
-     * Base query of direct-hire requests visible to this company account.
-     * Staff-on-behalf dossiers are admin-only and must never appear here.
+     * Direct-hire dossiers owned by this company user (personal workspace).
      */
     public function queryForCompany(User $company): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = DirectHireRequest::query()
+            ->where('hire_origin', DirectHireRequest::ORIGIN_COMPANY);
+
+        if (! $company->isCompany()) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query->where('company_user_id', $company->id);
+    }
+
+    /**
+     * All direct-hire dossiers for the company organization (locks / conflict checks).
+     */
+    public function queryForCompanyOrganization(User $company): \Illuminate\Database\Eloquent\Builder
     {
         $query = DirectHireRequest::query()
             ->where('hire_origin', DirectHireRequest::ORIGIN_COMPANY);
@@ -965,12 +979,10 @@ class DirectHireService
         $org = $company->companyOrganization();
 
         if ($org) {
-            $query->where('company_profile_id', $org->id);
-        } else {
-            $query->where('company_user_id', $company->id);
+            return $query->where('company_profile_id', $org->id);
         }
 
-        return $query;
+        return $query->where('company_user_id', $company->id);
     }
 
     public function companyHasOpenRequest(User $company): bool
@@ -986,14 +998,14 @@ class DirectHireService
             return false;
         }
 
-        return $this->queryForCompany($company)
+        return $this->queryForCompanyOrganization($company)
             ->where('talent_user_id', $talent->id)
             ->whereIn('status', DirectHireRequest::openStatuses())
             ->exists();
     }
 
     /**
-     * Talent user IDs with an open direct-hire process for this company.
+     * Talent user IDs with an open direct-hire process for this company organization.
      *
      * @return list<int>
      */
@@ -1003,7 +1015,7 @@ class DirectHireService
             return [];
         }
 
-        return $this->queryForCompany($company)
+        return $this->queryForCompanyOrganization($company)
             ->whereIn('status', DirectHireRequest::openStatuses())
             ->pluck('talent_user_id')
             ->filter()
@@ -1033,7 +1045,7 @@ class DirectHireService
             return null;
         }
 
-        return $this->queryForCompany($company)
+        return $this->queryForCompanyOrganization($company)
             ->where('talent_user_id', $talent->id)
             ->where('status', DirectHireRequest::STATUS_HIRED)
             ->whereNotNull('talent_locked_at')
@@ -1053,7 +1065,7 @@ class DirectHireService
             return [];
         }
 
-        return $this->queryForCompany($company)
+        return $this->queryForCompanyOrganization($company)
             ->where('status', DirectHireRequest::STATUS_HIRED)
             ->whereNotNull('talent_user_id')
             ->whereNotNull('talent_locked_at')
@@ -1075,7 +1087,7 @@ class DirectHireService
     }
 
     /**
-     * @return 'hired'|'open'|'intermediation_locked'|null
+     * @return 'hired'|'open'|'intermediation_locked'|'intermediation_open'|null
      */
     public function companyProposeBlockReason(User $company, User $talent): ?string
     {
@@ -1087,8 +1099,18 @@ class DirectHireService
             return 'hired';
         }
 
-        if (app(RecruitmentRequestService::class)->activeNamedLockForTalent($company, $talent)) {
+        $recruitment = app(RecruitmentRequestService::class);
+
+        if ($recruitment->activeNamedLockForTalent($company, $talent)) {
             return 'intermediation_locked';
+        }
+
+        if ($recruitment->existingNamedRequestForCompanyTalent($company, $talent)) {
+            return 'intermediation_open';
+        }
+
+        if ($this->companyHasOpenRequestWithTalent($company, $talent)) {
+            return 'open';
         }
 
         if ($this->companyHasOpenRequest($company)) {
@@ -1103,6 +1125,7 @@ class DirectHireService
         return match ($this->companyProposeBlockReason($company, $talent)) {
             'hired' => __('talenma.direct_hire.cta_disabled_locked_hint'),
             'intermediation_locked' => __('talenma.direct_hire.cta_disabled_locked_intermediation_hint'),
+            'intermediation_open' => __('talenma.direct_hire.cta_disabled_open_intermediation_hint'),
             'open' => __('talenma.direct_hire.cta_disabled_hint'),
             default => null,
         };
@@ -1358,12 +1381,9 @@ class DirectHireService
             abort(403);
         }
 
-        $org = $actor->companyOrganization();
+        $sameCreator = (int) $request->company_user_id === (int) $actor->id;
 
-        $sameCreator = $request->company_user_id === $actor->id;
-        $sameOrg = $org && $request->company_profile_id && $request->company_profile_id === $org->id;
-
-        abort_unless($sameCreator || $sameOrg, 403);
+        abort_unless($sameCreator, 403);
     }
 
     public function assertStaffCanManage(DirectHireRequest $request, User $actor): void

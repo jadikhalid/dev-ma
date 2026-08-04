@@ -6,32 +6,27 @@
         'postponed' => 'bg-violet-50 text-violet-800',
         default => 'bg-amber-50 text-amber-800',
     };
+    $creatorAttribution = $job->creatorAttribution();
 @endphp
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-                <h2 class="text-xl font-bold text-gray-900">{{ $job->title }}</h2>
-                <p class="mt-1 text-sm text-gray-500">
-                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold {{ $statusBadge }}">{{ $job->statusLabel() }}</span>
-                    @if ($job->professionSummary() !== '')
-                        · {{ $job->professionSummary() }}
-                    @endif
-                    @if ($job->locationLabel() !== '')
-                        · {{ $job->locationLabel() }}
-                    @endif
-                    @if ($job->remote_ok)
-                        · {{ __('talenma.jobs.remote') }}
-                    @endif
-                </p>
-                <a
-                    href="{{ route('company.jobs.index') }}"
-                    class="mt-2 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-900"
-                >← {{ __('talenma.jobs.back') }}</a>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div class="min-w-0 sm:w-1/2 sm:max-w-[50%] sm:shrink-0">
+                @include('jobs._show-header-meta', [
+                    'job' => $job,
+                    'statusBadge' => $statusBadge,
+                    'creatorAttribution' => $creatorAttribution,
+                    'showCompanyInMeta' => ! $ownsJob,
+                    'backUrl' => route('company.jobs.index'),
+                ])
             </div>
-            <div class="flex flex-wrap gap-2">
-                @if ($job->isClosed())
+            <div class="flex flex-wrap gap-2 sm:w-1/2 sm:justify-end">
+                @if (! $ownsJob)
+                    <p class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                        {{ __('talenma.jobs.catalog_readonly_notice') }}
+                    </p>
+                @elseif ($job->isClosed())
                     <p class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                         {{ __('talenma.jobs.closed_readonly_notice') }}
                     </p>
@@ -140,12 +135,16 @@
         })"
     >
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-4 lg:gap-5 lg:items-start">
-            @if ($job->isClosed())
+            @if ($ownsJob && $job->isClosed())
                 <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                     {{ __('talenma.jobs.closed_readonly_body') }}
                 </div>
+            @elseif (! $ownsJob)
+                <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    {{ __('talenma.jobs.catalog_readonly_body') }}
+                </div>
             @endif
-            <article class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-3 min-w-0">
+            <article class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-3 min-w-0 {{ $ownsJob ? '' : 'lg:col-span-2' }}">
                 <p class="text-sm text-gray-500">
                     {{ $job->contractTypeLabel() }}
                     @if ($job->professionSummary() !== '')
@@ -154,10 +153,14 @@
                     @if ($job->experienceLabel() !== '')
                         · {{ $job->experienceLabel() }}
                     @endif
+                    @if ($job->workModesSummary() !== '')
+                        · {{ $job->workModesSummary() }}
+                    @endif
                 </p>
                 <div class="prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">{{ $job->description }}</div>
             </article>
 
+            @if ($ownsJob)
             <section class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4 min-w-0 lg:sticky lg:top-20">
                 <div class="flex flex-col gap-1">
                     <div class="flex items-baseline justify-between gap-2">
@@ -284,6 +287,7 @@
                     </p>
                 @endforelse
             </section>
+            @endif
         </div>
 
         @include('company._talent-profile-drawer')

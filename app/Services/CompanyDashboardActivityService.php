@@ -272,10 +272,6 @@ class CompanyDashboardActivityService
      */
     private function recruitmentEvents(User $company, int $limit): Collection
     {
-        if (! $company->isCompanyOwner()) {
-            return collect();
-        }
-
         $teamActor = __('talenma.dashboard.company.activity.team_actor');
 
         $statusEvents = RecruitmentRequestStatusEvent::query()
@@ -374,29 +370,29 @@ class CompanyDashboardActivityService
     {
         $events = collect();
 
-        if ($company->isCompanyOwner()) {
-            RecruitmentRequest::query()
-                ->where('company_user_id', $company->id)
-                ->where('mode', RecruitmentRequest::MODE_NAMED)
-                ->whereNotNull('developer_user_id')
-                ->whereNotNull('talent_unlocked_at')
-                ->with('talent')
-                ->latest('talent_unlocked_at')
-                ->limit($limit)
-                ->get()
-                ->each(function (RecruitmentRequest $request) use ($events) {
-                    $events->push($this->activityItem(
-                        type: 'talent_unlocked',
-                        actor: $request->talent?->name
-                            ?: __('talenma.dashboard.company.activity.unknown_talent'),
-                        at: $request->talent_unlocked_at,
-                        subject: $request->talent?->name,
-                        detail: 'named',
-                        href: route('sourcing.show', $request),
-                        self: true,
-                    ));
-                });
-        }
+        $events = collect();
+
+        RecruitmentRequest::query()
+            ->where('company_user_id', $company->id)
+            ->where('mode', RecruitmentRequest::MODE_NAMED)
+            ->whereNotNull('developer_user_id')
+            ->whereNotNull('talent_unlocked_at')
+            ->with('talent')
+            ->latest('talent_unlocked_at')
+            ->limit($limit)
+            ->get()
+            ->each(function (RecruitmentRequest $request) use ($events) {
+                $events->push($this->activityItem(
+                    type: 'talent_unlocked',
+                    actor: $request->talent?->name
+                        ?: __('talenma.dashboard.company.activity.unknown_talent'),
+                    at: $request->talent_unlocked_at,
+                    subject: $request->talent?->name,
+                    detail: 'named',
+                    href: route('sourcing.show', $request),
+                    self: true,
+                ));
+            });
 
         $this->directHires->queryForCompany($company)
             ->where('status', DirectHireRequest::STATUS_HIRED)
@@ -435,6 +431,13 @@ class CompanyDashboardActivityService
 
         return JobPostingActivityEvent::query()
             ->where('company_profile_id', $org->id)
+            ->where(function ($query) use ($company) {
+                $query->where('actor_user_id', $company->id)
+                    ->orWhereHas(
+                        'jobPosting',
+                        fn ($job) => $job->where('created_by', $company->id)
+                    );
+            })
             ->whereIn('event', [
                 JobPostingActivityEvent::EVENT_CREATED,
                 JobPostingActivityEvent::EVENT_PUBLISHED,
@@ -498,15 +501,8 @@ class CompanyDashboardActivityService
      */
     private function scopeDirectHireQuery($query, User $company): void
     {
-        $query->where('hire_origin', \App\Models\DirectHireRequest::ORIGIN_COMPANY);
-
-        $org = $company->companyOrganization();
-
-        if ($org) {
-            $query->where('company_profile_id', $org->id);
-        } else {
-            $query->where('company_user_id', $company->id);
-        }
+        $query->where('hire_origin', \App\Models\DirectHireRequest::ORIGIN_COMPANY)
+            ->where('company_user_id', $company->id);
     }
 
     /**

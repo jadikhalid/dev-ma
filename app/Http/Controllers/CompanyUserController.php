@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class CompanyUserController extends Controller
@@ -77,6 +78,78 @@ class CompanyUserController extends Controller
         return redirect()
             ->route('profile.edit', ['panel' => 'account'])
             ->with('toast_success', __('talenma.company_users.created'));
+    }
+
+    public function update(Request $request, User $member): RedirectResponse|JsonResponse
+    {
+        $owner = $request->user();
+        abort_unless($owner->canManageCompanyUsers(), 403);
+
+        $profile = $owner->companyProfile;
+        abort_unless($profile, 404);
+
+        $membership = CompanyMembership::query()
+            ->where('company_profile_id', $profile->id)
+            ->where('user_id', $member->id)
+            ->firstOrFail();
+
+        abort_unless($member->isCompanyMember(), 403);
+        abort_unless(! $member->isCompanyOwner(), 403);
+
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'min:2', 'max:127'],
+            'last_name' => ['required', 'string', 'min:2', 'max:127'],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique(User::class, 'email')->ignore($member->id),
+                Rule::unique(User::class, 'pending_email')->ignore($member->id),
+            ],
+            'job_title' => ['nullable', 'string', 'max:100'],
+        ], [], [
+            'first_name' => __('talenma.company_users.first_name'),
+            'last_name' => __('talenma.company_users.last_name'),
+            'email' => __('talenma.company_users.email'),
+            'job_title' => __('talenma.company_users.job_title'),
+        ]);
+
+        $orgName = $profile->displayName() ?: $owner->name;
+        $personName = trim($data['first_name'].' '.$data['last_name']);
+
+        DB::transaction(function () use ($data, $member, $membership, $orgName, $personName) {
+            $member->fill([
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'name' => $orgName.' / '.$personName,
+                'email' => $data['email'],
+            ]);
+
+            if ($member->isDirty('email')) {
+                $member->email_verified_at = now();
+                $member->pending_email = null;
+                $member->pending_email_token = null;
+                $member->pending_email_expires_at = null;
+            }
+
+            $member->save();
+
+            $membership->update([
+                'job_title' => $data['job_title'] ?? null,
+            ]);
+        });
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.company_users.updated'),
+            ]);
+        }
+
+        return redirect()
+            ->route('profile.edit', ['panel' => 'account'])
+            ->with('toast_success', __('talenma.company_users.updated'));
     }
 
     public function destroy(Request $request, User $member): RedirectResponse|JsonResponse

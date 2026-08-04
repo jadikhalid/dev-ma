@@ -24,7 +24,11 @@
         {{-- Bandeau d'accueil + progression --}}
         <div class="bg-white rounded-2xl border px-4 py-4 sm:px-6 sm:py-5">
             <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-                <x-company-contact-photo :profile="$profile" size="md" class="mx-auto sm:mx-0 shrink-0" />
+                @if ($isOwner)
+                    <x-company-contact-photo :profile="$profile" size="md" class="mx-auto sm:mx-0 shrink-0" />
+                @else
+                    <x-user-avatar :user="$user" size="md" class="mx-auto sm:mx-0 shrink-0 ring-2 ring-emerald-100" />
+                @endif
                 <div class="flex-1 min-w-0 text-center sm:text-left">
                     <p class="text-base sm:text-lg font-semibold text-gray-900 truncate">
                         {{ __('talenma.dashboard.welcome', ['name' => $welcomeName]) }}
@@ -33,7 +37,9 @@
                     @if (! $completion['is_catalog_ready'])
                         <span class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-semibold border border-amber-200">
                             <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                            {{ __('talenma.dashboard.company.profile_incomplete') }}
+                            {{ $isOwner
+                                ? __('talenma.dashboard.company.profile_incomplete')
+                                : __('talenma.dashboard.company.profile_incomplete_member') }}
                         </span>
                     @endif
                 </div>
@@ -56,15 +62,11 @@
                             <span class="text-[9px] uppercase tracking-wide text-gray-500">{{ __('talenma.dashboard.company.progress_label') }}</span>
                         </div>
                     </div>
-                    @if ($isOwner)
-                        <a href="{{ $profileEditUrl }}" class="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition whitespace-nowrap">
-                            {{ ($completion['status'] === 'complete' || $completion['percent'] >= 100) ? __('talenma.dashboard.company.edit_profile') : __('talenma.dashboard.company.complete_profile') }}
-                        </a>
-                    @else
-                        <a href="{{ route('company.jobs.index') }}" class="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition whitespace-nowrap">
-                            {{ __('talenma.dashboard.company.jobs_manage') }}
-                        </a>
-                    @endif
+                    <a href="{{ $profileEditUrl }}" class="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition whitespace-nowrap">
+                        {{ ($completion['status'] === 'complete' || $completion['percent'] >= 100)
+                            ? __('talenma.dashboard.company.edit_profile')
+                            : __('talenma.dashboard.company.complete_profile') }}
+                    </a>
                 </div>
             </div>
         </div>

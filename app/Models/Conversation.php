@@ -76,9 +76,14 @@ class Conversation extends Model
         return (int) $this->talent_user_id === (int) $user->id;
     }
 
+    public function isCompanySideParticipant(User $user): bool
+    {
+        return (int) $this->company_user_id === (int) $user->id;
+    }
+
     public function counterpartFor(User $user): ?User
     {
-        if ((int) $this->company_user_id === (int) $user->id) {
+        if ($this->isCompanySideParticipant($user)) {
             return $this->isStaffChannel() ? $this->staff : $this->talent;
         }
 
@@ -95,7 +100,7 @@ class Conversation extends Model
             return false;
         }
 
-        $lastRead = (int) $this->company_user_id === (int) $user->id
+        $lastRead = $this->isCompanySideParticipant($user)
             ? $this->company_last_read_at
             : $this->talent_last_read_at;
 
@@ -108,7 +113,7 @@ class Conversation extends Model
 
     public function markReadFor(User $user): void
     {
-        $column = (int) $this->company_user_id === (int) $user->id
+        $column = $this->isCompanySideParticipant($user)
             ? 'company_last_read_at'
             : 'talent_last_read_at';
 

@@ -2426,10 +2426,14 @@ Alpine.data('companyJobConfirmAction', (config = {}) => ({
                 return;
             }
 
+            if (payload?.show_url) {
+                window.location.href = payload.show_url;
+
+                return;
+            }
+
             if (payload?.reload) {
-                if (! payload.show_url) {
-                    pushToast('success', payload.message || '');
-                }
+                pushToast('success', payload.message || '');
 
                 window.setTimeout(() => {
                     window.location.reload();
@@ -2595,7 +2599,7 @@ Alpine.data('companyJobsIndex', (config = {}) => ({
     sectorSlug: config.initialSector ?? '',
     defaultSector: config.defaultSector ?? '',
     query: config.initialQuery ?? '',
-    counts: config.initialCounts ?? { all: 0, mine: 0, closed: 0 },
+    counts: config.initialCounts ?? { all: 0, company: 0, company_closed: 0, mine: 0, closed: 0 },
     jobs: Array.isArray(config.initialJobs) ? config.initialJobs : [],
     total: Array.isArray(config.initialJobs) ? config.initialJobs.length : 0,
     labels: config.labels ?? {},
@@ -2603,9 +2607,37 @@ Alpine.data('companyJobsIndex', (config = {}) => ({
     error: null,
     requestToken: 0,
 
+    get scopeLabel() {
+        if (this.scope === 'company') {
+            return this.labels.company ?? '';
+        }
+
+        if (this.scope === 'company_closed') {
+            return this.labels.companyClosed ?? '';
+        }
+
+        if (this.scope === 'mine') {
+            return this.labels.mine ?? '';
+        }
+
+        if (this.scope === 'closed') {
+            return this.labels.closed ?? '';
+        }
+
+        return this.labels.all ?? '';
+    },
+
     get emptyMessage() {
         if (this.scope === 'all' && (this.sectorSlug || (this.query ?? '').trim() !== '')) {
             return this.labels.emptyFiltered ?? this.labels.empty ?? '';
+        }
+
+        if (this.scope === 'company') {
+            return this.labels.emptyCompany ?? this.labels.empty ?? '';
+        }
+
+        if (this.scope === 'company_closed') {
+            return this.labels.emptyCompanyClosed ?? this.labels.empty ?? '';
         }
 
         if (this.scope === 'mine') {
@@ -2626,7 +2658,7 @@ Alpine.data('companyJobsIndex', (config = {}) => ({
 
         this.scope = scope;
 
-        if (scope === 'mine' || scope === 'closed') {
+        if (scope !== 'all') {
             this.query = '';
         } else if (! this.sectorSlug && this.defaultSector) {
             this.sectorSlug = this.defaultSector;

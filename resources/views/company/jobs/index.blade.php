@@ -22,9 +22,13 @@
             initialJobs: @js($jobs),
             labels: {
                 all: @js(__('talenma.jobs.filter_all')),
+                company: @js(__('talenma.jobs.filter_company')),
+                companyClosed: @js(__('talenma.jobs.filter_company_closed')),
                 mine: @js(__('talenma.jobs.filter_mine')),
                 closed: @js(__('talenma.jobs.filter_closed')),
                 empty: @js(__('talenma.jobs.empty')),
+                emptyCompany: @js(__('talenma.jobs.empty_company')),
+                emptyCompanyClosed: @js(__('talenma.jobs.empty_company_closed')),
                 emptyMine: @js(__('talenma.jobs.empty_mine')),
                 emptyClosed: @js(__('talenma.jobs.empty_closed')),
                 emptyFiltered: @js(__('talenma.jobs.empty_filtered')),
@@ -59,9 +63,53 @@
 
                 <div class="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white to-white p-3.5 sm:p-4">
                     <p class="mb-3 text-[11px] font-bold uppercase tracking-wider text-emerald-800/80">
-                        {{ __('talenma.jobs.filter_mine_group') }}
+                        {{ __('talenma.jobs.filter_company_group') }}
                     </p>
-                    <nav class="space-y-1.5" aria-label="{{ __('talenma.jobs.filter_mine_group') }}">
+                    <nav class="space-y-1.5" aria-label="{{ __('talenma.jobs.filter_company_group') }}">
+                        <button
+                            type="button"
+                            @click="setScope('company')"
+                            class="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition"
+                            :class="scope === 'company'
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-900'"
+                            :aria-current="scope === 'company' ? 'page' : null"
+                        >
+                            <span>{{ __('talenma.jobs.filter_company') }}</span>
+                            <span
+                                class="inline-flex min-w-[1.5rem] items-center justify-center rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums"
+                                :class="scope === 'company' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
+                                x-text="counts.company"
+                            ></span>
+                        </button>
+                        <button
+                            type="button"
+                            @click="setScope('company_closed')"
+                            class="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition"
+                            :class="scope === 'company_closed'
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-900'"
+                            :aria-current="scope === 'company_closed' ? 'page' : null"
+                        >
+                            <span>{{ __('talenma.jobs.filter_company_closed') }}</span>
+                            <span
+                                class="inline-flex min-w-[1.5rem] items-center justify-center rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums"
+                                :class="scope === 'company_closed' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
+                                x-text="counts.company_closed"
+                            ></span>
+                        </button>
+                    </nav>
+                </div>
+
+                <div class="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white to-white p-3.5 sm:p-4">
+                    <p class="mb-3 text-[11px] font-bold uppercase tracking-wider text-emerald-800/80">
+                        {{ auth()->user()->isCompanyOwner()
+                            ? __('talenma.jobs.filter_mine_group')
+                            : __('talenma.jobs.filter_mine_group_member') }}
+                    </p>
+                    <nav class="space-y-1.5" aria-label="{{ auth()->user()->isCompanyOwner()
+                            ? __('talenma.jobs.filter_mine_group')
+                            : __('talenma.jobs.filter_mine_group_member') }}">
                         <button
                             type="button"
                             @click="setScope('mine')"
@@ -140,7 +188,7 @@
 
                 <div class="mb-3 flex items-baseline justify-between gap-2">
                     <h3 class="text-sm font-bold text-slate-900">
-                        <span x-text="scope === 'mine' ? labels.mine : (scope === 'closed' ? labels.closed : labels.all)"></span>
+                        <span x-text="scopeLabel"></span>
                         <span class="ml-1.5 text-xs font-semibold text-emerald-700" x-text="total"></span>
                     </h3>
                     <span x-show="loading" class="text-[11px] font-medium text-slate-400" x-cloak>{{ __('talenma.jobs.filter_loading') }}</span>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Profile;
 use App\Services\ProfileDocumentService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
@@ -52,7 +53,7 @@ class ProfileDetailsController extends Controller
             'cvDocuments' => $profile->cvDocuments(),
             'cvLanguageOptions' => ProfileDocumentService::cvLanguageOptions(),
             'registrationDocuments' => $profile->registrationDocuments(),
-            'workModeOptions' => $this->workModeOptions(),
+            'workModeOptions' => Profile::workModeOptions(),
             'languageOptions' => $this->languageOptions(),
             'educationOptions' => $this->educationOptions(),
             'countryOptions' => \App\Models\Profile::countryOptions(),
@@ -197,7 +198,7 @@ class ProfileDetailsController extends Controller
             'availability' => [
                 'availability' => ['required', 'string', Rule::in(array_keys(\App\Models\Profile::statusOptions()))],
                 'work_modes' => ['required', 'array', 'min:1'],
-                'work_modes.*' => ['string', Rule::in(array_keys($this->workModeOptions()))],
+                'work_modes.*' => ['string', Rule::in(array_keys(Profile::workModeOptions()))],
             ],
             'visibility' => [
                 'is_public' => ['nullable', 'boolean'],
@@ -304,18 +305,6 @@ class ProfileDetailsController extends Controller
             ],
             default => [],
         };
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function workModeOptions(): array
-    {
-        return [
-            'remote' => __('talenma.talent.work_mode_remote'),
-            'visa_sponsorship' => __('talenma.talent.work_mode_visa'),
-            'local' => __('talenma.talent.work_mode_local'),
-        ];
     }
 
     /**

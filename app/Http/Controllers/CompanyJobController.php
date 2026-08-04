@@ -6,6 +6,7 @@ use App\Models\CompanyProfile;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\JobPostingActivityEvent;
+use App\Models\Profile;
 use App\Services\JobPostingService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
@@ -30,39 +31,46 @@ class CompanyJobController extends Controller
         abort_unless($org, 404);
 
         $requestedScope = $request->string('scope')->toString();
-        $scope = in_array($requestedScope, ['mine', 'closed'], true) ? $requestedScope : 'all';
+        $scope = in_array($requestedScope, ['company', 'company_closed', 'mine', 'closed'], true)
+            ? $requestedScope
+            : 'all';
         $defaultSectorSlug = $this->professions->slugsFromProfile($org->profession_sector_id, null)['sector'];
         $sectorSlug = $request->has('sector')
             ? trim($request->string('sector')->toString())
             : $defaultSectorSlug;
         $query = trim($request->string('q')->toString());
 
-        // Search filters apply only to "all" postings — "mine" / "closed" list every matching posting.
+        // Search filters apply only to the platform catalog ("all").
         $applySearchFilters = $scope === 'all';
         $activeSectorSlug = $applySearchFilters ? $sectorSlug : '';
         $activeQuery = $applySearchFilters ? $query : '';
 
-        $baseQuery = JobPosting::query()->where('company_profile_id', $org->id);
-        $openQuery = (clone $baseQuery)->where('status', '!=', JobPosting::STATUS_CLOSED);
+        $orgQuery = JobPosting::query()->where('company_profile_id', $org->id);
+        $orgOpenQuery = (clone $orgQuery)->where('status', '!=', JobPosting::STATUS_CLOSED);
+        $platformOpenQuery = JobPosting::query()->where('status', JobPosting::STATUS_PUBLISHED);
 
         $counts = [
-            'all' => (clone $openQuery)->count(),
-            'mine' => (clone $openQuery)->where('created_by', $user->id)->count(),
-            'closed' => (clone $baseQuery)
+            'all' => (clone $platformOpenQuery)->count(),
+            'company' => (clone $orgOpenQuery)->count(),
+            'company_closed' => (clone $orgQuery)->where('status', JobPosting::STATUS_CLOSED)->count(),
+            'mine' => (clone $orgOpenQuery)->where('created_by', $user->id)->count(),
+            'closed' => (clone $orgQuery)
                 ->where('status', JobPosting::STATUS_CLOSED)
                 ->where('created_by', $user->id)
                 ->count(),
         ];
 
-        $jobsQuery = (clone $baseQuery)
-            ->when(
-                $scope === 'closed',
-                fn ($builder) => $builder
-                    ->where('status', JobPosting::STATUS_CLOSED)
-                    ->where('created_by', $user->id),
-                fn ($builder) => $builder->where('status', '!=', JobPosting::STATUS_CLOSED),
-            )
-            ->when($scope === 'mine', fn ($builder) => $builder->where('created_by', $user->id))
+        $jobsQuery = match ($scope) {
+            'company' => (clone $orgOpenQuery),
+            'company_closed' => (clone $orgQuery)->where('status', JobPosting::STATUS_CLOSED),
+            'mine' => (clone $orgOpenQuery)->where('created_by', $user->id),
+            'closed' => (clone $orgQuery)
+                ->where('status', JobPosting::STATUS_CLOSED)
+                ->where('created_by', $user->id),
+            default => (clone $platformOpenQuery),
+        };
+
+        $jobsQuery
             ->when($activeSectorSlug !== '', function ($builder) use ($activeSectorSlug) {
                 $builder->whereHas(
                     'professionSector',
@@ -76,6 +84,9 @@ class CompanyJobController extends Controller
                     $inner->where('title', 'like', $like)
                         ->orWhere('description', 'like', $like)
                         ->orWhere('location_city', 'like', $like)
+                        ->orWhereHas('companyProfile.user', function ($companyUser) use ($like) {
+                            $companyUser->where('name', 'like', $like);
+                        })
                         ->orWhereHas('profession', function ($profession) use ($like) {
                             $profession->where('name_fr', 'like', $like)
                                 ->orWhere('name_en', 'like', $like);
@@ -86,13 +97,17 @@ class CompanyJobController extends Controller
                         });
                 });
             })
-            ->with(['professionSector', 'profession'])
+            ->with(['professionSector', 'profession', 'companyProfile.user'])
             ->withCount('applications')
             ->when(
-                $scope === 'closed',
+                in_array($scope, ['company_closed', 'closed'], true),
                 fn ($builder) => $builder->latest('closed_at'),
-                fn ($builder) => $builder->latest(),
+                fn ($builder) => $scope === 'all'
+                    ? $builder->latest('published_at')
+                    : $builder->latest(),
             );
+
+        $present = fn (JobPosting $job) => $this->presentJobCard($job, $org);
 
         if ($request->wantsJson()) {
             $jobs = $jobsQuery->limit(100)->get();
@@ -103,12 +118,12 @@ class CompanyJobController extends Controller
                 'q' => $applySearchFilters ? $query : '',
                 'total' => $jobs->count(),
                 'counts' => $counts,
-                'jobs' => $jobs->map(fn (JobPosting $job) => $this->presentJobCard($job))->values(),
+                'jobs' => $jobs->map($present)->values(),
             ]);
         }
 
         $jobs = $jobsQuery->limit(100)->get()
-            ->map(fn (JobPosting $job) => $this->presentJobCard($job))
+            ->map($present)
             ->values();
         $professionSectors = $this->professions->sectorsForLocale();
 
@@ -134,6 +149,7 @@ class CompanyJobController extends Controller
         return view('company.jobs.form', $this->formViewData(new JobPosting([
             'status' => JobPosting::STATUS_DRAFT,
             'remote_ok' => false,
+            'work_modes' => [],
             'location_country' => CompanyProfile::DEFAULT_COUNTRY,
             'profession_sector_id' => $org?->profession_sector_id,
         ]), $slugs['sector'], $slugs['profession']));
@@ -166,18 +182,32 @@ class CompanyJobController extends Controller
 
     public function show(Request $request, JobPosting $job): View
     {
-        $this->authorizeJob($request, $job);
-        $this->jobs->markSeenForCompany($request->user(), $job);
+        $user = $request->user();
+        abort_unless($user->canManageJobs(), 403);
 
-        $job->load(['applications.talent.profile', 'creator', 'professionSector', 'profession']);
+        $org = $user->companyOrganization();
+        abort_unless($org, 404);
 
-        $applicationsTotal = $job->applications->count();
-        $matchingApplications = $job->applications
-            ->filter(fn (JobApplication $application) => $job->matchesTalentProfile($application->talent))
-            ->values();
+        $ownsJob = $job->company_profile_id === $org->id;
+
+        if ($ownsJob) {
+            $this->jobs->markSeenForCompany($user, $job);
+            $job->load(['applications.talent.profile', 'creator', 'professionSector', 'profession', 'companyProfile.user']);
+
+            $applicationsTotal = $job->applications->count();
+            $matchingApplications = $job->applications
+                ->filter(fn (JobApplication $application) => $job->matchesTalentProfile($application->talent))
+                ->values();
+        } else {
+            abort_unless($job->isPublished(), 404);
+            $job->load(['creator', 'professionSector', 'profession', 'companyProfile.user']);
+            $applicationsTotal = 0;
+            $matchingApplications = collect();
+        }
 
         return view('company.jobs.show', [
             'job' => $job,
+            'ownsJob' => $ownsJob,
             'matchingApplications' => $matchingApplications,
             'applicationsTotal' => $applicationsTotal,
         ]);
@@ -353,6 +383,8 @@ class CompanyJobController extends Controller
                 },
             ],
             'remote_ok' => ['nullable', 'boolean'],
+            'work_modes' => ['required', 'array', 'min:1'],
+            'work_modes.*' => ['string', Rule::in(array_keys(Profile::workModeOptions()))],
         ]);
 
         $resolved = $this->professions->resolveSelection(
@@ -365,7 +397,8 @@ class CompanyJobController extends Controller
 
         $data['profession_sector_id'] = $resolved['profession_sector_id'];
         $data['profession_id'] = $resolved['profession_id'];
-        $data['remote_ok'] = $request->boolean('remote_ok');
+        $data['work_modes'] = array_values(array_unique($data['work_modes']));
+        $data['remote_ok'] = in_array('remote', $data['work_modes'], true);
 
         return $data;
     }
@@ -382,14 +415,20 @@ class CompanyJobController extends Controller
      *     tone: array{bar: string, badge: string, hover: string}
      * }
      */
-    private function presentJobCard(JobPosting $job): array
+    private function presentJobCard(JobPosting $job, CompanyProfile $viewerOrg): array
     {
+        $ownsJob = $job->company_profile_id === $viewerOrg->id;
+        $companyName = $job->companyProfile?->displayName() ?? '';
+
         $summaryParts = array_filter([
+            (! $ownsJob && $companyName !== '') ? $companyName : null,
             $job->professionSummary(),
             $job->experienceLabel() !== '' ? $job->experienceLabel() : null,
-            __('talenma.jobs.applications_count', ['count' => $job->applications_count]),
+            $ownsJob
+                ? __('talenma.jobs.applications_count', ['count' => $job->applications_count])
+                : null,
             $job->locationLabel() !== '' ? $job->locationLabel() : null,
-            $job->remote_ok ? __('talenma.jobs.remote') : null,
+            $job->workModesSummary() !== '' ? $job->workModesSummary() : null,
         ]);
 
         return [
@@ -399,7 +438,7 @@ class CompanyJobController extends Controller
             'status' => $job->status,
             'status_label' => $job->statusLabel(),
             'summary' => implode(' · ', $summaryParts),
-            'unseen' => $job->hasUnseenChangesForCompany(),
+            'unseen' => $ownsJob && $job->hasUnseenChangesForCompany(),
             'tone' => match ($job->status) {
                 JobPosting::STATUS_PUBLISHED => [
                     'bar' => 'bg-emerald-500',
@@ -449,6 +488,7 @@ class CompanyJobController extends Controller
             'professionSectors' => $this->professions->sectorsForLocale(),
             'sectorSlug' => old('sector', $sectorSlug),
             'professionSlug' => old('profession', $professionSlug),
+            'workModeOptions' => Profile::workModeOptions(),
         ];
     }
 

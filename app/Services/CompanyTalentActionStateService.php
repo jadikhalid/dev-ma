@@ -13,7 +13,7 @@ class CompanyTalentActionStateService
 
     /**
      * Hire CTAs + lock state for a company/talent pair (catalog card & profile drawer).
-     * An active lock after a successful hire (intermediation OR direct hire) blocks both CTAs.
+     * Org-wide: an open/locked named intermediation or direct hire for a talent blocks both CTAs for the whole team.
      *
      * @return array<string, mixed>
      */
@@ -24,17 +24,8 @@ class CompanyTalentActionStateService
         $talentLocked = $namedLock !== null || $directHireLock !== null;
 
         $canProposeGlobally = $this->directHires->companyCanPropose($company);
-        $hiredTalentIds = $this->directHires->hiredTalentIdsForCompany($company);
-        $lockedNamedTalentIds = $namedLock
-            ? [(int) $talent->id]
-            : [];
-        [$canPropose, $directHireHint] = $this->directHires->resolveProposeForTalent(
-            $company,
-            $talent,
-            $canProposeGlobally,
-            $hiredTalentIds,
-            $lockedNamedTalentIds,
-        );
+        $canPropose = $this->directHires->companyCanProposeToTalent($company, $talent);
+        $directHireHint = $this->directHires->companyProposeDisabledHint($company, $talent);
 
         $canRequestNamed = $this->recruitmentRequests->companyCanRequestNamedForTalent($company, $talent);
         $namedHint = $this->recruitmentRequests->namedRequestDisabledHint($company, $talent);

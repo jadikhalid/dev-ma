@@ -519,7 +519,7 @@ class MessagingService
         }
 
         $now = now();
-        $readColumn = (int) $conversation->company_user_id === (int) $sender->id
+        $readColumn = $conversation->isCompanySideParticipant($sender)
             ? 'company_last_read_at'
             : 'talent_last_read_at';
 
@@ -567,7 +567,7 @@ class MessagingService
 
     private function notifyRecipient(Conversation $conversation, Message $message, User $sender): void
     {
-        $recipient = (int) $conversation->company_user_id === (int) $sender->id
+        $recipient = $conversation->isCompanySideParticipant($sender)
             ? $conversation->talent
             : $conversation->company;
 

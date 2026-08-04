@@ -6,6 +6,7 @@ use App\Models\DirectHireRequest;
 use App\Models\RecruitmentRequest;
 use App\Services\AdminDashboardService;
 use App\Services\CompanyDashboardActivityService;
+use App\Services\CompanyMemberAccountCompletionService;
 use App\Services\CompanyProfileCompletionService;
 use App\Services\DashboardActivityToastService;
 use App\Services\DirectHireService;
@@ -21,6 +22,7 @@ class DashboardController extends Controller
     public function __construct(
         private TalentProfileCompletionService $profileCompletion,
         private CompanyProfileCompletionService $companyProfileCompletion,
+        private CompanyMemberAccountCompletionService $companyMemberAccountCompletion,
         private AdminDashboardService $adminDashboard,
         private TalentDashboardStatsService $talentStats,
         private CompanyDashboardActivityService $companyActivity,
@@ -56,15 +58,15 @@ class DashboardController extends Controller
 
         if ($user->isCompany()) {
             $profile = $user->companyOrganization();
-            $completion = $this->companyProfileCompletion->assess($profile);
-            $recentRequests = $user->isCompanyOwner()
-                ? $user->recruitmentRequests()
-                    ->with('talent.profile')
-                    ->whereIn('status', RecruitmentRequest::openStatuses())
-                    ->latest()
-                    ->take(5)
-                    ->get()
-                : collect();
+            $completion = $user->isCompanyMember()
+                ? $this->companyMemberAccountCompletion->assess($user)
+                : $this->companyProfileCompletion->assess($profile);
+            $recentRequests = $user->recruitmentRequests()
+                ->with('talent.profile')
+                ->whereIn('status', RecruitmentRequest::openStatuses())
+                ->latest()
+                ->take(5)
+                ->get();
 
             $directHires = $this->directHires->queryForCompany($user)
                 ->with(['talent.profile', 'rounds'])

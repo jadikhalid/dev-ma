@@ -235,6 +235,20 @@ class Profile extends Model
             ->all();
     }
 
+    /**
+     * Collaboration modes offered on talent fiche and job postings.
+     *
+     * @return array<string, string>
+     */
+    public static function workModeOptions(): array
+    {
+        return [
+            'remote' => __('talenma.talent.work_mode_remote'),
+            'visa_sponsorship' => __('talenma.talent.work_mode_visa'),
+            'local' => __('talenma.talent.work_mode_local'),
+        ];
+    }
+
     public static function labelForWorkMode(string $mode): string
     {
         $key = match (strtolower(trim($mode))) {

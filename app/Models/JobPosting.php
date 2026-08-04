@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'location_city',
     'location_country',
     'remote_ok',
+    'work_modes',
     'status',
     'published_at',
     'closed_at',
@@ -72,6 +73,7 @@ class JobPosting extends Model
     {
         return [
             'remote_ok' => 'boolean',
+            'work_modes' => 'array',
             'published_at' => 'datetime',
             'closed_at' => 'datetime',
             'company_seen_at' => 'datetime',
@@ -175,7 +177,24 @@ class JobPosting extends Model
     }
 
     /**
-     * Exact profile match: sector, profession and experience range.
+     * @return list<string>
+     */
+    public function workModeLabels(): array
+    {
+        return collect($this->work_modes ?? [])
+            ->map(fn (string $mode) => Profile::labelForWorkMode($mode))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    public function workModesSummary(): string
+    {
+        return implode(' · ', $this->workModeLabels());
+    }
+
+    /**
+     * Exact profile match: sector, profession, experience range and compatible collaboration modes.
      */
     public function matchesTalentProfile(?User $talent): bool
     {
@@ -200,9 +219,81 @@ class JobPosting extends Model
             return false;
         }
 
-        return $this->experienceLevelMatchesYears(
+        if (! $this->experienceLevelMatchesYears(
             $profile->experience_years !== null ? (int) $profile->experience_years : null
-        );
+        )) {
+            return false;
+        }
+
+        return $this->workModesCompatibleWith($profile);
+    }
+
+    /**
+     * At least one shared collaboration mode must be viable (local requires same country).
+     */
+    public function workModesCompatibleWith(Profile $profile): bool
+    {
+        $jobModes = array_values(array_filter($this->work_modes ?? []));
+        $talentModes = array_values(array_filter($profile->work_modes ?? []));
+
+        if ($jobModes === [] || $talentModes === []) {
+            return false;
+        }
+
+        foreach (array_intersect($jobModes, $talentModes) as $mode) {
+            if ($this->workModeIsGeographicallyCompatible((string) $mode, $profile)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @deprecated Use workModesCompatibleWith() — kept for callers that only check raw overlap.
+     *
+     * @param  list<string>|null  $talentModes
+     */
+    public function workModesOverlap(?array $talentModes): bool
+    {
+        $jobModes = array_values(array_filter($this->work_modes ?? []));
+        $talentModes = array_values(array_filter($talentModes ?? []));
+
+        if ($jobModes === [] || $talentModes === []) {
+            return false;
+        }
+
+        return count(array_intersect($jobModes, $talentModes)) > 0;
+    }
+
+    private function workModeIsGeographicallyCompatible(string $mode, Profile $profile): bool
+    {
+        return match ($mode) {
+            'local' => $this->localWorkModeCompatible($profile),
+            'remote', 'visa_sponsorship' => true,
+            default => true,
+        };
+    }
+
+    private function localWorkModeCompatible(Profile $profile): bool
+    {
+        $jobCountry = $this->normalizedCountryCode($this->location_country);
+        $talentCountry = $this->normalizedCountryCode($profile->country);
+
+        if ($jobCountry === null || $talentCountry === null) {
+            return false;
+        }
+
+        return $jobCountry === $talentCountry;
+    }
+
+    private function normalizedCountryCode(mixed $country): ?string
+    {
+        if (! is_string($country) || ! filled(trim($country))) {
+            return null;
+        }
+
+        return strtolower(trim($country));
     }
 
     public function experienceLevelMatchesYears(?int $years): bool
@@ -262,15 +353,41 @@ class JobPosting extends Model
         }
 
         $levels = self::experienceLevelsForYears((int) $profile->experience_years);
+        $talentModes = array_values(array_filter($profile->work_modes ?? []));
+        $talentCountry = strtolower(trim((string) ($profile->country ?? ''))) ?: null;
 
-        if ($levels === []) {
+        if ($levels === [] || $talentModes === []) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        $remoteCapableModes = array_values(array_filter(
+            $talentModes,
+            fn (string $mode) => $mode !== 'local'
+        ));
+        $canMatchLocal = in_array('local', $talentModes, true) && $talentCountry !== null;
+
+        if ($remoteCapableModes === [] && ! $canMatchLocal) {
             return $query->whereRaw('0 = 1');
         }
 
         return $query
             ->where('profession_sector_id', $profile->profession_sector_id)
             ->where('profession_id', $profile->profession_id)
-            ->whereIn('experience_level', $levels);
+            ->whereIn('experience_level', $levels)
+            ->where(function ($builder) use ($remoteCapableModes, $canMatchLocal, $talentCountry) {
+                foreach ($remoteCapableModes as $mode) {
+                    $builder->orWhereJsonContains('work_modes', $mode);
+                }
+
+                if ($canMatchLocal) {
+                    $builder->orWhere(function ($local) use ($talentCountry) {
+                        $local->whereJsonContains('work_modes', 'local')
+                            ->whereNotNull('location_country')
+                            ->where('location_country', '!=', '')
+                            ->whereRaw('LOWER(location_country) = ?', [$talentCountry]);
+                    });
+                }
+            });
     }
 
     public function contractTypeLabel(): string
@@ -311,5 +428,55 @@ class JobPosting extends Model
         }
 
         return $this->staff_seen_at->getTimestamp() < $this->updated_at->getTimestamp();
+    }
+
+    /**
+     * @return array{company: string, person: string|null, role: string|null}
+     */
+    public function creatorAttribution(): array
+    {
+        $this->loadMissing(['creator', 'companyProfile.user']);
+
+        $company = trim((string) ($this->companyProfile?->displayName() ?? ''));
+        if ($company === '') {
+            $company = '—';
+        }
+
+        $creator = $this->creator;
+
+        if ($creator === null) {
+            return [
+                'company' => $company,
+                'person' => null,
+                'role' => null,
+            ];
+        }
+
+        if ($creator->isCompanyOwner()) {
+            $person = trim((string) ($this->companyProfile?->representative_name ?? ''));
+            if ($person === '') {
+                $person = $creator->formalDisplayName();
+            }
+
+            return [
+                'company' => $company,
+                'person' => $person,
+                'role' => __('talenma.dashboard.company.welcome_role_owner'),
+            ];
+        }
+
+        if ($creator->isCompanyMember()) {
+            return [
+                'company' => $company,
+                'person' => $creator->formalDisplayName(),
+                'role' => __('talenma.dashboard.company.welcome_role_member'),
+            ];
+        }
+
+        return [
+            'company' => $company,
+            'person' => $creator->formalDisplayName(),
+            'role' => null,
+        ];
     }
 }

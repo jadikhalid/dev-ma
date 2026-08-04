@@ -308,7 +308,38 @@ class RecruitmentRequestService
             return false;
         }
 
-        return app(DirectHireService::class)->activeHireLockForTalent($company, $talent) === null;
+        $directHires = app(DirectHireService::class);
+
+        if ($directHires->activeHireLockForTalent($company, $talent) !== null) {
+            return false;
+        }
+
+        return ! $directHires->companyHasOpenRequestWithTalent($company, $talent);
+    }
+
+    public function namedRequestDisabledHint(User $company, User $talent): ?string
+    {
+        $existing = $this->existingNamedRequestForCompanyTalent($company, $talent);
+
+        if ($existing) {
+            if ($existing->isClosedSuccessful() && $existing->hasActiveTalentLock()) {
+                return __('talenma.recruitment.named_blocked_locked');
+            }
+
+            return __('talenma.recruitment.named_blocked_open');
+        }
+
+        $directHires = app(DirectHireService::class);
+
+        if ($directHires->activeHireLockForTalent($company, $talent)) {
+            return __('talenma.recruitment.named_blocked_locked_direct_hire');
+        }
+
+        if ($directHires->companyHasOpenRequestWithTalent($company, $talent)) {
+            return __('talenma.recruitment.named_blocked_open_direct_hire');
+        }
+
+        return null;
     }
 
     /**
@@ -359,25 +390,6 @@ class RecruitmentRequestService
             ->first();
     }
 
-    public function namedRequestDisabledHint(User $company, User $talent): ?string
-    {
-        $existing = $this->existingNamedRequestForCompanyTalent($company, $talent);
-
-        if ($existing) {
-            if ($existing->isClosedSuccessful() && $existing->hasActiveTalentLock()) {
-                return __('talenma.recruitment.named_blocked_locked');
-            }
-
-            return __('talenma.recruitment.named_blocked_open');
-        }
-
-        if (app(DirectHireService::class)->activeHireLockForTalent($company, $talent)) {
-            return __('talenma.recruitment.named_blocked_locked_direct_hire');
-        }
-
-        return null;
-    }
-
     public function syncTalentLockAfterStatusChange(RecruitmentRequest $request, bool $statusChanged): void
     {
         if (! $statusChanged || ! $request->isNamed()) {
@@ -417,14 +429,7 @@ class RecruitmentRequestService
      */
     private function companyActorIds(User $company): array
     {
-        $ids = [(int) $company->id];
-        $org = $company->companyOrganization();
-
-        if ($org && filled($org->user_id)) {
-            $ids[] = (int) $org->user_id;
-        }
-
-        return array_values(array_unique($ids));
+        return $company->companyTeamUserIds();
     }
 
     private function notifyChatRecipient(

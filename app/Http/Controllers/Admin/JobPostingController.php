@@ -7,6 +7,7 @@ use App\Models\CompanyProfile;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\JobPostingActivityEvent;
+use App\Models\Profile;
 use App\Services\JobPostingService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
@@ -82,6 +83,7 @@ class JobPostingController extends Controller
             'professionSectors' => $this->professions->sectorsForLocale(),
             'sectorSlug' => old('sector', $slugs['sector']),
             'professionSlug' => old('profession', $slugs['profession']),
+            'workModeOptions' => Profile::workModeOptions(),
         ]);
     }
 
@@ -231,6 +233,8 @@ class JobPostingController extends Controller
                 },
             ],
             'remote_ok' => ['nullable', 'boolean'],
+            'work_modes' => ['required', 'array', 'min:1'],
+            'work_modes.*' => ['string', Rule::in(array_keys(Profile::workModeOptions()))],
         ]);
 
         $resolved = $this->professions->resolveSelection(
@@ -243,7 +247,8 @@ class JobPostingController extends Controller
 
         $data['profession_sector_id'] = $resolved['profession_sector_id'];
         $data['profession_id'] = $resolved['profession_id'];
-        $data['remote_ok'] = $request->boolean('remote_ok');
+        $data['work_modes'] = array_values(array_unique($data['work_modes']));
+        $data['remote_ok'] = in_array('remote', $data['work_modes'], true);
 
         return $data;
     }

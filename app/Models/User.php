@@ -178,6 +178,40 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->companyMembership?->companyProfile;
     }
 
+    /**
+     * Owner + member user IDs attached to the same company organization.
+     *
+     * @return list<int>
+     */
+    public function companyTeamUserIds(): array
+    {
+        if (! $this->isCompany()) {
+            return [];
+        }
+
+        $org = $this->companyOrganization();
+
+        if (! $org) {
+            return [(int) $this->id];
+        }
+
+        $ids = [];
+
+        if (filled($org->user_id)) {
+            $ids[] = (int) $org->user_id;
+        }
+
+        $org->loadMissing('memberships');
+
+        foreach ($org->memberships as $membership) {
+            if (filled($membership->user_id)) {
+                $ids[] = (int) $membership->user_id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
     public function canManageCompanyProfile(): bool
     {
         return $this->isCompanyOwner() && $this->isApproved() && ! $this->isDisabled();
@@ -316,7 +350,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Affichage entreprise : raison sociale pour owner, « Entreprise / Prénom Nom » pour membre.
+     * Affichage entreprise : « Raison sociale / Prénom Nom » (admin ou utilisateur).
      */
     public function companyDisplayName(): string
     {
@@ -324,15 +358,31 @@ class User extends Authenticatable implements MustVerifyEmail
             return $this->name;
         }
 
-        if ($this->isCompanyOwner()) {
-            return $this->name;
+        $org = $this->companyOrganization();
+        $orgName = trim((string) ($org?->displayName() ?: $this->name));
+
+        if ($orgName === '') {
+            $orgName = trim((string) $this->name);
         }
 
-        $orgName = $this->companyOrganization()?->displayName() ?: $this->name;
-        $person = trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
+        if ($this->isCompanyOwner()) {
+            $person = trim((string) ($org?->representative_name ?? ''));
 
-        if ($person === '') {
-            return $orgName;
+            if ($person === '') {
+                $person = trim((string) (($this->first_name ?? '').' '.($this->last_name ?? '')));
+            }
+
+            if ($person === '' || strcasecmp($person, $orgName) === 0) {
+                return $orgName !== '' ? $orgName : $this->name;
+            }
+
+            return $orgName.' / '.$person;
+        }
+
+        $person = trim((string) (($this->first_name ?? '').' '.($this->last_name ?? '')));
+
+        if ($person === '' || $orgName === '') {
+            return $orgName !== '' ? $orgName : $this->name;
         }
 
         return $orgName.' / '.$person;

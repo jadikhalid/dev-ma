@@ -32,7 +32,7 @@
                 <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" />
                 <div class="hidden lg:flex items-center gap-1 min-w-0">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingAccount">
-                        @if ($authUser->isStaff())
+                        @if ($authUser->isStaff() || $authUser->isCompany())
                             {{ __('talenma.nav.dashboard') }}
                         @else
                             <span class="inline-flex items-center gap-1.5">
@@ -129,7 +129,6 @@
                     @elseif ($authUser->isCompany())
                         <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-1.5">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
                                 {{ __('talenma.nav.messages') }}
                                 @if ($inboxUnread > 0)
                                     <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
@@ -138,7 +137,6 @@
                         </x-nav-link>
                         <x-nav-link :href="route('sourcing.index')" :active="request()->routeIs('sourcing.*')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-1.5">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
                                 {{ __('talenma.nav.sourcing') }}
                                 @if ($sourcingPending)
                                     <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.recruitment.nav_new') }}">
@@ -151,7 +149,6 @@
                         </x-nav-link>
                         <x-nav-link :href="route('company.direct-hire.index')" :active="request()->routeIs('company.direct-hire.*')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-1.5">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
                                 {{ __('talenma.nav.direct_hire') }}
                                 @if ($directHirePending)
                                     <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
@@ -164,7 +161,6 @@
                         </x-nav-link>
                         <x-nav-link :href="route('company.jobs.index')" :active="request()->routeIs('company.jobs.*')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-1.5">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6"/></svg>
                                 {{ __('talenma.nav.jobs') }}
                                 @if ($jobsPending)
                                     <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
@@ -177,7 +173,6 @@
                         </x-nav-link>
                         <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.search', 'company.talent.*')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-700">
-                                <svg class="h-4 w-4 shrink-0 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
                                 {{ __('talenma.nav.talents') }}
                             </span>
                         </x-nav-link>
@@ -272,7 +267,7 @@
             @unless ($pendingAccount)
                 <div class="border-b border-gray-100 pb-2 mb-2">
                     <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        @if ($authUser->isStaff())
+                        @if ($authUser->isStaff() || $authUser->isCompany())
                             {{ __('talenma.nav.dashboard') }}
                         @else
                             <span class="inline-flex items-center gap-2">
@@ -369,7 +364,6 @@
                     @elseif ($authUser->isCompany())
                         <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
                             <span class="inline-flex items-center gap-2">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
                                 {{ __('talenma.nav.messages') }}
                                 @if ($inboxUnread > 0)
                                     <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
@@ -378,7 +372,6 @@
                         </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('sourcing.index')" :active="request()->routeIs('sourcing.*')">
                             <span class="inline-flex items-center gap-2">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
                                 {{ __('talenma.nav.sourcing') }}
                                 @if ($sourcingPending)
                                     <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.recruitment.nav_new') }}">
@@ -391,7 +384,6 @@
                         </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.direct-hire.index')" :active="request()->routeIs('company.direct-hire.*')">
                             <span class="inline-flex items-center gap-2">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
                                 {{ __('talenma.nav.direct_hire') }}
                                 @if ($directHirePending)
                                     <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
@@ -404,7 +396,6 @@
                         </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.jobs.index')" :active="request()->routeIs('company.jobs.*')">
                             <span class="inline-flex items-center gap-2">
-                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6"/></svg>
                                 {{ __('talenma.nav.jobs') }}
                                 @if ($jobsPending)
                                     <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
@@ -417,7 +408,6 @@
                         </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('company.search')" :active="request()->routeIs('company.search', 'company.talent.*')">
                             <span class="inline-flex items-center gap-2 rounded-md bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
-                                <svg class="h-4 w-4 shrink-0 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
                                 {{ __('talenma.nav.talents') }}
                             </span>
                         </x-responsive-nav-link>

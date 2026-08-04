@@ -6,6 +6,8 @@ use App\Models\CompanyMembership;
 use App\Models\CompanyProfile;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
+use App\Models\Profession;
+use App\Models\ProfessionSector;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -80,18 +82,57 @@ class CompanyMultiUserAndJobsTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_owner_and_member_can_manage_jobs(): void
+    public function test_member_cannot_change_identity_fields_on_profile(): void
     {
         [$owner, $profile] = $this->makeCompanyOwner();
         $member = $this->makeCompanyMember($owner, $profile);
 
+        $this->actingAs($member)->patch(route('profile.update'), [
+            'first_name' => 'Hacker',
+            'last_name' => 'Name',
+            'email' => 'hacked@example.com',
+        ])->assertRedirect();
+
+        $member->refresh();
+        $this->assertSame('Sara', $member->first_name);
+        $this->assertSame('Benali', $member->last_name);
+        $this->assertNotSame('hacked@example.com', $member->email);
+    }
+
+    public function test_owner_can_update_company_member_identity(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner();
+        $member = $this->makeCompanyMember($owner, $profile);
+
+        $this->actingAs($owner)->put(route('company.users.update', $member), [
+            'first_name' => 'Sara',
+            'last_name' => 'Amrani',
+            'email' => 'sara.amrani@example.com',
+            'job_title' => 'Finance',
+        ])->assertRedirect(route('profile.edit', ['panel' => 'account']));
+
+        $member->refresh();
+        $this->assertSame('Amrani', $member->last_name);
+        $this->assertSame('sara.amrani@example.com', $member->email);
+        $this->assertSame('Finance', $member->companyMembership?->job_title);
+    }
+
+    public function test_owner_and_member_can_manage_jobs(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner();
+        $member = $this->makeCompanyMember($owner, $profile);
+        [$sector, $profession] = $this->makeProfessionCatalog();
+
         $payload = [
             'title' => 'Développeur Laravel',
             'description' => str_repeat('Description du poste pour annonce entreprise. ', 3),
+            'sector' => $sector->slug,
+            'profession' => $profession->slug,
+            'experience_level' => JobPosting::EXPERIENCE_JUNIOR,
             'contract_type' => 'cdi',
             'location_country' => 'fr',
             'location_city' => 'Paris',
-            'remote_ok' => '1',
+            'work_modes' => ['remote', 'local'],
         ];
 
         $this->actingAs($owner)
@@ -101,6 +142,8 @@ class CompanyMultiUserAndJobsTest extends TestCase
         $job = JobPosting::query()->first();
         $this->assertNotNull($job);
         $this->assertSame(JobPosting::STATUS_DRAFT, $job->status);
+        $this->assertSame(['remote', 'local'], $job->work_modes);
+        $this->assertTrue($job->remote_ok);
 
         $this->actingAs($member)
             ->post(route('company.jobs.publish', $job))
@@ -132,6 +175,7 @@ class CompanyMultiUserAndJobsTest extends TestCase
             'status' => JobPosting::STATUS_PUBLISHED,
             'published_at' => now(),
             'remote_ok' => true,
+            'work_modes' => ['remote'],
         ]);
 
         $this->actingAs($talent)
@@ -202,6 +246,31 @@ class CompanyMultiUserAndJobsTest extends TestCase
         $this->actingAs($member)
             ->post(route('talent.jobs.apply', $job))
             ->assertForbidden();
+    }
+
+    /**
+     * @return array{0: ProfessionSector, 1: Profession}
+     */
+    private function makeProfessionCatalog(): array
+    {
+        $sector = ProfessionSector::query()->create([
+            'slug' => 'it',
+            'name_fr' => 'IT',
+            'name_en' => 'IT',
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $profession = Profession::query()->create([
+            'profession_sector_id' => $sector->id,
+            'slug' => 'dev',
+            'name_fr' => 'Dev',
+            'name_en' => 'Dev',
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        return [$sector, $profession];
     }
 
     /**

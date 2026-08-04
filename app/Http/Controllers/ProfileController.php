@@ -108,21 +108,12 @@ class ProfileController extends Controller
         }
 
         $emailChanged = false;
-        $newEmail = strtolower(trim((string) $validated['email']));
+        $newEmail = isset($validated['email'])
+            ? strtolower(trim((string) $validated['email']))
+            : strtolower($user->email);
 
         if ($user->isCompanyMember()) {
-            $orgName = $user->companyOrganization()?->displayName() ?: $user->name;
-            $person = trim($validated['first_name'].' '.$validated['last_name']);
-            $user->fill([
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-                'name' => $orgName.' / '.$person,
-                'email' => $validated['email'],
-            ]);
-
-            if ($user->isDirty('email')) {
-                $user->email_verified_at = null;
-            }
+            // Identity fields are owner-managed — only avatar changes apply here.
         } elseif ($user->isCompanyOwner()) {
             $user->fill([
                 'name' => $validated['name'],
@@ -290,11 +281,12 @@ class ProfileController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        abort_if($user->isCompanyMember(), 403);
+
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
         ]);
-
-        $user = $request->user();
 
         Auth::logout();
 

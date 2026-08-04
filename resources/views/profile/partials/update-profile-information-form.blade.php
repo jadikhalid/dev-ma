@@ -103,37 +103,31 @@
         </div>
 
         @if ($user->isCompanyMember())
+            <div class="rounded-xl border border-amber-100 bg-amber-50/50 px-4 py-3 text-sm text-amber-900">
+                {{ __('talenma.account.identity_locked_member') }}
+            </div>
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
                     <x-input-label for="first_name" :value="__('talenma.auth.first_name')" />
                     <x-text-input
                         id="first_name"
-                        name="first_name"
                         type="text"
-                        class="mt-1 block w-full"
-                        :value="old('first_name', $user->first_name)"
-                        required
-                        autofocus
-                        autocomplete="given-name"
-                        data-required
-                        data-required-message="{{ __('talenma.auth.first_name') }}"
+                        class="mt-1 block w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+                        :value="$user->first_name"
+                        disabled
+                        readonly
                     />
-                    <x-input-error class="mt-2" :messages="$errors->get('first_name')" />
                 </div>
                 <div>
                     <x-input-label for="last_name" :value="__('talenma.auth.last_name')" />
                     <x-text-input
                         id="last_name"
-                        name="last_name"
                         type="text"
-                        class="mt-1 block w-full"
-                        :value="old('last_name', $user->last_name)"
-                        required
-                        autocomplete="family-name"
-                        data-required
-                        data-required-message="{{ __('talenma.auth.last_name') }}"
+                        class="mt-1 block w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+                        :value="$user->last_name"
+                        disabled
+                        readonly
                     />
-                    <x-input-error class="mt-2" :messages="$errors->get('last_name')" />
                 </div>
             </div>
         @else
@@ -163,50 +157,61 @@
                 for="email"
                 :value="$useCompanyBranding ? __('talenma.account.email_company') : __('talenma.account.email')"
             />
-            <x-text-input
-                id="email"
-                name="email"
-                type="email"
-                class="mt-1 block w-full"
-                :value="old('email', $user->email)"
-                required
-                autocomplete="username"
-                data-required
-                data-required-message="{{ $useCompanyBranding ? __('talenma.account.email_company') : __('talenma.account.email') }}"
-            />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
+            @if ($user->isCompanyMember())
+                <x-text-input
+                    id="email"
+                    type="email"
+                    class="mt-1 block w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+                    :value="$user->email"
+                    disabled
+                    readonly
+                />
+            @else
+                <x-text-input
+                    id="email"
+                    name="email"
+                    type="email"
+                    class="mt-1 block w-full"
+                    :value="old('email', $user->email)"
+                    required
+                    autocomplete="username"
+                    data-required
+                    data-required-message="{{ $useCompanyBranding ? __('talenma.account.email_company') : __('talenma.account.email') }}"
+                />
+                <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
-            @if ($useCompanyBranding && $user->hasPendingEmailChange())
-                <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 px-3.5 py-3 space-y-2">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-800">
-                        {{ __('talenma.account.pending_email_label') }}
-                    </p>
-                    <input
-                        type="email"
-                        value="{{ $user->pending_email }}"
-                        disabled
-                        class="block w-full rounded-md border-gray-200 bg-gray-100 text-gray-400 shadow-sm text-sm cursor-not-allowed"
-                    >
-                    <p class="text-xs text-amber-800/80">
-                        {{ __('talenma.account.pending_email_hint', ['minutes' => \App\Services\PendingEmailChangeService::TTL_MINUTES]) }}
-                    </p>
-                    <button
-                        type="submit"
-                        form="cancel-pending-email-form"
-                        class="text-xs font-semibold text-amber-900 underline hover:text-amber-700"
-                    >
-                        {{ __('talenma.account.pending_email_cancel') }}
-                    </button>
-                </div>
-            @elseif ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail() && ! $useCompanyBranding)
-                <div>
-                    <p class="text-sm mt-2 text-gray-800">
-                        {{ __('talenma.account.email_unverified') }}
-                        <button form="send-verification" class="underline text-sm text-indigo-600 hover:text-indigo-800">
-                            {{ __('talenma.account.resend_verification') }}
+                @if ($useCompanyBranding && $user->hasPendingEmailChange())
+                    <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 px-3.5 py-3 space-y-2">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                            {{ __('talenma.account.pending_email_label') }}
+                        </p>
+                        <input
+                            type="email"
+                            value="{{ $user->pending_email }}"
+                            disabled
+                            class="block w-full rounded-md border-gray-200 bg-gray-100 text-gray-400 shadow-sm text-sm cursor-not-allowed"
+                        >
+                        <p class="text-xs text-amber-800/80">
+                            {{ __('talenma.account.pending_email_hint', ['minutes' => \App\Services\PendingEmailChangeService::TTL_MINUTES]) }}
+                        </p>
+                        <button
+                            type="submit"
+                            form="cancel-pending-email-form"
+                            class="text-xs font-semibold text-amber-900 underline hover:text-amber-700"
+                        >
+                            {{ __('talenma.account.pending_email_cancel') }}
                         </button>
-                    </p>
-                </div>
+                    </div>
+                @elseif ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail() && ! $useCompanyBranding)
+                    <div>
+                        <p class="text-sm mt-2 text-gray-800">
+                            {{ __('talenma.account.email_unverified') }}
+                            <button form="send-verification" class="underline text-sm text-indigo-600 hover:text-indigo-800">
+                                {{ __('talenma.account.resend_verification') }}
+                            </button>
+                        </p>
+                    </div>
+                @endif
             @endif
         </div>
 

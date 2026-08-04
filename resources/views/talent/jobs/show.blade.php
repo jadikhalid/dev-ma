@@ -19,8 +19,8 @@
                 @if ($job->locationLabel() !== '')
                     · {{ $job->locationLabel() }}
                 @endif
-                @if ($job->remote_ok)
-                    · {{ __('talenma.jobs.remote') }}
+                @if ($job->workModesSummary() !== '')
+                    · {{ $job->workModesSummary() }}
                 @endif
             </p>
             <a
@@ -45,6 +45,9 @@
                     @endif
                     @if ($job->experienceLabel() !== '')
                         · {{ $job->experienceLabel() }}
+                    @endif
+                    @if ($job->workModesSummary() !== '')
+                        · {{ $job->workModesSummary() }}
                     @endif
                 </p>
                 <div class="prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">{{ $job->description }}</div>
