@@ -20,29 +20,22 @@ class UserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_moderator_approval_is_queued_for_admin(): void
+    public function test_moderator_approval_is_executed_immediately_when_permitted(): void
     {
-        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
-        $moderator = User::factory()->create(['role' => 'moderator', 'approval_status' => null]);
+        $moderator = User::factory()->moderator([
+            \App\Models\ModeratorPermissionCatalog::ACCOUNTS_APPROVE,
+            \App\Models\ModeratorPermissionCatalog::ACCOUNTS_VIEW,
+        ])->create();
         $talent = User::factory()->create([
             'role' => 'dev',
             'approval_status' => User::APPROVAL_PENDING,
         ]);
 
-        $this->actingAs($moderator)->post(route('admin.users.approve', $talent));
+        $this->withSession([\App\Services\ModeratorAssignmentService::SESSION_MODE_KEY => true])
+            ->actingAs($moderator)
+            ->post(route('admin.users.approve', $talent));
 
-        $this->assertDatabaseHas('moderation_requests', [
-            'requested_by' => $moderator->id,
-            'target_user_id' => $talent->id,
-            'action_type' => ModerationRequest::ACTION_APPROVE_TALENT,
-            'status' => ModerationRequest::STATUS_PENDING,
-        ]);
-
-        $this->assertTrue($talent->fresh()->isPendingApproval());
-
-        $request = ModerationRequest::first();
-        $this->actingAs($admin)->post(route('admin.moderation.approve', $request));
-
+        $this->assertDatabaseCount('moderation_requests', 0);
         $this->assertTrue($talent->fresh()->isApproved());
         $this->assertNotNull($talent->fresh()->profile);
     }
@@ -85,32 +78,37 @@ class UserManagementTest extends TestCase
         });
     }
 
-    public function test_moderator_approval_request_sends_email_after_admin_confirms(): void
+    public function test_moderator_approval_sends_email_immediately(): void
     {
         Mail::fake();
 
-        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
-        $moderator = User::factory()->create(['role' => 'moderator', 'approval_status' => null]);
+        $moderator = User::factory()->moderator([
+            \App\Models\ModeratorPermissionCatalog::ACCOUNTS_APPROVE,
+            \App\Models\ModeratorPermissionCatalog::ACCOUNTS_VIEW,
+        ])->create();
         $talent = User::factory()->create([
             'role' => 'dev',
             'approval_status' => User::APPROVAL_PENDING,
         ]);
 
-        $this->actingAs($moderator)->post(route('admin.users.approve', $talent));
-        Mail::assertNothingSent();
-
-        $request = ModerationRequest::first();
-        $this->actingAs($admin)->post(route('admin.moderation.approve', $request));
+        $this->withSession([\App\Services\ModeratorAssignmentService::SESSION_MODE_KEY => true])
+            ->actingAs($moderator)
+            ->post(route('admin.users.approve', $talent));
 
         Mail::assertSent(TalentApprovedMail::class, fn (TalentApprovedMail $mail) => $mail->hasTo($talent->email));
     }
 
     public function test_only_admin_can_grant_moderator_role(): void
     {
-        $moderator = User::factory()->create(['role' => 'moderator', 'approval_status' => null]);
+        $moderator = User::factory()->moderator([
+            \App\Models\ModeratorPermissionCatalog::ACCOUNTS_VIEW,
+        ])->create();
         $talent = User::factory()->create(['role' => 'dev', 'approval_status' => User::APPROVAL_APPROVED]);
 
-        $this->actingAs($moderator)->post(route('admin.users.moderator.grant', $talent))->assertForbidden();
+        $this->withSession([\App\Services\ModeratorAssignmentService::SESSION_MODE_KEY => true])
+            ->actingAs($moderator)
+            ->post(route('admin.users.moderator.grant', $talent))
+            ->assertForbidden();
     }
 
     public function test_staff_can_view_pending_registration_details(): void
@@ -127,7 +125,7 @@ class UserManagementTest extends TestCase
         ]);
         $talent->profile()->create([
             'profession_sector_id' => $sector->id,
-            'registration_description' => 'Développeur full-stack avec cinq ans d\'expérience.',
+            'bio' => 'Développeur full-stack avec cinq ans d\'expérience.',
             'experience_years' => 0,
             'country' => 'Maroc',
         ]);
@@ -137,8 +135,8 @@ class UserManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('name', 'Talent En Attente')
             ->assertJsonPath('email', 'pending@example.com')
-            ->assertJsonPath('description', 'Développeur full-stack avec cinq ans d\'expérience.')
-            ->assertJsonPath('sector', $sector->localizedName());
+            ->assertJsonPath('current_profile.bio', 'Développeur full-stack avec cinq ans d\'expérience.')
+            ->assertJsonPath('current_profile.sector', $sector->localizedName());
     }
 
     public function test_staff_can_view_approved_talent_dossier(): void
@@ -158,7 +156,6 @@ class UserManagementTest extends TestCase
         $talent->profile()->create([
             'profession_sector_id' => $sector->id,
             'profession_id' => Profession::query()->where('profession_sector_id', $sector->id)->value('id'),
-            'registration_description' => 'Description à l\'inscription.',
             'specialization' => 'Laravel, API REST',
             'bio' => 'Bio actuelle du talent.',
             'experience_years' => 5,
@@ -170,7 +167,6 @@ class UserManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('first_name', 'Karim')
             ->assertJsonPath('last_name', 'Benali')
-            ->assertJsonPath('description', 'Description à l\'inscription.')
             ->assertJsonPath('is_pending', false)
             ->assertJsonPath('current_profile.specialization', 'Laravel, API REST')
             ->assertJsonPath('current_profile.bio', 'Bio actuelle du talent.');
@@ -188,7 +184,7 @@ class UserManagementTest extends TestCase
         ]);
         $profile = $talent->profile()->create([
             'profession_sector_id' => $sector->id,
-            'registration_description' => 'Profil test.',
+            'bio' => 'Profil test.',
             'experience_years' => 0,
             'country' => 'Maroc',
         ]);
@@ -223,7 +219,7 @@ class UserManagementTest extends TestCase
         ]);
         $profile = $talent->profile()->create([
             'profession_sector_id' => $sector->id,
-            'registration_description' => 'Profil à supprimer.',
+            'bio' => 'Profil à supprimer.',
             'experience_years' => 0,
             'country' => 'Maroc',
         ]);

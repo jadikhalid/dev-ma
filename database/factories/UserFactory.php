@@ -79,4 +79,29 @@ class UserFactory extends Factory
             'approved_at' => now(),
         ]);
     }
+
+    /**
+     * @param  list<string>  $permissions
+     */
+    public function moderator(array $permissions = []): static
+    {
+        return $this->talent()->afterCreating(function (User $user) use ($permissions) {
+            $assignment = \App\Models\ModeratorAssignment::query()->create([
+                'user_id' => $user->id,
+                'granted_by' => null,
+                'granted_at' => now(),
+            ]);
+
+            foreach ($permissions as $permission) {
+                if (! \App\Models\ModeratorPermissionCatalog::isValid($permission)) {
+                    continue;
+                }
+
+                \App\Models\ModeratorPermission::query()->create([
+                    'moderator_assignment_id' => $assignment->id,
+                    'permission' => $permission,
+                ]);
+            }
+        });
+    }
 }

@@ -175,7 +175,6 @@ class DevTalentSeeder extends Seeder
             'profession_sector_id' => $sector->id,
             'profession_id' => $profession->id,
             'specialization' => $specialization,
-            'registration_description' => 'Profil de démonstration pour tests — '.$sector->name_fr.' / '.$profession->name_fr.'.',
             'bio' => sprintf(
                 'Talent marocain spécialisé en %s (%s). Profil généré pour le développement et les tests de recherche sur Talents du Maroc. Compétences : %s.',
                 $profession->name_fr,

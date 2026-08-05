@@ -70,6 +70,7 @@
                 </section>
 
                 {{-- Sourcing — demandes ouvertes --}}
+                @if ($canViewSourcing ?? true)
                 <section class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2.5 min-w-0">
@@ -148,6 +149,109 @@
                         </ul>
                     @endif
                 </section>
+                @endif
+
+                {{-- Recrutement — dossiers pilotés par la plateforme --}}
+                @if ($canViewDirectHire ?? true)
+                <section class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                                </svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="inline-flex items-center gap-2 text-sm font-bold tracking-tight text-slate-900">
+                                    {{ __('talenma.dashboard.admin.direct_hire_title') }}
+                                    @if ($staffDirectHireUnseen ?? false)
+                                        @foreach (range(1, 3) as $dot)
+                                            <span class="relative flex h-2.5 w-2.5" @if ($loop->first) title="{{ __('talenma.direct_hire.nav_new') }}" @endif>
+                                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                                <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                            </span>
+                                        @endforeach
+                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
+                                    @endif
+                                </p>
+                                <p class="text-xs text-slate-500">{{ __('talenma.dashboard.admin.direct_hire_subtitle') }}</p>
+                            </div>
+                        </div>
+                        <a href="{{ route('admin.direct-hire.index') }}" class="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                            {{ __('talenma.dashboard.admin.direct_hire_all') }}
+                        </a>
+                    </div>
+
+                    @if (($staffDirectHires ?? collect())->isEmpty())
+                        <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center">
+                            <p class="text-sm text-slate-500">{{ __('talenma.dashboard.admin.direct_hire_empty') }}</p>
+                        </div>
+                    @else
+                        <ul class="mt-4 max-h-[22rem] space-y-2.5 overflow-y-auto overscroll-contain pr-1">
+                            @foreach ($staffDirectHires as $hire)
+                                @php
+                                    $tone = match ($hire->statusTone()) {
+                                        'amber' => 'bg-amber-50 text-amber-800 border-amber-200',
+                                        'violet' => 'bg-violet-50 text-violet-800 border-violet-200',
+                                        'sky' => 'bg-sky-50 text-sky-800 border-sky-200',
+                                        'emerald' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                        'rose' => 'bg-rose-50 text-rose-800 border-rose-200',
+                                        default => 'bg-slate-100 text-slate-700 border-slate-200',
+                                    };
+                                    $originTone = $hire->isStaffOnBehalf()
+                                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                        : 'bg-violet-50 text-violet-700 border-violet-200';
+                                    $latestRound = $hire->rounds->last();
+                                    $hireUnseen = $hire->hasUnseenChangesForStaff();
+                                @endphp
+                                <li>
+                                    <a
+                                        href="{{ route('admin.direct-hire.show', $hire) }}"
+                                        class="group flex items-start gap-3 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-50/80 hover:shadow-md hover:ring-indigo-200"
+                                    >
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                                                <div class="min-w-0">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <span class="text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $hire->shortSubject() }}</span>
+                                                        <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $tone }}">
+                                                            {{ $hire->statusLabel() }}
+                                                        </span>
+                                                        <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $originTone }}">
+                                                            {{ $hire->hireOriginLabel() }}
+                                                        </span>
+                                                    </div>
+                                                    <p class="mt-1.5 text-xs font-medium text-slate-400">
+                                                        {{ $hire->talentDisplayName() }}
+                                                        @if ($hire->isStaffOnBehalf())
+                                                            · {{ $hire->companyDisplayName() }}
+                                                        @endif
+                                                        · {{ $hire->created_at?->translatedFormat('d M Y') }}
+                                                    </p>
+                                                    @if ($latestRound)
+                                                        <p class="mt-1 text-xs text-slate-600">
+                                                            {{ __('talenma.direct_hire.round_n', ['n' => $latestRound->position]) }} — {{ $latestRound->title }}
+                                                            ({{ $latestRound->statusLabel() }})
+                                                        </p>
+                                                    @endif
+                                                </div>
+                                                <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $hire->created_at?->toIso8601String() }}">{{ $hire->created_at?->diffForHumans() }}</time>
+                                            </div>
+                                        </div>
+                                        @if ($hireUnseen)
+                                            <span class="relative flex h-2.5 w-2.5 shrink-0 self-center" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                                <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                            </span>
+                                            <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
+                                        @endif
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </section>
+                @endif
 
                 {{-- Activité récente --}}
                 <section class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">

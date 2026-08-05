@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'profession_sector_id',
     'profession_id',
     'specialization',
-    'registration_description',
     'bio',
     'experience_years',
     'education_level',

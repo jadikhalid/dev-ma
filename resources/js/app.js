@@ -1369,7 +1369,6 @@ Alpine.data('registerWizard', (config) => ({
     description: config.initialDescription ?? '',
     documentsCount: config.initialDocumentsCount ?? 0,
     documentFiles: [],
-    representativeName: config.initialRepresentativeName ?? '',
     companyDescription: config.initialCompanyDescription ?? '',
     companyWebsite: config.initialCompanyWebsite ?? '',
     companyCountry: config.initialCompanyCountry ?? config.defaultCompanyCountry ?? '',
@@ -1423,9 +1422,8 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get companyStep2Valid() {
-        const nameOk = this.representativeName.trim().length >= 2;
-
-        return nameOk
+        return this.firstName.trim().length >= 2
+            && this.lastName.trim().length >= 2
             && this.sector !== ''
             && this.companyDescription.trim().length >= 50;
     },
@@ -1565,8 +1563,6 @@ Alpine.data('registerWizard', (config) => ({
                 return this.description.trim() === '';
             case 'documents':
                 return this.documentsCount === 0;
-            case 'representative_name':
-                return this.representativeName.trim() === '';
             case 'company_description':
                 return this.companyDescription.trim() === '';
             case 'company_website':
@@ -1595,7 +1591,8 @@ Alpine.data('registerWizard', (config) => ({
 
         if (this.isCompany && this.step === 2) {
             return [
-                'representative_name',
+                'first_name',
+                'last_name',
                 'sector',
                 'company_description',
                 'company_website',
@@ -1641,7 +1638,9 @@ Alpine.data('registerWizard', (config) => ({
                 const value = this.firstName.trim();
 
                 if (! value) {
-                    return messages.first_name_required ?? null;
+                    return (this.isCompany
+                        ? messages.representative_first_name_required
+                        : messages.first_name_required) ?? null;
                 }
 
                 if (value.length < 2) {
@@ -1662,7 +1661,9 @@ Alpine.data('registerWizard', (config) => ({
                 const value = this.lastName.trim();
 
                 if (! value) {
-                    return messages.last_name_required ?? null;
+                    return (this.isCompany
+                        ? messages.representative_last_name_required
+                        : messages.last_name_required) ?? null;
                 }
 
                 if (value.length < 2) {
@@ -1784,27 +1785,6 @@ Alpine.data('registerWizard', (config) => ({
 
                 if (this.isCompany && this.documentsCount > 2) {
                     return messages.documents_max_company ?? null;
-                }
-
-                return null;
-            }
-            case 'representative_name': {
-                const value = this.representativeName.trim();
-
-                if (! value) {
-                    return messages.representative_name_required ?? null;
-                }
-
-                if (value.length < 2) {
-                    return messages.representative_name_min ?? null;
-                }
-
-                if (value.length > 255) {
-                    return messages.representative_name_max ?? null;
-                }
-
-                if (! this.namePattern.test(value)) {
-                    return messages.representative_name_format ?? null;
                 }
 
                 return null;
@@ -1975,7 +1955,6 @@ Alpine.data('registerWizard', (config) => ({
         this.description = '';
         this.documentsCount = 0;
         this.documentFiles = [];
-        this.representativeName = '';
         this.companyDescription = '';
         this.companyWebsite = '';
         this.companyCountry = this.defaultCompanyCountry;
@@ -2201,6 +2180,9 @@ Alpine.data('adminPendingDrawer', (config) => ({
     loading: false,
     error: null,
     user: null,
+    moderatorSaving: false,
+    confirmingModeratorRevoke: false,
+    selectedPermissions: [],
     labels: config.labels ?? {},
 
     async openFor(userId) {
@@ -2208,6 +2190,7 @@ Alpine.data('adminPendingDrawer', (config) => ({
         this.loading = true;
         this.error = null;
         this.user = null;
+        this.selectedPermissions = [];
         document.body.classList.add('overflow-hidden');
 
         try {
@@ -2223,6 +2206,7 @@ Alpine.data('adminPendingDrawer', (config) => ({
             }
 
             this.user = await response.json();
+            this.selectedPermissions = [...(this.user?.moderator?.permissions ?? [])];
         } catch {
             this.error = config.loadError ?? 'Error';
         } finally {
@@ -2235,7 +2219,294 @@ Alpine.data('adminPendingDrawer', (config) => ({
         this.loading = false;
         this.error = null;
         this.user = null;
+        this.moderatorSaving = false;
+        this.confirmingModeratorRevoke = false;
+        this.selectedPermissions = [];
         document.body.classList.remove('overflow-hidden');
+    },
+
+    togglePermission(key, checked) {
+        const set = new Set(this.selectedPermissions);
+        if (checked) {
+            set.add(key);
+        } else {
+            set.delete(key);
+        }
+        this.selectedPermissions = [...set];
+    },
+
+    csrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+    },
+
+    async grantModerator() {
+        if (! this.user?.moderator?.grant_url) {
+            return;
+        }
+
+        this.moderatorSaving = true;
+        try {
+            const response = await fetch(this.user.moderator.grant_url, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrfToken(),
+                },
+                body: JSON.stringify({ permissions: this.selectedPermissions }),
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (! response.ok) {
+                throw new Error(payload.message ?? 'error');
+            }
+            this.user.moderator = { ...this.user.moderator, ...payload.moderator };
+            this.selectedPermissions = [...(payload.moderator?.permissions ?? [])];
+            pushToast('success', payload.message);
+            await refreshAdminUsersDynamic();
+        } catch (error) {
+            pushToast('error', error.message || config.saveError || 'Error');
+        } finally {
+            this.moderatorSaving = false;
+        }
+    },
+
+    requestModeratorRevoke() {
+        if (this.user?.moderator?.is_moderator) {
+            this.confirmingModeratorRevoke = true;
+        }
+    },
+
+    cancelModeratorRevoke() {
+        this.confirmingModeratorRevoke = false;
+    },
+
+    async revokeModerator() {
+        if (! this.user?.moderator?.revoke_url) {
+            return;
+        }
+
+        this.confirmingModeratorRevoke = false;
+        this.moderatorSaving = true;
+        try {
+            const response = await fetch(this.user.moderator.revoke_url, {
+                method: 'DELETE',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrfToken(),
+                },
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (! response.ok) {
+                throw new Error(payload.message ?? 'error');
+            }
+            this.user.moderator = { ...this.user.moderator, ...payload.moderator };
+            this.selectedPermissions = [];
+            pushToast('success', payload.message);
+            await refreshAdminUsersDynamic();
+        } catch (error) {
+            pushToast('error', error.message || config.saveError || 'Error');
+        } finally {
+            this.moderatorSaving = false;
+        }
+    },
+
+    async saveModeratorPermissions() {
+        if (! this.user?.moderator?.permissions_url) {
+            return;
+        }
+
+        this.moderatorSaving = true;
+        try {
+            const response = await fetch(this.user.moderator.permissions_url, {
+                method: 'PUT',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrfToken(),
+                },
+                body: JSON.stringify({ permissions: this.selectedPermissions }),
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (! response.ok) {
+                throw new Error(payload.message ?? 'error');
+            }
+            this.user.moderator = { ...this.user.moderator, ...payload.moderator };
+            this.selectedPermissions = [...(payload.moderator?.permissions ?? [])];
+            pushToast('success', payload.message);
+            await refreshAdminUsersDynamic();
+        } catch (error) {
+            pushToast('error', error.message || config.saveError || 'Error');
+        } finally {
+            this.moderatorSaving = false;
+        }
+    },
+}));
+
+Alpine.data('adminUserDeletionModal', () => ({
+    open: false,
+    formId: null,
+    userName: '',
+    deletesMembers: false,
+    isModerator: false,
+
+    requestDeletion(detail = {}) {
+        if (! detail.formId) {
+            return;
+        }
+
+        this.formId = detail.formId;
+        this.userName = String(detail.userName ?? '');
+        this.deletesMembers = Boolean(detail.deletesMembers);
+        this.isModerator = Boolean(detail.isModerator);
+        this.open = true;
+        document.documentElement.classList.add('overflow-hidden');
+        this.$nextTick(() => this.$refs.cancelButton?.focus());
+    },
+
+    cancelDeletion() {
+        this.open = false;
+        this.formId = null;
+        this.userName = '';
+        this.deletesMembers = false;
+        this.isModerator = false;
+        document.documentElement.classList.remove('overflow-hidden');
+    },
+
+    confirmDeletion() {
+        // La liste est re-rendue en AJAX : on relit le formulaire au moment de valider.
+        const form = this.formId ? document.getElementById(this.formId) : null;
+
+        this.open = false;
+        this.formId = null;
+        this.userName = '';
+        this.deletesMembers = false;
+        this.isModerator = false;
+        document.documentElement.classList.remove('overflow-hidden');
+
+        if (form instanceof HTMLFormElement) {
+            form.requestSubmit();
+        }
+    },
+}));
+
+Alpine.data('adminCreateAccountDrawer', (config = {}) => ({
+    open: false,
+    role: 'dev',
+    emailStatus: null,
+    emailMessage: '',
+    emailCheckToken: 0,
+    checkEmailUrl: config.checkEmailUrl ?? '',
+    messages: config.messages ?? {},
+
+    get isCompany() {
+        return this.role === 'company';
+    },
+
+    openDrawer() {
+        this.open = true;
+        document.documentElement.classList.add('overflow-hidden');
+        this.$nextTick(() => this.$refs.createAccountFirstName?.focus());
+    },
+
+    closeDrawer() {
+        this.open = false;
+        document.documentElement.classList.remove('overflow-hidden');
+    },
+
+    clearEmailStatus() {
+        this.emailStatus = null;
+        this.emailMessage = '';
+    },
+
+    resetForm() {
+        const form = this.$refs.form;
+
+        if (form instanceof HTMLFormElement) {
+            form.reset();
+            commitFormDefaults(form);
+        }
+
+        this.role = 'dev';
+        this.clearEmailStatus();
+        this.$nextTick(() => this.$refs.createAccountFirstName?.focus());
+    },
+
+    onAjaxSuccess(event) {
+        const formId = event?.detail?.formId;
+
+        if (formId !== 'admin-create-account-form') {
+            return;
+        }
+
+        this.resetForm();
+        this.closeDrawer();
+    },
+
+    emailIsValid(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value ?? '').trim());
+    },
+
+    async checkEmail() {
+        const email = String(this.$refs.form?.querySelector('[name="email"]')?.value ?? '').trim().toLowerCase();
+
+        if (email === '') {
+            this.clearEmailStatus();
+
+            return;
+        }
+
+        if (! this.emailIsValid(email)) {
+            this.emailStatus = 'invalid';
+            this.emailMessage = this.messages.emailInvalid || '';
+
+            return;
+        }
+
+        if (! this.checkEmailUrl) {
+            return;
+        }
+
+        const token = ++this.emailCheckToken;
+        this.emailStatus = 'checking';
+        this.emailMessage = this.messages.emailChecking || '';
+
+        try {
+            const params = new URLSearchParams({ email });
+            const response = await fetch(`${this.checkEmailUrl}?${params.toString()}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (token !== this.emailCheckToken) {
+                return;
+            }
+
+            const payload = await response.json().catch(() => null);
+
+            if (response.ok && payload?.available) {
+                this.emailStatus = 'available';
+                this.emailMessage = payload.message || this.messages.emailAvailable || '';
+
+                return;
+            }
+
+            this.emailStatus = 'taken';
+            this.emailMessage = payload?.message || this.messages.emailTaken || '';
+            pushToast('error', this.emailMessage);
+        } catch {
+            if (token !== this.emailCheckToken) {
+                return;
+            }
+
+            this.emailStatus = 'error';
+            this.emailMessage = this.messages.networkError || '';
+        }
     },
 }));
 
@@ -6553,11 +6824,22 @@ function setPartialLoading(elementId, loading) {
     if (! loading) {
         element.removeAttribute('aria-busy');
 
+        if (element.dataset.partialLoadingPositioned === '1') {
+            element.classList.remove('relative');
+            delete element.dataset.partialLoadingPositioned;
+        }
+
         return;
     }
 
     element.setAttribute('aria-busy', 'true');
-    element.classList.add('relative');
+
+    // « relative » l'emporte sur « absolute »/« fixed » dans l'ordre Tailwind :
+    // ne l'ajouter que si l'élément n'est pas déjà positionné, sinon il saute.
+    if (window.getComputedStyle(element).position === 'static') {
+        element.classList.add('relative');
+        element.dataset.partialLoadingPositioned = '1';
+    }
 
     const overlay = document.createElement('div');
     overlay.dataset.partialLoading = '1';
@@ -6573,6 +6855,10 @@ function setPartialLoading(elementId, loading) {
     `;
 
     element.appendChild(overlay);
+}
+
+async function refreshAdminUsersDynamic() {
+    await refreshProfilePartial('admin-users-dynamic');
 }
 
 async function refreshDocumentsCard() {
@@ -6769,6 +7055,44 @@ document.addEventListener('submit', async (event) => {
         }
     });
 
+    form.querySelectorAll('[data-email]').forEach((field) => {
+        if (firstError) {
+            return;
+        }
+
+        const value = String(field.value ?? '').trim();
+
+        if (value === '') {
+            return;
+        }
+
+        if (! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            firstError = field.dataset.emailMessage || form.dataset.errorMessage || 'Error';
+        }
+    });
+
+    form.querySelectorAll('[data-match]').forEach((field) => {
+        if (firstError) {
+            return;
+        }
+
+        const selector = String(field.dataset.match || '').trim();
+
+        if (selector === '') {
+            return;
+        }
+
+        const other = form.querySelector(selector);
+
+        if (! other) {
+            return;
+        }
+
+        if (String(field.value ?? '') !== String(other.value ?? '')) {
+            firstError = field.dataset.matchMessage || form.dataset.errorMessage || 'Error';
+        }
+    });
+
     if (firstError !== null) {
         pushToast('error', firstError);
 
@@ -6844,6 +7168,10 @@ document.addEventListener('submit', async (event) => {
                         field.value = '';
                     }
                 });
+            }
+
+            if (form.hasAttribute('data-ajax-reset')) {
+                form.reset();
             }
 
             commitFormDefaults(form);
@@ -6935,7 +7263,13 @@ document.addEventListener('submit', async (event) => {
                 await refreshPresentationCard();
             } else if (form.dataset.refresh === 'company-users') {
                 await refreshCompanyUsersCard();
+            } else if (form.dataset.refresh === 'admin-users') {
+                await refreshAdminUsersDynamic();
             }
+
+            window.dispatchEvent(new CustomEvent('ajax-form-success', {
+                detail: { formId: form.id || null, form },
+            }));
         } else if (response.status === 422) {
             const messages = payload.errors
                 ? Object.values(payload.errors).flat()

@@ -1,26 +1,36 @@
 @php
+    use App\Models\ModeratorPermissionCatalog;
+
     $authUser = Auth::user();
     $pendingAccount = $authUser->isPendingApproval();
     $companyOrg = $authUser->isCompany() ? $authUser->companyOrganization() : null;
     $isCompanyOwner = $authUser->isCompanyOwner();
-    $inboxUnread = (! $pendingAccount && ($authUser->isCompany() || $authUser->isTalent() || $authUser->isStaff()))
+    $actingAsModerator = $authUser->isActingAsModerator();
+    $canSwitchModeratorMode = $authUser->canActAsModerator() && ! $authUser->isAdmin();
+    $inboxUnread = (! $pendingAccount && ($authUser->isCompany() || $authUser->isTalent() || $authUser->canAccessStaffMessaging()))
         ? app(\App\Services\MessagingService::class)->unreadCountFor($authUser)
         : 0;
     $directHirePending = false;
     $sourcingPending = false;
     $jobsPending = false;
     if (! $pendingAccount) {
-        if ($authUser->isTalent()) {
+        if ($actingAsModerator) {
+            if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE)) {
+                $sourcingPending = app(\App\Services\RecruitmentRequestService::class)->staffHasUnseenChanges($authUser);
+            }
+            if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::DIRECT_HIRE_MANAGE)) {
+                $directHirePending = app(\App\Services\DirectHireService::class)->staffHasUnseenChanges($authUser);
+            }
+            if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::JOBS_MANAGE)) {
+                $jobsPending = app(\App\Services\JobPostingService::class)->staffHasUnseenChanges($authUser);
+            }
+        } elseif ($authUser->isTalent()) {
             $directHirePending = app(\App\Services\DirectHireService::class)->talentHasUnseenChanges($authUser);
             $jobsPending = app(\App\Services\JobPostingService::class)->talentHasUnseenChanges($authUser);
         } elseif ($authUser->isCompany()) {
             $directHirePending = app(\App\Services\DirectHireService::class)->companyHasUnseenChanges($authUser);
             $sourcingPending = app(\App\Services\RecruitmentRequestService::class)->companyHasUnseenChanges($authUser);
             $jobsPending = app(\App\Services\JobPostingService::class)->companyHasUnseenChanges($authUser);
-        } elseif ($authUser->isStaff()) {
-            $sourcingPending = app(\App\Services\RecruitmentRequestService::class)->staffHasUnseenChanges($authUser);
-            $directHirePending = app(\App\Services\DirectHireService::class)->staffHasUnseenChanges($authUser);
-            $jobsPending = app(\App\Services\JobPostingService::class)->staffHasUnseenChanges($authUser);
         }
     }
 @endphp
@@ -32,7 +42,7 @@
                 <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" />
                 <div class="hidden lg:flex items-center gap-1 min-w-0">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingAccount">
-                        @if ($authUser->isStaff() || $authUser->isCompany())
+                        @if ($actingAsModerator || $authUser->isCompany())
                             {{ __('talenma.nav.dashboard') }}
                         @else
                             <span class="inline-flex items-center gap-1.5">
@@ -41,55 +51,65 @@
                             </span>
                         @endif
                     </x-nav-link>
-                    @if ($authUser->isStaff())
-                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
-                        <x-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">
-                            <span class="inline-flex items-center gap-1.5">
-                                {{ __('talenma.nav.admin_recruitment') }}
-                                @if ($sourcingPending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.recruitment.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                    </span>
-                                    <span class="sr-only">{{ __('talenma.recruitment.nav_new') }}</span>
-                                @endif
-                            </span>
-                        </x-nav-link>
-                        <x-nav-link :href="route('admin.direct-hire.index')" :active="request()->routeIs('admin.direct-hire.*')">
-                            <span class="inline-flex items-center gap-1.5">
-                                {{ __('talenma.nav.admin_direct_hire') }}
-                                @if ($directHirePending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                    </span>
-                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
-                                @endif
-                            </span>
-                        </x-nav-link>
-                        <x-nav-link :href="route('admin.jobs.index')" :active="request()->routeIs('admin.jobs.*')">
-                            <span class="inline-flex items-center gap-1.5">
-                                {{ __('talenma.nav.admin_jobs') }}
-                                @if ($jobsPending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                    </span>
-                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
-                                @endif
-                            </span>
-                        </x-nav-link>
-                        @if ($authUser->isAdmin())
+                    @if ($actingAsModerator)
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_VIEW))
+                            <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
+                        @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE))
+                            <x-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">
+                                <span class="inline-flex items-center gap-1.5">
+                                    {{ __('talenma.nav.admin_recruitment') }}
+                                    @if ($sourcingPending)
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.recruitment.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.recruitment.nav_new') }}</span>
+                                    @endif
+                                </span>
+                            </x-nav-link>
+                        @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::DIRECT_HIRE_MANAGE))
+                            <x-nav-link :href="route('admin.direct-hire.index')" :active="request()->routeIs('admin.direct-hire.*')">
+                                <span class="inline-flex items-center gap-1.5">
+                                    {{ __('talenma.nav.admin_direct_hire') }}
+                                    @if ($directHirePending)
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
+                                    @endif
+                                </span>
+                            </x-nav-link>
+                        @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::JOBS_MANAGE))
+                            <x-nav-link :href="route('admin.jobs.index')" :active="request()->routeIs('admin.jobs.*')">
+                                <span class="inline-flex items-center gap-1.5">
+                                    {{ __('talenma.nav.admin_jobs') }}
+                                    @if ($jobsPending)
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                    @endif
+                                </span>
+                            </x-nav-link>
+                        @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::PUBLICATIONS_MANAGE))
                             <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
                         @endif
-                        <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
-                            <span class="inline-flex items-center gap-1.5">
-                                {{ __('talenma.nav.messages') }}
-                                @if ($inboxUnread > 0)
-                                    <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
-                                @endif
-                            </span>
-                        </x-nav-link>
+                        @if ($authUser->canAccessStaffMessaging())
+                            <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
+                                <span class="inline-flex items-center gap-1.5">
+                                    {{ __('talenma.nav.messages') }}
+                                    @if ($inboxUnread > 0)
+                                        <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                                    @endif
+                                </span>
+                            </x-nav-link>
+                        @endif
                     @elseif ($authUser->isTalent())
                         <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-1.5">
@@ -181,20 +201,24 @@
             </div>
             <div class="hidden lg:flex items-center gap-3 shrink-0">
                 <x-locale-switcher />
-                <span class="text-xs px-2.5 py-1 rounded-full font-medium {{ $authUser->isAdmin() ? 'bg-violet-100 text-violet-700' : ($authUser->isModerator() ? 'bg-purple-100 text-purple-700' : ($authUser->isTalent() ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700')) }}">
-                    @if ($authUser->isAdmin())
-                        {{ __('talenma.roles.admin') }}
-                    @elseif ($authUser->isModerator())
-                        {{ __('talenma.roles.moderator') }}
-                    @elseif ($authUser->isTalent())
-                        {{ __('talenma.roles.talent') }}
-                    @elseif ($authUser->isCompanyOwner())
-                        {{ __('talenma.roles.company_owner') }}
-                    @elseif ($authUser->isCompanyMember())
-                        {{ __('talenma.roles.company_member') }}
-                    @else
-                        {{ __('talenma.roles.company') }}
-                    @endif
+                @if ($canSwitchModeratorMode)
+                    <form method="POST" action="{{ route('moderator-mode.update') }}" class="flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1">
+                        @csrf
+                        <input type="hidden" name="mode" value="{{ $actingAsModerator ? 'talent' : 'moderator' }}">
+                        <span class="text-[11px] font-semibold {{ $actingAsModerator ? 'text-gray-400' : 'text-indigo-700' }}">{{ __('talenma.roles.talent') }}</span>
+                        <button
+                            type="submit"
+                            class="relative inline-flex h-5 w-9 items-center rounded-full transition {{ $actingAsModerator ? 'bg-purple-600' : 'bg-gray-300' }}"
+                            title="{{ $actingAsModerator ? __('talenma.admin.users.switch_to_talent') : __('talenma.admin.users.switch_to_moderator') }}"
+                            aria-label="{{ $actingAsModerator ? __('talenma.admin.users.switch_to_talent') : __('talenma.admin.users.switch_to_moderator') }}"
+                        >
+                            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition {{ $actingAsModerator ? 'translate-x-4' : 'translate-x-0.5' }}"></span>
+                        </button>
+                        <span class="text-[11px] font-semibold {{ $actingAsModerator ? 'text-purple-700' : 'text-gray-400' }}">{{ __('talenma.roles.moderator') }}</span>
+                    </form>
+                @endif
+                <span class="text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap {{ $authUser->roleBadgeClasses() }}">
+                    {{ $authUser->roleLabel() }}
                 </span>
                 <x-dropdown align="right" width="48" :open-on-hover="true">
                     <x-slot name="trigger">
@@ -204,7 +228,7 @@
                             @else
                                 <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-gray-200" />
                             @endif
-                            <span class="hidden xl:inline">{{ $authUser->isCompany() ? $authUser->companyDisplayName() : $authUser->name }}</span>
+                            <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
                         </button>
                     </x-slot>
                     <x-slot name="content">
@@ -267,7 +291,7 @@
             @unless ($pendingAccount)
                 <div class="border-b border-gray-100 pb-2 mb-2">
                     <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        @if ($authUser->isStaff() || $authUser->isCompany())
+                        @if ($actingAsModerator || $authUser->isCompany())
                             {{ __('talenma.nav.dashboard') }}
                         @else
                             <span class="inline-flex items-center gap-2">
@@ -276,55 +300,74 @@
                             </span>
                         @endif
                     </x-responsive-nav-link>
-                    @if ($authUser->isStaff())
-                        <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">
-                            <span class="inline-flex items-center gap-2">
-                                {{ __('talenma.nav.admin_recruitment') }}
-                                @if ($sourcingPending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.recruitment.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                    </span>
-                                    <span class="sr-only">{{ __('talenma.recruitment.nav_new') }}</span>
-                                @endif
-                            </span>
-                        </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('admin.direct-hire.index')" :active="request()->routeIs('admin.direct-hire.*')">
-                            <span class="inline-flex items-center gap-2">
-                                {{ __('talenma.nav.admin_direct_hire') }}
-                                @if ($directHirePending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                    </span>
-                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
-                                @endif
-                            </span>
-                        </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('admin.jobs.index')" :active="request()->routeIs('admin.jobs.*')">
-                            <span class="inline-flex items-center gap-2">
-                                {{ __('talenma.nav.admin_jobs') }}
-                                @if ($jobsPending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                    </span>
-                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
-                                @endif
-                            </span>
-                        </x-responsive-nav-link>
-                        @if ($authUser->isAdmin())
+                    @if ($canSwitchModeratorMode)
+                        <form method="POST" action="{{ route('moderator-mode.update') }}" class="px-4 py-2">
+                            @csrf
+                            <input type="hidden" name="mode" value="{{ $actingAsModerator ? 'talent' : 'moderator' }}">
+                            <button type="submit" class="w-full rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-left text-sm font-semibold text-purple-700">
+                                {{ $actingAsModerator ? __('talenma.admin.users.switch_to_talent') : __('talenma.admin.users.switch_to_moderator') }}
+                            </button>
+                        </form>
+                    @endif
+                    @if ($actingAsModerator)
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_VIEW))
+                            <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-responsive-nav-link>
+                        @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE))
+                            <x-responsive-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">
+                                <span class="inline-flex items-center gap-2">
+                                    {{ __('talenma.nav.admin_recruitment') }}
+                                    @if ($sourcingPending)
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.recruitment.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.recruitment.nav_new') }}</span>
+                                    @endif
+                                </span>
+                            </x-responsive-nav-link>
+                        @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::DIRECT_HIRE_MANAGE))
+                            <x-responsive-nav-link :href="route('admin.direct-hire.index')" :active="request()->routeIs('admin.direct-hire.*')">
+                                <span class="inline-flex items-center gap-2">
+                                    {{ __('talenma.nav.admin_direct_hire') }}
+                                    @if ($directHirePending)
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
+                                    @endif
+                                </span>
+                            </x-responsive-nav-link>
+                        @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::JOBS_MANAGE))
+                            <x-responsive-nav-link :href="route('admin.jobs.index')" :active="request()->routeIs('admin.jobs.*')">
+                                <span class="inline-flex items-center gap-2">
+                                    {{ __('talenma.nav.admin_jobs') }}
+                                    @if ($jobsPending)
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                    @endif
+                                </span>
+                            </x-responsive-nav-link>
+                        @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::PUBLICATIONS_MANAGE))
                             <x-responsive-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
                         @endif
-                        <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
-                            <span class="inline-flex items-center gap-2">
-                                {{ __('talenma.nav.messages') }}
-                                @if ($inboxUnread > 0)
-                                    <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
-                                @endif
-                            </span>
-                        </x-responsive-nav-link>
+                        @if ($authUser->canAccessStaffMessaging())
+                            <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
+                                <span class="inline-flex items-center gap-2">
+                                    {{ __('talenma.nav.messages') }}
+                                    @if ($inboxUnread > 0)
+                                        <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                                    @endif
+                                </span>
+                            </x-responsive-nav-link>
+                        @endif
                     @elseif ($authUser->isTalent())
                         <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
                             <span class="inline-flex items-center gap-2">

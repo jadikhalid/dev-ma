@@ -124,7 +124,7 @@ class RegistrationTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertNotNull($user->email_verified_at);
         $this->assertNotNull($user->profile);
-        $this->assertSame('Développeur passionné avec plus de cinq ans d\'expérience en Laravel et React.', $user->profile->registration_description);
+        $this->assertSame('Développeur passionné avec plus de cinq ans d\'expérience en Laravel et React.', $user->profile->bio);
         $this->assertCount(1, $user->profile->documents);
         $this->assertSame(User::APPROVAL_PENDING, $user->approval_status);
         $this->assertDatabaseMissing('pending_registrations', ['email' => 'test@example.com']);
@@ -299,9 +299,8 @@ class RegistrationTest extends TestCase
         $profile = $user->companyProfile;
 
         $this->assertNotNull($profile);
-        $this->assertNotNull($profile->registration_sector);
-        $this->assertNotNull($profile->registration_description);
-        $this->assertSame($profile->description, $profile->registration_description);
+        $this->assertNotNull($profile->sector);
+        $this->assertNotNull($profile->description);
         $this->assertNull($profile->hiring_needs);
         $this->assertCount(1, $profile->documents);
     }

@@ -105,9 +105,12 @@
                         @if ($panel === 'talent' && isset($profile) && $showTalentPanel)
                             <div class="hidden lg:block mt-6 pt-6 border-t border-gray-100">
                                 <div class="flex items-center gap-3">
+                                    <span class="inline-flex shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium {{ $user->roleBadgeClasses() }}">
+                                        {{ $user->roleLabel() }}
+                                    </span>
                                     <x-user-avatar :user="$user" size="sm" />
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ trim($user->first_name.' '.$user->last_name) ?: $user->name }}</p>
+                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ $user->headerDisplayName() }}</p>
                                         <p id="profile-header-profession" class="text-xs text-gray-500 truncate">{{ $profile->professionLabel() ?? '—' }}</p>
                                         <p id="profile-header-sector" class="mt-0.5 text-[11px] font-medium text-indigo-600 truncate">{{ $profile->sectorLabel() ?? '—' }}</p>
                                     </div>

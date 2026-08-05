@@ -47,14 +47,14 @@ class MessagingService
 
             $query->where('company_user_id', $user->id)
                 ->when($excludedIds !== [], fn ($q) => $q->whereNotIn('id', $excludedIds));
+        } elseif ($user->canAccessStaffMessaging()) {
+            $query->where('channel', Conversation::CHANNEL_STAFF);
         } elseif ($user->isTalent()) {
             $excludedIds = $this->directHireConversationIdsFor($user);
 
             $query->where('channel', Conversation::CHANNEL_TALENT)
                 ->where('talent_user_id', $user->id)
                 ->when($excludedIds !== [], fn ($q) => $q->whereNotIn('id', $excludedIds));
-        } elseif ($user->isStaff()) {
-            $query->where('channel', Conversation::CHANNEL_STAFF);
         } else {
             return collect();
         }
@@ -76,11 +76,9 @@ class MessagingService
                 ->count();
         }
 
-        if ($user->isTalent()) {
+        if ($user->canAccessStaffMessaging()) {
             return Conversation::query()
-                ->where('channel', Conversation::CHANNEL_TALENT)
-                ->where('talent_user_id', $user->id)
-                ->whereNotIn('id', $this->directHireConversationIdsFor($user))
+                ->where('channel', Conversation::CHANNEL_STAFF)
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
                     $q->whereNull('talent_last_read_at')
@@ -89,9 +87,11 @@ class MessagingService
                 ->count();
         }
 
-        if ($user->isStaff()) {
+        if ($user->isTalent()) {
             return Conversation::query()
-                ->where('channel', Conversation::CHANNEL_STAFF)
+                ->where('channel', Conversation::CHANNEL_TALENT)
+                ->where('talent_user_id', $user->id)
+                ->whereNotIn('id', $this->directHireConversationIdsFor($user))
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
                     $q->whereNull('talent_last_read_at')
@@ -124,11 +124,9 @@ class MessagingService
             return;
         }
 
-        if ($user->isTalent()) {
+        if ($user->canAccessStaffMessaging()) {
             Conversation::query()
-                ->where('channel', Conversation::CHANNEL_TALENT)
-                ->where('talent_user_id', $user->id)
-                ->whereNotIn('id', $this->directHireConversationIdsFor($user))
+                ->where('channel', Conversation::CHANNEL_STAFF)
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
                     $q->whereNull('talent_last_read_at')
@@ -139,9 +137,11 @@ class MessagingService
             return;
         }
 
-        if ($user->isStaff()) {
+        if ($user->isTalent()) {
             Conversation::query()
-                ->where('channel', Conversation::CHANNEL_STAFF)
+                ->where('channel', Conversation::CHANNEL_TALENT)
+                ->where('talent_user_id', $user->id)
+                ->whereNotIn('id', $this->directHireConversationIdsFor($user))
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
                     $q->whereNull('talent_last_read_at')
@@ -320,7 +320,7 @@ class MessagingService
             } else {
                 $this->assertCompanyCanMessage($sender);
             }
-        } elseif ($sender->isStaff()) {
+        } elseif ($sender->canAccessStaffMessaging()) {
             abort_unless($conversation->isStaffChannel(), 403);
         }
 

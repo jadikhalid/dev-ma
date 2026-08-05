@@ -31,10 +31,26 @@
         @click.stop
     >
         <div class="shrink-0 flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-100">
-            <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-wide text-indigo-600">{{ __('talenma.admin.users.registration_drawer_title') }}</p>
-                <h3 class="mt-1 text-lg font-bold text-gray-900 truncate" x-text="user?.name ?? '…'"></h3>
-                <p class="text-sm text-gray-500 truncate" x-text="user?.email ?? ''"></p>
+            <div class="min-w-0 flex items-start gap-3">
+                <template x-if="user?.role === 'company' && user?.current_profile?.logo_url">
+                    <img
+                        :src="user.current_profile.logo_url"
+                        :alt="user.name"
+                        class="shrink-0 w-12 h-12 rounded-xl object-cover border border-gray-200 bg-white"
+                    >
+                </template>
+                <template x-if="user?.role !== 'company' && user?.current_profile?.photo_url">
+                    <img
+                        :src="user.current_profile.photo_url"
+                        :alt="user.name"
+                        class="shrink-0 w-12 h-12 rounded-full object-cover border border-gray-200 bg-white"
+                    >
+                </template>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-indigo-600">{{ __('talenma.admin.users.registration_drawer_title') }}</p>
+                    <h3 class="mt-1 text-lg font-bold text-gray-900 truncate" x-text="user?.name ?? '…'"></h3>
+                    <p class="text-sm text-gray-500 truncate" x-text="user?.email ?? ''"></p>
+                </div>
             </div>
             <button
                 type="button"
@@ -115,68 +131,6 @@
                         </dl>
                     </section>
 
-                    <section x-show="user.role === 'company'" x-cloak>
-                        <h4 class="text-sm font-semibold text-gray-900 mb-3">{{ __('talenma.admin.users.registration_section_company') }}</h4>
-                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.company?.company_name">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_name') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.company?.company_name"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.auth.sector') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.sector"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.company?.employee_count">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_employees') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.company?.employee_count"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.company?.representative_name">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_representative') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.company?.representative_name"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.company?.email">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_email') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900 break-all" x-text="user.company?.email"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.company?.city">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.city') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.company?.city"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.company?.country">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.talent.country') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.company?.country"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.company?.website">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_website') }}</dt>
-                                <dd class="mt-1">
-                                    <a :href="user.company?.website" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 font-medium break-all" x-text="user.company?.website"></a>
-                                </dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.description && user.description !== '—'">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.company.section_presentation') }}</dt>
-                                <dd class="mt-2 text-gray-700 whitespace-pre-line leading-relaxed" x-text="user.description"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.company?.hiring_needs">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_hiring_needs') }}</dt>
-                                <dd class="mt-2 text-gray-700 whitespace-pre-line leading-relaxed" x-text="user.company?.hiring_needs"></dd>
-                            </div>
-                        </dl>
-                    </section>
-
-                    <section x-show="user.role !== 'company'">
-                        <h4 class="text-sm font-semibold text-gray-900 mb-3">{{ __('talenma.admin.users.registration_section_registration') }}</h4>
-                        <dl class="space-y-4 text-sm">
-                            <div class="rounded-xl border border-gray-200 px-4 py-3">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.auth.sector') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.sector"></dd>
-                            </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3">
-                                <dt class="text-xs text-gray-500">{{ __('talenma.auth.registration_description') }}</dt>
-                                <dd class="mt-2 text-gray-700 whitespace-pre-line leading-relaxed" x-text="user.description"></dd>
-                            </div>
-                        </dl>
-                    </section>
-
                     <section>
                         <h4 class="text-sm font-semibold text-gray-900 mb-3">{{ __('talenma.admin.users.registration_section_documents') }}</h4>
                         <template x-if="user.documents.length === 0">
@@ -214,6 +168,20 @@
                             x-show="user.current_profile && Object.keys(user.current_profile).length > 0"
                             class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"
                         >
+                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.photo_url">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_photo') }}</dt>
+                                <dd class="mt-2">
+                                    <img
+                                        :src="user.current_profile.photo_url"
+                                        :alt="user.name"
+                                        class="w-20 h-20 rounded-full object-cover border border-gray-200 bg-white"
+                                    >
+                                </dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.sector">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.auth.sector') }}</dt>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.sector"></dd>
+                            </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.profession">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.dossier_field_profession') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.profession"></dd>
@@ -292,6 +260,33 @@
                             x-show="user.current_profile && Object.keys(user.current_profile).length > 0"
                             class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm"
                         >
+                            <div
+                                class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2"
+                                x-show="user.current_profile?.logo_url || user.current_profile?.representative_photo_url"
+                            >
+                                <div class="flex flex-wrap gap-6">
+                                    <div x-show="user.current_profile?.logo_url">
+                                        <dt class="text-xs text-gray-500">{{ __('talenma.company.logo') }}</dt>
+                                        <dd class="mt-2">
+                                            <img
+                                                :src="user.current_profile.logo_url"
+                                                :alt="user.current_profile.company_name || user.name"
+                                                class="w-20 h-20 rounded-xl object-cover border border-gray-200 bg-white"
+                                            >
+                                        </dd>
+                                    </div>
+                                    <div x-show="user.current_profile?.representative_photo_url">
+                                        <dt class="text-xs text-gray-500">{{ __('talenma.company.representative_photo') }}</dt>
+                                        <dd class="mt-2">
+                                            <img
+                                                :src="user.current_profile.representative_photo_url"
+                                                :alt="user.current_profile.representative_name || user.name"
+                                                class="w-20 h-20 rounded-full object-cover border border-gray-200 bg-white"
+                                            >
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.company_name">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_name') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.company_name"></dd>
@@ -311,6 +306,12 @@
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.country">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.country') }}</dt>
                                 <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.country"></dd>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.website">
+                                <dt class="text-xs text-gray-500">{{ __('talenma.admin.users.company_field_website') }}</dt>
+                                <dd class="mt-1">
+                                    <a :href="user.current_profile.website" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 font-medium break-all" x-text="user.current_profile.website"></a>
+                                </dd>
                             </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3 sm:col-span-2" x-show="user.current_profile?.description">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.company.description') }}</dt>
@@ -334,16 +335,78 @@
                             </div>
                         </dl>
                     </section>
+
+                    <section x-show="user.moderator" x-cloak class="rounded-2xl border border-purple-200 bg-purple-50/40 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h4 class="text-sm font-semibold text-purple-900">{{ __('talenma.admin.users.moderator_section_title') }}</h4>
+                                <p class="mt-1 text-xs text-purple-700" x-text="user.moderator?.is_moderator ? labels.moderatorActive : labels.moderatorInactive"></p>
+                                <p class="mt-1 text-xs text-purple-600" x-show="user.moderator?.granted_at" x-text="labels.moderatorGrantedAt + ' ' + (user.moderator?.granted_at ?? '')"></p>
+                            </div>
+                            <template x-if="user.moderator?.can_manage">
+                                <div class="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        x-show="!user.moderator.is_moderator"
+                                        @click="grantModerator()"
+                                        :disabled="moderatorSaving"
+                                        class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-violet-300 text-violet-700 bg-white hover:bg-violet-50 disabled:opacity-50"
+                                    >
+                                        {{ __('talenma.admin.users.grant_moderator') }}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        x-show="user.moderator.is_moderator"
+                                        @click="requestModeratorRevoke()"
+                                        :disabled="moderatorSaving"
+                                        class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                                    >
+                                        {{ __('talenma.admin.users.revoke_moderator') }}
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="mt-4 space-y-2" x-show="user.moderator?.is_moderator || user.moderator?.can_manage">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-purple-800">{{ __('talenma.admin.users.moderator_permissions_title') }}</p>
+                            <template x-for="option in (user.moderator?.permission_options ?? [])" :key="option.key">
+                                <label class="flex items-start gap-3 rounded-xl border border-purple-100 bg-white px-3 py-2.5">
+                                    <input
+                                        type="checkbox"
+                                        class="mt-0.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        :value="option.key"
+                                        :checked="selectedPermissions.includes(option.key)"
+                                        :disabled="!user.moderator?.can_manage || moderatorSaving || !user.moderator?.is_moderator"
+                                        @change="togglePermission(option.key, $event.target.checked)"
+                                    >
+                                    <span class="min-w-0">
+                                        <span class="block text-sm font-medium text-gray-900" x-text="option.label"></span>
+                                        <span class="block text-xs text-gray-500" x-text="option.description"></span>
+                                    </span>
+                                </label>
+                            </template>
+                            <button
+                                type="button"
+                                x-show="user.moderator?.can_manage && user.moderator?.is_moderator"
+                                @click="saveModeratorPermissions()"
+                                :disabled="moderatorSaving"
+                                class="mt-2 inline-flex items-center justify-center rounded-lg bg-purple-600 px-3 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
+                            >
+                                <span x-show="!moderatorSaving">{{ __('talenma.admin.users.moderator_permissions_save') }}</span>
+                                <span x-show="moderatorSaving">…</span>
+                            </button>
+                        </div>
+                    </section>
                 </div>
             </template>
         </div>
 
-        <div x-show="user?.is_pending && !loading" x-cloak class="shrink-0 border-t border-gray-100 px-6 py-4 bg-gray-50 space-y-3">
-            <form :action="user?.approve_url" method="POST">
+        <div x-show="user?.is_pending && !loading && (user?.can_approve || user?.can_reject)" x-cloak class="shrink-0 border-t border-gray-100 px-6 py-4 bg-gray-50 space-y-3">
+            <form x-show="user?.can_approve" :action="user?.approve_url" method="POST">
                 @csrf
                 <x-primary-button class="w-full justify-center">{{ __('talenma.admin.users.approve_btn') }}</x-primary-button>
             </form>
-            <form :action="user?.reject_url" method="POST" class="flex flex-col sm:flex-row gap-2">
+            <form x-show="user?.can_reject" :action="user?.reject_url" method="POST" class="flex flex-col sm:flex-row gap-2">
                 @csrf
                 <input
                     type="text"
@@ -355,6 +418,68 @@
                     {{ __('talenma.admin.users.reject_btn') }}
                 </button>
             </form>
+        </div>
+    </div>
+
+    <div
+        x-show="confirmingModeratorRevoke"
+        x-cloak
+        class="fixed inset-0 z-[80] flex items-center justify-center p-4"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="moderator-revoke-title"
+        @keydown.escape.window="if (confirmingModeratorRevoke) cancelModeratorRevoke()"
+    >
+        <div class="absolute inset-0 bg-slate-950/50 backdrop-blur-[2px]" @click="cancelModeratorRevoke()"></div>
+        <div
+            x-show="confirmingModeratorRevoke"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 translate-y-3 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+            x-transition:leave-end="opacity-0 translate-y-3 scale-95"
+            class="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
+            @click.stop
+        >
+            <div class="px-6 pt-6 pb-5">
+                <div class="flex items-start gap-4">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-700">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v4m0 4h.01M10.3 3.7 2.6 17a2 2 0 0 0 1.73 3h15.34a2 2 0 0 0 1.73-3L13.7 3.7a2 2 0 0 0-3.4 0Z"/>
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 id="moderator-revoke-title" class="text-lg font-bold text-gray-900">
+                            {{ __('talenma.admin.users.revoke_moderator_modal_title') }}
+                        </h3>
+                        <p class="mt-2 text-sm leading-6 text-gray-600">
+                            {{ __('talenma.admin.users.revoke_moderator_modal_text') }}
+                            <strong class="font-semibold text-gray-900" x-text="user?.name ?? ''"></strong>
+                        </p>
+                        <p class="mt-2 rounded-lg bg-purple-50 px-3 py-2 text-sm font-medium text-purple-900">
+                            {{ __('talenma.admin.users.revoke_moderator_modal_recovery') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col-reverse gap-2 bg-gray-50 px-6 py-4 sm:flex-row sm:justify-end">
+                <button
+                    type="button"
+                    @click="cancelModeratorRevoke()"
+                    class="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+                >
+                    {{ __('talenma.common.cancel') }}
+                </button>
+                <button
+                    type="button"
+                    @click="revokeModerator()"
+                    :disabled="moderatorSaving"
+                    class="inline-flex justify-center rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-800 disabled:opacity-50"
+                >
+                    {{ __('talenma.admin.users.revoke_moderator_confirm') }}
+                </button>
+            </div>
         </div>
     </div>
 </div>

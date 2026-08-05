@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\ModeratorPermissionCatalog;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class TalentDossierPresenter
@@ -18,6 +20,7 @@ class TalentDossierPresenter
             'profile.profession',
             'profile.documents',
             'approvedBy',
+            'moderatorAssignments.permissions',
         ]);
 
         $profile = $user->profile;
@@ -36,8 +39,7 @@ class TalentDossierPresenter
             'approved_at' => $user->approved_at?->translatedFormat('d M Y, H:i'),
             'approved_by' => $user->approvedBy?->name,
             'is_pending' => $user->isPendingApproval(),
-            'sector' => $profile?->sectorLabel() ?? '—',
-            'description' => $profile?->registration_description ?? '—',
+            'is_approved_talent' => $user->isTalent() && $user->isApproved(),
             'documents' => $profile?->documents
                 ->map(fn ($document) => [
                     'id' => $document->id,
@@ -49,9 +51,11 @@ class TalentDossierPresenter
                 ->values()
                 ->all(),
             'current_profile' => $this->currentProfile($profile),
-            'company' => null,
             'approve_url' => route('admin.users.approve', $user),
             'reject_url' => route('admin.users.reject', $user),
+            'can_approve' => Auth::user()?->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_APPROVE) ?? false,
+            'can_reject' => Auth::user()?->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_REJECT) ?? false,
+            'moderator' => $this->moderatorSection($user),
         ];
     }
 
@@ -78,12 +82,6 @@ class TalentDossierPresenter
             'approved_at' => $user->approved_at?->translatedFormat('d M Y, H:i'),
             'approved_by' => $user->approvedBy?->name,
             'is_pending' => $user->isPendingApproval(),
-            'sector' => filled($company?->registration_sector) ? $company->registration_sector : ($company?->sector ?? '—'),
-            'description' => filled($company?->registration_description)
-                ? $company->registration_description
-                : (filled($company?->description)
-                    ? $company->description
-                    : (filled($company?->registration_hiring_needs) ? $company->registration_hiring_needs : '—')),
             'documents' => $company?->documents
                 ->map(fn ($document) => [
                     'id' => $document->id,
@@ -95,19 +93,11 @@ class TalentDossierPresenter
                 ->values()
                 ->all() ?? [],
             'current_profile' => $this->currentCompanyProfile($company),
-            'company' => $company ? array_filter([
-                'company_name' => $this->text($user->name),
-                'representative_name' => $this->text($company->representative_name),
-                'representative_photo_url' => $company->representativePhotoUrl(),
-                'email' => $this->text($user->email),
-                'website' => $this->text($company->website),
-                'country' => $this->text($company->countryLabel()),
-                'city' => $this->text($company->city),
-                'employee_count' => $this->text($company->employee_count),
-                'hiring_needs' => $this->text($company->hiring_needs),
-            ], fn ($value) => filled($value)) : [],
             'approve_url' => route('admin.users.approve', $user),
             'reject_url' => route('admin.users.reject', $user),
+            'can_approve' => Auth::user()?->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_APPROVE) ?? false,
+            'can_reject' => Auth::user()?->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_REJECT) ?? false,
+            'moderator' => null,
         ];
     }
 
@@ -120,7 +110,11 @@ class TalentDossierPresenter
             return [];
         }
 
+        $profile->loadMissing('user');
+
         return array_filter([
+            'photo_url' => $profile->user?->avatarUrl(),
+            'sector' => $profile->sectorLabel(),
             'profession' => $profile->professionLabel(),
             'specialization' => $this->text($profile->specialization),
             'bio' => $this->text($profile->bio),
@@ -189,9 +183,33 @@ class TalentDossierPresenter
         return '—';
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function moderatorSection(User $user): ?array
+    {
+        if (! $user->isTalent() || ! $user->isApproved()) {
+            return null;
+        }
+
+        $viewer = Auth::user();
+        $assignment = $user->activeModeratorAssignment();
+        $canManage = $viewer?->isAdmin() ?? false;
+
+        return [
+            'is_moderator' => $assignment !== null,
+            'permissions' => $assignment?->permissionKeys() ?? [],
+            'permission_options' => ModeratorPermissionCatalog::options(),
+            'granted_at' => $assignment?->granted_at?->translatedFormat('d M Y, H:i'),
+            'can_manage' => $canManage,
+            'grant_url' => $canManage ? route('admin.users.moderator.grant', $user) : null,
+            'permissions_url' => $canManage ? route('admin.users.moderator.permissions', $user) : null,
+            'revoke_url' => $canManage ? route('admin.users.moderator.revoke', $user) : null,
+        ];
+    }
+
     private function text(?string $value): ?string
     {
         return filled($value) ? $value : null;
     }
-
 }

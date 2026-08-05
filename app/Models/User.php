@@ -117,6 +117,19 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ModerationRequest::class, 'requested_by');
     }
 
+    public function moderatorAssignments(): HasMany
+    {
+        return $this->hasMany(ModeratorAssignment::class);
+    }
+
+    public function activeModeratorAssignment(): ?ModeratorAssignment
+    {
+        $this->loadMissing('moderatorAssignments.permissions');
+
+        return $this->moderatorAssignments
+            ->first(fn (ModeratorAssignment $assignment) => $assignment->isActive());
+    }
+
     public function jobPostingsCreated(): HasMany
     {
         return $this->hasMany(JobPosting::class, 'created_by');
@@ -237,19 +250,73 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === 'admin';
     }
 
+    /**
+     * Talent with an active moderator assignment (regardless of UI mode).
+     */
     public function isModerator(): bool
     {
-        return $this->role === 'moderator';
+        return $this->isTalent() && $this->activeModeratorAssignment() !== null;
+    }
+
+    /**
+     * Can enter moderator mode (assignment + at least one permission).
+     */
+    public function canActAsModerator(): bool
+    {
+        if (! $this->isModerator()) {
+            return false;
+        }
+
+        return $this->moderatorPermissionKeys() !== [];
+    }
+
+    public function isActingAsModerator(): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if (! $this->canActAsModerator()) {
+            return false;
+        }
+
+        return (bool) session(\App\Services\ModeratorAssignmentService::SESSION_MODE_KEY, false);
     }
 
     public function isStaff(): bool
     {
-        return $this->isAdmin() || $this->isModerator();
+        return $this->isAdmin() || $this->isActingAsModerator();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function moderatorPermissionKeys(): array
+    {
+        return $this->activeModeratorAssignment()?->permissionKeys() ?? [];
+    }
+
+    public function hasModeratorPermission(string $permission): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if (! $this->isActingAsModerator()) {
+            return false;
+        }
+
+        return in_array($permission, $this->moderatorPermissionKeys(), true);
+    }
+
+    public function canAccessStaffMessaging(): bool
+    {
+        return $this->hasModeratorPermission(ModeratorPermissionCatalog::STAFF_MESSAGES_MANAGE);
     }
 
     public function isApproved(): bool
     {
-        if ($this->isStaff()) {
+        if ($this->isAdmin()) {
             return true;
         }
 
@@ -347,6 +414,51 @@ class User extends Authenticatable implements MustVerifyEmail
         $name = trim((string) $this->name);
 
         return $name !== '' ? $name : __('talenma.talent.anonymous');
+    }
+
+    /**
+     * Nom affiché dans le header (titre de chaque mot).
+     */
+    public function headerDisplayName(): string
+    {
+        if ($this->isCompany()) {
+            return $this->companyMailPersonName();
+        }
+
+        return $this->titleCasePersonName($this->formalDisplayName());
+    }
+
+    /**
+     * Étiquette de compte : « Raison sociale/Administrateur » côté entreprise.
+     */
+    public function roleLabel(): string
+    {
+        if ($this->isCompanyOwner() || $this->isCompanyMember()) {
+            $orgName = trim((string) ($this->companyOrganization()?->displayName() ?? ''));
+            $seat = $this->isCompanyOwner()
+                ? __('talenma.roles.company_seat_owner')
+                : __('talenma.roles.company_seat_member');
+
+            return $orgName !== '' ? $orgName.'/'.$seat : $seat;
+        }
+
+        return match (true) {
+            $this->isAdmin() => __('talenma.roles.admin'),
+            $this->isActingAsModerator() => __('talenma.roles.moderator'),
+            $this->isTalent() => __('talenma.roles.talent'),
+            $this->isCompany() => __('talenma.roles.company'),
+            default => '',
+        };
+    }
+
+    public function roleBadgeClasses(): string
+    {
+        return match (true) {
+            $this->isAdmin() => 'bg-violet-100 text-violet-700',
+            $this->isActingAsModerator() => 'bg-purple-100 text-purple-700',
+            $this->isTalent() => 'bg-indigo-100 text-indigo-700',
+            default => 'bg-emerald-100 text-emerald-700',
+        };
     }
 
     /**

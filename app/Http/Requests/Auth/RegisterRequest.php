@@ -23,18 +23,24 @@ class RegisterRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $firstName = is_string($this->first_name)
+            ? trim(preg_replace('/\s+/u', ' ', $this->first_name) ?? '')
+            : $this->first_name;
+        $lastName = is_string($this->last_name)
+            ? trim(preg_replace('/\s+/u', ' ', $this->last_name) ?? '')
+            : $this->last_name;
+
+        $representativeName = null;
+        if (is_string($firstName) && is_string($lastName) && $firstName !== '' && $lastName !== '') {
+            $representativeName = trim($firstName.' '.$lastName);
+        }
+
         $this->merge([
             'name' => is_string($this->name) ? trim(preg_replace('/\s+/u', ' ', $this->name) ?? '') : $this->name,
-            'first_name' => is_string($this->first_name)
-                ? trim(preg_replace('/\s+/u', ' ', $this->first_name) ?? '')
-                : $this->first_name,
-            'last_name' => is_string($this->last_name)
-                ? trim(preg_replace('/\s+/u', ' ', $this->last_name) ?? '')
-                : $this->last_name,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'representative_name' => $representativeName,
             'email' => is_string($this->email) ? Str::lower(trim($this->email)) : $this->email,
-            'representative_name' => is_string($this->representative_name)
-                ? trim(preg_replace('/\s+/u', ' ', $this->representative_name) ?? '')
-                : $this->representative_name,
             'company_description' => is_string($this->company_description) ? trim($this->company_description) : $this->company_description,
             'company_website' => is_string($this->company_website) ? trim($this->company_website) : $this->company_website,
             'company_country' => is_string($this->company_country)
@@ -58,7 +64,7 @@ class RegisterRequest extends FormRequest
                 'regex:/^[\p{L}\p{M}][\p{L}\p{M}\s\'\-\.]*$/u',
             ],
             'first_name' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'dev'),
+                Rule::requiredIf(fn () => in_array($this->input('role'), ['dev', 'company'], true)),
                 'nullable',
                 'string',
                 'min:2',
@@ -66,7 +72,7 @@ class RegisterRequest extends FormRequest
                 'regex:/^[\p{L}\p{M}][\p{L}\p{M}\s\'\-\.]*$/u',
             ],
             'last_name' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'dev'),
+                Rule::requiredIf(fn () => in_array($this->input('role'), ['dev', 'company'], true)),
                 'nullable',
                 'string',
                 'min:2',
@@ -113,7 +119,6 @@ class RegisterRequest extends FormRequest
                 'mimes:pdf,jpg,jpeg,png,webp',
             ],
             'representative_name' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'company'),
                 'nullable',
                 'string',
                 'min:2',
@@ -146,10 +151,16 @@ class RegisterRequest extends FormRequest
      */
     public function attributes(): array
     {
+        $isCompany = $this->input('role') === 'company';
+
         return [
             'name' => __('talenma.auth.company_name'),
-            'first_name' => __('talenma.auth.first_name'),
-            'last_name' => __('talenma.auth.last_name'),
+            'first_name' => $isCompany
+                ? __('talenma.auth.representative_first_name')
+                : __('talenma.auth.first_name'),
+            'last_name' => $isCompany
+                ? __('talenma.auth.representative_last_name')
+                : __('talenma.auth.last_name'),
             'email' => __('talenma.auth.email'),
             'password' => __('talenma.auth.password'),
             'password_confirmation' => __('talenma.auth.confirm_password'),
@@ -174,14 +185,18 @@ class RegisterRequest extends FormRequest
             'name.min' => __('talenma.auth.validation.name_min'),
             'name.max' => __('talenma.auth.validation.name_max'),
             'name.regex' => __('talenma.auth.validation.name_format'),
-            'first_name.required' => __('talenma.auth.validation.first_name_required'),
-            'first_name.min' => __('talenma.auth.validation.name_min'),
-            'first_name.max' => __('talenma.auth.validation.name_max'),
-            'first_name.regex' => __('talenma.auth.validation.name_format'),
-            'last_name.required' => __('talenma.auth.validation.last_name_required'),
-            'last_name.min' => __('talenma.auth.validation.name_min'),
-            'last_name.max' => __('talenma.auth.validation.name_max'),
-            'last_name.regex' => __('talenma.auth.validation.name_format'),
+            'first_name.required' => $this->input('role') === 'company'
+                ? __('talenma.auth.validation.representative_first_name_required')
+                : __('talenma.auth.validation.first_name_required'),
+            'first_name.min' => __('talenma.auth.validation.first_name_min'),
+            'first_name.max' => __('talenma.auth.validation.first_name_max'),
+            'first_name.regex' => __('talenma.auth.validation.first_name_format'),
+            'last_name.required' => $this->input('role') === 'company'
+                ? __('talenma.auth.validation.representative_last_name_required')
+                : __('talenma.auth.validation.last_name_required'),
+            'last_name.min' => __('talenma.auth.validation.last_name_min'),
+            'last_name.max' => __('talenma.auth.validation.last_name_max'),
+            'last_name.regex' => __('talenma.auth.validation.last_name_format'),
             'email.required' => __('talenma.auth.validation.email_required'),
             'email.email' => __('talenma.auth.validation.email_invalid'),
             'email.unique' => __('talenma.auth.validation.email_taken'),

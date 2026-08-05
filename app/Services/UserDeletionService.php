@@ -12,27 +12,58 @@ class UserDeletionService
         private AvatarService $avatars,
         private PendingRegistrationService $pendingRegistrations,
         private DirectHireService $directHires,
+        private ModeratorAssignmentService $moderatorAssignments,
     ) {}
 
-    public function delete(User $user): void
+    public function delete(User $user, ?User $actor = null): void
     {
-        DB::transaction(function () use ($user) {
-            // Detach (or purge orphan) direct-hire dossiers before FK/profile cleanup.
-            $this->directHires->releasePartyOnUserDeletion($user);
+        DB::transaction(function () use ($user, $actor) {
+            if ($user->isModerator()) {
+                if (! $actor?->isAdmin()) {
+                    abort(403);
+                }
 
-            $this->deleteProfileAssets($user);
-            $this->deleteCompanyAssets($user);
-            $this->deleteMessageAttachments($user);
-            $this->avatars->delete($user);
-            $this->pendingRegistrations->purgeForEmail($user->email);
+                $this->moderatorAssignments->revokeForDeletion($actor, $user);
+            }
 
-            DB::table('sessions')->where('user_id', $user->id)->delete();
-            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            if ($user->isCompanyOwner()) {
+                $company = $user->companyProfile()
+                    ->with('memberships.user')
+                    ->first();
 
-            $user->profile()?->delete();
-            $user->companyProfile()?->delete();
-            $user->delete();
+                // Delete seats first while their organization and owner still exist.
+                // This lets process history be reassigned/detached cleanly before
+                // the company profile and all organization data are removed.
+                foreach ($company?->memberships ?? [] as $membership) {
+                    $member = $membership->user;
+
+                    if ($member && (int) $member->id !== (int) $user->id) {
+                        $this->deleteSingleUser($member);
+                    }
+                }
+            }
+
+            $this->deleteSingleUser($user);
         });
+    }
+
+    private function deleteSingleUser(User $user): void
+    {
+        // Detach (or purge orphan) direct-hire dossiers before FK/profile cleanup.
+        $this->directHires->releasePartyOnUserDeletion($user);
+
+        $this->deleteProfileAssets($user);
+        $this->deleteCompanyAssets($user);
+        $this->deleteMessageAttachments($user);
+        $this->avatars->delete($user);
+        $this->pendingRegistrations->purgeForEmail($user->email);
+
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+        DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+
+        $user->profile()?->delete();
+        $user->companyProfile()?->delete();
+        $user->delete();
     }
 
     private function deleteProfileAssets(User $user): void

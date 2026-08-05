@@ -21,7 +21,7 @@ class InboxController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isCompany() && ! $user->isTalent() && ! $user->isStaff()) {
+        if (! $user->isCompany() && ! $user->isTalent() && ! $user->canAccessStaffMessaging()) {
             return redirect()->route('dashboard');
         }
 
@@ -41,7 +41,7 @@ class InboxController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isCompany() && ! $user->isTalent() && ! $user->isStaff()) {
+        if (! $user->isCompany() && ! $user->isTalent() && ! $user->canAccessStaffMessaging()) {
             return redirect()->route('dashboard');
         }
 
@@ -113,7 +113,7 @@ class InboxController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isCompany() && ! $user->isTalent() && ! $user->isStaff()) {
+        if (! $user->isCompany() && ! $user->isTalent() && ! $user->canAccessStaffMessaging()) {
             abort(403);
         }
 

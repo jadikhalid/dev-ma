@@ -16,7 +16,7 @@
     data-error-message="{{ __('talenma.company.save_error') }}"
     novalidate
     x-data="talentLocationSelect({
-        country: @js(old('country', $profile->country ?: \App\Models\CompanyProfile::DEFAULT_COUNTRY)),
+        country: @js(old('country', $profile->country)),
         city: @js(old('city', $profile->city)),
         citiesByCountry: @js($citiesByCountry),
     })"

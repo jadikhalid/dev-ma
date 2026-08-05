@@ -9,6 +9,7 @@ use App\Models\JobPosting;
 use App\Models\Profession;
 use App\Models\ProfessionSector;
 use App\Models\User;
+use App\Services\UserDeletionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -62,6 +63,33 @@ class CompanyMultiUserAndJobsTest extends TestCase
         ])->assertRedirect(route('profile.edit', ['panel' => 'account']));
 
         $this->assertDatabaseHas('users', ['email' => 'sara@example.com']);
+    }
+
+    public function test_deleting_company_owner_also_deletes_all_attached_members(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner();
+        $firstMember = $this->makeCompanyMember($owner, $profile);
+        $secondMember = $this->makeCompanyMember($owner, $profile);
+        $secondMember->update([
+            'email' => 'second.member@example.com',
+            'name' => 'JADI DIGITAL / Amine Alaoui',
+            'first_name' => 'Amine',
+            'last_name' => 'Alaoui',
+        ]);
+
+        $ownerId = $owner->id;
+        $profileId = $profile->id;
+        $memberIds = [$firstMember->id, $secondMember->id];
+
+        app(UserDeletionService::class)->delete($owner);
+
+        $this->assertDatabaseMissing('users', ['id' => $ownerId]);
+        $this->assertDatabaseMissing('company_profiles', ['id' => $profileId]);
+
+        foreach ($memberIds as $memberId) {
+            $this->assertDatabaseMissing('users', ['id' => $memberId]);
+            $this->assertDatabaseMissing('company_memberships', ['user_id' => $memberId]);
+        }
     }
 
     public function test_member_cannot_access_company_profile_or_user_management(): void

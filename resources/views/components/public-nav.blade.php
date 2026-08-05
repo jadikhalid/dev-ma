@@ -17,16 +17,19 @@
                 </div>
                 @auth
                     @php $authUser = Auth::user(); @endphp
+                    <span class="hidden sm:inline-flex text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap {{ $authUser->roleBadgeClasses() }}">
+                        {{ $authUser->roleLabel() }}
+                    </span>
                     @if ($authUser->isTalent())
                         <x-dropdown align="right" width="48" :open-on-hover="true">
                             <x-slot name="trigger">
                                 <button
                                     type="button"
                                     class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
-                                    aria-label="{{ $authUser->name }}"
+                                    aria-label="{{ $authUser->headerDisplayName() }}"
                                 >
                                     <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-gray-200" />
-                                    <span class="hidden xl:inline">{{ $authUser->name }}</span>
+                                    <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="content">
@@ -41,10 +44,11 @@
                             <x-slot name="trigger">
                                 <button
                                     type="button"
-                                    class="rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                    aria-label="{{ $authUser->name }}"
+                                    class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                                    aria-label="{{ $authUser->headerDisplayName() }}"
                                 >
-                                    <x-user-avatar :user="$authUser" size="sm" />
+                                    <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-gray-200" />
+                                    <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="content">
@@ -60,14 +64,14 @@
                                 <button
                                     type="button"
                                     class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
-                                    aria-label="{{ $authUser->companyDisplayName() }}"
+                                    aria-label="{{ $authUser->headerDisplayName() }}"
                                 >
                                     <x-company-logo
                                         :profile="$authUser->companyOrganization() ?? $authUser->companyProfile"
                                         size="xs"
                                         class="ring-1 ring-gray-200"
                                     />
-                                    <span class="hidden xl:inline">{{ $authUser->companyDisplayName() }}</span>
+                                    <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="content">

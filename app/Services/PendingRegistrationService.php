@@ -147,10 +147,8 @@ class PendingRegistrationService
                 $companyProfile = $user->companyProfile()->create([
                     'representative_name' => $payload['representative_name'] ?? null,
                     'sector' => $sectorLabel,
-                    'registration_sector' => $sectorLabel,
                     'profession_sector_id' => $sector->id,
                     'description' => $payload['company_description'],
-                    'registration_description' => $payload['company_description'],
                     'website' => $payload['company_website'] ?? null,
                     'country' => $payload['company_country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY,
                 ]);
@@ -166,7 +164,7 @@ class PendingRegistrationService
 
                 $profile = $user->profile()->create([
                     'profession_sector_id' => $sector->id,
-                    'registration_description' => $payload['description'],
+                    'bio' => $payload['description'],
                     'experience_years' => 0,
                 ]);
 
@@ -234,8 +232,14 @@ class PendingRegistrationService
         }
 
         if ($validated['role'] === 'company') {
+            $firstName = $validated['first_name'];
+            $lastName = $validated['last_name'];
+
             $payload['name'] = $validated['name'];
-            $payload['representative_name'] = $validated['representative_name'];
+            $payload['first_name'] = $firstName;
+            $payload['last_name'] = $lastName;
+            $payload['representative_name'] = $validated['representative_name']
+                ?? trim($firstName.' '.$lastName);
             $payload['sector'] = $validated['sector'];
             $payload['company_description'] = $validated['company_description'];
             $payload['company_website'] = $validated['company_website'] ?? null;

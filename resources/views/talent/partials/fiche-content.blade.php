@@ -109,7 +109,7 @@
                         data-min-length="30"
                         data-min-length-message="{{ __('talenma.talent.required_bio_min') }}"
                         placeholder="{{ __('talenma.talent.bio_placeholder') }}"
-                    >{{ old('bio', filled($profile->bio) ? $profile->bio : $profile->registration_description) }}</textarea>
+                    >{{ old('bio', $profile->bio) }}</textarea>
                     <x-input-error :messages="$errors->get('bio')" class="mt-2" />
                 </div>
 

@@ -37,22 +37,41 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if ($user->isStaff()) {
+        if ($user->isActingAsModerator() || $user->isAdmin()) {
             $recentActivity = $this->staffRecruitmentActivity->recentActivity($user);
             $this->activityToasts->flashUnseen($user, $recentActivity, 'staff');
 
-            $sourcingRequests = RecruitmentRequest::query()
-                ->with(['company', 'talent'])
-                ->whereIn('status', RecruitmentRequest::openStatuses())
-                ->latest()
-                ->take(20)
-                ->get();
+            $sourcingRequests = $user->hasModeratorPermission(\App\Models\ModeratorPermissionCatalog::SOURCING_MANAGE)
+                ? RecruitmentRequest::query()
+                    ->with(['company', 'talent'])
+                    ->whereIn('status', RecruitmentRequest::openStatuses())
+                    ->latest()
+                    ->take(20)
+                    ->get()
+                : collect();
+
+            $staffDirectHires = $user->hasModeratorPermission(\App\Models\ModeratorPermissionCatalog::DIRECT_HIRE_MANAGE)
+                ? $this->directHires->queryForStaff()
+                    ->with(['talent', 'companyProfile.user', 'company', 'rounds'])
+                    ->whereIn('status', DirectHireRequest::openStatuses())
+                    ->latest()
+                    ->take(20)
+                    ->get()
+                : collect();
 
             return view('dashboard.admin', [
                 'dashboard' => $this->adminDashboard->build($user),
                 'sourcingRequests' => $sourcingRequests,
                 'recentActivity' => $recentActivity,
-                'sourcingUnseen' => $this->recruitmentRequests->staffHasUnseenChanges($user),
+                'sourcingUnseen' => $user->hasModeratorPermission(\App\Models\ModeratorPermissionCatalog::SOURCING_MANAGE)
+                    ? $this->recruitmentRequests->staffHasUnseenChanges($user)
+                    : false,
+                'staffDirectHires' => $staffDirectHires,
+                'staffDirectHireUnseen' => $user->hasModeratorPermission(\App\Models\ModeratorPermissionCatalog::DIRECT_HIRE_MANAGE)
+                    ? $this->directHires->staffHasUnseenChanges($user)
+                    : false,
+                'canViewSourcing' => $user->hasModeratorPermission(\App\Models\ModeratorPermissionCatalog::SOURCING_MANAGE),
+                'canViewDirectHire' => $user->hasModeratorPermission(\App\Models\ModeratorPermissionCatalog::DIRECT_HIRE_MANAGE),
             ]);
         }
 

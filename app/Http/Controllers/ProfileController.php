@@ -62,9 +62,7 @@ class ProfileController extends Controller
         ];
 
         if ($showCompanyPanel) {
-            $profile = $user->companyProfile ?: $user->companyProfile()->create([
-                'country' => CompanyProfile::DEFAULT_COUNTRY,
-            ]);
+            $profile = $user->companyProfile ?: $user->companyProfile()->create();
 
             if ($user->company_seat !== User::SEAT_OWNER) {
                 $user->update(['company_seat' => User::SEAT_OWNER]);
@@ -250,8 +248,6 @@ class ProfileController extends Controller
 
         $profile = $user->companyProfile()->firstOrCreate([
             'user_id' => $user->id,
-        ], [
-            'country' => CompanyProfile::DEFAULT_COUNTRY,
         ]);
 
         if ($request->boolean('remove_representative_photo')) {

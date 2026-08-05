@@ -1,5 +1,7 @@
 @php
     $user = Auth::user();
+    $welcomeName = $user->headerDisplayName();
+    $welcomeRole = $user->roleLabel();
 @endphp
 
 <x-app-layout>
@@ -9,14 +11,10 @@
             <div class="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-10">
                 <x-user-avatar :user="$user" size="lg" class="mx-auto lg:mx-0" />
                 <div class="flex-1 min-w-0 text-center lg:text-left">
-                    @php
-                        $helloName = filled($user->first_name)
-                            ? $user->first_name
-                            : (preg_split('/\s+/u', trim((string) $user->name))[0] ?? $user->name);
-                    @endphp
                     <p class="text-lg font-semibold text-gray-900">
-                        {{ __('talenma.dashboard.talent.hello', ['name' => $helloName]) }}
+                        {{ __('talenma.dashboard.talent.hello', ['name' => $welcomeName]) }}
                     </p>
+                    <p class="mt-0.5 text-sm text-gray-500">{{ $welcomeRole }}</p>
                 </div>
 
                 <div class="flex items-center gap-5 shrink-0">

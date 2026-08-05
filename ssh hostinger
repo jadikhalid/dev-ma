@@ -10,6 +10,7 @@ Sur Hostinger (SSH) :
 ssh -p 65002 u282907555@46.202.182.44
 Mot de passe : Maroc-2025@2026!
 cd ~/domains/talentsdumaroc.com/laravel
+bash scripts/deploy.sh
 git pull
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force

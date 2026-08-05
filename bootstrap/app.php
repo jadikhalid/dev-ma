@@ -15,12 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\EnsureUserIsNotDisabled::class,
+            \App\Http\Middleware\EnsureValidModeratorMode::class,
             \App\Http\Middleware\PreventAuthPageCache::class,
         ]);
 
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'staff' => \App\Http\Middleware\EnsureUserIsStaff::class,
+            'moderator.permission' => \App\Http\Middleware\EnsureModeratorPermission::class,
             'talent.approved' => \App\Http\Middleware\EnsureTalentIsApproved::class,
             'talent.pending' => \App\Http\Middleware\EnsureTalentIsPending::class,
             'talent.rejected' => \App\Http\Middleware\EnsureTalentIsRejected::class,

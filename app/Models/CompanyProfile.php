@@ -15,16 +15,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'phone',
     'linkedin_url',
     'sector',
-    'registration_sector',
     'profession_sector_id',
     'country',
     'city',
     'description',
-    'registration_description',
     'website',
     'employee_count',
     'hiring_needs',
-    'registration_hiring_needs',
 ])]
 class CompanyProfile extends Model
 {

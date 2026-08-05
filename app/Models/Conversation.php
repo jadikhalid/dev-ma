@@ -69,7 +69,7 @@ class Conversation extends Model
             return true;
         }
 
-        if ($this->isStaffChannel() && $user->isStaff()) {
+        if ($this->isStaffChannel() && $user->canAccessStaffMessaging()) {
             return true;
         }
 

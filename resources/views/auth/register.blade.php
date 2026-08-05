@@ -12,7 +12,8 @@
 
     if (old('role') === 'company') {
         if (
-            $errors->has('representative_name')
+            $errors->has('first_name')
+            || $errors->has('last_name')
             || $errors->has('sector')
             || $errors->has('company_description')
             || $errors->has('company_website')
@@ -63,6 +64,8 @@
         'representative_name_min' => __('talenma.auth.validation.representative_name_min'),
         'representative_name_max' => __('talenma.auth.validation.representative_name_max'),
         'representative_name_format' => __('talenma.auth.validation.representative_name_format'),
+        'representative_first_name_required' => __('talenma.auth.validation.representative_first_name_required'),
+        'representative_last_name_required' => __('talenma.auth.validation.representative_last_name_required'),
         'company_description_required' => __('talenma.auth.validation.company_description_required'),
         'company_description_min' => __('talenma.auth.validation.company_description_min'),
         'company_description_max' => __('talenma.auth.validation.company_description_max'),
@@ -106,7 +109,6 @@
             initialSector: @js(old('sector', '')),
             initialDescription: @js(old('description', '')),
             initialDocumentsCount: @js(is_array(old('documents')) ? count(old('documents')) : 0),
-            initialRepresentativeName: @js(old('representative_name', '')),
             initialCompanyDescription: @js(old('company_description', '')),
             initialCompanyWebsite: @js(old('company_website', '')),
             initialCompanyCountry: @js(old('company_country', \App\Models\CompanyProfile::DEFAULT_COUNTRY)),
@@ -288,11 +290,16 @@
                 x-transition:enter-end="opacity-100 translate-x-0"
                 class="space-y-3"
             >
-                <div class="grid grid-cols-1 gap-3">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <x-input-label for="representative_name" :value="__('talenma.auth.representative_name')" class="text-xs sm:text-sm" />
-                        <x-text-input id="representative_name" name="representative_name" x-model="representativeName" @blur="onFieldBlur('representative_name')" @input="onFieldInput('representative_name')" x-bind:class="fieldInvalidClass('representative_name')" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="255" autocomplete="name" />
-                        <x-input-error :messages="$errors->get('representative_name')" class="mt-1" />
+                        <x-input-label for="representative_first_name" :value="__('talenma.auth.representative_first_name')" class="text-xs sm:text-sm" />
+                        <x-text-input id="representative_first_name" name="first_name" x-model="firstName" @blur="onFieldBlur('first_name')" @input="onFieldInput('first_name')" x-bind:class="fieldInvalidClass('first_name')" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="given-name" x-bind:required="isCompany" x-bind:disabled="!isCompany" />
+                        <x-input-error :messages="$errors->get('first_name')" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-input-label for="representative_last_name" :value="__('talenma.auth.representative_last_name')" class="text-xs sm:text-sm" />
+                        <x-text-input id="representative_last_name" name="last_name" x-model="lastName" @blur="onFieldBlur('last_name')" @input="onFieldInput('last_name')" x-bind:class="fieldInvalidClass('last_name')" class="mt-1 block w-full text-sm py-2" minlength="2" maxlength="127" autocomplete="family-name" x-bind:required="isCompany" x-bind:disabled="!isCompany" />
+                        <x-input-error :messages="$errors->get('last_name')" class="mt-1" />
                     </div>
                 </div>
                 <div>
