@@ -6,8 +6,10 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="sourcing" />
+
     <div
-        class="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+    class="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
         x-data="sourcingIndex()"
         @keydown.escape.window="closeCreate()"
         @sourcing-open-created.window="closeCreate()"

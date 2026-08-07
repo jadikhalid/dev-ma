@@ -22,8 +22,10 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="users" />
+
     <div class="py-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        @foreach (['request_submitted' => 'amber', 'user_created' => 'green', 'user_approved' => 'green', 'user_rejected' => 'amber', 'user_deleted' => 'amber', 'moderator_granted' => 'green', 'moderator_revoked' => 'amber', 'request_approved' => 'green', 'request_rejected' => 'amber'] as $flash => $color)
+        @foreach (['user_created' => 'green', 'user_approved' => 'green', 'user_rejected' => 'amber', 'user_deleted' => 'amber', 'moderator_granted' => 'green', 'moderator_revoked' => 'amber'] as $flash => $color)
             @if (session($flash))
                 <div class="p-4 rounded-xl border text-sm {{ $color === 'green' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-900' }}">
                     {{ __('talenma.admin.users.flash.'.$flash) }}
@@ -32,43 +34,10 @@
         @endforeach
 
         <div id="admin-users-dynamic" class="space-y-8">
-            @if (Auth::user()->isAdmin() && $pendingRequests->isNotEmpty())
-                <section class="bg-violet-50 border border-violet-200 rounded-2xl p-6 space-y-4">
-                    <h3 class="font-semibold text-violet-900">{{ __('talenma.admin.users.pending_requests_title') }}</h3>
-                    @foreach ($pendingRequests as $moderationRequest)
-                        <div class="bg-white rounded-xl border p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                            <div>
-                                <p class="font-medium text-gray-900">
-                                    {{ __('talenma.admin.users.action_labels.'.$moderationRequest->action_type) }}
-                                </p>
-                                <p class="text-sm text-gray-500 mt-1">
-                                    {{ __('talenma.admin.users.requested_by', ['name' => $moderationRequest->requester->name]) }}
-                                    @if ($moderationRequest->targetUser)
-                                        — {{ $moderationRequest->targetUser->name }} ({{ $moderationRequest->targetUser->email }})
-                                    @endif
-                                </p>
-                            </div>
-                            <div class="flex gap-2">
-                                <form method="POST" action="{{ route('admin.moderation.approve', $moderationRequest) }}">
-                                    @csrf
-                                    <x-primary-button>{{ __('talenma.admin.users.confirm_action') }}</x-primary-button>
-                                </form>
-                                <form method="POST" action="{{ route('admin.moderation.reject', $moderationRequest) }}">
-                                    @csrf
-                                    <button type="submit" class="px-4 py-2 text-sm border rounded-lg text-gray-700 hover:bg-gray-50">
-                                        {{ __('talenma.admin.users.refuse_action') }}
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @endforeach
-                </section>
-            @endif
-
             <section
                 id="admin-users-list"
                 class="relative bg-white rounded-2xl border overflow-hidden"
-                @if (in_array($filter, ['pending', 'talents', 'companies', 'all'], true))
+                @if (in_array($filter, ['pending', 'talents', 'companies', 'moderators', 'all'], true))
                     x-data="adminPendingDrawer({
                         loadError: @js(__('talenma.admin.users.registration_load_error')),
                         saveError: @js(__('talenma.common.save_error')),
@@ -153,7 +122,7 @@
                                     <p class="text-xs mt-1 text-gray-400">
                                         {{ __('talenma.admin.users.role_label') }} :
                                         @if ($user->isModerator())
-                                            {{ __('talenma.roles.moderator') }}
+                                            <span class="inline-flex items-center rounded-md bg-purple-50 px-1.5 py-0.5 text-[11px] font-semibold text-purple-800 ring-1 ring-purple-200">{{ __('talenma.roles.moderator') }}</span>
                                         @elseif ($user->isCompany())
                                             {{ __('talenma.roles.company') }}
                                         @else

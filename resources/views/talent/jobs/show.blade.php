@@ -30,6 +30,8 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="jobs" />
+
     <div class="py-5 sm:py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         @if ($job->isClosed())
             <div class="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">

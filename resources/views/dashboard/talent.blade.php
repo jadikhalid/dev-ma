@@ -5,6 +5,8 @@
 @endphp
 
 <x-app-layout>
+    <x-process-help topic="dashboard" />
+
     <div class="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {{-- Bandeau d'accueil + progression --}}
         <div class="bg-white rounded-2xl border p-6 sm:p-8">
@@ -272,14 +274,14 @@
 
             {{-- Colonne droite : vidéo → profil → coordonnées --}}
             <aside class="space-y-5 min-w-0">
-                @if ($profile?->profession_id)
-                    <x-talent-video-snapshot
-                        class="!h-auto"
-                        :editable="true"
-                        :video-url="$profile->presentation_video_url ?? null"
-                        :person-name="trim($user->first_name.' '.$user->last_name) ?: $user->name"
-                    />
+                <x-talent-video-snapshot
+                    class="!h-auto"
+                    :editable="true"
+                    :video-url="$profile->presentation_video_url ?? null"
+                    :person-name="trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: $user->name"
+                />
 
+                @if ($profile?->profession_id)
                     <div class="bg-white rounded-2xl border p-6 sm:p-8">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">

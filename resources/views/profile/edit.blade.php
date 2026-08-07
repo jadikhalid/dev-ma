@@ -32,6 +32,14 @@
         </div>
     </x-slot>
 
+    @if ($showTalentPanel && $panel === 'talent')
+        <x-process-help topic="profile_talent" />
+    @elseif ($showCompanyPanel && $panel === 'company')
+        <x-process-help topic="profile_company" />
+    @elseif ((! $showSettingsShell || $panel === 'account') && (Auth::user()?->isTalent() || Auth::user()?->isCompany()))
+        <x-process-help topic="profile_account" />
+    @endif
+
     <div
         class="py-10"
         data-ajax-network-error="{{ __('talenma.common.network_error') }}"

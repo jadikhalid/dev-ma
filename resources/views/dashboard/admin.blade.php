@@ -1,19 +1,11 @@
-@php
-    $kpiColsClass = match (count($dashboard['kpis'])) {
-        7 => 'xl:grid-cols-7',
-        6 => 'xl:grid-cols-6',
-        5 => 'xl:grid-cols-5',
-        4 => 'xl:grid-cols-4',
-        default => 'xl:grid-cols-3',
-    };
-@endphp
-
 <x-app-layout>
     <x-slot name="header">
         <div>
             <h2 class="text-xl font-bold text-gray-900">{{ __('talenma.dashboard.admin.title') }}</h2>
         </div>
     </x-slot>
+
+    <x-process-help topic="dashboard" />
 
     <div class="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {{-- En-tête admin --}}
@@ -32,43 +24,9 @@
             </div>
         </div>
 
-        <div @class([
-            'grid gap-6 items-start',
-            'lg:grid-cols-3' => Auth::user()->isAdmin(),
-        ])>
-            {{-- Colonne principale --}}
-            <div @class([
-                'space-y-6 min-w-0',
-                'lg:col-span-2' => Auth::user()->isAdmin(),
-            ])>
-                {{-- Statistiques --}}
-                <section class="bg-white rounded-xl border overflow-hidden">
-                    <div class="px-3 py-2 border-b bg-slate-50">
-                        <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-700">{{ __('talenma.dashboard.admin.section_stats') }}</h3>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-3 {{ $kpiColsClass }} divide-x divide-y divide-slate-100">
-                        @foreach ($dashboard['kpis'] as $kpi)
-                            @php
-                                $valueClass = match ($kpi['tone'] ?? 'slate') {
-                                    'amber' => 'text-amber-700',
-                                    'indigo' => 'text-indigo-700',
-                                    'emerald' => 'text-emerald-700',
-                                    'sky' => 'text-sky-700',
-                                    'violet' => 'text-violet-700',
-                                    default => 'text-slate-900',
-                                };
-                                $cellClass = ($kpi['tone'] ?? 'slate') === 'amber' && (int) $kpi['value'] > 0
-                                    ? 'bg-amber-50/60'
-                                    : (($kpi['tone'] ?? '') === 'violet' && (int) $kpi['value'] > 0 ? 'bg-violet-50/50' : 'bg-white');
-                            @endphp
-                            <div class="flex flex-col gap-1 px-3 py-3 {{ $cellClass }}">
-                                <span class="text-xs leading-snug text-slate-600">{{ $kpi['label'] }}</span>
-                                <span class="text-xl font-bold tabular-nums {{ $valueClass }}">{{ $kpi['value'] }}</span>
-                            </div>
-                        @endforeach
-                    </div>
-                </section>
-
+        <div class="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_17.5rem] xl:grid-cols-[minmax(0,1fr)_19rem]">
+            {{-- Colonne principale — flux opérationnel --}}
+            <div class="space-y-6 min-w-0">
                 {{-- Sourcing — demandes ouvertes --}}
                 @if ($canViewSourcing ?? true)
                 <section class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
@@ -410,33 +368,56 @@
                 </section>
             </div>
 
-            {{-- Colonne droite --}}
-            @if (Auth::user()->isAdmin())
-                <aside class="min-w-0 lg:sticky lg:top-24">
-                    <section class="bg-white rounded-2xl border overflow-hidden">
-                        <div class="px-6 py-4 border-b">
-                            <h3 class="text-sm font-semibold text-gray-900">{{ __('talenma.dashboard.admin.section_moderation') }}</h3>
+            {{-- Colonne droite — statistiques --}}
+            <aside class="min-w-0 lg:sticky lg:top-24">
+                <section class="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
+                        <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-700">{{ __('talenma.dashboard.admin.section_stats') }}</h3>
+                    </div>
+
+                    @if (empty($dashboard['stat_groups'] ?? []))
+                        <p class="px-4 py-6 text-sm text-slate-500">—</p>
+                    @else
+                        <div class="divide-y divide-slate-100">
+                            @foreach ($dashboard['stat_groups'] as $group)
+                                <div class="px-3 py-3">
+                                    <p class="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $group['label'] }}</p>
+                                    <ul class="space-y-0.5">
+                                        @foreach ($group['items'] as $item)
+                                            @php
+                                                $valueClass = match ($item['tone'] ?? 'slate') {
+                                                    'amber' => 'text-amber-700',
+                                                    'indigo' => 'text-indigo-700',
+                                                    'emerald' => 'text-emerald-700',
+                                                    'sky' => 'text-sky-700',
+                                                    'violet' => 'text-violet-700',
+                                                    default => 'text-slate-900',
+                                                };
+                                                $rowClass = ($item['tone'] ?? 'slate') === 'amber' && (int) $item['value'] > 0
+                                                    ? 'bg-amber-50/70'
+                                                    : 'hover:bg-slate-50';
+                                            @endphp
+                                            <li>
+                                                @if (! empty($item['href']))
+                                                    <a href="{{ $item['href'] }}" class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition {{ $rowClass }}">
+                                                        <span class="min-w-0 text-xs leading-snug text-slate-600">{{ $item['label'] }}</span>
+                                                        <span class="shrink-0 text-sm font-bold tabular-nums {{ $valueClass }}">{{ $item['value'] }}</span>
+                                                    </a>
+                                                @else
+                                                    <div class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 {{ $rowClass }}">
+                                                        <span class="min-w-0 text-xs leading-snug text-slate-600">{{ $item['label'] }}</span>
+                                                        <span class="shrink-0 text-sm font-bold tabular-nums {{ $valueClass }}">{{ $item['value'] }}</span>
+                                                    </div>
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endforeach
                         </div>
-                        @if ($dashboard['pending_moderation_requests']->isEmpty())
-                            <p class="px-6 py-6 text-sm text-gray-500">{{ __('talenma.dashboard.admin.moderation_empty') }}</p>
-                        @else
-                            <div class="divide-y max-h-[32rem] overflow-y-auto">
-                                @foreach ($dashboard['pending_moderation_requests'] as $request)
-                                    <div class="px-6 py-4">
-                                        <p class="text-sm font-medium text-gray-900">{{ $request['action'] }}</p>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            {{ $request['requester'] }}
-                                            @if ($request['target'])
-                                                — {{ $request['target'] }}
-                                            @endif
-                                        </p>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-                    </section>
-                </aside>
-            @endif
+                    @endif
+                </section>
+            </aside>
         </div>
     </div>
 </x-app-layout>

@@ -92,8 +92,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/users/{user}/moderator', [UserManagementController::class, 'grantModerator'])->name('users.moderator.grant');
             Route::put('/users/{user}/moderator/permissions', [UserManagementController::class, 'updateModeratorPermissions'])->name('users.moderator.permissions');
             Route::delete('/users/{user}/moderator', [UserManagementController::class, 'revokeModerator'])->name('users.moderator.revoke');
-            Route::post('/moderation-requests/{moderationRequest}/approve', [UserManagementController::class, 'approveRequest'])->name('moderation.approve');
-            Route::post('/moderation-requests/{moderationRequest}/reject', [UserManagementController::class, 'rejectRequest'])->name('moderation.reject');
         });
 
         Route::post('/users/{user}/approve', [UserManagementController::class, 'approve'])

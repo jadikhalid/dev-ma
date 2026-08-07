@@ -69,7 +69,6 @@ class ModeratorPermissionsTest extends TestCase
             ->assertRedirect();
 
         $this->assertTrue($talent->fresh()->isApproved());
-        $this->assertDatabaseCount('moderation_requests', 0);
     }
 
     public function test_moderator_cannot_create_accounts(): void

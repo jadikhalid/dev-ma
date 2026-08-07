@@ -13,6 +13,8 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="inbox" />
+
     <div
         class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4"
         x-data="inboxWorkspace({

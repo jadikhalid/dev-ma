@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SocialFeedItem;
 use App\Models\SocialPost;
 use App\Support\SocialFeedStorage;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -26,7 +27,7 @@ class PublicationsController extends Controller
         ]);
     }
 
-    public function storeNews(Request $request): RedirectResponse
+    public function storeNews(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -50,12 +51,18 @@ class PublicationsController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.admin.news.saved'),
+            ]);
+        }
+
         return redirect()
             ->to(route('admin.publications.index').'#actualites')
             ->with('news_saved', true);
     }
 
-    public function updateNews(Request $request, SocialFeedItem $newsItem): RedirectResponse
+    public function updateNews(Request $request, SocialFeedItem $newsItem): RedirectResponse|JsonResponse
     {
         abort_unless($newsItem->source === 'article', 404);
 
@@ -78,21 +85,33 @@ class PublicationsController extends Controller
             'source' => 'article',
         ])->save();
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.admin.news.updated'),
+            ]);
+        }
+
         return redirect()
             ->to(route('admin.publications.index').'#actualites')
             ->with('news_updated', true);
     }
 
-    public function destroyNews(SocialFeedItem $newsItem): RedirectResponse
+    public function destroyNews(Request $request, SocialFeedItem $newsItem): RedirectResponse|JsonResponse
     {
         $newsItem->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.admin.news.deleted'),
+            ]);
+        }
 
         return redirect()
             ->to(route('admin.publications.index').'#actualites')
             ->with('news_deleted', true);
     }
 
-    public function storeSocialPost(Request $request): RedirectResponse
+    public function storeSocialPost(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'post_title' => ['required', 'string', 'max:255'],
@@ -117,14 +136,26 @@ class PublicationsController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.admin.social_posts.saved'),
+            ]);
+        }
+
         return redirect()
             ->to(route('admin.publications.index').'#reseaux')
             ->with('post_saved', true);
     }
 
-    public function destroySocialPost(SocialPost $socialPost): RedirectResponse
+    public function destroySocialPost(Request $request, SocialPost $socialPost): RedirectResponse|JsonResponse
     {
         $socialPost->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.admin.social_posts.deleted'),
+            ]);
+        }
 
         return redirect()
             ->to(route('admin.publications.index').'#reseaux')

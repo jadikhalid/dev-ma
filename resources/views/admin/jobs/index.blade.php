@@ -16,6 +16,8 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="jobs" />
+
     <div class="py-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
         <form method="GET" action="{{ route('admin.jobs.index') }}" class="rounded-2xl border bg-white p-4 sm:p-5">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end">

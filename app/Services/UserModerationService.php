@@ -6,7 +6,7 @@ use App\Mail\CompanyApprovedMail;
 use App\Mail\CompanyRejectedMail;
 use App\Mail\TalentApprovedMail;
 use App\Mail\TalentRejectedMail;
-use App\Models\ModerationRequest;
+use App\Models\ModerationAction;
 use App\Models\ModeratorPermissionCatalog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -20,63 +20,10 @@ class UserModerationService
         private ModeratorAssignmentService $moderatorAssignments,
     ) {}
 
-    public function submit(User $actor, string $action, ?User $target = null, array $payload = []): string
+    public function submit(User $actor, string $action, ?User $target = null, array $payload = []): void
     {
         $this->guardAction($actor, $action, $target);
         $this->execute($action, $target, $payload, $actor);
-
-        return 'executed';
-    }
-
-    public function approveRequest(ModerationRequest $request, User $admin, ?string $note = null): void
-    {
-        if (! $admin->isAdmin()) {
-            abort(403);
-        }
-
-        if (! $request->isPending()) {
-            throw ValidationException::withMessages([
-                'request' => __('talenma.admin.users.request_already_processed'),
-            ]);
-        }
-
-        DB::transaction(function () use ($request, $admin, $note) {
-            $target = $request->targetUser;
-
-            $this->execute(
-                $request->action_type,
-                $target,
-                $request->payload ?? [],
-                $admin,
-            );
-
-            $request->update([
-                'status' => ModerationRequest::STATUS_APPROVED,
-                'reviewed_by' => $admin->id,
-                'reviewed_at' => now(),
-                'admin_note' => $note,
-            ]);
-        });
-    }
-
-    public function rejectRequest(ModerationRequest $request, User $admin, ?string $note = null): void
-    {
-        if (! $admin->isAdmin()) {
-            abort(403);
-        }
-
-        if (! $request->isPending()) {
-            throw ValidationException::withMessages([
-                'request' => __('talenma.admin.users.request_already_processed'),
-            ]);
-        }
-
-        $request->update([
-            'status' => ModerationRequest::STATUS_REJECTED,
-            'reviewed_by' => $admin->id,
-            'reviewed_at' => now(),
-            'admin_note' => $note,
-        ]);
     }
 
     private function guardAction(User $actor, string $action, ?User $target): void
@@ -86,21 +33,21 @@ class UserModerationService
         }
 
         $requiredPermission = match ($action) {
-            ModerationRequest::ACTION_CREATE_USER => null,
-            ModerationRequest::ACTION_APPROVE_TALENT,
-            ModerationRequest::ACTION_APPROVE_COMPANY => ModeratorPermissionCatalog::ACCOUNTS_APPROVE,
-            ModerationRequest::ACTION_REJECT_TALENT,
-            ModerationRequest::ACTION_REJECT_COMPANY => ModeratorPermissionCatalog::ACCOUNTS_REJECT,
-            ModerationRequest::ACTION_DELETE_USER => ModeratorPermissionCatalog::ACCOUNTS_DELETE,
-            ModerationRequest::ACTION_GRANT_MODERATOR,
-            ModerationRequest::ACTION_REVOKE_MODERATOR => null,
+            ModerationAction::CREATE_USER => null,
+            ModerationAction::APPROVE_TALENT,
+            ModerationAction::APPROVE_COMPANY => ModeratorPermissionCatalog::ACCOUNTS_APPROVE,
+            ModerationAction::REJECT_TALENT,
+            ModerationAction::REJECT_COMPANY => ModeratorPermissionCatalog::ACCOUNTS_REJECT,
+            ModerationAction::DELETE_USER => ModeratorPermissionCatalog::ACCOUNTS_DELETE,
+            ModerationAction::GRANT_MODERATOR,
+            ModerationAction::REVOKE_MODERATOR => null,
             default => null,
         };
 
         if (in_array($action, [
-            ModerationRequest::ACTION_CREATE_USER,
-            ModerationRequest::ACTION_GRANT_MODERATOR,
-            ModerationRequest::ACTION_REVOKE_MODERATOR,
+            ModerationAction::CREATE_USER,
+            ModerationAction::GRANT_MODERATOR,
+            ModerationAction::REVOKE_MODERATOR,
         ], true) && ! $actor->isAdmin()) {
             abort(403);
         }
@@ -110,7 +57,7 @@ class UserModerationService
         }
 
         if (
-            $action === ModerationRequest::ACTION_DELETE_USER
+            $action === ModerationAction::DELETE_USER
             && $target?->isModerator()
             && ! $actor->isAdmin()
         ) {
@@ -133,14 +80,14 @@ class UserModerationService
     private function execute(string $action, ?User $target, array $payload, User $actor): void
     {
         match ($action) {
-            ModerationRequest::ACTION_APPROVE_TALENT => $this->approveTalent($target, $actor),
-            ModerationRequest::ACTION_REJECT_TALENT => $this->rejectTalent($target, $payload['reason'] ?? null, $actor),
-            ModerationRequest::ACTION_APPROVE_COMPANY => $this->approveCompany($target, $actor),
-            ModerationRequest::ACTION_REJECT_COMPANY => $this->rejectCompany($target, $payload['reason'] ?? null, $actor),
-            ModerationRequest::ACTION_DELETE_USER => $this->deleteUser($target, $actor),
-            ModerationRequest::ACTION_CREATE_USER => $this->createUser($payload, $actor),
-            ModerationRequest::ACTION_GRANT_MODERATOR => $this->grantModerator($actor, $target, $payload['permissions'] ?? []),
-            ModerationRequest::ACTION_REVOKE_MODERATOR => $this->revokeModerator($actor, $target),
+            ModerationAction::APPROVE_TALENT => $this->approveTalent($target, $actor),
+            ModerationAction::REJECT_TALENT => $this->rejectTalent($target, $payload['reason'] ?? null, $actor),
+            ModerationAction::APPROVE_COMPANY => $this->approveCompany($target, $actor),
+            ModerationAction::REJECT_COMPANY => $this->rejectCompany($target, $payload['reason'] ?? null, $actor),
+            ModerationAction::DELETE_USER => $this->deleteUser($target, $actor),
+            ModerationAction::CREATE_USER => $this->createUser($payload, $actor),
+            ModerationAction::GRANT_MODERATOR => $this->grantModerator($actor, $target, $payload['permissions'] ?? []),
+            ModerationAction::REVOKE_MODERATOR => $this->revokeModerator($actor, $target),
             default => throw ValidationException::withMessages([
                 'action' => __('talenma.admin.users.unknown_action'),
             ]),

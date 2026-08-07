@@ -239,6 +239,13 @@
             @endforeach
         </div>
 
+        <x-talent-video-snapshot
+            class="!h-auto"
+            :editable="true"
+            :video-url="$profile->presentation_video_url ?? null"
+            :person-name="trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: $user->name"
+        />
+
         <div id="talent-documents-card" class="relative bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
             <div>
                 <h3 class="text-lg font-bold text-gray-900">{{ __('talenma.talent.section_documents') }}</h3>

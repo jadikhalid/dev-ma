@@ -2518,6 +2518,17 @@ Alpine.data('talentPresentationVideo', (config = {}) => ({
     pendingName: '',
     pendingSizeLabel: '',
     playing: false,
+    helpOpen: false,
+
+    openHelp() {
+        this.helpOpen = true;
+        document.body.classList.add('overflow-y-hidden');
+    },
+
+    closeHelp() {
+        this.helpOpen = false;
+        document.body.classList.remove('overflow-y-hidden');
+    },
 
     applyVideoUrl(url) {
         this.videoUrl = url || null;
@@ -4344,6 +4355,162 @@ Alpine.data('sourcingIndex', () => ({
     closeCreate() {
         this.createOpen = false;
         document.documentElement.classList.remove('overflow-hidden');
+    },
+}));
+
+Alpine.data('publicationsAdmin', () => ({
+    newsOpen: false,
+    newsEditOpen: false,
+    socialOpen: false,
+    deleteConfirmOpen: false,
+    editAction: '',
+    editTitle: '',
+    editSubtitle: '',
+    editUrl: '',
+    deleteFormId: '',
+    deleteModalTitle: '',
+    deleteModalBody: '',
+    deleteConfirmLabel: '',
+
+    openNews() {
+        this.closeDeleteConfirm(false);
+        this.closeNewsEdit(false);
+        this.socialOpen = false;
+        this.newsOpen = true;
+        document.documentElement.classList.add('overflow-hidden');
+    },
+
+    closeNews() {
+        this.newsOpen = false;
+        this.unlockBody();
+        document.getElementById('publications-news-create')?.reset();
+    },
+
+    openNewsEdit(detail = {}) {
+        this.closeDeleteConfirm(false);
+        this.newsOpen = false;
+        this.socialOpen = false;
+        this.editAction = detail.action || '';
+        this.editTitle = detail.title || '';
+        this.editSubtitle = detail.subtitle || '';
+        this.editUrl = detail.url || '';
+
+        const thumbnail = document.getElementById('news_edit_thumbnail');
+
+        if (thumbnail) {
+            thumbnail.value = '';
+        }
+
+        this.newsEditOpen = true;
+        document.documentElement.classList.add('overflow-hidden');
+    },
+
+    closeNewsEdit(resetBody = true) {
+        this.newsEditOpen = false;
+        this.editAction = '';
+        this.editTitle = '';
+        this.editSubtitle = '';
+        this.editUrl = '';
+
+        const thumbnail = document.getElementById('news_edit_thumbnail');
+
+        if (thumbnail) {
+            thumbnail.value = '';
+        }
+
+        if (resetBody) {
+            this.unlockBody();
+        }
+    },
+
+    openSocial() {
+        this.closeDeleteConfirm(false);
+        this.newsOpen = false;
+        this.closeNewsEdit(false);
+        this.socialOpen = true;
+        document.documentElement.classList.add('overflow-hidden');
+    },
+
+    closeSocial() {
+        this.socialOpen = false;
+        this.unlockBody();
+        document.getElementById('publications-social-create')?.reset();
+    },
+
+    openDeleteConfirm(detail = {}) {
+        this.newsOpen = false;
+        this.closeNewsEdit(false);
+        this.socialOpen = false;
+        this.deleteFormId = detail.formId || '';
+        this.deleteModalTitle = detail.modalTitle || '';
+        this.deleteConfirmLabel = detail.confirmLabel || '';
+        this.deleteModalBody = String(detail.modalBody || '').replaceAll(':title', detail.title || '');
+        this.deleteConfirmOpen = true;
+        document.documentElement.classList.add('overflow-hidden');
+    },
+
+    closeDeleteConfirm(resetBody = true) {
+        this.deleteConfirmOpen = false;
+        this.deleteFormId = '';
+        this.deleteModalTitle = '';
+        this.deleteModalBody = '';
+        this.deleteConfirmLabel = '';
+
+        if (resetBody) {
+            this.unlockBody();
+        }
+    },
+
+    confirmDelete() {
+        const form = this.deleteFormId
+            ? document.getElementById(this.deleteFormId)
+            : null;
+
+        this.closeDeleteConfirm();
+
+        if (form instanceof HTMLFormElement) {
+            form.requestSubmit();
+        }
+    },
+
+    closeAll() {
+        if (this.newsOpen) {
+            this.closeNews();
+        }
+
+        if (this.newsEditOpen) {
+            this.closeNewsEdit();
+        }
+
+        if (this.socialOpen) {
+            this.closeSocial();
+        }
+
+        if (this.deleteConfirmOpen) {
+            this.closeDeleteConfirm();
+        }
+    },
+
+    unlockBody() {
+        if (! this.newsOpen && ! this.newsEditOpen && ! this.socialOpen && ! this.deleteConfirmOpen) {
+            document.documentElement.classList.remove('overflow-hidden');
+        }
+    },
+
+    onAjaxSuccess(event) {
+        const formId = event?.detail?.formId;
+
+        if (formId === 'publications-news-create') {
+            this.closeNews();
+        }
+
+        if (formId === 'publications-news-edit') {
+            this.closeNewsEdit();
+        }
+
+        if (formId === 'publications-social-create') {
+            this.closeSocial();
+        }
     },
 }));
 
@@ -6877,6 +7044,14 @@ async function refreshCompanyUsersCard() {
     await refreshProfilePartial('account-users-card');
 }
 
+async function refreshPublicationsNewsList() {
+    await refreshProfilePartial('publications-news-list');
+}
+
+async function refreshPublicationsSocialList() {
+    await refreshProfilePartial('publications-social-list');
+}
+
 function insertSourcingOpenCard(cardHtml) {
     const list = document.getElementById('sourcing-open-list');
     const empty = document.getElementById('sourcing-open-empty');
@@ -7265,6 +7440,10 @@ document.addEventListener('submit', async (event) => {
                 await refreshCompanyUsersCard();
             } else if (form.dataset.refresh === 'admin-users') {
                 await refreshAdminUsersDynamic();
+            } else if (form.dataset.refresh === 'publications-news') {
+                await refreshPublicationsNewsList();
+            } else if (form.dataset.refresh === 'publications-social') {
+                await refreshPublicationsSocialList();
             }
 
             window.dispatchEvent(new CustomEvent('ajax-form-success', {

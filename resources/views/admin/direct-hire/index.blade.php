@@ -41,6 +41,8 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="direct_hire" />
+
     <div class="py-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div class="rounded-2xl border border-indigo-100 bg-white p-4 sm:p-5">
             <div class="flex flex-wrap items-end gap-3">

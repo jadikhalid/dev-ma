@@ -112,11 +112,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Conversation::class, 'talent_user_id');
     }
 
-    public function moderationRequests(): HasMany
-    {
-        return $this->hasMany(ModerationRequest::class, 'requested_by');
-    }
-
     public function moderatorAssignments(): HasMany
     {
         return $this->hasMany(ModeratorAssignment::class);

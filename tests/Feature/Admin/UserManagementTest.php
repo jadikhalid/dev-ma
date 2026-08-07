@@ -4,7 +4,6 @@ namespace Tests\Feature\Admin;
 
 use App\Mail\TalentApprovedMail;
 use App\Mail\TalentRejectedMail;
-use App\Models\ModerationRequest;
 use App\Models\PendingRegistration;
 use App\Models\Profession;
 use App\Models\ProfessionSector;
@@ -35,7 +34,6 @@ class UserManagementTest extends TestCase
             ->actingAs($moderator)
             ->post(route('admin.users.approve', $talent));
 
-        $this->assertDatabaseCount('moderation_requests', 0);
         $this->assertTrue($talent->fresh()->isApproved());
         $this->assertNotNull($talent->fresh()->profile);
     }

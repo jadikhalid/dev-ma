@@ -6,6 +6,8 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="talents" />
+
     @php
         $selectClass = 'mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500';
         $canProposeDirectHire = $canProposeDirectHire ?? true;

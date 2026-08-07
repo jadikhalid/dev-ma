@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\ModerationRequest;
+use App\Models\DirectHireRequest;
+use App\Models\JobPosting;
+use App\Models\ModeratorAssignment;
+use App\Models\ModeratorPermissionCatalog;
 use App\Models\RecruitmentRequest;
 use App\Models\User;
 
@@ -10,43 +13,6 @@ class AdminDashboardService
 {
     public function build(User $actor): array
     {
-        $isAdmin = $actor->isAdmin();
-
-        $talentsPending = User::query()
-            ->where('role', 'dev')
-            ->where('approval_status', User::APPROVAL_PENDING)
-            ->whereNotNull('email_verified_at')
-            ->count();
-
-        $companiesPending = User::query()
-            ->where('role', 'company')
-            ->where('approval_status', User::APPROVAL_PENDING)
-            ->whereNotNull('email_verified_at')
-            ->count();
-
-        $sourcingOpen = RecruitmentRequest::query()
-            ->whereIn('status', RecruitmentRequest::openStatuses())
-            ->count();
-
-        $moderationPending = $isAdmin
-            ? ModerationRequest::query()->where('status', ModerationRequest::STATUS_PENDING)->count()
-            : 0;
-
-        $pendingModerationRequests = $isAdmin
-            ? ModerationRequest::query()
-                ->with(['requester', 'targetUser'])
-                ->where('status', ModerationRequest::STATUS_PENDING)
-                ->latest()
-                ->take(5)
-                ->get()
-                ->map(fn (ModerationRequest $request) => [
-                    'id' => $request->id,
-                    'action' => __('talenma.admin.users.action_labels.'.$request->action_type),
-                    'requester' => $request->requester?->name ?? '—',
-                    'target' => $request->targetUser?->name,
-                ])
-            : collect();
-
         return [
             'actor' => [
                 'name' => $actor->name,
@@ -58,61 +24,190 @@ class AdminDashboardService
                 'member_since' => $actor->created_at?->translatedFormat('d M Y'),
                 'email_verified' => $actor->hasVerifiedEmail(),
             ],
-            'kpis' => $this->kpis(
-                $talentsPending,
-                $companiesPending,
-                $sourcingOpen,
-                $moderationPending,
-                $isAdmin,
-            ),
-            'pending_moderation_requests' => $pendingModerationRequests,
+            'stat_groups' => $this->statGroups($actor),
         ];
     }
 
     /**
-     * @return list<array{key: string, label: string, value: int|string, href: string|null, tone: string}>
+     * @return list<array{key: string, label: string, items: list<array{key: string, label: string, value: int, href: string|null, tone: string}>}>
      */
-    private function kpis(
-        int $talentsPending,
-        int $companiesPending,
-        int $sourcingOpen,
-        int $moderationPending,
-        bool $isAdmin,
-    ): array {
-        $kpis = [
-            [
-                'key' => 'pending_talents',
-                'label' => __('talenma.dashboard.admin.kpi_pending_talents'),
-                'value' => $talentsPending,
-                'href' => route('admin.users.index', ['filter' => 'pending']),
-                'tone' => $talentsPending > 0 ? 'amber' : 'slate',
-            ],
-            [
-                'key' => 'pending_companies',
-                'label' => __('talenma.dashboard.admin.kpi_pending_companies'),
-                'value' => $companiesPending,
-                'href' => route('admin.users.index', ['filter' => 'pending']),
-                'tone' => $companiesPending > 0 ? 'amber' : 'slate',
-            ],
-            [
-                'key' => 'sourcing_open',
-                'label' => __('talenma.dashboard.admin.kpi_sourcing_open'),
-                'value' => $sourcingOpen,
-                'href' => route('admin.recruitment.index'),
-                'tone' => $sourcingOpen > 0 ? 'sky' : 'slate',
-            ],
-        ];
+    private function statGroups(User $actor): array
+    {
+        $groups = [];
 
-        if ($isAdmin) {
-            $kpis[] = [
-                'key' => 'moderation_pending',
-                'label' => __('talenma.dashboard.admin.kpi_moderation_pending'),
-                'value' => $moderationPending,
-                'href' => route('admin.users.index', ['filter' => 'pending']),
-                'tone' => $moderationPending > 0 ? 'violet' : 'slate',
-            ];
+        if ($actor->isAdmin() || $actor->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_VIEW)) {
+            $groups[] = $this->accountsGroup();
         }
 
-        return $kpis;
+        if ($actor->isAdmin() || $actor->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE)) {
+            $groups[] = $this->sourcingGroup();
+        }
+
+        if ($actor->isAdmin() || $actor->hasModeratorPermission(ModeratorPermissionCatalog::DIRECT_HIRE_MANAGE)) {
+            $groups[] = $this->directHireGroup();
+        }
+
+        if ($actor->isAdmin() || $actor->hasModeratorPermission(ModeratorPermissionCatalog::JOBS_MANAGE)) {
+            $groups[] = $this->jobsGroup();
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @return array{key: string, label: string, items: list<array{key: string, label: string, value: int, href: string|null, tone: string}>}
+     */
+    private function accountsGroup(): array
+    {
+        $talentsApproved = User::query()
+            ->where('role', 'dev')
+            ->where('approval_status', User::APPROVAL_APPROVED)
+            ->count();
+
+        $talentsPending = User::query()
+            ->where('role', 'dev')
+            ->where('approval_status', User::APPROVAL_PENDING)
+            ->whereNotNull('email_verified_at')
+            ->count();
+
+        $companiesApproved = User::query()
+            ->where('role', 'company')
+            ->where('company_seat', User::SEAT_OWNER)
+            ->where('approval_status', User::APPROVAL_APPROVED)
+            ->count();
+
+        $companiesPending = User::query()
+            ->where('role', 'company')
+            ->where('company_seat', User::SEAT_OWNER)
+            ->where('approval_status', User::APPROVAL_PENDING)
+            ->whereNotNull('email_verified_at')
+            ->count();
+
+        $moderators = ModeratorAssignment::query()
+            ->whereNull('revoked_at')
+            ->count();
+
+        return [
+            'key' => 'accounts',
+            'label' => __('talenma.dashboard.admin.stats_group_accounts'),
+            'items' => [
+                $this->item('talents_approved', __('talenma.dashboard.admin.kpi_approved_talents'), $talentsApproved, route('admin.users.index', ['filter' => 'talents']), 'emerald'),
+                $this->item('talents_pending', __('talenma.dashboard.admin.kpi_pending_talents'), $talentsPending, route('admin.users.index', ['filter' => 'pending']), $talentsPending > 0 ? 'amber' : 'slate'),
+                $this->item('companies_approved', __('talenma.dashboard.admin.kpi_companies'), $companiesApproved, route('admin.users.index', ['filter' => 'companies']), 'indigo'),
+                $this->item('companies_pending', __('talenma.dashboard.admin.kpi_pending_companies'), $companiesPending, route('admin.users.index', ['filter' => 'pending']), $companiesPending > 0 ? 'amber' : 'slate'),
+                $this->item('moderators', __('talenma.dashboard.admin.kpi_moderators'), $moderators, route('admin.users.index', ['filter' => 'moderators']), 'violet'),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{key: string, label: string, items: list<array{key: string, label: string, value: int, href: string|null, tone: string}>}
+     */
+    private function sourcingGroup(): array
+    {
+        $pending = RecruitmentRequest::query()
+            ->where('status', RecruitmentRequest::STATUS_PENDING)
+            ->count();
+
+        $inProgress = RecruitmentRequest::query()
+            ->where('status', RecruitmentRequest::STATUS_IN_PROGRESS)
+            ->count();
+
+        $open = $pending + $inProgress;
+
+        $closed = RecruitmentRequest::query()
+            ->whereIn('status', RecruitmentRequest::closedStatuses())
+            ->count();
+
+        return [
+            'key' => 'sourcing',
+            'label' => __('talenma.dashboard.admin.stats_group_sourcing'),
+            'items' => [
+                $this->item('sourcing_open', __('talenma.dashboard.admin.kpi_sourcing_open'), $open, route('admin.recruitment.index', ['filter' => 'pending']), $open > 0 ? 'sky' : 'slate'),
+                $this->item('sourcing_pending', __('talenma.dashboard.admin.kpi_sourcing_pending'), $pending, route('admin.recruitment.index', ['filter' => 'pending']), $pending > 0 ? 'amber' : 'slate'),
+                $this->item('sourcing_in_progress', __('talenma.dashboard.admin.kpi_sourcing_in_progress'), $inProgress, route('admin.recruitment.index', ['filter' => 'in_progress']), $inProgress > 0 ? 'sky' : 'slate'),
+                $this->item('sourcing_closed', __('talenma.dashboard.admin.kpi_sourcing_closed'), $closed, route('admin.recruitment.index', ['filter' => 'completed_successful']), 'slate'),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{key: string, label: string, items: list<array{key: string, label: string, value: int, href: string|null, tone: string}>}
+     */
+    private function directHireGroup(): array
+    {
+        $open = DirectHireRequest::query()
+            ->whereIn('status', DirectHireRequest::openStatuses())
+            ->count();
+
+        $pendingResponse = DirectHireRequest::query()
+            ->where('status', DirectHireRequest::STATUS_PENDING_RESPONSE)
+            ->count();
+
+        $inProcess = DirectHireRequest::query()
+            ->where('status', DirectHireRequest::STATUS_IN_PROCESS)
+            ->count();
+
+        $hired = DirectHireRequest::query()
+            ->where('status', DirectHireRequest::STATUS_HIRED)
+            ->count();
+
+        return [
+            'key' => 'direct_hire',
+            'label' => __('talenma.dashboard.admin.stats_group_direct_hire'),
+            'items' => [
+                $this->item('direct_hire_open', __('talenma.dashboard.admin.kpi_direct_hire_open'), $open, route('admin.direct-hire.index'), $open > 0 ? 'sky' : 'slate'),
+                $this->item('direct_hire_pending', __('talenma.dashboard.admin.kpi_direct_hire_pending'), $pendingResponse, route('admin.direct-hire.index'), $pendingResponse > 0 ? 'amber' : 'slate'),
+                $this->item('direct_hire_in_process', __('talenma.dashboard.admin.kpi_direct_hire_in_process'), $inProcess, route('admin.direct-hire.index'), $inProcess > 0 ? 'indigo' : 'slate'),
+                $this->item('direct_hire_hired', __('talenma.dashboard.admin.kpi_direct_hire_hired'), $hired, route('admin.direct-hire.index'), 'emerald'),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{key: string, label: string, items: list<array{key: string, label: string, value: int, href: string|null, tone: string}>}
+     */
+    private function jobsGroup(): array
+    {
+        $published = JobPosting::query()
+            ->where('status', JobPosting::STATUS_PUBLISHED)
+            ->count();
+
+        $draft = JobPosting::query()
+            ->where('status', JobPosting::STATUS_DRAFT)
+            ->count();
+
+        $closed = JobPosting::query()
+            ->where('status', JobPosting::STATUS_CLOSED)
+            ->count();
+
+        $hidden = JobPosting::query()
+            ->whereIn('status', [JobPosting::STATUS_HIDDEN, JobPosting::STATUS_POSTPONED])
+            ->count();
+
+        return [
+            'key' => 'jobs',
+            'label' => __('talenma.dashboard.admin.stats_group_jobs'),
+            'items' => [
+                $this->item('jobs_published', __('talenma.dashboard.admin.kpi_jobs_published'), $published, route('admin.jobs.index'), $published > 0 ? 'emerald' : 'slate'),
+                $this->item('jobs_draft', __('talenma.dashboard.admin.kpi_jobs_draft'), $draft, route('admin.jobs.index'), $draft > 0 ? 'amber' : 'slate'),
+                $this->item('jobs_closed', __('talenma.dashboard.admin.kpi_jobs_closed'), $closed, route('admin.jobs.index'), 'slate'),
+                $this->item('jobs_other', __('talenma.dashboard.admin.kpi_jobs_other'), $hidden, route('admin.jobs.index'), 'slate'),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{key: string, label: string, value: int, href: string|null, tone: string}
+     */
+    private function item(string $key, string $label, int $value, ?string $href, string $tone): array
+    {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'value' => $value,
+            'href' => $href,
+            'tone' => $tone,
+        ];
     }
 }

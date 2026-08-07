@@ -16,6 +16,8 @@
 @endphp
 
 <x-app-layout>
+    <x-process-help topic="dashboard" />
+
     <div class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-5">
         @if (session('recruitment_sent'))
             <div class="p-3 sm:p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm">{{ __('talenma.dashboard.company.request_sent') }}</div>

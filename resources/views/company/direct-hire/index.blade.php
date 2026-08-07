@@ -41,6 +41,8 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="direct_hire" />
+
     <div class="py-5 sm:py-6 max-w-6xl mx-auto px-4 sm:px-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5 lg:items-start">
             {{-- Colonne : en cours --}}

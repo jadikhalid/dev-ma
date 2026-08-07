@@ -21,6 +21,8 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="recruitment" />
+
     <div class="py-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div class="flex flex-wrap gap-2">
             @foreach ([

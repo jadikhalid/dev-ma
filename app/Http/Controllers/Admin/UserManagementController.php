@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreManagedUserRequest;
-use App\Models\ModerationRequest;
+use App\Models\ModerationAction;
 use App\Models\ModeratorPermissionCatalog;
 use App\Models\PendingRegistration;
 use App\Models\User;
@@ -75,19 +75,10 @@ class UserManagementController extends Controller
             });
         }
 
-        $pendingRequests = $request->user()->isAdmin()
-            ? ModerationRequest::query()
-                ->with(['requester', 'targetUser'])
-                ->where('status', ModerationRequest::STATUS_PENDING)
-                ->latest()
-                ->get()
-            : collect();
-
         return view('admin.users.index', [
             'users' => $usersQuery->paginate(20)->withQueryString(),
             'filter' => $filter,
             'search' => $search,
-            'pendingRequests' => $pendingRequests,
             'pendingCount' => User::query()
                 ->whereIn('role', ['dev', 'company'])
                 ->where('approval_status', User::APPROVAL_PENDING)
@@ -147,17 +138,14 @@ class UserManagementController extends Controller
     {
         $payload = $request->validatedPayload();
 
-        $result = $this->moderation->submit(
+        $this->moderation->submit(
             $request->user(),
-            ModerationRequest::ACTION_CREATE_USER,
+            ModerationAction::CREATE_USER,
             null,
             $payload,
         );
 
-        $messageKey = $result === 'executed'
-            ? 'user_created'
-            : 'request_submitted';
-        $message = __('talenma.admin.users.flash.'.$messageKey);
+        $message = __('talenma.admin.users.flash.user_created');
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -165,22 +153,22 @@ class UserManagementController extends Controller
             ]);
         }
 
-        return back()->with($messageKey, true);
+        return back()->with('user_created', true);
     }
 
     public function approve(Request $request, User $user): RedirectResponse
     {
         $action = $user->isCompany()
-            ? ModerationRequest::ACTION_APPROVE_COMPANY
-            : ModerationRequest::ACTION_APPROVE_TALENT;
+            ? ModerationAction::APPROVE_COMPANY
+            : ModerationAction::APPROVE_TALENT;
 
-        $result = $this->moderation->submit(
+        $this->moderation->submit(
             $request->user(),
             $action,
             $user,
         );
 
-        return back()->with($result === 'executed' ? 'user_approved' : 'request_submitted', true);
+        return back()->with('user_approved', true);
     }
 
     public function reject(Request $request, User $user): RedirectResponse
@@ -190,36 +178,34 @@ class UserManagementController extends Controller
         ]);
 
         $action = $user->isCompany()
-            ? ModerationRequest::ACTION_REJECT_COMPANY
-            : ModerationRequest::ACTION_REJECT_TALENT;
+            ? ModerationAction::REJECT_COMPANY
+            : ModerationAction::REJECT_TALENT;
 
-        $result = $this->moderation->submit(
+        $this->moderation->submit(
             $request->user(),
             $action,
             $user,
             ['reason' => $request->string('reason')->toString() ?: null],
         );
 
-        return back()->with($result === 'executed' ? 'user_rejected' : 'request_submitted', true);
+        return back()->with('user_rejected', true);
     }
 
     public function destroy(Request $request, User $user): RedirectResponse|JsonResponse
     {
-        $result = $this->moderation->submit(
+        $this->moderation->submit(
             $request->user(),
-            ModerationRequest::ACTION_DELETE_USER,
+            ModerationAction::DELETE_USER,
             $user,
         );
 
-        $messageKey = $result === 'executed' ? 'user_deleted' : 'request_submitted';
-
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => __('talenma.admin.users.flash.'.$messageKey),
+                'message' => __('talenma.admin.users.flash.user_deleted'),
             ]);
         }
 
-        return back()->with($messageKey, true);
+        return back()->with('user_deleted', true);
     }
 
     public function grantModerator(Request $request, User $user): RedirectResponse|JsonResponse
@@ -308,25 +294,4 @@ class UserManagementController extends Controller
         ];
     }
 
-    public function approveRequest(Request $request, ModerationRequest $moderationRequest): RedirectResponse
-    {
-        $this->moderation->approveRequest(
-            $moderationRequest,
-            $request->user(),
-            $request->string('admin_note')->toString() ?: null,
-        );
-
-        return back()->with('request_approved', true);
-    }
-
-    public function rejectRequest(Request $request, ModerationRequest $moderationRequest): RedirectResponse
-    {
-        $this->moderation->rejectRequest(
-            $moderationRequest,
-            $request->user(),
-            $request->string('admin_note')->toString() ?: null,
-        );
-
-        return back()->with('request_rejected', true);
-    }
 }

@@ -56,6 +56,8 @@
         </div>
     </x-slot>
 
+    <x-process-help topic="direct_hire" />
+
     <div class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-5 lg:gap-6 items-start">
             <div id="direct-hire-main-column" class="space-y-5 min-w-0">
