@@ -25,7 +25,20 @@
                         <p class="mt-0.5 text-sm font-semibold text-gray-900 truncate">{{ $item->title }}</p>
                         <p class="text-xs text-gray-600 truncate">{{ $item->subtitle }}</p>
                         <a href="{{ $item->url }}" target="_blank" rel="noopener noreferrer" class="text-[11px] text-indigo-600 hover:text-indigo-800 truncate block mt-1">{{ $item->url }}</a>
-                        <div class="mt-3">
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <x-secondary-button
+                                type="button"
+                                @click="$dispatch('publications-social-edit', {{ Js::from([
+                                    'id' => $item->id,
+                                    'title' => $item->title,
+                                    'subtitle' => $item->subtitle,
+                                    'url' => $item->url,
+                                    'network' => $item->network,
+                                    'action' => route('admin.publications.social-posts.update', $item),
+                                ]) }})"
+                            >
+                                {{ __('talenma.admin.social_posts.edit') }}
+                            </x-secondary-button>
                             <form
                                 id="publications-social-delete-{{ $item->id }}"
                                 method="POST"

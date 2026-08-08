@@ -9,38 +9,19 @@ return [
     ],
 
     /*
-    | Tuiles hero — photos locales pré-recadrées (public/images/hero/).
-    | Les ratios correspondent aux tuiles CSS (tall 11:18, square 1:1, landscape 11:9).
+    | Photos hero de secours (public/images/hero/) — utilisées si moins de 6
+    | talents publics avec photo de profil.
     */
-    'hero_bento' => [
-        [
-            'size' => 'tall',
-            'photo' => 'images/hero/infirmiere.jpg',
-            'profile_index' => 0,
-        ],
-        [
-            'size' => 'square',
-            'photo' => 'images/hero/karim.jpg',
-            'profile_index' => 1,
-        ],
-        [
-            'size' => 'square',
-            'photo' => 'images/hero/salma.jpg',
-            'profile_index' => 2,
-        ],
-        [
-            'size' => 'square',
-            'photo' => 'images/hero/omar.jpg',
-            'profile_index' => 3,
-        ],
-        [
-            'size' => 'square',
-            'photo' => 'images/hero/tarik.jpg',
-            'profile_index' => 4,
-        ],
+    'hero_fake_photos' => [
+        'images/hero/infirmiere.jpg',
+        'images/hero/karim.jpg',
+        'images/hero/salma.jpg',
+        'images/hero/omar.jpg',
+        'images/hero/tarik.jpg',
+        'images/hero/yasmine.jpg',
     ],
 
-    'hero_fallback_photo' => 'images/hero/fallback.jpg',
+    'hero_fallback_photo' => 'images/hero/karim.jpg',
 
     /*
     | Compte admin bootstrap (AdminUserSeeder uniquement — jamais au redeploy).

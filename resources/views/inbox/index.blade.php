@@ -37,22 +37,6 @@
             ]),
         })"
     >
-        @if ($viewer?->isCompany() || $viewer?->isTalent())
-            <div class="flex items-start gap-3 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-slate-50 px-4 py-3.5 shadow-sm shadow-indigo-600/5 sm:max-w-3xl">
-                <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v.01M12 6a3.75 3.75 0 013.75 3.75c0 1.55-.94 2.4-1.88 3.12-.7.54-1.37 1.05-1.37 2.13v.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </span>
-                <div class="min-w-0 pt-0.5">
-                    <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-indigo-700">{{ __('talenma.inbox.start_hint_label') }}</p>
-                    <p class="mt-1 text-sm leading-relaxed text-slate-600">
-                        {{ $viewer->isCompany() ? __('talenma.inbox.start_hint') : __('talenma.inbox.start_hint_talent') }}
-                    </p>
-                </div>
-            </div>
-        @endif
-
         <div class="rounded-2xl border border-indigo-100/80 bg-white shadow-sm shadow-indigo-600/5 overflow-hidden min-h-[32rem] h-[min(78vh,46rem)] grid lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)]">
             {{-- Left: conversation list --}}
             <aside

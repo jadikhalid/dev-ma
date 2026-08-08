@@ -14,7 +14,7 @@
 
                 <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-[1.1] text-gray-900">
                     {!! __('talenma.home.hero_title', [
-                        'talents' => '<span class="text-indigo-600">'.__('talenma.home.hero_talents').'</span>',
+                        'talents' => '<span class="text-amber-700/90">'.__('talenma.home.hero_talents').'</span>',
                         'emphasis' => '<strong class="font-bold">'.__('talenma.home.hero_emphasis').'</strong>',
                     ]) !!}
                 </h1>
@@ -49,7 +49,7 @@
 
             {{-- Visuel droit — mosaïque bento (masqué sur petits écrans) --}}
             <div class="hidden lg:flex justify-end lg:order-2">
-                <x-hero-freelancers-visual :talents-count="$talentsCount" />
+                <x-hero-freelancers-visual :talents-count="$talentsCount" :tiles="$heroTiles" />
             </div>
         </div>
 
@@ -129,7 +129,6 @@
                 <span class="text-3xl">🏢</span>
                 <h3 class="mt-4 text-xl font-bold">{{ __('talenma.home.mode_morocco_title') }}</h3>
                 <p class="mt-3 text-gray-600 text-sm leading-relaxed">{{ __('talenma.home.mode_morocco_desc') }}</p>
-                <a href="{{ route('services.index') }}" class="mt-4 inline-block text-indigo-600 font-semibold text-sm hover:text-indigo-800">{{ __('talenma.home.mode_morocco_link') }}</a>
             </div>
         </div>
     </div>

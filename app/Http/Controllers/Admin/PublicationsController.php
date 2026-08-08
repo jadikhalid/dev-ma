@@ -147,6 +147,39 @@ class PublicationsController extends Controller
             ->with('post_saved', true);
     }
 
+    public function updateSocialPost(Request $request, SocialPost $socialPost): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'post_title' => ['required', 'string', 'max:255'],
+            'post_subtitle' => ['required', 'string', 'max:255'],
+            'post_url' => ['required', 'url', 'max:2048'],
+            'post_network' => ['required', Rule::in(SocialPost::NETWORKS)],
+            'post_thumbnail' => ['nullable', 'image', 'max:2048'],
+        ]);
+
+        if ($request->hasFile('post_thumbnail')) {
+            SocialFeedStorage::delete($socialPost->thumbnail);
+            $socialPost->thumbnail = SocialFeedStorage::storeUpload($request->file('post_thumbnail'));
+        }
+
+        $socialPost->fill([
+            'title' => $validated['post_title'],
+            'subtitle' => $validated['post_subtitle'],
+            'url' => $validated['post_url'],
+            'network' => $validated['post_network'],
+        ])->save();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.admin.social_posts.updated'),
+            ]);
+        }
+
+        return redirect()
+            ->to(route('admin.publications.index').'#reseaux')
+            ->with('post_updated', true);
+    }
+
     public function destroySocialPost(Request $request, SocialPost $socialPost): RedirectResponse|JsonResponse
     {
         $socialPost->delete();

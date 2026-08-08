@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\SocialPost;
 use App\Models\User;
 use App\Services\CompanyCatalogSearchService;
+use App\Services\HeroTalentMosaicService;
 use App\Services\ProfessionCatalogService;
 
 class HomeController extends Controller
@@ -12,6 +13,7 @@ class HomeController extends Controller
     public function __construct(
         private ProfessionCatalogService $professionCatalog,
         private CompanyCatalogSearchService $companyCatalogSearch,
+        private HeroTalentMosaicService $heroTalentMosaic,
     ) {}
 
     public function index()
@@ -29,6 +31,7 @@ class HomeController extends Controller
             'talentsCount' => User::where('role', 'dev')
                 ->where('approval_status', User::APPROVAL_APPROVED)
                 ->count(),
+            'heroTiles' => $this->heroTalentMosaic->tiles(),
             'socialPosts' => SocialPost::forHomeSlider(),
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'canViewProfiles' => $canViewProfiles,

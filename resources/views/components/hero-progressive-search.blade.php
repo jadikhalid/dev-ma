@@ -19,6 +19,7 @@
         keywordMode: true,
         freeKeywords: false,
         requireCompleteSearch: true,
+        minKeywords: 0,
         maxKeywords: 3,
         canViewProfiles: @js((bool) $canViewProfiles),
         searchUrl: @js(route('talent-search')),

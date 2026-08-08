@@ -141,26 +141,17 @@ class CompanyCatalogSearchService
     }
 
     /**
-     * Pays distincts des entreprises approuvées (pour le filtre).
+     * Catalogue des pays disponibles pour le filtre (toujours complet).
      *
      * @return list<array{value: string, label: string}>
      */
     public function availableCountries(): array
     {
-        return CompanyProfile::query()
-            ->whereHas('user', fn ($q) => $q
-                ->where('role', 'company')
-                ->where('approval_status', User::APPROVAL_APPROVED))
-            ->whereNotNull('country')
-            ->where('country', '!=', '')
-            ->distinct()
-            ->orderBy('country')
-            ->pluck('country')
-            ->map(fn (string $code) => [
+        return collect(CompanyProfile::countryOptions())
+            ->map(fn (string $label, string $code) => [
                 'value' => $code,
-                'label' => CompanyProfile::countryLabelFor($code) ?? $code,
+                'label' => $label,
             ])
-            ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
     }

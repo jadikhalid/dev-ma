@@ -6,7 +6,6 @@
         <div class="max-w-2xl">
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">{{ __('talenma.home.companies_marquee_eyebrow') }}</p>
             <h2 class="mt-3 text-3xl font-bold text-gray-900">{{ __('talenma.home.companies_marquee_title') }}</h2>
-            <p class="mt-3 text-gray-600">{{ __('talenma.home.companies_marquee_subtitle') }}</p>
         </div>
 
         <div

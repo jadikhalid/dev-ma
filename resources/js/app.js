@@ -599,7 +599,7 @@ Alpine.data('heroProgressiveSearch', (config) => ({
         const validKeywords = this.selectedKeywords.filter((item) => this.filteredSpecializations.includes(item));
         const count = validKeywords.length;
 
-        if (! this.sectorSlug || ! this.professionSlug || count === 0) {
+        if (! this.sectorSlug || ! this.professionSlug) {
             return this.validationMessages.incomplete ?? null;
         }
 
@@ -607,7 +607,7 @@ Alpine.data('heroProgressiveSearch', (config) => ({
             return this.validationMessages.keywordsMax ?? null;
         }
 
-        if (count < this.minKeywords) {
+        if (this.minKeywords > 0 && count < this.minKeywords) {
             return this.validationMessages.incomplete ?? null;
         }
 
@@ -917,7 +917,7 @@ Alpine.data('heroCompanySearch', (config) => ({
     get searchValidationError() {
         const count = this.selectedKeywords.filter((item) => this.sectorKeywords.includes(item)).length;
 
-        if (! this.sectorSlug || count === 0) {
+        if (! this.sectorSlug) {
             return this.validationMessages.incomplete ?? null;
         }
 
@@ -4362,11 +4362,17 @@ Alpine.data('publicationsAdmin', () => ({
     newsOpen: false,
     newsEditOpen: false,
     socialOpen: false,
+    socialEditOpen: false,
     deleteConfirmOpen: false,
     editAction: '',
     editTitle: '',
     editSubtitle: '',
     editUrl: '',
+    socialEditAction: '',
+    socialEditTitle: '',
+    socialEditSubtitle: '',
+    socialEditUrl: '',
+    socialEditNetwork: 'linkedin',
     deleteFormId: '',
     deleteModalTitle: '',
     deleteModalBody: '',
@@ -4375,6 +4381,7 @@ Alpine.data('publicationsAdmin', () => ({
     openNews() {
         this.closeDeleteConfirm(false);
         this.closeNewsEdit(false);
+        this.closeSocialEdit(false);
         this.socialOpen = false;
         this.newsOpen = true;
         document.documentElement.classList.add('overflow-hidden');
@@ -4390,6 +4397,7 @@ Alpine.data('publicationsAdmin', () => ({
         this.closeDeleteConfirm(false);
         this.newsOpen = false;
         this.socialOpen = false;
+        this.closeSocialEdit(false);
         this.editAction = detail.action || '';
         this.editTitle = detail.title || '';
         this.editSubtitle = detail.subtitle || '';
@@ -4427,6 +4435,7 @@ Alpine.data('publicationsAdmin', () => ({
         this.closeDeleteConfirm(false);
         this.newsOpen = false;
         this.closeNewsEdit(false);
+        this.closeSocialEdit(false);
         this.socialOpen = true;
         document.documentElement.classList.add('overflow-hidden');
     },
@@ -4437,10 +4446,51 @@ Alpine.data('publicationsAdmin', () => ({
         document.getElementById('publications-social-create')?.reset();
     },
 
+    openSocialEdit(detail = {}) {
+        this.closeDeleteConfirm(false);
+        this.newsOpen = false;
+        this.closeNewsEdit(false);
+        this.socialOpen = false;
+        this.socialEditAction = detail.action || '';
+        this.socialEditTitle = detail.title || '';
+        this.socialEditSubtitle = detail.subtitle || '';
+        this.socialEditUrl = detail.url || '';
+        this.socialEditNetwork = detail.network || 'linkedin';
+
+        const thumbnail = document.getElementById('post_edit_thumbnail');
+
+        if (thumbnail) {
+            thumbnail.value = '';
+        }
+
+        this.socialEditOpen = true;
+        document.documentElement.classList.add('overflow-hidden');
+    },
+
+    closeSocialEdit(resetBody = true) {
+        this.socialEditOpen = false;
+        this.socialEditAction = '';
+        this.socialEditTitle = '';
+        this.socialEditSubtitle = '';
+        this.socialEditUrl = '';
+        this.socialEditNetwork = 'linkedin';
+
+        const thumbnail = document.getElementById('post_edit_thumbnail');
+
+        if (thumbnail) {
+            thumbnail.value = '';
+        }
+
+        if (resetBody) {
+            this.unlockBody();
+        }
+    },
+
     openDeleteConfirm(detail = {}) {
         this.newsOpen = false;
         this.closeNewsEdit(false);
         this.socialOpen = false;
+        this.closeSocialEdit(false);
         this.deleteFormId = detail.formId || '';
         this.deleteModalTitle = detail.modalTitle || '';
         this.deleteConfirmLabel = detail.confirmLabel || '';
@@ -4486,13 +4536,17 @@ Alpine.data('publicationsAdmin', () => ({
             this.closeSocial();
         }
 
+        if (this.socialEditOpen) {
+            this.closeSocialEdit();
+        }
+
         if (this.deleteConfirmOpen) {
             this.closeDeleteConfirm();
         }
     },
 
     unlockBody() {
-        if (! this.newsOpen && ! this.newsEditOpen && ! this.socialOpen && ! this.deleteConfirmOpen) {
+        if (! this.newsOpen && ! this.newsEditOpen && ! this.socialOpen && ! this.socialEditOpen && ! this.deleteConfirmOpen) {
             document.documentElement.classList.remove('overflow-hidden');
         }
     },
@@ -4510,6 +4564,10 @@ Alpine.data('publicationsAdmin', () => ({
 
         if (formId === 'publications-social-create') {
             this.closeSocial();
+        }
+
+        if (formId === 'publications-social-edit') {
+            this.closeSocialEdit();
         }
     },
 }));

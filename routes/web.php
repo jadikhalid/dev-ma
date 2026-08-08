@@ -51,8 +51,9 @@ Route::get('/talent-search', TalentSearchController::class)
 Route::get('/company-search', CompanyCatalogSearchController::class)
     ->middleware(['auth', 'verified', 'throttle:30,1'])
     ->name('company-catalog-search');
-Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
-Route::get('/services/{slug}', [ServiceController::class, 'show'])->name('services.show');
+Route::get('/services', [ServiceController::class, 'index'])
+    ->middleware(['auth', 'verified', 'account.approved'])
+    ->name('services.index');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/account/pending', [AccountStatusController::class, 'pending'])
@@ -147,6 +148,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/publications/news/{newsItem}', [PublicationsController::class, 'updateNews'])->name('publications.news.update');
             Route::delete('/publications/news/{newsItem}', [PublicationsController::class, 'destroyNews'])->name('publications.news.destroy');
             Route::post('/publications/social-posts', [PublicationsController::class, 'storeSocialPost'])->name('publications.social-posts.store');
+            Route::put('/publications/social-posts/{socialPost}', [PublicationsController::class, 'updateSocialPost'])->name('publications.social-posts.update');
             Route::delete('/publications/social-posts/{socialPost}', [PublicationsController::class, 'destroySocialPost'])->name('publications.social-posts.destroy');
 
             Route::redirect('/magazine-banner', '/admin/publications');

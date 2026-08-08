@@ -15,24 +15,15 @@ class TalentSearchController extends Controller
         $validated = $request->validate([
             'sector' => ['required', 'string', 'max:64'],
             'profession' => ['required', 'string', 'max:64'],
-            'keyword' => ['required', 'string', 'max:500'],
+            'keyword' => ['nullable', 'string', 'max:500'],
         ]);
 
         $keywords = array_values(array_filter(array_map(
             'trim',
-            explode(',', $validated['keyword']),
+            explode(',', (string) ($validated['keyword'] ?? '')),
         )));
 
         $count = count($keywords);
-
-        if ($count === 0) {
-            return response()->json([
-                'message' => __('talenma.home.search_validation_incomplete'),
-                'count' => 0,
-                'results' => [],
-                'full_access' => false,
-            ], 422);
-        }
 
         if ($count > 3) {
             return response()->json([

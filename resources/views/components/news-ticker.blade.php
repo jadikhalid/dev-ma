@@ -21,12 +21,13 @@
         @mouseenter="onBannerEnter()"
         @mouseleave="onBannerLeave()"
     >
-        <div class="flex items-center justify-center gap-3 sm:gap-4 py-1.5 border-b border-gray-100/90 px-4">
-            <span class="h-px w-10 sm:w-16 bg-gradient-to-r from-transparent to-gray-200/90"></span>
-            <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                {{ __('talenma.home.news_ticker_label') }}
-            </span>
-            <span class="h-px w-10 sm:w-16 bg-gradient-to-l from-transparent to-gray-200/90"></span>
+        <div class="flex items-center justify-center gap-3 sm:gap-4 py-1 border-b border-gray-100/90 px-4">
+            <span class="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-amber-200/70"></span>
+            <p class="inline-flex items-baseline gap-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                <span>{{ __('talenma.home.news_ticker_label') }}</span>
+                <span class="font-bold text-amber-700/90">{{ __('talenma.home.news_ticker_eco_prefix') }}</span>
+            </p>
+            <span class="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-amber-200/70"></span>
         </div>
 
         <div
