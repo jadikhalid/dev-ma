@@ -6,7 +6,7 @@
         {{ __('talenma.mail.verify_registration.body') }}
     </p>
     <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#6b7280;">
-        {{ __('talenma.mail.verify_registration.expiry', ['minutes' => \App\Services\PendingRegistrationService::EXPIRY_MINUTES]) }}
+        {{ __('talenma.mail.verify_registration.expiry', ['hours' => \App\Services\PendingRegistrationService::EXPIRY_HOURS]) }}
     </p>
     <p style="margin:0 0 24px;">
         <a href="{{ $verificationUrl }}" style="display:inline-block;padding:12px 24px;background-color:#4f46e5;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;border-radius:12px;">

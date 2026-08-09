@@ -42,4 +42,11 @@ return [
         'MG', 'HT', 'MU', 'RW', 'SC', 'TD', 'CF', 'DJ', 'KM', 'TN', 'DZ', 'VU',
         'NC', 'PF', 'RE', 'GP', 'MQ', 'GF', 'YT', 'PM', 'WF', 'BL', 'MF',
     ],
+
+    /*
+    | Version du texte de consentement au traitement des données.
+    | Incrémenter lors d’une modification matérielle du libellé / de la politique
+    | (talent aujourd’hui ; entreprises : même mécanisme à l’inscription).
+    */
+    'data_processing_consent_version' => '2026-08-09',
 ];

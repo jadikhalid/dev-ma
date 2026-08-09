@@ -109,6 +109,49 @@ class InboxController extends Controller
             ->with('toast_success', __('talenma.inbox.sent'));
     }
 
+    public function searchTalents(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user?->isCompany() && $user->isApproved(), 403);
+
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:1', 'max:100'],
+        ]);
+
+        $term = trim($data['q']);
+        $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+
+        $results = User::query()
+            ->where('role', 'dev')
+            ->where('approval_status', User::APPROVAL_APPROVED)
+            ->whereHas('profile', function ($query) {
+                $query->whereNotNull('profession_id')
+                    ->whereNotNull('bio')
+                    ->where('bio', '!=', '');
+            })
+            ->with('profile.profession')
+            ->where(function ($query) use ($like) {
+                $query->where('name', 'like', $like)
+                    ->orWhere('first_name', 'like', $like)
+                    ->orWhere('last_name', 'like', $like);
+            })
+            ->orderBy('name')
+            ->limit(12)
+            ->get()
+            ->map(fn (User $talent) => [
+                'id' => $talent->id,
+                'label' => $talent->profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
+                'subtitle' => $talent->profile?->professionLabel(),
+            ])
+            ->values()
+            ->all();
+
+        return response()->json([
+            'results' => $results,
+        ]);
+    }
+
     public function storeMessage(Request $request, Conversation $conversation): JsonResponse|RedirectResponse
     {
         $user = $request->user();
@@ -143,6 +186,26 @@ class InboxController extends Controller
         return redirect()
             ->route('inbox.show', $conversation)
             ->with('toast_success', __('talenma.inbox.reply_sent'));
+    }
+
+    public function destroy(Request $request, Conversation $conversation): JsonResponse|RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user?->isCompany() || $user?->isTalent(), 403);
+
+        $this->messaging->hideForViewer($user, $conversation);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('talenma.inbox.delete_success'),
+                'unread_count' => $this->messaging->unreadCountFor($user),
+            ]);
+        }
+
+        return redirect()
+            ->route('inbox.index')
+            ->with('toast_success', __('talenma.inbox.delete_success'));
     }
 
     public function showAttachment(Request $request, MessageAttachment $attachment): StreamedResponse

@@ -11,7 +11,10 @@
             <p class="text-sm text-gray-400 max-w-md">{{ __('talenma.footer.tagline') }}</p>
         </div>
         <div class="mt-10 pt-6 border-t border-gray-800 text-sm text-gray-500 flex flex-col sm:flex-row justify-between gap-2">
-            <p>&copy; {{ date('Y') }} {{ __('talenma.footer.copyright') }}</p>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <p>&copy; {{ date('Y') }} {{ __('talenma.footer.copyright') }}</p>
+                <a href="{{ route('privacy') }}" class="text-gray-400 underline hover:text-white transition">{{ __('talenma.footer.privacy') }}</a>
+            </div>
             <p>{{ __('talenma.footer.developed_by') }} <a href="https://www.jadi-digital.com" target="_blank" rel="noopener noreferrer" class="text-gray-400 underline hover:text-white transition">{{ __('talenma.footer.jadi_digital') }}</a></p>
         </div>
     </div>

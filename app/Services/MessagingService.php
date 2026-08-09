@@ -46,6 +46,7 @@ class MessagingService
             $excludedIds = $this->directHireConversationIdsFor($user);
 
             $query->where('company_user_id', $user->id)
+                ->whereNull('company_hidden_at')
                 ->when($excludedIds !== [], fn ($q) => $q->whereNotIn('id', $excludedIds));
         } elseif ($user->canAccessStaffMessaging()) {
             $query->where('channel', Conversation::CHANNEL_STAFF);
@@ -54,6 +55,7 @@ class MessagingService
 
             $query->where('channel', Conversation::CHANNEL_TALENT)
                 ->where('talent_user_id', $user->id)
+                ->whereNull('talent_hidden_at')
                 ->when($excludedIds !== [], fn ($q) => $q->whereNotIn('id', $excludedIds));
         } else {
             return collect();
@@ -67,6 +69,7 @@ class MessagingService
         if ($user->isCompany()) {
             return Conversation::query()
                 ->where('company_user_id', $user->id)
+                ->whereNull('company_hidden_at')
                 ->whereNotIn('id', $this->directHireConversationIdsFor($user))
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
@@ -91,6 +94,7 @@ class MessagingService
             return Conversation::query()
                 ->where('channel', Conversation::CHANNEL_TALENT)
                 ->where('talent_user_id', $user->id)
+                ->whereNull('talent_hidden_at')
                 ->whereNotIn('id', $this->directHireConversationIdsFor($user))
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
@@ -113,6 +117,7 @@ class MessagingService
         if ($user->isCompany()) {
             Conversation::query()
                 ->where('company_user_id', $user->id)
+                ->whereNull('company_hidden_at')
                 ->whereNotIn('id', $this->directHireConversationIdsFor($user))
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
@@ -141,6 +146,7 @@ class MessagingService
             Conversation::query()
                 ->where('channel', Conversation::CHANNEL_TALENT)
                 ->where('talent_user_id', $user->id)
+                ->whereNull('talent_hidden_at')
                 ->whereNotIn('id', $this->directHireConversationIdsFor($user))
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
@@ -207,12 +213,74 @@ class MessagingService
     {
         abort_unless($conversation->isParticipant($user), 403);
 
+        if ($user->isCompany() && $conversation->company_hidden_at) {
+            abort(404);
+        }
+
+        if ($user->isTalent() && $conversation->talent_hidden_at) {
+            abort(404);
+        }
+
         // Direct-hire threads are no longer part of the general inbox.
         $linked = DirectHireRequest::query()
             ->where('conversation_id', $conversation->id)
             ->exists();
 
         abort_if($linked, 404);
+    }
+
+    /**
+     * Masque définitivement le fil côté entreprise (le talent conserve l’échange).
+     */
+    public function hideForCompany(User $company, Conversation $conversation): void
+    {
+        abort_unless($company->isCompany() && $company->isApproved(), 403);
+        abort_unless($conversation->isCompanySideParticipant($company), 403);
+
+        if ($conversation->company_hidden_at) {
+            return;
+        }
+
+        $conversation->forceFill(['company_hidden_at' => now()])->save();
+    }
+
+    /**
+     * Masque définitivement le fil côté talent (l’entreprise conserve l’échange).
+     */
+    public function hideForTalent(User $talent, Conversation $conversation): void
+    {
+        abort_unless($talent->isTalent() && $talent->isApproved(), 403);
+        abort_unless(
+            $conversation->channel === Conversation::CHANNEL_TALENT
+            && (int) $conversation->talent_user_id === (int) $talent->id,
+            403,
+        );
+
+        if ($conversation->talent_hidden_at) {
+            return;
+        }
+
+        $conversation->forceFill(['talent_hidden_at' => now()])->save();
+    }
+
+    /**
+     * Masque le fil pour le viewer courant (entreprise ou talent).
+     */
+    public function hideForViewer(User $viewer, Conversation $conversation): void
+    {
+        if ($viewer->isCompany()) {
+            $this->hideForCompany($viewer, $conversation);
+
+            return;
+        }
+
+        if ($viewer->isTalent()) {
+            $this->hideForTalent($viewer, $conversation);
+
+            return;
+        }
+
+        abort(403);
     }
 
     /**
@@ -229,20 +297,14 @@ class MessagingService
         $this->assertTalentIsContactable($talent);
 
         return DB::transaction(function () use ($company, $talent, $subject, $body, $files) {
-            $conversation = Conversation::query()->firstOrCreate(
-                [
-                    'company_user_id' => $company->id,
-                    'talent_user_id' => $talent->id,
-                    'channel' => Conversation::CHANNEL_TALENT,
-                ],
-                [
-                    'subject' => $subject,
-                ],
-            );
-
-            if (blank($conversation->subject)) {
-                $conversation->forceFill(['subject' => $subject])->save();
-            }
+            // Chaque nouvel envoi (nouvel objet) ouvre un fil distinct.
+            // Pour poursuivre un échange existant, répondre dans le fil (colonne gauche).
+            $conversation = Conversation::query()->create([
+                'company_user_id' => $company->id,
+                'talent_user_id' => $talent->id,
+                'channel' => Conversation::CHANNEL_TALENT,
+                'subject' => $subject,
+            ]);
 
             $this->postMessage($conversation, $company, $body, $files);
 
@@ -395,6 +457,11 @@ class MessagingService
                 ...$this->counterpartVisual($conversation, $viewer, $counterpart),
             ],
             'show_url' => route('inbox.show', $conversation),
+            'destroy_url' => ($viewer->isCompany() || (
+                $viewer->isTalent() && $conversation->channel === Conversation::CHANNEL_TALENT
+            ))
+                ? route('inbox.destroy', $conversation)
+                : null,
         ];
     }
 

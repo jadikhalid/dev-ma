@@ -21,6 +21,7 @@ use App\Http\Controllers\InboxController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ModeratorModeController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PrivacyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileDetailsController;
 use App\Http\Controllers\RecruitmentRequestController;
@@ -39,6 +40,7 @@ Route::get('/locale/suggest-from-ip', [LocaleController::class, 'suggest'])
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/privacy', [PrivacyController::class, 'show'])->name('privacy');
 Route::get('/profile/email/confirm/{token}', [ProfileController::class, 'confirmPendingEmail'])
     ->middleware('throttle:20,1')
     ->name('profile.email.confirm');
@@ -180,9 +182,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('account.approved')->group(function () {
         Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
         Route::post('/inbox/conversations', [InboxController::class, 'store'])->name('inbox.store');
+        Route::get('/inbox/talent-suggestions', [InboxController::class, 'searchTalents'])
+            ->middleware('throttle:60,1')
+            ->name('inbox.talent-suggestions');
         Route::get('/inbox/attachments/{attachment}', [InboxController::class, 'showAttachment'])->name('inbox.attachments.show');
         Route::get('/inbox/{conversation}', [InboxController::class, 'show'])->name('inbox.show');
         Route::post('/inbox/{conversation}/messages', [InboxController::class, 'storeMessage'])->name('inbox.messages.store');
+        Route::delete('/inbox/{conversation}', [InboxController::class, 'destroy'])->name('inbox.destroy');
 
         Route::middleware('company.owner')->group(function () {
             Route::get('/company/profile', [CompanyProfileController::class, 'edit'])->name('company.profile.edit');

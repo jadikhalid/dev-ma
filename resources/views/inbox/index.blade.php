@@ -1,14 +1,34 @@
 @php
     $initialConversation = (isset($conversation) && is_array($conversation)) ? $conversation : null;
     $viewer = Auth::user();
+    $canCompose = $viewer?->isCompany() ?? false;
+    $canDelete = ($viewer?->isCompany() || $viewer?->isTalent()) ?? false;
+    $deleteBodyKey = $viewer?->isTalent()
+        ? 'talenma.inbox.delete_confirm_body_talent'
+        : 'talenma.inbox.delete_confirm_body';
 @endphp
 
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="text-xl font-bold text-slate-900">{{ __('talenma.inbox.title') }}</h2>
-            @if (__('talenma.inbox.subtitle') !== '')
-                <p class="text-sm text-slate-500">{{ __('talenma.inbox.subtitle') }}</p>
+        <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+                <h2 class="text-xl font-bold text-slate-900">{{ __('talenma.inbox.title') }}</h2>
+                @if (__('talenma.inbox.subtitle') !== '')
+                    <p class="text-sm text-slate-500">{{ __('talenma.inbox.subtitle') }}</p>
+                @endif
+            </div>
+            @if ($canCompose)
+                <button
+                    type="button"
+                    onclick="window.dispatchEvent(new CustomEvent('inbox-open-compose'))"
+                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-indigo-200 bg-white text-indigo-700 shadow-sm transition hover:bg-indigo-50 hover:border-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                    aria-label="{{ __('talenma.inbox.compose_open_aria') }}"
+                    title="{{ __('talenma.inbox.compose_open_aria') }}"
+                >
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </button>
             @endif
         </div>
     </x-slot>
@@ -21,6 +41,10 @@
             conversations: @js($conversations->values()),
             conversation: @js($initialConversation),
             indexUrl: @js(route('inbox.index')),
+            composeUrl: @js($canCompose ? route('inbox.store') : null),
+            talentSearchUrl: @js($canCompose ? route('inbox.talent-suggestions') : null),
+            canCompose: @js($canCompose),
+            canDelete: @js($canDelete),
             csrf: @js(csrf_token()),
             labels: @js([
                 'replyPlaceholder' => __('talenma.inbox.reply_placeholder'),
@@ -34,8 +58,23 @@
                 'selectConversation' => __('talenma.inbox.select_conversation'),
                 'selectConversationDesc' => __('talenma.inbox.select_conversation_desc'),
                 'back' => __('talenma.inbox.back'),
+                'composeSubjectRequired' => __('talenma.inbox.compose_subject_required'),
+                'composeMinBody' => __('talenma.inbox.compose_min_body'),
+                'composeTalentRequired' => __('talenma.inbox.compose_talent_required'),
+                'composeBodyRequired' => __('talenma.inbox.compose_body_required'),
+                'talentSearchLoading' => __('talenma.inbox.talent_search_loading'),
+                'talentSearchEmpty' => __('talenma.inbox.talent_search_empty'),
+                'sent' => __('talenma.inbox.sent'),
+                'networkError' => __('talenma.common.network_error'),
+                'deleteAria' => __('talenma.inbox.delete_aria'),
+                'deleteBadge' => __('talenma.inbox.delete_confirm_badge'),
+                'deleteTitle' => __('talenma.inbox.delete_confirm_title'),
+                'deleteBody' => __($deleteBodyKey),
+                'deleteConfirm' => __('talenma.inbox.delete_confirm_btn'),
+                'deleteCancel' => __('talenma.inbox.delete_confirm_cancel'),
             ]),
         })"
+        @inbox-open-compose.window="openCompose()"
     >
         <div class="rounded-2xl border border-indigo-100/80 bg-white shadow-sm shadow-indigo-600/5 overflow-hidden min-h-[32rem] h-[min(78vh,46rem)] grid lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)]">
             {{-- Left: conversation list --}}
@@ -62,18 +101,18 @@
 
                     <ul x-show="conversations.length > 0" class="divide-y divide-slate-100 min-h-full">
                         <template x-for="item in conversations" :key="item.id">
-                            <li>
+                            <li class="group relative flex items-stretch">
                                 <button
                                     type="button"
                                     data-inbox-item
-                                    class="w-full text-left block px-4 py-3.5 transition border-l-2 cursor-pointer"
+                                    class="min-w-0 flex-1 text-left block px-4 py-3.5 transition border-l-2 cursor-pointer"
                                     :class="isActive(item)
                                         ? 'bg-indigo-50 border-indigo-600'
                                         : (item.unread ? 'bg-indigo-50/30 border-transparent hover:bg-slate-50' : 'border-transparent hover:bg-slate-50')"
                                     @click.stop="selectConversation(item)"
                                 >
                                     <div class="flex items-start justify-between gap-2 pointer-events-none">
-                                        <div class="min-w-0 flex-1">
+                                        <div class="min-w-0 flex-1 pr-8">
                                             <div class="flex items-center gap-2">
                                                 <p
                                                     class="truncate text-sm font-semibold"
@@ -94,6 +133,19 @@
                                             x-text="item.last_message_at ? new Date(item.last_message_at).toLocaleDateString() : ''"
                                         ></time>
                                     </div>
+                                </button>
+                                <button
+                                    type="button"
+                                    x-show="canDelete && item.destroy_url"
+                                    x-cloak
+                                    class="absolute right-2 top-1/2 z-10 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                                    :aria-label="labels.deleteAria"
+                                    :title="labels.deleteAria"
+                                    @click.stop="requestDelete(item)"
+                                >
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                    </svg>
                                 </button>
                             </li>
                         </template>
@@ -244,5 +296,229 @@
                 </template>
             </section>
         </div>
+
+        @if ($canCompose)
+            {{-- Bottom sheet: composer un message à un talent --}}
+            <div
+                x-show="composeOpen"
+                x-cloak
+                class="fixed inset-0 z-[60]"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="inbox-compose-title"
+                data-inbox-compose
+            >
+                <div
+                    x-show="composeOpen"
+                    x-transition:enter="transition-opacity ease-out duration-300"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition-opacity ease-in duration-200"
+                    x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="absolute inset-0 bg-gray-900/40"
+                    @click="closeCompose()"
+                ></div>
+
+                <div
+                    x-show="composeOpen"
+                    x-transition:enter="transform transition ease-out duration-300"
+                    x-transition:enter-start="translate-y-full"
+                    x-transition:enter-end="translate-y-0"
+                    x-transition:leave="transform transition ease-in duration-200"
+                    x-transition:leave-start="translate-y-0"
+                    x-transition:leave-end="translate-y-full"
+                    class="absolute bottom-0 right-0 flex w-full max-w-md flex-col rounded-t-2xl bg-white shadow-2xl ring-1 ring-black/5 sm:bottom-3 sm:right-3 sm:max-h-[min(88vh,42rem)] sm:max-w-lg sm:rounded-2xl"
+                    @click.stop
+                >
+                    <div class="mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full bg-slate-200 sm:hidden" aria-hidden="true"></div>
+
+                    <div class="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+                        <div class="min-w-0">
+                            <h3 id="inbox-compose-title" class="text-lg font-bold text-gray-900">{{ __('talenma.inbox.compose_title') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('talenma.inbox.compose_sheet_desc') }}</p>
+                        </div>
+                        <button
+                            type="button"
+                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                            @click="closeCompose()"
+                            aria-label="{{ __('talenma.common.close') }}"
+                        >
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div id="inbox-compose-sheet" class="relative min-h-0 flex-1 overflow-y-auto px-5 py-5">
+                        <form
+                            class="space-y-3"
+                            @submit.prevent="sendCompose()"
+                            novalidate
+                            data-error-message="{{ __('talenma.inbox.error') }}"
+                            data-network-error-message="{{ __('talenma.common.network_error') }}"
+                        >
+                            <div class="relative" @click.outside="closeTalentSuggestions()">
+                                <label class="block text-xs font-medium text-gray-600" for="inbox-compose-talent">{{ __('talenma.inbox.compose_talent') }}</label>
+                                <input
+                                    id="inbox-compose-talent"
+                                    type="search"
+                                    x-model="talentQuery"
+                                    x-ref="talentInput"
+                                    @input="onTalentInput()"
+                                    @keydown="onTalentKeydown($event)"
+                                    @focus="onTalentFocus()"
+                                    maxlength="100"
+                                    autocomplete="off"
+                                    role="combobox"
+                                    aria-controls="inbox-talent-listbox"
+                                    :aria-expanded="talentSuggestionsOpen"
+                                    aria-autocomplete="list"
+                                    :disabled="composeSending"
+                                    class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-60"
+                                    placeholder="{{ __('talenma.inbox.compose_talent_placeholder') }}"
+                                >
+                                <input
+                                    type="hidden"
+                                    name="talent_id"
+                                    :value="selectedTalentId ?? ''"
+                                    data-required
+                                    data-required-message="{{ __('talenma.inbox.compose_talent_required') }}"
+                                >
+
+                                <div
+                                    x-show="talentSuggestionsOpen"
+                                    x-cloak
+                                    id="inbox-talent-listbox"
+                                    role="listbox"
+                                    class="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                                >
+                                    <template x-if="talentLoading">
+                                        <p class="px-3 py-2 text-xs text-slate-500" x-text="labels.talentSearchLoading"></p>
+                                    </template>
+                                    <template x-if="! talentLoading && talentResults.length === 0">
+                                        <p class="px-3 py-2 text-xs text-slate-500" x-text="labels.talentSearchEmpty"></p>
+                                    </template>
+                                    <template x-for="(item, index) in talentResults" :key="item.id">
+                                        <button
+                                            type="button"
+                                            role="option"
+                                            class="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm transition"
+                                            :class="index === talentActiveIndex ? 'bg-indigo-50 text-indigo-900' : 'text-slate-800 hover:bg-slate-50'"
+                                            @mousedown.prevent="selectTalent(item)"
+                                            @mouseenter="talentActiveIndex = index"
+                                        >
+                                            <span class="font-medium" x-text="item.label"></span>
+                                            <span class="text-xs text-slate-500" x-show="item.subtitle" x-text="item.subtitle"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600" for="inbox-compose-subject">{{ __('talenma.inbox.compose_subject') }}</label>
+                                <input
+                                    id="inbox-compose-subject"
+                                    name="subject"
+                                    type="text"
+                                    x-model="composeSubject"
+                                    maxlength="255"
+                                    data-required
+                                    data-required-message="{{ __('talenma.inbox.compose_subject_required') }}"
+                                    :disabled="composeSending"
+                                    class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-60"
+                                    placeholder="{{ __('talenma.inbox.compose_subject_placeholder') }}"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600" for="inbox-compose-body">{{ __('talenma.inbox.compose_body') }}</label>
+                                <textarea
+                                    id="inbox-compose-body"
+                                    name="body"
+                                    x-model="composeBody"
+                                    rows="5"
+                                    maxlength="5000"
+                                    data-required
+                                    data-required-message="{{ __('talenma.inbox.compose_body_required') }}"
+                                    data-min-length="20"
+                                    data-min-length-message="{{ __('talenma.inbox.compose_min_body') }}"
+                                    :disabled="composeSending"
+                                    class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-60"
+                                    placeholder="{{ __('talenma.inbox.compose_body_placeholder') }}"
+                                ></textarea>
+                            </div>
+
+                            <div>
+                                <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600" :class="composeSending && 'pointer-events-none opacity-60'">
+                                    <input type="file" class="hidden" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*" @change="onComposeFiles($event)" :disabled="composeSending">
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">{{ __('talenma.inbox.attach') }}</span>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-400">{{ __('talenma.inbox.attachments_hint') }}</p>
+                                <ul class="mt-1 space-y-1 text-xs text-gray-600" x-show="composeFiles.length">
+                                    <template x-for="(file, index) in composeFiles" :key="file.name + index">
+                                        <li class="flex items-center gap-2">
+                                            <span class="truncate" x-text="file.name"></span>
+                                            <button type="button" class="text-red-600" @click="removeComposeFile(index)" :disabled="composeSending">×</button>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2 pt-1">
+                                <button
+                                    type="submit"
+                                    class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+                                    :disabled="composeSending"
+                                    x-text="composeSending ? labels.sending : @js(__('talenma.inbox.compose_send'))"
+                                ></button>
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                                    @click="closeCompose()"
+                                    :disabled="composeSending"
+                                >{{ __('talenma.inbox.compose_cancel') }}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <template x-teleport="body">
+            <div
+                x-show="deleteConfirming"
+                x-cloak
+                class="fixed inset-0 z-[80] flex items-center justify-center p-4"
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="inbox-delete-title"
+                data-inbox-compose
+                @keydown.escape.window="closeDeleteConfirm()"
+            >
+                <div class="absolute inset-0 bg-slate-900/50" @click="closeDeleteConfirm()" aria-hidden="true"></div>
+                <div class="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl ring-2 ring-rose-200">
+                    <p class="inline-flex items-center rounded-md bg-rose-50 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-100" x-text="labels.deleteBadge"></p>
+                    <p id="inbox-delete-title" class="mt-3 text-base font-semibold text-slate-900" x-text="labels.deleteTitle"></p>
+                    <p class="mt-2 text-sm leading-relaxed text-slate-600" x-text="labels.deleteBody"></p>
+                    <div class="mt-5 flex flex-wrap justify-end gap-3">
+                        <button
+                            type="button"
+                            class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                            @click="closeDeleteConfirm()"
+                            :disabled="deleteSending"
+                            x-text="labels.deleteCancel"
+                        ></button>
+                        <button
+                            type="button"
+                            class="inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-lg font-semibold text-sm text-white hover:bg-rose-700 disabled:opacity-60"
+                            @click="confirmDelete()"
+                            :disabled="deleteSending"
+                            x-text="deleteSending ? labels.sending : labels.deleteConfirm"
+                        ></button>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
 </x-app-layout>

@@ -139,9 +139,14 @@ class RegisterRequest extends FormRequest
                 'max:255',
             ],
             'company_country' => [
+                Rule::requiredIf(fn () => $this->input('role') === 'company'),
                 'nullable',
                 'string',
                 Rule::in(\App\Models\CompanyProfile::COUNTRY_CODES),
+            ],
+            'data_processing_consent' => [
+                Rule::excludeUnless(fn () => in_array($this->input('role'), ['dev', 'company'], true)),
+                'accepted',
             ],
         ];
     }
@@ -172,6 +177,7 @@ class RegisterRequest extends FormRequest
             'company_description' => __('talenma.company.description'),
             'company_website' => __('talenma.auth.company_website'),
             'company_country' => __('talenma.auth.company_country'),
+            'data_processing_consent' => __('talenma.auth.data_processing_consent_label'),
         ];
     }
 
@@ -229,6 +235,10 @@ class RegisterRequest extends FormRequest
             'company_description.required' => __('talenma.auth.validation.company_description_required'),
             'company_description.min' => __('talenma.auth.validation.company_description_min'),
             'company_description.max' => __('talenma.auth.validation.company_description_max'),
+            'company_country.required' => __('talenma.auth.validation.company_country_required'),
+            'company_country.in' => __('talenma.auth.validation.company_country_invalid'),
+            'data_processing_consent.required' => __('talenma.auth.validation.data_processing_consent_required'),
+            'data_processing_consent.accepted' => __('talenma.auth.validation.data_processing_consent_required'),
         ];
     }
 

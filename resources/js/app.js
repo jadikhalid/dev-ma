@@ -1373,6 +1373,7 @@ Alpine.data('registerWizard', (config) => ({
     companyWebsite: config.initialCompanyWebsite ?? '',
     companyCountry: config.initialCompanyCountry ?? config.defaultCompanyCountry ?? '',
     defaultCompanyCountry: config.defaultCompanyCountry ?? '',
+    dataProcessingConsent: Boolean(config.initialDataProcessingConsent),
     validationMessages: config.validationMessages ?? {},
     fieldErrors: {},
     namePattern: /^[\p{L}\p{M}][\p{L}\p{M}\s'\-\.]*$/u,
@@ -1382,6 +1383,7 @@ Alpine.data('registerWizard', (config) => ({
             this.step = 1;
             this.documentFiles = [];
             this.documentsCount = 0;
+            this.dataProcessingConsent = false;
             this.clearFieldErrors();
         });
 
@@ -1425,18 +1427,21 @@ Alpine.data('registerWizard', (config) => ({
         return this.firstName.trim().length >= 2
             && this.lastName.trim().length >= 2
             && this.sector !== ''
-            && this.companyDescription.trim().length >= 50;
+            && this.companyDescription.trim().length >= 50
+            && this.companyCountry !== '';
     },
 
     get talentStep2Valid() {
         return this.sector !== ''
             && this.description.trim().length >= 255
             && this.documentsCount >= 1
-            && this.documentsCount <= 5;
+            && this.documentsCount <= 5
+            && this.dataProcessingConsent;
     },
 
     get companyStep3Valid() {
-        return this.documentsCount <= 2;
+        return this.documentsCount <= 2
+            && this.dataProcessingConsent;
     },
 
     get documentsMax() {
@@ -1567,6 +1572,10 @@ Alpine.data('registerWizard', (config) => ({
                 return this.companyDescription.trim() === '';
             case 'company_website':
                 return this.companyWebsite.trim() === '';
+            case 'company_country':
+                return this.companyCountry === '';
+            case 'data_processing_consent':
+                return ! this.dataProcessingConsent;
             default:
                 return false;
         }
@@ -1596,15 +1605,16 @@ Alpine.data('registerWizard', (config) => ({
                 'sector',
                 'company_description',
                 'company_website',
+                'company_country',
             ].includes(field);
         }
 
-        if (this.isCompany && this.step === 3 && field === 'documents') {
-            return true;
+        if (this.isCompany && this.step === 3) {
+            return ['documents', 'data_processing_consent'].includes(field);
         }
 
         if (this.isTalent && this.step === 2) {
-            return ['sector', 'description', 'documents'].includes(field);
+            return ['sector', 'description', 'documents', 'data_processing_consent'].includes(field);
         }
 
         return false;
@@ -1789,6 +1799,13 @@ Alpine.data('registerWizard', (config) => ({
 
                 return null;
             }
+            case 'data_processing_consent': {
+                if (! this.dataProcessingConsent) {
+                    return messages.data_processing_consent_required ?? null;
+                }
+
+                return null;
+            }
             case 'company_description': {
                 const value = this.companyDescription.trim();
 
@@ -1809,6 +1826,13 @@ Alpine.data('registerWizard', (config) => ({
             case 'company_website': {
                 if (! this.urlIsValid(this.companyWebsite)) {
                     return messages.company_website_invalid ?? null;
+                }
+
+                return null;
+            }
+            case 'company_country': {
+                if (! this.companyCountry) {
+                    return messages.company_country_required ?? null;
                 }
 
                 return null;
@@ -1977,6 +2001,28 @@ Alpine.data('registerWizard', (config) => ({
     prev() {
         if (this.canGoBack) {
             this.step -= 1;
+        }
+    },
+
+    onEnterKey(event) {
+        if (event.target?.tagName === 'TEXTAREA') {
+            return;
+        }
+
+        // Étapes intermédiaires : Entrée = Continuer (si le bouton est actif).
+        if (this.showNext) {
+            event.preventDefault();
+
+            if (this.canGoNext) {
+                this.next();
+            }
+
+            return;
+        }
+
+        // Dernière étape : bloquer Entrée tant que le formulaire n’est pas valide.
+        if (this.showSubmit && ! this.canSubmit) {
+            event.preventDefault();
         }
     },
 
@@ -4914,6 +4960,10 @@ Alpine.data('inboxWorkspace', (config) => ({
     conversations: config.conversations ?? [],
     conversation: config.conversation ?? null,
     indexUrl: config.indexUrl ?? '/inbox',
+    composeUrl: config.composeUrl ?? null,
+    talentSearchUrl: config.talentSearchUrl ?? null,
+    canCompose: Boolean(config.canCompose),
+    canDelete: Boolean(config.canDelete),
     csrf: config.csrf ?? '',
     labels: config.labels ?? {},
     messages: config.conversation?.messages ?? [],
@@ -4924,6 +4974,24 @@ Alpine.data('inboxWorkspace', (config) => ({
     error: null,
     pollTimer: null,
     selectToken: 0,
+
+    composeOpen: false,
+    composeSubject: '',
+    composeBody: '',
+    composeFiles: [],
+    composeSending: false,
+    talentQuery: '',
+    talentResults: [],
+    talentSuggestionsOpen: false,
+    talentLoading: false,
+    talentActiveIndex: -1,
+    talentDebounceTimer: null,
+    selectedTalentId: null,
+    selectedTalentLabel: '',
+    talentMinChars: 2,
+    deleteConfirming: false,
+    deleteSending: false,
+    pendingDeleteItem: null,
 
     get selectedId() {
         return this.conversation?.id ?? null;
@@ -4979,6 +5047,9 @@ Alpine.data('inboxWorkspace', (config) => ({
         if (this.onDocumentClick) {
             document.removeEventListener('click', this.onDocumentClick);
         }
+
+        clearTimeout(this.talentDebounceTimer);
+        document.documentElement.classList.remove('overflow-hidden');
     },
 
     isActive(item) {
@@ -4986,7 +5057,7 @@ Alpine.data('inboxWorkspace', (config) => ({
     },
 
     handlePageClick(event) {
-        if (! this.hasSelection || this.selecting || this.sending) {
+        if (this.composeOpen || this.deleteConfirming || ! this.hasSelection || this.selecting || this.sending) {
             return;
         }
 
@@ -4997,11 +5068,349 @@ Alpine.data('inboxWorkspace', (config) => ({
         }
 
         // Keep selection when interacting with the thread pane or a conversation row.
-        if (target.closest('[data-inbox-thread]') || target.closest('[data-inbox-item]')) {
+        if (target.closest('[data-inbox-thread]') || target.closest('[data-inbox-item]') || target.closest('[data-inbox-compose]')) {
             return;
         }
 
         this.clearSelection();
+    },
+
+    requestDelete(item) {
+        if (! this.canDelete || ! item?.destroy_url || this.deleteSending) {
+            return;
+        }
+
+        this.pendingDeleteItem = item;
+        this.deleteConfirming = true;
+        document.documentElement.classList.add('overflow-hidden');
+    },
+
+    closeDeleteConfirm() {
+        if (this.deleteSending) {
+            return;
+        }
+
+        this.deleteConfirming = false;
+        this.pendingDeleteItem = null;
+        document.documentElement.classList.remove('overflow-hidden');
+    },
+
+    async confirmDelete() {
+        const item = this.pendingDeleteItem;
+
+        if (! item?.destroy_url || this.deleteSending) {
+            return;
+        }
+
+        this.deleteSending = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('_token', this.csrf);
+            formData.append('_method', 'DELETE');
+
+            const response = await fetch(item.destroy_url, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [payload?.message || this.labels.error];
+
+                messages.filter(Boolean).forEach((message) => pushToast('error', message));
+
+                return;
+            }
+
+            pushToast('success', payload.message || '');
+
+            const deletedId = Number(item.id);
+            this.conversations = this.conversations.filter((conversation) => Number(conversation.id) !== deletedId);
+
+            if (Number(this.selectedId) === deletedId) {
+                this.clearSelection();
+            }
+
+            if (typeof payload.unread_count === 'number') {
+                updateInboxNavBadge(payload.unread_count);
+            }
+
+            this.deleteConfirming = false;
+            this.pendingDeleteItem = null;
+            document.documentElement.classList.remove('overflow-hidden');
+        } catch {
+            pushToast('error', this.labels.networkError ?? this.labels.error);
+        } finally {
+            this.deleteSending = false;
+        }
+    },
+
+    openCompose() {
+        if (! this.canCompose || ! this.composeUrl) {
+            return;
+        }
+
+        this.resetComposeForm();
+        this.composeOpen = true;
+        document.documentElement.classList.add('overflow-hidden');
+        this.$nextTick(() => this.$refs.talentInput?.focus());
+    },
+
+    closeCompose() {
+        if (this.composeSending) {
+            return;
+        }
+
+        this.composeOpen = false;
+        this.closeTalentSuggestions();
+        document.documentElement.classList.remove('overflow-hidden');
+        this.resetComposeForm();
+    },
+
+    resetComposeForm() {
+        this.composeSubject = '';
+        this.composeBody = '';
+        this.composeFiles = [];
+        this.composeSending = false;
+        this.talentQuery = '';
+        this.talentResults = [];
+        this.talentSuggestionsOpen = false;
+        this.talentLoading = false;
+        this.talentActiveIndex = -1;
+        this.selectedTalentId = null;
+        this.selectedTalentLabel = '';
+        clearTimeout(this.talentDebounceTimer);
+        setPartialLoading('inbox-compose-sheet', false);
+    },
+
+    onTalentInput() {
+        if (this.selectedTalentId && this.talentQuery.trim() === String(this.selectedTalentLabel ?? '').trim()) {
+            return;
+        }
+
+        this.selectedTalentId = null;
+        this.selectedTalentLabel = '';
+        clearTimeout(this.talentDebounceTimer);
+        this.talentDebounceTimer = setTimeout(() => this.fetchTalentSuggestions(), 220);
+    },
+
+    onTalentFocus() {
+        if (this.talentQuery.trim().length >= this.talentMinChars) {
+            this.fetchTalentSuggestions();
+        }
+    },
+
+    async fetchTalentSuggestions() {
+        if (! this.talentSearchUrl) {
+            return;
+        }
+
+        const term = this.talentQuery.trim();
+
+        if (term.length < this.talentMinChars) {
+            this.talentResults = [];
+            this.talentSuggestionsOpen = false;
+            this.talentActiveIndex = -1;
+
+            return;
+        }
+
+        this.talentLoading = true;
+        this.talentSuggestionsOpen = true;
+
+        try {
+            const params = new URLSearchParams({ q: term });
+            const response = await fetch(`${this.talentSearchUrl}?${params.toString()}`, {
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+
+            if (! response.ok) {
+                throw new Error('talent search failed');
+            }
+
+            const data = await response.json();
+            this.talentResults = data.results ?? [];
+            this.talentActiveIndex = this.talentResults.length ? 0 : -1;
+        } catch {
+            this.talentResults = [];
+            this.talentActiveIndex = -1;
+        } finally {
+            this.talentLoading = false;
+        }
+    },
+
+    selectTalent(item) {
+        this.selectedTalentId = item.id;
+        this.selectedTalentLabel = item.label;
+        this.talentQuery = item.label;
+        this.closeTalentSuggestions();
+        this.$refs.talentInput?.focus();
+    },
+
+    closeTalentSuggestions() {
+        this.talentSuggestionsOpen = false;
+        this.talentActiveIndex = -1;
+    },
+
+    onTalentKeydown(event) {
+        if (event.key === 'Escape') {
+            this.closeTalentSuggestions();
+
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            if (this.talentSuggestionsOpen && this.talentActiveIndex >= 0 && this.talentResults[this.talentActiveIndex]) {
+                event.preventDefault();
+                this.selectTalent(this.talentResults[this.talentActiveIndex]);
+            }
+
+            return;
+        }
+
+        if (! this.talentSuggestionsOpen || ! this.talentResults.length) {
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            this.talentActiveIndex = Math.min(this.talentActiveIndex + 1, this.talentResults.length - 1);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            this.talentActiveIndex = Math.max(this.talentActiveIndex - 1, 0);
+        }
+    },
+
+    onComposeFiles(event) {
+        const incoming = Array.from(event.target.files ?? []);
+        const merged = [...this.composeFiles];
+
+        for (const file of incoming) {
+            if (merged.length >= 3) {
+                break;
+            }
+
+            if (! merged.some((existing) => existing.name === file.name && existing.size === file.size)) {
+                merged.push(file);
+            }
+        }
+
+        this.composeFiles = merged;
+        event.target.value = '';
+    },
+
+    removeComposeFile(index) {
+        this.composeFiles = this.composeFiles.filter((_, i) => i !== index);
+    },
+
+    async sendCompose() {
+        if (! this.canCompose || ! this.composeUrl || this.composeSending) {
+            return;
+        }
+
+        if (! this.selectedTalentId) {
+            pushToast('error', this.labels.composeTalentRequired ?? this.labels.error);
+
+            return;
+        }
+
+        const body = this.composeBody.trim();
+        const subject = this.composeSubject.trim();
+
+        if (! subject) {
+            pushToast('error', this.labels.composeSubjectRequired ?? this.labels.error);
+
+            return;
+        }
+
+        if (! body) {
+            pushToast('error', this.labels.composeBodyRequired ?? this.labels.error);
+
+            return;
+        }
+
+        if (body.length < 20) {
+            pushToast('error', this.labels.composeMinBody ?? this.labels.error);
+
+            return;
+        }
+
+        this.composeSending = true;
+        setPartialLoading('inbox-compose-sheet', true);
+
+        const formData = new FormData();
+        formData.append('talent_id', String(this.selectedTalentId));
+        formData.append('subject', subject);
+        formData.append('body', body);
+        formData.append('_token', this.csrf);
+
+        this.composeFiles.forEach((file) => {
+            formData.append('attachments[]', file);
+        });
+
+        try {
+            const response = await fetch(this.composeUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [payload?.message || this.labels.error];
+
+                messages.filter(Boolean).forEach((message) => pushToast('error', message));
+
+                return;
+            }
+
+            pushToast('success', payload.message || this.labels.sent || '');
+
+            const conversationPayload = payload.conversation;
+            this.composeOpen = false;
+            document.documentElement.classList.remove('overflow-hidden');
+            this.resetComposeForm();
+
+            if (conversationPayload?.id) {
+                this.bumpConversationInList(conversationPayload);
+                const item = this.conversations.find((c) => Number(c.id) === Number(conversationPayload.id));
+
+                if (item) {
+                    if (Number(item.id) === Number(this.selectedId)) {
+                        this.conversation = null;
+                        this.messages = [];
+                    }
+
+                    await this.selectConversation(item);
+                } else if (payload.show_url) {
+                    window.location = payload.show_url;
+                }
+            } else if (payload.show_url) {
+                window.location = payload.show_url;
+            }
+        } catch {
+            pushToast('error', this.labels.networkError ?? this.labels.error);
+        } finally {
+            setPartialLoading('inbox-compose-sheet', false);
+            this.composeSending = false;
+        }
     },
 
     async selectConversation(item, options = {}) {

@@ -1,6 +1,6 @@
 <x-emails.layout>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">
-        {{ __('talenma.mail.company_approved.greeting', ['name' => $user->name]) }}
+        {{ __('talenma.mail.company_approved.greeting', ['name' => $user->companyMailPersonName()]) }}
     </p>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">
         {{ __('talenma.mail.company_approved.body') }}

@@ -6,6 +6,7 @@
         || $errors->has('description')
         || $errors->has('documents')
         || $errors->has('documents.*')
+        || $errors->has('data_processing_consent')
     )) {
         $initialStep = 2;
     }
@@ -22,7 +23,7 @@
             $initialStep = 2;
         }
 
-        if ($errors->has('documents') || $errors->has('documents.*')) {
+        if ($errors->has('documents') || $errors->has('documents.*') || $errors->has('data_processing_consent')) {
             $initialStep = 3;
         }
     }
@@ -70,6 +71,8 @@
         'company_description_min' => __('talenma.auth.validation.company_description_min'),
         'company_description_max' => __('talenma.auth.validation.company_description_max'),
         'company_website_invalid' => __('talenma.auth.validation.company_website_invalid'),
+        'company_country_required' => __('talenma.auth.validation.company_country_required'),
+        'data_processing_consent_required' => __('talenma.auth.validation.data_processing_consent_required'),
     ];
 @endphp
 
@@ -99,6 +102,7 @@
         novalidate
         class="flex flex-col h-full min-h-0"
         @submit="onSubmit($event)"
+        @keydown.enter="onEnterKey($event)"
         x-data="registerWizard({
             initialRole: @js(old('role', $defaultRole ?? '')),
             initialStep: @js($initialStep),
@@ -111,8 +115,9 @@
             initialDocumentsCount: @js(is_array(old('documents')) ? count(old('documents')) : 0),
             initialCompanyDescription: @js(old('company_description', '')),
             initialCompanyWebsite: @js(old('company_website', '')),
-            initialCompanyCountry: @js(old('company_country', \App\Models\CompanyProfile::DEFAULT_COUNTRY)),
+            initialCompanyCountry: @js(old('company_country', '')),
             defaultCompanyCountry: @js(\App\Models\CompanyProfile::DEFAULT_COUNTRY),
+            initialDataProcessingConsent: @js((bool) old('data_processing_consent')),
             validationMessages: @js($registerValidationMessages),
         })"
     >@csrf
@@ -344,6 +349,9 @@
                             id="company_country"
                             name="company_country"
                             x-model="companyCountry"
+                            @blur="onFieldBlur('company_country')"
+                            @change="onFieldInput('company_country')"
+                            x-bind:class="fieldInvalidClass('company_country')"
                             class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm py-2"
                         >
                             <option value="">{{ __('talenma.talent.country_placeholder') }}</option>
@@ -396,6 +404,27 @@
                     <p class="mt-0.5 text-[11px] sm:text-xs text-gray-500">{{ __('talenma.auth.company_registration_documents_hint') }}</p>
                     <x-input-error :messages="$errors->get('documents')" class="mt-1" />
                     <x-input-error :messages="$errors->get('documents.*')" class="mt-1" />
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                    <label class="flex items-start gap-2.5 cursor-pointer">
+                        <input
+                            id="company_data_processing_consent"
+                            name="data_processing_consent"
+                            type="checkbox"
+                            value="1"
+                            x-model="dataProcessingConsent"
+                            x-bind:disabled="!isCompany"
+                            @change="onFieldInput('data_processing_consent')"
+                            x-bind:class="fieldInvalidClass('data_processing_consent')"
+                            class="mt-0.5 rounded border-gray-300 text-emerald-600 shadow-sm focus:ring-emerald-500"
+                        >
+                        <span class="text-xs sm:text-sm text-gray-700 leading-snug">
+                            {!! __('talenma.auth.data_processing_consent_company', [
+                                'policy' => '<a href="'.e(route('privacy')).'" target="_blank" rel="noopener noreferrer" class="font-semibold text-emerald-700 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-900">'.e(__('talenma.auth.privacy_policy')).'</a>',
+                            ]) !!}
+                        </span>
+                    </label>
+                    <x-input-error :messages="$errors->get('data_processing_consent')" class="mt-2" />
                 </div>
             </div>
 
@@ -470,6 +499,27 @@
                     <p class="mt-0.5 text-[11px] sm:text-xs text-gray-500">{{ __('talenma.auth.registration_documents_hint') }}</p>
                     <x-input-error :messages="$errors->get('documents')" class="mt-1" />
                     <x-input-error :messages="$errors->get('documents.*')" class="mt-1" />
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                    <label class="flex items-start gap-2.5 cursor-pointer">
+                        <input
+                            id="data_processing_consent"
+                            name="data_processing_consent"
+                            type="checkbox"
+                            value="1"
+                            x-model="dataProcessingConsent"
+                            x-bind:disabled="!isTalent"
+                            @change="onFieldInput('data_processing_consent')"
+                            x-bind:class="fieldInvalidClass('data_processing_consent')"
+                            class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                        >
+                        <span class="text-xs sm:text-sm text-gray-700 leading-snug">
+                            {!! __('talenma.auth.data_processing_consent', [
+                                'policy' => '<a href="'.e(route('privacy')).'" target="_blank" rel="noopener noreferrer" class="font-semibold text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800">'.e(__('talenma.auth.privacy_policy')).'</a>',
+                            ]) !!}
+                        </span>
+                    </label>
+                    <x-input-error :messages="$errors->get('data_processing_consent')" class="mt-2" />
                 </div>
             </div>
         </div>

@@ -21,7 +21,10 @@ use Illuminate\Validation\ValidationException;
 
 class PendingRegistrationService
 {
-    public const EXPIRY_MINUTES = 5;
+    /** Lien de confirmation d'inscription (24 heures). */
+    public const EXPIRY_HOURS = 24;
+
+    public const EXPIRY_MINUTES = self::EXPIRY_HOURS * 60;
 
     /**
      * @throws ValidationException
@@ -132,6 +135,10 @@ class PendingRegistrationService
                 'role' => $payload['role'],
                 'company_seat' => $payload['role'] === 'company' ? User::SEAT_OWNER : null,
                 'email_verified_at' => now(),
+                'data_processing_consent_at' => isset($payload['data_processing_consent_at'])
+                    ? \Illuminate\Support\Carbon::parse($payload['data_processing_consent_at'])
+                    : null,
+                'data_processing_consent_version' => $payload['data_processing_consent_version'] ?? null,
                 'approval_status' => User::APPROVAL_PENDING,
                 'approved_at' => null,
             ]);
@@ -229,6 +236,8 @@ class PendingRegistrationService
             $payload['name'] = trim($firstName.' '.$lastName);
             $payload['sector'] = $validated['sector'];
             $payload['description'] = $validated['description'];
+            $payload['data_processing_consent_at'] = now()->toIso8601String();
+            $payload['data_processing_consent_version'] = (string) config('talenma.data_processing_consent_version');
         }
 
         if ($validated['role'] === 'company') {
@@ -244,6 +253,8 @@ class PendingRegistrationService
             $payload['company_description'] = $validated['company_description'];
             $payload['company_website'] = $validated['company_website'] ?? null;
             $payload['company_country'] = $validated['company_country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY;
+            $payload['data_processing_consent_at'] = now()->toIso8601String();
+            $payload['data_processing_consent_version'] = (string) config('talenma.data_processing_consent_version');
         }
 
         return $payload;

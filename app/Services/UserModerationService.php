@@ -156,7 +156,7 @@ class UserModerationService
             $user->companyProfile()->create();
         }
 
-        Mail::to($user->email)->send(new CompanyApprovedMail($user->fresh()));
+        Mail::to($user->email)->send(new CompanyApprovedMail($user->fresh()->loadMissing('companyProfile')));
     }
 
     public function rejectCompany(User $user, ?string $reason, User $reviewer): void

@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'last_message_at',
     'company_last_read_at',
     'talent_last_read_at',
+    'company_hidden_at',
+    'talent_hidden_at',
 ])]
 class Conversation extends Model
 {
@@ -29,6 +31,8 @@ class Conversation extends Model
             'last_message_at' => 'datetime',
             'company_last_read_at' => 'datetime',
             'talent_last_read_at' => 'datetime',
+            'company_hidden_at' => 'datetime',
+            'talent_hidden_at' => 'datetime',
         ];
     }
 

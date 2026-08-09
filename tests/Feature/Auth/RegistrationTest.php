@@ -39,10 +39,11 @@ class RegistrationTest extends TestCase
     {
         return array_merge($this->validPayload(), [
             'sector' => 'it-digital',
-            'description' => 'Développeur passionné avec plus de cinq ans d\'expérience en Laravel et React.',
+            'description' => str_repeat('a', 255),
             'documents' => [
                 UploadedFile::fake()->create('diploma.pdf', 100, 'application/pdf'),
             ],
+            'data_processing_consent' => '1',
         ], $overrides);
     }
 
@@ -54,10 +55,12 @@ class RegistrationTest extends TestCase
             'password' => 'Password1',
             'password_confirmation' => 'Password1',
             'role' => 'company',
-            'representative_name' => 'Jean Dupont',
+            'first_name' => 'Jean',
+            'last_name' => 'Dupont',
             'sector' => 'it-digital',
             'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile, à la recherche de talents pour accompagner notre croissance.',
             'company_country' => 'fr',
+            'data_processing_consent' => '1',
         ], $overrides);
     }
 
@@ -124,10 +127,26 @@ class RegistrationTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertNotNull($user->email_verified_at);
         $this->assertNotNull($user->profile);
-        $this->assertSame('Développeur passionné avec plus de cinq ans d\'expérience en Laravel et React.', $user->profile->bio);
+        $this->assertSame(str_repeat('a', 255), $user->profile->bio);
         $this->assertCount(1, $user->profile->documents);
         $this->assertSame(User::APPROVAL_PENDING, $user->approval_status);
+        $this->assertNotNull($user->data_processing_consent_at);
+        $this->assertSame(config('talenma.data_processing_consent_version'), $user->data_processing_consent_version);
         $this->assertDatabaseMissing('pending_registrations', ['email' => 'test@example.com']);
+    }
+
+    public function test_talent_registration_requires_data_processing_consent(): void
+    {
+        Mail::fake();
+
+        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
+            'data_processing_consent' => null,
+        ]));
+
+        $response->assertRedirect('/register');
+        $response->assertSessionHasErrors('data_processing_consent');
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'test@example.com']);
+        Mail::assertNothingSent();
     }
 
     public function test_expired_registration_link_is_rejected_and_purged(): void
@@ -198,6 +217,23 @@ class RegistrationTest extends TestCase
         $this->assertSame('Acme SAS', $user?->name);
         $this->assertNotNull($user?->companyProfile);
         $this->assertSame(User::APPROVAL_PENDING, $user?->approval_status);
+        $this->assertNotNull($user?->data_processing_consent_at);
+        $this->assertSame(config('talenma.data_processing_consent_version'), $user?->data_processing_consent_version);
+    }
+
+    public function test_company_registration_requires_data_processing_consent(): void
+    {
+        Mail::fake();
+
+        $response = $this->from('/register')->post('/register', $this->validCompanyPayload([
+            'email' => 'company-consent@example.com',
+            'data_processing_consent' => null,
+        ]));
+
+        $response->assertRedirect('/register');
+        $response->assertSessionHasErrors('data_processing_consent');
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'company-consent@example.com']);
+        Mail::assertNothingSent();
     }
 
     public function test_talent_verification_email_uses_full_name(): void
@@ -273,7 +309,7 @@ class RegistrationTest extends TestCase
         ]));
 
         $response->assertRedirect('/register');
-        $response->assertSessionHasErrors(['representative_name', 'sector', 'company_description']);
+        $response->assertSessionHasErrors(['name', 'sector', 'company_description', 'company_country']);
     }
 
     public function test_company_registration_stores_sector_and_documents_on_verify(): void
@@ -310,10 +346,10 @@ class RegistrationTest extends TestCase
         $response = $this->from('/register')->post('/register', $this->validPayload());
 
         $response->assertRedirect('/register');
-        $response->assertSessionHasErrors(['sector', 'description', 'documents']);
+        $response->assertSessionHasErrors(['sector', 'description', 'documents', 'data_processing_consent']);
     }
 
-    public function test_talent_registration_rejects_more_than_three_documents(): void
+    public function test_talent_registration_rejects_more_than_five_documents(): void
     {
         $response = $this->from('/register')->post('/register', $this->validTalentPayload([
             'documents' => [
@@ -321,6 +357,8 @@ class RegistrationTest extends TestCase
                 UploadedFile::fake()->create('diploma-2.pdf', 100, 'application/pdf'),
                 UploadedFile::fake()->create('diploma-3.pdf', 100, 'application/pdf'),
                 UploadedFile::fake()->create('diploma-4.pdf', 100, 'application/pdf'),
+                UploadedFile::fake()->create('diploma-5.pdf', 100, 'application/pdf'),
+                UploadedFile::fake()->create('diploma-6.pdf', 100, 'application/pdf'),
             ],
         ]));
 

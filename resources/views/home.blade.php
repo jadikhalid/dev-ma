@@ -84,6 +84,11 @@
             <p class="mt-3 text-xs sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
         @endif
 
+        <x-latest-jobs-marquee
+            :jobs="$latestJobs ?? collect()"
+            :index-url="$latestJobsIndexUrl ?? route('login')"
+        />
+
         {{-- Bandeau réassurance style Malt --}}
         <div class="mt-8 lg:mt-10 pt-6 border-t border-gray-100">
             <div class="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-8 lg:gap-12 text-xs sm:text-sm font-medium text-gray-700">

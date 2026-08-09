@@ -26,6 +26,8 @@ use Illuminate\Notifications\Notifiable;
     'role',
     'company_seat',
     'email_verified_at',
+    'data_processing_consent_at',
+    'data_processing_consent_version',
     'approval_status',
     'approved_at',
     'approved_by',
@@ -55,6 +57,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'data_processing_consent_at' => 'datetime',
             'pending_email_expires_at' => 'datetime',
             'approved_at' => 'datetime',
             'disabled_at' => 'datetime',
