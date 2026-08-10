@@ -12,19 +12,19 @@
         <div class="absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-teal-200/25 blur-3xl" aria-hidden="true"></div>
         <div class="absolute inset-0 opacity-[0.08]" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 22px 22px;" aria-hidden="true"></div>
 
-        <div class="relative z-10 flex flex-1 flex-col justify-center gap-5 px-6 py-10">
-            <div class="flex flex-col gap-3">
+        <div class="relative z-10 flex flex-1 flex-col justify-center gap-6 px-6 py-10">
+            <div class="flex flex-col gap-3.5">
                 {{-- Relais du nom de marque quand le header le masque (< 420px) --}}
-                <p class="hidden max-[420px]:block text-[1.7rem] font-bold leading-none tracking-tight text-white">
+                <p class="hidden max-[420px]:block text-[2.25rem] font-bold leading-[1.05] tracking-tight text-white">
                     Talents du <span class="text-amber-200">Maroc</span>
                 </p>
 
-                <p class="inline-flex w-fit max-w-full items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold leading-snug tracking-[0.04em] text-white/90 backdrop-blur-sm">
+                <p class="inline-flex w-fit max-w-full items-center rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-[13px] font-semibold leading-snug tracking-[0.04em] text-white/90 backdrop-blur-sm">
                     {{ __('talenma.home.badge') }}
                 </p>
             </div>
 
-            <h1 class="max-w-[17rem] text-[1.95rem] font-extrabold leading-[1.24] tracking-[-0.02em] text-white min-[390px]:max-w-[19.5rem] min-[390px]:text-[2.15rem] min-[430px]:max-w-[21rem] min-[430px]:text-[2.3rem]">
+            <h1 class="max-w-[20.5rem] text-[2.4rem] font-extrabold leading-[1.2] tracking-[-0.02em] text-white min-[480px]:max-w-[22rem] min-[480px]:text-[2.55rem]">
                 {!! __('talenma.home.hero_title', [
                     'talents' => '<span class="text-amber-200">'.__('talenma.home.hero_talents').'</span>',
                     'emphasis' => '<strong class="font-extrabold text-white underline decoration-amber-200/60 decoration-2 underline-offset-[6px]">'.__('talenma.home.hero_emphasis').'</strong>',
