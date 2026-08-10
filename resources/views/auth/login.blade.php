@@ -15,7 +15,15 @@
             <form method="POST" action="{{ route('login') }}" class="flex flex-col flex-1 min-h-0">@csrf
                 <div>
                     <x-input-label for="email" :value="__('talenma.auth.email')" />
-                    <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email')" required autofocus />
+                    <x-text-input
+                        id="email"
+                        name="email"
+                        type="email"
+                        class="mt-1 block w-full"
+                        :value="old('email')"
+                        required
+                        x-init="if (window.matchMedia('(min-width: 640px)').matches) { $el.focus() }"
+                    />
                 </div>
                 <div class="mt-4">
                     <x-input-label for="password" :value="__('talenma.auth.password')" />
