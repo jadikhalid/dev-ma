@@ -5,7 +5,7 @@
 
 <section class="relative overflow-hidden bg-white hero-section" aria-label="hero">
     {{-- Petit écran : header (4rem) + panneau marque = 100svh au chargement --}}
-    <div class="sm:hidden relative isolate flex h-[calc(100svh-4rem)] min-h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden">
+    <div class="sm:hidden relative isolate flex h-[calc(100svh-5rem)] min-h-[calc(100svh-5rem)] flex-col justify-center overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-b from-indigo-600 via-indigo-600 to-teal-600" aria-hidden="true"></div>
         <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-indigo-500/40 to-transparent" aria-hidden="true"></div>
         <div class="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-amber-300/20 blur-3xl" aria-hidden="true"></div>

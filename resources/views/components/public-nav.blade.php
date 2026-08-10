@@ -10,9 +10,9 @@
         'px-4 sm:px-6 lg:px-10 xl:px-12' => $fullWidth,
         'max-w-7xl px-4 sm:px-6 lg:px-8' => ! $fullWidth,
     ])>
-        <div class="flex items-center justify-between h-16">
+        <div class="flex items-center justify-between h-20 sm:h-16">
             <div class="sm:hidden">
-                <x-brand-logo href="{{ route('home') }}" size="sm" :light="true" />
+                <x-brand-logo href="{{ route('home') }}" size="md" :light="true" />
             </div>
             <div class="hidden sm:block">
                 <x-brand-logo href="{{ route('home') }}" size="sm" />
@@ -21,7 +21,7 @@
             <div class="hidden md:flex items-center">
                 <x-social-links />
             </div>
-            <div class="flex items-center gap-2 sm:gap-3">
+            <div class="flex items-center gap-2.5 sm:gap-3">
                 <div class="hidden lg:block">
                     <x-locale-switcher />
                 </div>
@@ -95,15 +95,15 @@
                 @else
                     <a
                         href="{{ route('login') }}"
-                        class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-semibold rounded-lg transition-all duration-300 ease-in-out text-white/95 border border-white/25 bg-white/10 hover:bg-white/20 sm:text-indigo-600 sm:border-indigo-200/80 sm:bg-indigo-50/60 sm:hover:bg-indigo-100 sm:hover:border-indigo-300 sm:hover:text-indigo-700 sm:hover:shadow-sm"
+                        class="inline-flex items-center px-4 py-2.5 sm:px-4 sm:py-2 text-base sm:text-sm font-semibold rounded-xl sm:rounded-lg transition-all duration-300 ease-in-out text-white/95 border border-white/30 bg-white/15 hover:bg-white/25 sm:text-indigo-600 sm:border-indigo-200/80 sm:bg-indigo-50/60 sm:hover:bg-indigo-100 sm:hover:border-indigo-300 sm:hover:text-indigo-700 sm:hover:shadow-sm"
                     >{{ __('talenma.nav.login') }}</a>
                     <a
                         href="{{ route('register') }}"
-                        class="sm:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg transition bg-white/90 text-indigo-700 hover:bg-white shadow-sm"
+                        class="sm:hidden inline-flex items-center justify-center w-11 h-11 rounded-xl transition bg-white/95 text-indigo-700 hover:bg-white shadow-sm"
                         aria-label="{{ __('talenma.nav.register') }}"
                         title="{{ __('talenma.nav.register') }}"
                     >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                         </svg>
                     </a>
