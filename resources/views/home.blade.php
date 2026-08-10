@@ -33,7 +33,6 @@
         </div>
     </div>
 
-    <div class="home-rest-mobile-type">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8 sm:pt-12 lg:pt-16 lg:pb-10">
         <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
             {{-- Colonne texte --}}
@@ -145,10 +144,8 @@
             :index-url="$latestJobsIndexUrl ?? route('jobs.gate')"
         />
     </div>
-    </div>
 </section>
 
-<div class="home-rest-mobile-type">
 <section class="py-20 bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="text-3xl font-bold text-center">{{ __('talenma.home.modes_title') }}</h2>
@@ -212,5 +209,4 @@
     </div>
 </section>
 @endguest
-</div>
 @endsection
