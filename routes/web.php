@@ -18,6 +18,7 @@ use App\Http\Controllers\CompanyUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
+use App\Http\Controllers\JobAccessGateController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ModeratorModeController;
 use App\Http\Controllers\PaymentController;
@@ -41,6 +42,10 @@ Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('local
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/privacy', [PrivacyController::class, 'show'])->name('privacy');
+Route::get('/annonces/acces/{job?}', JobAccessGateController::class)
+    ->middleware('auth')
+    ->whereNumber('job')
+    ->name('jobs.gate');
 Route::get('/profile/email/confirm/{token}', [ProfileController::class, 'confirmPendingEmail'])
     ->middleware('throttle:20,1')
     ->name('profile.email.confirm');

@@ -42,7 +42,7 @@ class HomeController extends Controller
         $latestJobsIndexUrl = match (true) {
             $canBrowseTalentJobs => route('talent.jobs.index'),
             $canManageCompanyJobs => route('company.jobs.index'),
-            default => route('login'),
+            default => route('jobs.gate'),
         };
 
         $latestJobs = $this->latestPublishedJobs($canBrowseTalentJobs, $canManageCompanyJobs, $viewerCompanyProfileId);
@@ -72,6 +72,7 @@ class HomeController extends Controller
      *     company: string,
      *     company_initials: string,
      *     logo_url: ?string,
+     *     sector: ?string,
      *     date: string,
      *     url: string
      * }>
@@ -82,19 +83,19 @@ class HomeController extends Controller
         ?int $viewerCompanyProfileId,
     ): Collection {
         return JobPosting::query()
-            ->with(['companyProfile.user'])
+            ->with(['companyProfile.user', 'professionSector'])
             ->where('status', JobPosting::STATUS_PUBLISHED)
             ->orderByDesc('published_at')
             ->orderByDesc('id')
             ->limit(10)
-            ->get(['id', 'title', 'description', 'company_profile_id', 'published_at', 'created_at'])
+            ->get(['id', 'title', 'description', 'company_profile_id', 'profession_sector_id', 'published_at', 'created_at'])
             ->map(function (JobPosting $job) use ($canBrowseTalentJobs, $canManageCompanyJobs, $viewerCompanyProfileId) {
                 $url = match (true) {
                     $canBrowseTalentJobs => route('talent.jobs.show', $job),
                     $canManageCompanyJobs && $viewerCompanyProfileId === (int) $job->company_profile_id
                         => route('company.jobs.show', $job),
                     $canManageCompanyJobs => route('company.jobs.index'),
-                    default => route('login'),
+                    default => route('jobs.gate', $job),
                 };
 
                 $profile = $job->companyProfile;
@@ -109,6 +110,7 @@ class HomeController extends Controller
                     'company' => $profile?->displayName() ?: '—',
                     'company_initials' => $profile?->initials() ?: '—',
                     'logo_url' => $profile?->logoUrl(),
+                    'sector' => $job->professionSector?->localizedName() ?: null,
                     'date' => $publishedAt?->translatedFormat('d M Y') ?? '',
                     'url' => $url,
                 ];

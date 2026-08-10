@@ -4,20 +4,51 @@
 <x-news-ticker />
 
 <section class="relative overflow-hidden bg-white hero-section" aria-label="hero">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8 lg:pt-16 lg:pb-10">
+    {{-- Petit écran : header (4rem) + panneau marque = 100svh au chargement --}}
+    <div class="sm:hidden relative isolate flex h-[calc(100svh-4rem)] min-h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-indigo-600 via-indigo-600 to-teal-600" aria-hidden="true"></div>
+        <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-indigo-500/40 to-transparent" aria-hidden="true"></div>
+        <div class="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-amber-300/20 blur-3xl" aria-hidden="true"></div>
+        <div class="absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-teal-200/25 blur-3xl" aria-hidden="true"></div>
+        <div class="absolute inset-0 opacity-[0.08]" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 22px 22px;" aria-hidden="true"></div>
+
+        <div class="relative z-10 flex flex-1 flex-col justify-center gap-5 px-6 py-10">
+            <div class="flex flex-col gap-3">
+                {{-- Relais du nom de marque quand le header le masque (< 420px) --}}
+                <p class="hidden max-[420px]:block text-[1.7rem] font-bold leading-none tracking-tight text-white">
+                    Talents du <span class="text-amber-200">Maroc</span>
+                </p>
+
+                <p class="inline-flex w-fit max-w-full items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold leading-snug tracking-[0.04em] text-white/90 backdrop-blur-sm">
+                    {{ __('talenma.home.badge') }}
+                </p>
+            </div>
+
+            <h1 class="max-w-[17rem] text-[1.95rem] font-extrabold leading-[1.24] tracking-[-0.02em] text-white min-[390px]:max-w-[19.5rem] min-[390px]:text-[2.15rem] min-[430px]:max-w-[21rem] min-[430px]:text-[2.3rem]">
+                {!! __('talenma.home.hero_title', [
+                    'talents' => '<span class="text-amber-200">'.__('talenma.home.hero_talents').'</span>',
+                    'emphasis' => '<strong class="font-extrabold text-white underline decoration-amber-200/60 decoration-2 underline-offset-[6px]">'.__('talenma.home.hero_emphasis').'</strong>',
+                ]) !!}
+            </h1>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8 sm:pt-12 lg:pt-16 lg:pb-10">
         <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
             {{-- Colonne texte --}}
             <div>
-                <p class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs sm:text-sm font-medium mb-4">
-                    {{ __('talenma.home.badge') }}
-                </p>
+                <div class="hidden sm:block">
+                    <p class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-100 text-indigo-800 text-sm font-semibold mb-4 ring-1 ring-indigo-200/70">
+                        {{ __('talenma.home.badge') }}
+                    </p>
 
-                <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-[1.1] text-gray-900">
-                    {!! __('talenma.home.hero_title', [
-                        'talents' => '<span class="text-amber-700/90">'.__('talenma.home.hero_talents').'</span>',
-                        'emphasis' => '<strong class="font-bold">'.__('talenma.home.hero_emphasis').'</strong>',
-                    ]) !!}
-                </h1>
+                    <h1 class="text-4xl lg:text-[2.75rem] font-extrabold tracking-tight leading-[1.1] text-gray-950">
+                        {!! __('talenma.home.hero_title', [
+                            'talents' => '<span class="text-amber-700">'.__('talenma.home.hero_talents').'</span>',
+                            'emphasis' => '<strong class="font-extrabold text-indigo-700">'.__('talenma.home.hero_emphasis').'</strong>',
+                        ]) !!}
+                    </h1>
+                </div>
 
                 <p class="hidden lg:block mt-4 text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl">
                     {!! __('talenma.home.hero_subtitle', [
@@ -26,7 +57,7 @@
                 </p>
 
                 @guest
-                    <div class="mt-6 rounded-xl border border-gray-100 bg-gray-50/70 p-4 sm:p-5">
+                    <div class="mt-2 sm:mt-6 rounded-xl border border-gray-100 bg-gray-50/70 p-4 sm:p-5">
                         <p class="text-sm sm:text-base font-semibold text-gray-900">{{ __('talenma.home.cta_new_visitor_question') }}</p>
                         <p class="mt-1.5 text-sm text-gray-600 leading-relaxed">{{ __('talenma.home.cta_new_visitor_hint') }}</p>
                         <div class="mt-4 flex flex-col sm:flex-row gap-2.5">
@@ -39,7 +70,7 @@
                         </div>
                     </div>
                 @else
-                    <div class="mt-5">
+                    <div class="mt-2 sm:mt-5">
                         <a href="{{ route('dashboard') }}" class="inline-flex justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
                             {{ __('talenma.nav.my_space') }} →
                         </a>
@@ -84,11 +115,6 @@
             <p class="mt-3 text-xs sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
         @endif
 
-        <x-latest-jobs-marquee
-            :jobs="$latestJobs ?? collect()"
-            :index-url="$latestJobsIndexUrl ?? route('login')"
-        />
-
         {{-- Bandeau réassurance style Malt --}}
         <div class="mt-8 lg:mt-10 pt-6 border-t border-gray-100">
             <div class="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-8 lg:gap-12 text-xs sm:text-sm font-medium text-gray-700">
@@ -112,6 +138,11 @@
                 </div>
             </div>
         </div>
+
+        <x-latest-jobs-marquee
+            :jobs="$latestJobs ?? collect()"
+            :index-url="$latestJobsIndexUrl ?? route('jobs.gate')"
+        />
     </div>
 </section>
 

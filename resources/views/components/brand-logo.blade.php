@@ -9,7 +9,8 @@
     $s = $sizes[$size] ?? $sizes['md'];
     $textClass = $light ? 'text-white' : 'text-gray-900';
     $accentClass = $light ? 'text-white' : 'text-indigo-600';
-    $badgeClass = 'flex items-center justify-center '.$s['box'].' rounded-lg bg-indigo-600 text-white font-bold shrink-0'.($badgeBorder ? ' border border-white' : '');
+    $badgeClass = 'flex items-center justify-center '.$s['box'].' rounded-lg font-bold shrink-0 bg-white text-indigo-600 ring-1 ring-indigo-200 sm:bg-indigo-600 sm:text-white sm:ring-0'
+        .($badgeBorder ? ' sm:border sm:border-white' : '');
     $classes = $attributes->merge(['class' => 'flex items-center gap-2']);
 @endphp
 

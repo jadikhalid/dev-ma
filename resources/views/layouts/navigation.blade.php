@@ -35,11 +35,16 @@
     }
 @endphp
 
-<nav x-data="{ open: false }" class="relative bg-white border-b border-gray-100 sticky top-0 z-40">
+<nav x-data="{ open: false }" class="relative sticky top-0 z-40 border-b backdrop-blur-md bg-indigo-600/90 border-white/10 sm:bg-white sm:border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center gap-2 sm:gap-4 min-w-0">
-                <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" />
+                <div class="sm:hidden">
+                    <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" :light="true" />
+                </div>
+                <div class="hidden sm:block">
+                    <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" />
+                </div>
                 <div class="hidden lg:flex items-center gap-1 min-w-0">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingAccount">
                         @if ($actingAsModerator || $authUser->isCompany())
@@ -260,7 +265,7 @@
                 <button
                     type="button"
                     @click="open = !open"
-                    class="p-2 text-gray-500"
+                    class="p-2 text-white/90 hover:text-white sm:text-gray-500 sm:hover:text-gray-700"
                     :aria-expanded="open"
                     aria-controls="mobile-navigation-menu"
                 >

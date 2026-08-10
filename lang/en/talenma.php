@@ -593,6 +593,7 @@ An administrator or moderator is reviewing your application before your company 
         'search_drawer_login_company' => 'I already have an account',
         'search_submit' => 'Search',
         'latest_jobs_title' => 'Latest job posts',
+        'latest_jobs_eyebrow' => 'Opportunities',
         'latest_jobs_view_all' => 'View all',
         'latest_jobs_scroll_prev' => 'Scroll to previous job posts',
         'latest_jobs_scroll_next' => 'Scroll to next job posts',

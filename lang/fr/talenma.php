@@ -593,6 +593,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
         'search_drawer_login_company' => 'J\'ai déjà un compte',
         'search_submit' => 'Rechercher',
         'latest_jobs_title' => 'Dernières annonces',
+        'latest_jobs_eyebrow' => 'Opportunités',
         'latest_jobs_view_all' => 'Voir tout',
         'latest_jobs_scroll_prev' => 'Faire défiler vers les annonces précédentes',
         'latest_jobs_scroll_next' => 'Faire défiler vers les annonces suivantes',
