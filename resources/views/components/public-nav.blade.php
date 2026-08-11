@@ -35,10 +35,14 @@
                             <x-slot name="trigger">
                                 <button
                                     type="button"
-                                    class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                                    class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 text-sm text-white/95 hover:bg-white/15 sm:text-gray-600 sm:hover:bg-gray-50 rounded-lg"
                                     aria-label="{{ $authUser->headerDisplayName() }}"
+                                    aria-haspopup="menu"
                                 >
-                                    <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-gray-200" />
+                                    <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-white/40 sm:ring-gray-200" />
+                                    <svg class="sm:hidden h-4 w-4 shrink-0 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M19 9l-7 7-7-7"/>
+                                    </svg>
                                     <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
                                 </button>
                             </x-slot>
@@ -54,10 +58,14 @@
                             <x-slot name="trigger">
                                 <button
                                     type="button"
-                                    class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                                    class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 text-sm text-white/95 hover:bg-white/15 sm:text-gray-600 sm:hover:bg-gray-50 rounded-lg"
                                     aria-label="{{ $authUser->headerDisplayName() }}"
+                                    aria-haspopup="menu"
                                 >
-                                    <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-gray-200" />
+                                    <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-white/40 sm:ring-gray-200" />
+                                    <svg class="sm:hidden h-4 w-4 shrink-0 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M19 9l-7 7-7-7"/>
+                                    </svg>
                                     <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
                                 </button>
                             </x-slot>
@@ -73,14 +81,18 @@
                             <x-slot name="trigger">
                                 <button
                                     type="button"
-                                    class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                                    class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 text-sm text-white/95 hover:bg-white/15 sm:text-gray-600 sm:hover:bg-gray-50 rounded-lg"
                                     aria-label="{{ $authUser->headerDisplayName() }}"
+                                    aria-haspopup="menu"
                                 >
                                     <x-company-logo
                                         :profile="$authUser->companyOrganization() ?? $authUser->companyProfile"
                                         size="xs"
-                                        class="ring-1 ring-gray-200"
+                                        class="ring-1 ring-white/40 sm:ring-gray-200"
                                     />
+                                    <svg class="sm:hidden h-4 w-4 shrink-0 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M19 9l-7 7-7-7"/>
+                                    </svg>
                                     <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
                                 </button>
                             </x-slot>
