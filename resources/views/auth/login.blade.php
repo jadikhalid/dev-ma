@@ -22,7 +22,7 @@
                         class="mt-1.5 block w-full !text-base !py-3 sm:mt-1 sm:!py-2"
                         :value="old('email')"
                         required
-                        x-init="if (window.matchMedia('(min-width: 640px)').matches) { $el.focus() }"
+                        x-init="if (window.matchMedia('(min-width: 640px) and (min-height: 500px)').matches) { $el.focus() }"
                     />
                 </div>
                 <div class="mt-5 sm:mt-4">

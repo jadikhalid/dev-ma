@@ -15,7 +15,7 @@
         <div class="relative z-10 flex flex-1 flex-col justify-center gap-6 px-6 py-10">
             <div class="flex flex-col gap-3.5">
                 {{-- Relais du nom de marque quand le header le masque (< 420px) --}}
-                <p class="hidden max-[420px]:block text-[2.25rem] font-bold leading-[1.05] tracking-tight text-white">
+                <p class="hidden max-w-420-block text-[2.25rem] font-bold leading-[1.05] tracking-tight text-white">
                     Talents du <span class="text-amber-200">Maroc</span>
                 </p>
 
@@ -24,7 +24,7 @@
                 </p>
             </div>
 
-            <h1 class="max-w-[20.5rem] text-[2.4rem] font-extrabold leading-[1.2] tracking-[-0.02em] text-white min-[480px]:max-w-[22rem] min-[480px]:text-[2.55rem]">
+            <h1 class="max-w-[20.5rem] text-[2.4rem] font-extrabold leading-[1.2] tracking-[-0.02em] text-white min-w-480-hero-title">
                 {!! __('talenma.home.hero_title', [
                     'talents' => '<span class="text-amber-200">'.__('talenma.home.hero_talents').'</span>',
                     'emphasis' => '<strong class="font-extrabold text-white underline decoration-amber-200/60 decoration-2 underline-offset-[6px]">'.__('talenma.home.hero_emphasis').'</strong>',

@@ -14,6 +14,11 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            // Keep phone landscape on the "mobile" layout: width alone is not enough
+            // (landscape phones often exceed 639px wide but stay short in height).
+            screens: {
+                sm: { raw: '(min-width: 640px) and (min-height: 500px)' },
+            },
         },
     },
 
