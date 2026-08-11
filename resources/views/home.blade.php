@@ -58,8 +58,8 @@
 
                 @guest
                     <div class="mt-2 sm:mt-6 rounded-xl border border-gray-100 bg-gray-50/70 p-4 sm:p-5">
-                        <p class="text-sm sm:text-base font-semibold text-gray-900">{{ __('talenma.home.cta_new_visitor_question') }}</p>
-                        <p class="mt-1.5 text-sm text-gray-600 leading-relaxed">{{ __('talenma.home.cta_new_visitor_hint') }}</p>
+                        <p class="text-base sm:text-base font-semibold text-gray-900">{{ __('talenma.home.cta_new_visitor_question') }}</p>
+                        <p class="mt-1.5 text-base text-gray-600 leading-relaxed">{{ __('talenma.home.cta_new_visitor_hint') }}</p>
                         <div class="mt-4 flex flex-col sm:flex-row gap-2.5">
                             <a href="{{ route('register', ['role' => 'dev']) }}" class="inline-flex justify-center px-5 py-2.5 bg-white border border-gray-200 text-gray-800 text-sm font-semibold rounded-xl hover:border-indigo-300 hover:text-indigo-700 transition">
                                 {{ __('talenma.home.cta_talent') }}

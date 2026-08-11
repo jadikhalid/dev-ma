@@ -155,6 +155,18 @@ class JobPostingController extends Controller
         return $this->respond($request, __('talenma.jobs.hidden'), reload: true);
     }
 
+    public function destroy(Request $request, JobPosting $job): JsonResponse|RedirectResponse
+    {
+        // Admin wants permanent deletion (remove every related trace).
+        $this->jobs->purgeCompletely($job);
+
+        return $this->respond(
+            $request,
+            __('talenma.jobs.deleted'),
+            route('admin.jobs.index'),
+        );
+    }
+
     public function updateApplication(Request $request, JobPosting $job, JobApplication $application): JsonResponse|RedirectResponse
     {
         abort_unless($application->job_posting_id === $job->id, 404);
