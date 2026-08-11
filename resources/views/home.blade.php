@@ -90,7 +90,7 @@
                 <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <span class="text-sm font-semibold text-gray-800">
+                <span class="text-base sm:text-sm font-semibold text-gray-800">
                     {{ ($showCompanySearch ?? false) ? __('talenma.home.company_search_tab') : __('talenma.home.search_tab') }}
                 </span>
             </div>
@@ -112,12 +112,12 @@
         </div>
 
         @if ($talentsCount > 0)
-            <p class="mt-3 text-xs sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
+            <p class="mt-3 text-sm sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
         @endif
 
         {{-- Bandeau réassurance style Malt --}}
         <div class="mt-8 lg:mt-10 pt-6 border-t border-gray-100">
-            <div class="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-8 lg:gap-12 text-xs sm:text-sm font-medium text-gray-700">
+            <div class="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-8 lg:gap-12 text-sm sm:text-sm font-medium text-gray-700">
                 <div class="flex items-center gap-2">
                     <svg class="w-6 h-6 shrink-0 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
@@ -154,17 +154,17 @@
             <div class="p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
                 <span class="text-3xl">🎯</span>
                 <h3 class="mt-4 text-xl font-bold">{{ __('talenma.home.mode_direct_title') }}</h3>
-                <p class="mt-3 text-gray-600 text-sm leading-relaxed">{{ __('talenma.home.mode_direct_desc') }}</p>
+                <p class="mt-3 text-gray-600 text-base sm:text-sm leading-relaxed">{{ __('talenma.home.mode_direct_desc') }}</p>
             </div>
             <div class="p-8 rounded-2xl border-2 border-indigo-200 bg-indigo-50/50 shadow-sm">
                 <span class="text-3xl">🤝</span>
                 <h3 class="mt-4 text-xl font-bold">{{ __('talenma.home.mode_intermediary_title') }}</h3>
-                <p class="mt-3 text-gray-600 text-sm leading-relaxed">{{ __('talenma.home.mode_intermediary_desc') }}</p>
+                <p class="mt-3 text-gray-600 text-base sm:text-sm leading-relaxed">{{ __('talenma.home.mode_intermediary_desc') }}</p>
             </div>
             <div class="p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
                 <span class="text-3xl">🏢</span>
                 <h3 class="mt-4 text-xl font-bold">{{ __('talenma.home.mode_morocco_title') }}</h3>
-                <p class="mt-3 text-gray-600 text-sm leading-relaxed">{{ __('talenma.home.mode_morocco_desc') }}</p>
+                <p class="mt-3 text-gray-600 text-base sm:text-sm leading-relaxed">{{ __('talenma.home.mode_morocco_desc') }}</p>
             </div>
         </div>
     </div>

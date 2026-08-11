@@ -10,7 +10,7 @@
     >
         <div class="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
             <div class="min-w-0">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-600">
+                <p class="text-[12px] sm:text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-600">
                     {{ __('talenma.home.latest_jobs_eyebrow') }}
                 </p>
                 <div class="mt-1.5 flex items-center gap-2.5">
@@ -26,7 +26,7 @@
             </div>
             <a
                 href="{{ $indexUrl }}"
-                class="inline-flex shrink-0 items-center justify-center gap-1.5 self-start rounded-xl border border-indigo-200 bg-white px-3.5 py-2 text-xs font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 sm:self-auto"
+                class="inline-flex shrink-0 items-center justify-center gap-1.5 self-start rounded-xl border border-indigo-200 bg-white px-3.5 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 sm:text-xs sm:self-auto"
             >
                 {{ __('talenma.home.latest_jobs_view_all') }}
                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -106,11 +106,11 @@
                                         {{ $job['title'] }}
                                     </span>
                                     @if ($job['excerpt'] !== '')
-                                        <span class="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500 sm:text-sm">
+                                        <span class="mt-1 line-clamp-2 text-sm leading-relaxed text-gray-500 sm:text-sm">
                                             {{ $job['excerpt'] }}
                                         </span>
                                     @endif
-                                    <span class="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                                    <span class="mt-2 flex flex-wrap items-center gap-2 text-sm sm:text-sm">
                                         <span class="min-w-0 truncate font-semibold text-teal-800/80">{{ $job['company'] }}</span>
                                         @if (! empty($job['sector']))
                                             <span class="inline-flex max-w-full items-center truncate rounded-md bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 ring-1 ring-indigo-200/80 sm:text-[11px]">
