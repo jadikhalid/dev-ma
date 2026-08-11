@@ -49,12 +49,12 @@
         <div @class([
             'flex-1 flex flex-col items-center bg-gray-50',
             'justify-center px-6 py-12' => ! $viewportFit,
-            'h-full min-h-0 overflow-hidden px-4 py-3 sm:px-6 sm:py-4' => $viewportFit,
+            'h-full min-h-0 overflow-hidden px-5 py-4 sm:px-6 sm:py-4' => $viewportFit,
         ])>
             <div @class([
                 'lg:hidden w-full max-w-md flex justify-between items-center',
                 'mb-8' => ! $viewportFit,
-                'shrink-0 mb-3' => $viewportFit,
+                'shrink-0 mb-4 sm:mb-3' => $viewportFit,
             ])>
                 <x-brand-logo href="{{ route('home') }}" />
                 <x-locale-switcher />
@@ -64,18 +64,18 @@
                 'flex flex-col min-h-0 flex-1' => $viewportFit,
             ])>
                 @isset($title)
-                    <div @class(['mb-8' => ! $viewportFit, 'shrink-0 mb-2 sm:mb-3' => $viewportFit])>
-                        <h2 @class(['text-2xl font-bold', 'text-xl sm:text-2xl' => $viewportFit])>{{ $title }}</h2>
-                        @isset($description)<p @class(['mt-2 text-sm text-gray-600', 'mt-1 text-xs sm:text-sm line-clamp-2' => $viewportFit])>{{ $description }}</p>@endisset
+                    <div @class(['mb-8' => ! $viewportFit, 'shrink-0 mb-3 sm:mb-3' => $viewportFit])>
+                        <h2 class="text-2xl font-bold">{{ $title }}</h2>
+                        @isset($description)<p @class(['mt-2 text-sm text-gray-600', 'mt-1.5 text-sm line-clamp-2' => $viewportFit])>{{ $description }}</p>@endisset
                     </div>
                 @endisset
                 <div @class([
                     'bg-white rounded-2xl shadow-sm border px-8 py-8',
-                    'flex flex-col min-h-0 flex-1 overflow-hidden px-5 py-4 sm:px-6 sm:py-5' => $viewportFit,
+                    'flex flex-col min-h-0 flex-1 overflow-hidden px-5 py-5 sm:px-6 sm:py-5' => $viewportFit,
                 ])>{{ $slot }}</div>
                 <p @class([
                     'mt-6 text-center text-sm text-gray-500',
-                    'shrink-0 mt-2 sm:mt-3 text-xs sm:text-sm' => $viewportFit,
+                    'shrink-0 mt-3 text-sm' => $viewportFit,
                 ])>
                     <a href="{{ route('home') }}" class="text-indigo-600 font-medium hover:text-indigo-800">{{ __('talenma.nav.back_home') }}</a>
                 </p>
