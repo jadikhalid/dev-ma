@@ -133,7 +133,11 @@ class CompanyProfileTest extends TestCase
         $user = $this->approvedCompany(['logo_path' => 'company-logos/old.jpg']);
         $user->update(['avatar_path' => 'avatars/'.$user->id.'.jpg']);
 
-        $this->assertSame('/storage/avatars/'.$user->id.'.jpg', $user->fresh()->companyProfile->logoUrl());
+        $fresh = $user->fresh();
+        $this->assertSame(
+            '/storage/avatars/'.$fresh->id.'.jpg?v='.$fresh->updated_at->getTimestamp(),
+            $fresh->companyProfile->logoUrl(),
+        );
     }
 
     public function test_company_owner_can_upload_and_remove_contact_photo(): void
@@ -159,7 +163,7 @@ class CompanyProfileTest extends TestCase
         $this->assertStringStartsWith('company-contacts/'.$profile->id, $profile->representative_photo_path);
         Storage::disk('public')->assertExists($profile->representative_photo_path);
         $this->assertSame(
-            '/storage/'.$profile->representative_photo_path,
+            '/storage/'.$profile->representative_photo_path.'?v='.$profile->updated_at->getTimestamp(),
             $profile->representativePhotoUrl(),
         );
 

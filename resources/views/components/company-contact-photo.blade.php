@@ -12,16 +12,19 @@
     $label = filled($profile?->representative_name)
         ? $profile->representative_name
         : __('talenma.company.section_contact');
+    $photoUrl = $profile?->representativePhotoUrl();
 @endphp
 
-@if ($profile?->representativePhotoUrl())
+@if ($photoUrl)
     <img
-        src="{{ $profile->representativePhotoUrl() }}"
+        src="{{ $photoUrl }}"
         alt="{{ $label }}"
+        data-media-contact-photo
         {{ $attributes->class(['object-cover shrink-0 rounded-full', $sizeClass]) }}
     >
 @else
     <span
+        data-media-contact-photo-fallback
         {{ $attributes->class(['inline-flex items-center justify-center bg-indigo-100 text-indigo-700 font-bold shrink-0 rounded-full', $sizeClass]) }}
         aria-hidden="true"
     >

@@ -227,13 +227,13 @@
                 </span>
                 <x-dropdown align="right" width="48" :open-on-hover="true">
                     <x-slot name="trigger">
-                        <button type="button" class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
+                        <button type="button" class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg" data-header-display-aria aria-label="{{ $authUser->headerDisplayName() }}">
                             @if ($authUser->isCompany())
                                 <x-company-logo :profile="$companyOrg" size="xs" class="ring-1 ring-gray-200" />
                             @else
                                 <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-gray-200" />
                             @endif
-                            <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
+                            <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
                         </button>
                     </x-slot>
                     <x-slot name="content">

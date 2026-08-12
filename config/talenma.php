@@ -48,5 +48,5 @@ return [
     | Incrémenter lors d’une modification matérielle du libellé / de la politique
     | (talent aujourd’hui ; entreprises : même mécanisme à l’inscription).
     */
-    'data_processing_consent_version' => '2026-08-09',
+    'data_processing_consent_version' => '2026-08-12',
 ];

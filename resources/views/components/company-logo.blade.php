@@ -10,16 +10,19 @@
     ];
     $sizeClass = $sizes[$size] ?? $sizes['md'];
     $label = $profile?->displayName() ?: __('talenma.company.name');
+    $logoUrl = $profile?->logoUrl();
 @endphp
 
-@if ($profile?->logoUrl())
+@if ($logoUrl)
     <img
-        src="{{ $profile->logoUrl() }}"
+        src="{{ $logoUrl }}"
         alt="{{ $label }}"
+        data-media-company-logo
         {{ $attributes->class(['object-cover shrink-0 rounded-full', $sizeClass]) }}
     >
 @else
     <span
+        data-media-company-logo-fallback
         {{ $attributes->class(['inline-flex items-center justify-center bg-emerald-100 text-emerald-700 font-bold shrink-0 rounded-full', $sizeClass]) }}
         aria-hidden="true"
     >

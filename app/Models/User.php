@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Support\PublicStorageUrl;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -365,7 +366,8 @@ class User extends Authenticatable implements MustVerifyEmail
 
         // Relative path so the image works regardless of APP_URL host/port
         // (e.g. browsing via 127.0.0.1:8000 while APP_URL is http://localhost).
-        return '/storage/'.ltrim($this->avatar_path, '/');
+        // ?v= busts browser cache when the avatar file is overwritten in place.
+        return PublicStorageUrl::make($this->avatar_path, $this->updated_at);
     }
 
     public function initials(): string

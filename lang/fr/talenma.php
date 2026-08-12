@@ -705,7 +705,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
     'privacy' => [
         'title' => 'Politique de confidentialité',
         'updated_at' => 'Dernière mise à jour : :date',
-        'updated_date' => '9 août 2026',
+        'updated_date' => '12 août 2026',
         'sections' => [
             'who' => [
                 'title' => 'Qui est responsable ?',
@@ -722,6 +722,44 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
             'share' => [
                 'title' => 'Avec qui partageons-nous vos données ?',
                 'body' => 'Vos données sont accessibles aux équipes habilitées de Talents du Maroc. Selon le fonctionnement de la plateforme, certaines informations de profil peuvent être présentées aux entreprises ou talents concernés. Nous ne vendons pas vos données personnelles.',
+            ],
+            'cookies' => [
+                'title' => 'Cookies et stockage local',
+                'intro' => 'Talents du Maroc utilise des cookies techniques et, sur certains appareils, un stockage local du navigateur pour assurer le fonctionnement du site et mémoriser vos préférences. Nous n’utilisons pas de cookies publicitaires ni de traceurs analytics tiers à ce jour.',
+                'table' => [
+                    'name' => 'Nom',
+                    'purpose' => 'Finalité',
+                    'duration' => 'Durée',
+                    'type' => 'Type',
+                ],
+                'rows' => [
+                    [
+                        'name' => 'Cookie de session (ex. talents-du-maroc-session)',
+                        'purpose' => 'Maintient votre session : connexion, langue d’affichage, protection CSRF, messages temporaires.',
+                        'duration' => 'Jusqu’à 2 heures d’inactivité ou fermeture du navigateur',
+                        'type' => 'Strictement nécessaire',
+                    ],
+                    [
+                        'name' => 'XSRF-TOKEN',
+                        'purpose' => 'Protection contre les requêtes frauduleuses (CSRF).',
+                        'duration' => 'Session',
+                        'type' => 'Strictement nécessaire',
+                    ],
+                    [
+                        'name' => 'remember_web_* (si « Se souvenir de moi » est coché)',
+                        'purpose' => 'Vous maintient connecté·e sans resaisir vos identifiants.',
+                        'duration' => 'Plusieurs mois (selon votre choix à la connexion)',
+                        'type' => 'Fonctionnel',
+                    ],
+                    [
+                        'name' => 'sessionStorage : talenma_mobile_locale_checked',
+                        'purpose' => 'Évite de relancer la suggestion automatique de langue sur mobile à chaque visite de l’accueil.',
+                        'duration' => 'Jusqu’à la fermeture de l’onglet',
+                        'type' => 'Fonctionnel',
+                    ],
+                ],
+                'note_ip' => 'La suggestion de langue sur mobile peut s’appuyer sur le pays détecté à partir de votre adresse IP (traitement côté serveur, sans script tiers dans le navigateur). Vous pouvez à tout moment changer la langue via le sélecteur du site.',
+                'note_manage' => 'Vous pouvez supprimer ou bloquer les cookies via les paramètres de votre navigateur. Certaines fonctionnalités (connexion, formulaires sécurisés) peuvent alors ne plus fonctionner correctement.',
             ],
             'rights' => [
                 'title' => 'Vos droits',

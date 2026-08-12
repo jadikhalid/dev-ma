@@ -10,6 +10,8 @@ class PrivacyPolicyTest extends TestCase
     {
         $this->get(route('privacy'))
             ->assertOk()
-            ->assertSee(__('talenma.privacy.title'), false);
+            ->assertSee(__('talenma.privacy.title'), false)
+            ->assertSee(__('talenma.privacy.sections.cookies.title'), false)
+            ->assertSee('talenma_mobile_locale_checked', false);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PublicStorageUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -381,7 +382,7 @@ class CompanyProfile extends Model
         }
 
         // Legacy company_profiles.logo_path — kept as fallback until re-uploaded via /profile.
-        return '/storage/'.ltrim($this->logo_path, '/');
+        return PublicStorageUrl::make($this->logo_path, $this->updated_at);
     }
 
     public function representativePhotoUrl(): ?string
@@ -390,7 +391,7 @@ class CompanyProfile extends Model
             return null;
         }
 
-        return '/storage/'.ltrim($this->representative_photo_path, '/');
+        return PublicStorageUrl::make($this->representative_photo_path, $this->updated_at);
     }
 
     public function representativeInitials(): string

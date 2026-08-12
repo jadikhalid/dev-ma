@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PublicStorageUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -71,7 +72,8 @@ class ProfileDocument extends Model
 
     public function publicUrl(): string
     {
-        return Storage::disk('public')->url($this->path);
+        return PublicStorageUrl::make($this->path, $this->updated_at)
+            ?? Storage::disk('public')->url($this->path);
     }
 
     public function formattedSize(): string

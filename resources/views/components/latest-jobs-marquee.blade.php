@@ -111,9 +111,9 @@
                                         </span>
                                     @endif
                                     <span class="mt-2 flex flex-wrap items-center gap-2 text-sm sm:text-sm">
-                                        <span class="min-w-0 truncate font-semibold text-teal-800/80">{{ $job['company'] }}</span>
+                                        <span class="inline-flex max-w-full items-center truncate rounded-md bg-teal-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white ring-1 ring-teal-800/40 sm:text-[11px]">{{ $job['company'] }}</span>
                                         @if (! empty($job['sector']))
-                                            <span class="inline-flex max-w-full items-center truncate rounded-md bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 ring-1 ring-indigo-200/80 sm:text-[11px]">
+                                            <span class="inline-flex max-w-full items-center truncate rounded-md bg-amber-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white ring-1 ring-amber-800/40 sm:text-[11px]">
                                                 {{ $job['sector'] }}
                                             </span>
                                         @endif

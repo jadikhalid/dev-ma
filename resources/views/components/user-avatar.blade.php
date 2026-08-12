@@ -9,16 +9,19 @@
         'xl' => 'w-32 h-32 text-3xl',
     ];
     $sizeClass = $sizes[$size] ?? $sizes['md'];
+    $avatarUrl = (! $initialsOnly) ? $user->avatarUrl() : null;
 @endphp
 
-@if (! $initialsOnly && $user->avatarUrl())
+@if ($avatarUrl)
     <img
-        src="{{ $user->avatarUrl() }}"
+        src="{{ $avatarUrl }}"
         alt="{{ $user->name }}"
+        data-media-avatar
         {{ $attributes->merge(['class' => 'rounded-full object-cover shrink-0 '.$sizeClass]) }}
     >
 @else
     <span
+        data-media-avatar-fallback
         {{ $attributes->merge(['class' => 'inline-flex items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-bold shrink-0 '.$sizeClass]) }}
         aria-hidden="true"
     >

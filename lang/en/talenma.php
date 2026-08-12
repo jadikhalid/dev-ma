@@ -705,7 +705,7 @@ An administrator or moderator is reviewing your application before your company 
     'privacy' => [
         'title' => 'Privacy policy',
         'updated_at' => 'Last updated: :date',
-        'updated_date' => 'August 9, 2026',
+        'updated_date' => 'August 12, 2026',
         'sections' => [
             'who' => [
                 'title' => 'Who is responsible?',
@@ -722,6 +722,44 @@ An administrator or moderator is reviewing your application before your company 
             'share' => [
                 'title' => 'Who do we share your data with?',
                 'body' => 'Your data is accessible to authorized Talents du Maroc teams. Depending on how the platform works, some profile information may be shown to relevant companies or talents. We do not sell your personal data.',
+            ],
+            'cookies' => [
+                'title' => 'Cookies and local storage',
+                'intro' => 'Talents du Maroc uses technical cookies and, on some devices, browser local storage to operate the site and remember your preferences. We do not use advertising cookies or third-party analytics trackers at this time.',
+                'table' => [
+                    'name' => 'Name',
+                    'purpose' => 'Purpose',
+                    'duration' => 'Duration',
+                    'type' => 'Type',
+                ],
+                'rows' => [
+                    [
+                        'name' => 'Session cookie (e.g. talents-du-maroc-session)',
+                        'purpose' => 'Maintains your session: login state, display language, CSRF protection, temporary messages.',
+                        'duration' => 'Up to 2 hours of inactivity or until the browser is closed',
+                        'type' => 'Strictly necessary',
+                    ],
+                    [
+                        'name' => 'XSRF-TOKEN',
+                        'purpose' => 'Protection against fraudulent requests (CSRF).',
+                        'duration' => 'Session',
+                        'type' => 'Strictly necessary',
+                    ],
+                    [
+                        'name' => 'remember_web_* (when “Remember me” is checked)',
+                        'purpose' => 'Keeps you signed in without re-entering your credentials.',
+                        'duration' => 'Several months (based on your choice at login)',
+                        'type' => 'Functional',
+                    ],
+                    [
+                        'name' => 'sessionStorage: talenma_mobile_locale_checked',
+                        'purpose' => 'Prevents the automatic language suggestion on mobile from running on every home page visit.',
+                        'duration' => 'Until the tab is closed',
+                        'type' => 'Functional',
+                    ],
+                ],
+                'note_ip' => 'Mobile language suggestion may rely on the country detected from your IP address (server-side processing, with no third-party script in the browser). You can change the language at any time using the site language selector.',
+                'note_manage' => 'You can delete or block cookies in your browser settings. Some features (sign-in, secure forms) may then no longer work correctly.',
             ],
             'rights' => [
                 'title' => 'Your rights',

@@ -31,6 +31,35 @@
             </section>
 
             <section>
+                <h2 class="text-lg font-semibold text-gray-900">{{ __('talenma.privacy.sections.cookies.title') }}</h2>
+                <p class="mt-2">{{ __('talenma.privacy.sections.cookies.intro') }}</p>
+                <div class="mt-4 overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-50 text-left text-gray-900">
+                            <tr>
+                                <th scope="col" class="px-3 py-2 font-semibold">{{ __('talenma.privacy.sections.cookies.table.name') }}</th>
+                                <th scope="col" class="px-3 py-2 font-semibold">{{ __('talenma.privacy.sections.cookies.table.purpose') }}</th>
+                                <th scope="col" class="px-3 py-2 font-semibold">{{ __('talenma.privacy.sections.cookies.table.duration') }}</th>
+                                <th scope="col" class="px-3 py-2 font-semibold">{{ __('talenma.privacy.sections.cookies.table.type') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            @foreach (__('talenma.privacy.sections.cookies.rows') as $row)
+                                <tr class="align-top">
+                                    <td class="px-3 py-2 font-medium text-gray-900">{{ $row['name'] }}</td>
+                                    <td class="px-3 py-2">{{ $row['purpose'] }}</td>
+                                    <td class="px-3 py-2 whitespace-nowrap">{{ $row['duration'] }}</td>
+                                    <td class="px-3 py-2 whitespace-nowrap">{{ $row['type'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <p class="mt-4">{{ __('talenma.privacy.sections.cookies.note_ip') }}</p>
+                <p class="mt-2">{{ __('talenma.privacy.sections.cookies.note_manage') }}</p>
+            </section>
+
+            <section>
                 <h2 class="text-lg font-semibold text-gray-900">{{ __('talenma.privacy.sections.rights.title') }}</h2>
                 <p class="mt-2">{{ __('talenma.privacy.sections.rights.body') }}</p>
             </section>

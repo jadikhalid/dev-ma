@@ -37,11 +37,17 @@ class SocialFeedStorage
         $publicFile = public_path($path);
 
         if (is_file($publicFile)) {
-            return asset($path);
+            $url = asset($path);
+            $mtime = @filemtime($publicFile);
+
+            return is_int($mtime) ? $url.'?v='.$mtime : $url;
         }
 
         if (Storage::disk('public')->exists($path)) {
-            return Storage::disk('public')->url($path);
+            $absolute = Storage::disk('public')->path($path);
+            $mtime = is_file($absolute) ? @filemtime($absolute) : false;
+
+            return PublicStorageUrl::make($path, is_int($mtime) ? $mtime : null) ?? Storage::disk('public')->url($path);
         }
 
         return asset('storage/'.$path);

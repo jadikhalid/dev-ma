@@ -159,9 +159,13 @@ class ProfileController extends Controller
         }
 
         if ($request->wantsJson()) {
+            $fresh = $user->fresh();
+
             return response()->json([
                 'message' => __('talenma.account.saved'),
-                'avatar_url' => $user->fresh()->avatarUrl(),
+                'avatar_url' => $fresh->avatarUrl(),
+                'avatar_initials' => $fresh->initials(),
+                'header_display_name' => $fresh->headerDisplayName(),
             ]);
         }
 

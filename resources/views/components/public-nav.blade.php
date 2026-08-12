@@ -38,12 +38,13 @@
                                     class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 text-sm text-white/95 hover:bg-white/15 sm:text-gray-600 sm:hover:bg-gray-50 rounded-lg"
                                     aria-label="{{ $authUser->headerDisplayName() }}"
                                     aria-haspopup="menu"
+                                    data-header-display-aria
                                 >
                                     <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-white/40 sm:ring-gray-200" />
                                     <svg class="sm:hidden h-4 w-4 shrink-0 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M19 9l-7 7-7-7"/>
                                     </svg>
-                                    <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
+                                    <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="content">
@@ -61,12 +62,13 @@
                                     class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 text-sm text-white/95 hover:bg-white/15 sm:text-gray-600 sm:hover:bg-gray-50 rounded-lg"
                                     aria-label="{{ $authUser->headerDisplayName() }}"
                                     aria-haspopup="menu"
+                                    data-header-display-aria
                                 >
                                     <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-white/40 sm:ring-gray-200" />
                                     <svg class="sm:hidden h-4 w-4 shrink-0 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M19 9l-7 7-7-7"/>
                                     </svg>
-                                    <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
+                                    <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="content">
@@ -84,6 +86,7 @@
                                     class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 text-sm text-white/95 hover:bg-white/15 sm:text-gray-600 sm:hover:bg-gray-50 rounded-lg"
                                     aria-label="{{ $authUser->headerDisplayName() }}"
                                     aria-haspopup="menu"
+                                    data-header-display-aria
                                 >
                                     <x-company-logo
                                         :profile="$authUser->companyOrganization() ?? $authUser->companyProfile"
@@ -93,7 +96,7 @@
                                     <svg class="sm:hidden h-4 w-4 shrink-0 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M19 9l-7 7-7-7"/>
                                     </svg>
-                                    <span class="hidden xl:inline">{{ $authUser->headerDisplayName() }}</span>
+                                    <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="content">

@@ -2070,6 +2070,20 @@ Alpine.data('avatarPreview', (config = {}) => ({
         this.originalUrl = this.previewUrl;
     },
 
+    applySavedUrl(url) {
+        this.revokeObjectUrl();
+        this.previewUrl = url || null;
+        this.originalUrl = url || null;
+
+        if (this.$refs.input) {
+            this.$refs.input.value = '';
+        }
+
+        if (this.$refs.removeAvatar) {
+            this.$refs.removeAvatar.checked = false;
+        }
+    },
+
     resetToInitial() {
         if (this.$refs.input) {
             this.$refs.input.value = '';
@@ -7578,6 +7592,88 @@ function commitFormDefaults(form) {
     });
 }
 
+function applyMediaSrc(selector, url) {
+    document.querySelectorAll(selector).forEach((img) => {
+        if (! (img instanceof HTMLImageElement)) {
+            return;
+        }
+
+        if (url) {
+            img.src = url;
+            img.hidden = false;
+        }
+    });
+}
+
+function applyHeaderDisplayName(name) {
+    if (! name) {
+        return;
+    }
+
+    document.querySelectorAll('[data-header-display-name]').forEach((el) => {
+        el.textContent = name;
+    });
+
+    document.querySelectorAll('[data-header-display-aria]').forEach((el) => {
+        el.setAttribute('aria-label', name);
+    });
+}
+
+function applyProfileMediaFromPayload(form, payload) {
+    if (payload.avatar_url !== undefined) {
+        const url = payload.avatar_url || null;
+
+        if (url) {
+            applyMediaSrc('img[data-media-avatar], img[data-media-company-logo]', url);
+        } else {
+            // Avatar removed: full reload so initials/fallback markup stays consistent.
+            window.setTimeout(() => window.location.reload(), 400);
+
+            return true;
+        }
+
+        alpineRootsInForm(form).forEach((element) => {
+            const data = window.Alpine?.$data(element);
+
+            if (data && typeof data.applySavedUrl === 'function') {
+                data.applySavedUrl(url);
+            }
+        });
+    }
+
+    if (payload.representative_photo_url !== undefined) {
+        const url = payload.representative_photo_url || null;
+
+        if (! url) {
+            window.setTimeout(() => window.location.reload(), 400);
+
+            return true;
+        }
+
+        applyMediaSrc('img[data-media-contact-photo]', url);
+
+        alpineRootsInForm(form).forEach((element) => {
+            const data = window.Alpine?.$data(element);
+
+            if (data && typeof data.applySavedUrl === 'function') {
+                data.applySavedUrl(url);
+            }
+        });
+    }
+
+    if (payload.header_display_name) {
+        applyHeaderDisplayName(payload.header_display_name);
+    }
+
+    if (payload.avatar_initials) {
+        document.querySelectorAll('[data-media-avatar-fallback]').forEach((el) => {
+            el.textContent = payload.avatar_initials;
+        });
+    }
+
+    return false;
+}
+
 // Bouton « Annuler » : restaure localement les valeurs initiales, sans rechargement serveur
 document.addEventListener('click', (event) => {
     const resetButton = event.target.closest('[data-reset]');
@@ -7823,6 +7919,10 @@ document.addEventListener('submit', async (event) => {
                     window.location.reload();
                 }, 400);
 
+                return;
+            }
+
+            if (applyProfileMediaFromPayload(form, payload)) {
                 return;
             }
 
