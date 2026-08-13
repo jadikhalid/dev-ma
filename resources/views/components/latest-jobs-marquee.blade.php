@@ -38,7 +38,6 @@
         <div
             class="group/marquee relative overflow-hidden rounded-2xl border border-white/80 bg-white/90 shadow-sm backdrop-blur-sm"
             x-data="magazineTicker({ inline: true })"
-            x-init="init()"
             @resize.window.passive="onResize()"
             @mouseenter="onBannerEnter()"
             @mouseleave="onBannerLeave()"

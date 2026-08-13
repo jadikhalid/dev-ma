@@ -9,7 +9,9 @@ Alpine.data('magazineTicker', (config = {}) => ({
     opacity: 1,
     translateY: 0,
     pointerEvents: 'auto',
+    _booted: false,
     _marqueeResizeTimer: null,
+    _marqueeImageTimer: null,
     _autoScrollFrame: null,
     _lastAutoScrollTime: null,
     _dragMoved: false,
@@ -17,6 +19,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
     _dragStartScroll: 0,
     _canUseArrows: false,
     _marqueeOriginals: null,
+    _settingUp: false,
     arrowHoldDirection: 0,
     arrowScrollSpeed: 240,
 
@@ -29,6 +32,11 @@ Alpine.data('magazineTicker', (config = {}) => ({
     isDragging: false,
 
     init() {
+        if (this._booted) {
+            return;
+        }
+
+        this._booted = true;
         this._canUseArrows = window.matchMedia('(min-width: 1024px)').matches;
 
         const arrowMedia = window.matchMedia('(min-width: 1024px)');
@@ -41,12 +49,41 @@ Alpine.data('magazineTicker', (config = {}) => ({
         });
 
         this.$nextTick(() => {
-            this.setupMarquee();
-            if (! this.inline) {
-                this.update();
-            }
-            this.startAutoScroll();
+            this.bootMarquee();
         });
+    },
+
+    async bootMarquee() {
+        await this.waitForMarqueeImages();
+        this.setupMarquee(false);
+
+        if (! this.inline) {
+            this.update();
+        }
+
+        this.startAutoScroll();
+    },
+
+    waitForMarqueeImages() {
+        const setA = this.$refs.marqueeSetA;
+
+        if (! setA) {
+            return Promise.resolve();
+        }
+
+        const pending = Array.from(setA.querySelectorAll('img')).filter((img) => ! img.complete);
+
+        if (! pending.length) {
+            return Promise.resolve();
+        }
+
+        return Promise.race([
+            Promise.all(pending.map((img) => new Promise((resolve) => {
+                img.addEventListener('load', resolve, { once: true });
+                img.addEventListener('error', resolve, { once: true });
+            }))),
+            new Promise((resolve) => setTimeout(resolve, 2000)),
+        ]);
     },
 
     onResize() {
@@ -93,122 +130,149 @@ Alpine.data('magazineTicker', (config = {}) => ({
         this._autoScrollFrame = requestAnimationFrame(tick);
     },
 
+    scheduleImageRelayout() {
+        const setA = this.$refs.marqueeSetA;
+
+        if (! setA) {
+            return;
+        }
+
+        const pending = Array.from(setA.querySelectorAll('img')).filter((img) => ! img.complete);
+
+        if (! pending.length) {
+            return;
+        }
+
+        const onImageSettled = () => {
+            clearTimeout(this._marqueeImageTimer);
+            this._marqueeImageTimer = setTimeout(() => this.setupMarquee(true), 120);
+        };
+
+        pending.forEach((img) => {
+            img.addEventListener('load', onImageSettled, { once: true });
+            img.addEventListener('error', onImageSettled, { once: true });
+        });
+    },
+
     setupMarquee(reset = false) {
         const setA = this.$refs.marqueeSetA;
         const setB = this.$refs.marqueeSetB;
         const leadSpacer = this.$refs.marqueeLeadSpacer;
         const container = this.$refs.marqueeViewport;
 
-        if (! setA || ! setB || ! leadSpacer || ! container) {
+        if (! setA || ! setB || ! leadSpacer || ! container || this._settingUp) {
             return;
         }
 
-        if (! this._marqueeOriginals?.length) {
-            this._marqueeOriginals = Array.from(setA.children).map((item) => item.cloneNode(true));
-        }
+        this._settingUp = true;
 
-        const originals = this._marqueeOriginals;
-        const containerWidth = container.offsetWidth;
+        try {
+            if (! this._marqueeOriginals?.length) {
+                this._marqueeOriginals = Array.from(setA.children).map((item) => item.cloneNode(true));
+            }
 
-        if (! originals.length || ! containerWidth) {
-            return;
-        }
+            const originals = this._marqueeOriginals;
+            const containerWidth = container.offsetWidth;
 
-        const appendCycle = (markNewest = false) => {
-            originals.forEach((template, index) => {
-                const clone = template.cloneNode(true);
+            if (! originals.length || ! containerWidth) {
+                return;
+            }
 
-                if (markNewest && index === 0) {
-                    clone.dataset.newest = '1';
+            const appendCycle = (markNewest = false) => {
+                originals.forEach((template, index) => {
+                    const clone = template.cloneNode(true);
+
+                    if (markNewest && index === 0) {
+                        clone.dataset.newest = '1';
+                    }
+
+                    setA.appendChild(clone);
+                });
+            };
+
+            setA.innerHTML = '';
+            leadSpacer.style.width = '0px';
+
+            const widthProbe = originals[0].cloneNode(true);
+            setA.appendChild(widthProbe);
+            const firstItemWidth = widthProbe.offsetWidth;
+            setA.removeChild(widthProbe);
+
+            const targetPrepend = Math.max(0, (containerWidth - firstItemWidth) / 2);
+            let prependWidth = 0;
+            let safety = 0;
+
+            if (originals.length > 1) {
+                let sourceIndex = originals.length - 1;
+
+                while (prependWidth < targetPrepend && safety < 48) {
+                    const clone = originals[sourceIndex].cloneNode(true);
+                    setA.insertBefore(clone, setA.firstChild);
+                    prependWidth += clone.offsetWidth;
+                    safety++;
+
+                    sourceIndex--;
+
+                    if (sourceIndex < 1) {
+                        sourceIndex = originals.length - 1;
+                    }
+                }
+            }
+
+            appendCycle(true);
+
+            const newest = setA.querySelector('[data-newest="1"]');
+
+            if (! newest) {
+                return;
+            }
+
+            let cycleWidth = 0;
+            let cycleNode = newest;
+
+            for (let index = 0; index < originals.length; index++) {
+                if (! cycleNode) {
+                    break;
                 }
 
-                setA.appendChild(clone);
-            });
-        };
+                cycleWidth += cycleNode.offsetWidth;
+                cycleNode = cycleNode.nextElementSibling;
+            }
 
-        setA.innerHTML = '';
-        leadSpacer.style.width = '0px';
+            if (! cycleWidth) {
+                return;
+            }
 
-        const widthProbe = originals[0].cloneNode(true);
-        setA.appendChild(widthProbe);
-        const firstItemWidth = widthProbe.offsetWidth;
-        setA.removeChild(widthProbe);
+            const newestPosition = newest.offsetLeft;
 
-        const targetPrepend = Math.max(0, (containerWidth - firstItemWidth) / 2);
-        let prependWidth = 0;
-        let safety = 0;
-
-        if (originals.length > 1) {
-            let sourceIndex = originals.length - 1;
-
-            while (prependWidth < targetPrepend && safety < 48) {
-                const clone = originals[sourceIndex].cloneNode(true);
-                setA.insertBefore(clone, setA.firstChild);
-                prependWidth += clone.offsetWidth;
+            while (setA.scrollWidth < newestPosition + cycleWidth + containerWidth + 64 && safety < 80) {
+                appendCycle(false);
                 safety++;
-
-                sourceIndex--;
-
-                if (sourceIndex < 1) {
-                    sourceIndex = originals.length - 1;
-                }
-            }
-        }
-
-        appendCycle(true);
-
-        const newest = setA.querySelector('[data-newest="1"]');
-
-        if (! newest) {
-            return;
-        }
-
-        let cycleWidth = 0;
-        let cycleNode = newest;
-
-        for (let index = 0; index < originals.length; index++) {
-            if (! cycleNode) {
-                break;
             }
 
-            cycleWidth += cycleNode.offsetWidth;
-            cycleNode = cycleNode.nextElementSibling;
-        }
+            setB.innerHTML = setA.innerHTML;
 
-        if (! cycleWidth) {
-            return;
-        }
+            let centerBase = newestPosition + firstItemWidth / 2 - containerWidth / 2;
 
-        const newestPosition = newest.offsetLeft;
-
-        while (setA.scrollWidth < newestPosition + cycleWidth + containerWidth + 64 && safety < 80) {
-            appendCycle(false);
-            safety++;
-        }
-
-        setB.innerHTML = setA.innerHTML;
-
-        let centerBase = newestPosition + firstItemWidth / 2 - containerWidth / 2;
-
-        if (centerBase < 0) {
-            leadSpacer.style.width = `${Math.ceil(-centerBase)}px`;
-            centerBase = leadSpacer.offsetWidth + newestPosition + firstItemWidth / 2 - containerWidth / 2;
-        }
-
-        this.marqueeDistance = cycleWidth;
-        this.marqueeCenterBase = centerBase;
-
-        if (! reset || ! this.isDragging) {
-            this.marqueeScrollPx = 0;
-        } else if (this.marqueeDistance > 0) {
-            this.marqueeScrollPx = ((this.marqueeScrollPx % this.marqueeDistance) + this.marqueeDistance) % this.marqueeDistance;
-        }
-
-        setA.querySelectorAll('img').forEach((img) => {
-            if (! img.complete) {
-                img.addEventListener('load', () => this.setupMarquee(true), { once: true });
+            if (centerBase < 0) {
+                leadSpacer.style.width = `${Math.ceil(-centerBase)}px`;
+                centerBase = leadSpacer.offsetWidth + newestPosition + firstItemWidth / 2 - containerWidth / 2;
             }
-        });
+
+            this.marqueeDistance = cycleWidth;
+            this.marqueeCenterBase = centerBase;
+
+            // Remeasure (images/resize): keep progress. Only the first layout starts at 0.
+            if (! reset) {
+                this.marqueeScrollPx = 0;
+            } else if (this.marqueeDistance > 0) {
+                this.marqueeScrollPx = ((this.marqueeScrollPx % this.marqueeDistance) + this.marqueeDistance) % this.marqueeDistance;
+            }
+
+            this.scheduleImageRelayout();
+        } finally {
+            this._settingUp = false;
+        }
     },
 
     marqueeTrackStyle() {

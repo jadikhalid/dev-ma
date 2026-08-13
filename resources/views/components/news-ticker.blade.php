@@ -8,7 +8,6 @@
 <div
     class="hidden sm:block"
     x-data="magazineTicker"
-    x-init="init()"
     @scroll.window.passive="update()"
     @resize.window.passive="onResize()"
 >
