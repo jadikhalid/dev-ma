@@ -7949,7 +7949,8 @@ document.addEventListener('submit', async (event) => {
         const payload = await response.json().catch(() => null);
 
         if (payload === null) {
-            pushToast('error', genericError);
+            const hint = response.status ? ` (HTTP ${response.status})` : '';
+            pushToast('error', `${genericError}${hint}`);
 
             return;
         }

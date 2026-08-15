@@ -114,19 +114,30 @@ class PublicationsController extends Controller
 
     public function storeSocialPost(Request $request): RedirectResponse|JsonResponse
     {
-        $validated = $request->validate([
-            'post_title' => ['required', 'string', 'max:255'],
-            'post_subtitle' => ['required', 'string', 'max:255'],
-            'post_url' => ['required', 'url', 'max:2048'],
-            'post_network' => ['required', Rule::in(SocialPost::NETWORKS)],
-            'post_thumbnail' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'post_title' => ['required', 'string', 'max:255'],
+                'post_subtitle' => ['required', 'string', 'max:255'],
+                'post_url' => ['required', 'url', 'max:2048'],
+                'post_network' => ['required', Rule::in(SocialPost::NETWORKS)],
+                'post_thumbnail' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            ]);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        }
 
         try {
             $thumbnailPath = null;
 
             if ($request->hasFile('post_thumbnail')) {
-                $thumbnailPath = SocialFeedStorage::storeUpload($request->file('post_thumbnail'));
+                $file = $request->file('post_thumbnail');
+                \Log::info('Social post upload attempt', [
+                    'original' => $file?->getClientOriginalName(),
+                    'mime' => $file?->getMimeType(),
+                    'size' => $file?->getSize(),
+                    'url_len' => strlen((string) $validated['post_url']),
+                ]);
+                $thumbnailPath = SocialFeedStorage::storeUpload($file);
             }
 
             SocialPost::pushPost([
@@ -144,7 +155,7 @@ class PublicationsController extends Controller
 
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => __('talenma.admin.publications_upload_failed'),
+                    'message' => __('talenma.admin.publications_upload_failed').' '.$exception->getMessage(),
                 ], 500);
             }
 
