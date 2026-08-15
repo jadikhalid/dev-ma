@@ -4,7 +4,10 @@ namespace App\Support;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class SocialFeedStorage
 {
@@ -12,16 +15,28 @@ class SocialFeedStorage
 
     public static function storeUpload(UploadedFile $file): string
     {
-        $directory = public_path(self::PUBLIC_DIR);
+        try {
+            // Prefer storage/app/public (writable on Hostinger via deploy chmod + storage:link).
+            $path = $file->store(self::PUBLIC_DIR, 'public');
+        } catch (Throwable $exception) {
+            Log::warning('SocialFeedStorage upload failed', [
+                'error' => $exception->getMessage(),
+            ]);
 
-        if (! is_dir($directory)) {
-            mkdir($directory, 0755, true);
+            throw ValidationException::withMessages([
+                'thumbnail' => [__('talenma.admin.publications_upload_failed')],
+                'post_thumbnail' => [__('talenma.admin.publications_upload_failed')],
+            ]);
         }
 
-        $filename = $file->hashName();
-        $file->move($directory, $filename);
+        if (! is_string($path) || $path === '') {
+            throw ValidationException::withMessages([
+                'thumbnail' => [__('talenma.admin.publications_upload_failed')],
+                'post_thumbnail' => [__('talenma.admin.publications_upload_failed')],
+            ]);
+        }
 
-        return self::PUBLIC_DIR.'/'.$filename;
+        return $path;
     }
 
     public static function url(?string $path): ?string
@@ -34,6 +49,7 @@ class SocialFeedStorage
             return $path;
         }
 
+        // Legacy files written directly under public/magazine-banner
         $publicFile = public_path($path);
 
         if (is_file($publicFile)) {
@@ -47,7 +63,8 @@ class SocialFeedStorage
             $absolute = Storage::disk('public')->path($path);
             $mtime = is_file($absolute) ? @filemtime($absolute) : false;
 
-            return PublicStorageUrl::make($path, is_int($mtime) ? $mtime : null) ?? Storage::disk('public')->url($path);
+            return PublicStorageUrl::make($path, is_int($mtime) ? $mtime : null)
+                ?? Storage::disk('public')->url($path);
         }
 
         return asset('storage/'.$path);

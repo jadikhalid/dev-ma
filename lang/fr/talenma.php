@@ -500,6 +500,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
             'url_invalid' => 'Le lien doit être une URL valide (http ou https).',
             'network_required' => 'Choisissez un réseau.',
         ],
+        'publications_upload_failed' => 'Impossible d’enregistrer la miniature sur le serveur. Réessayez sans image, ou contactez le support hébergeur (droits d’écriture storage).',
     ],
     'social_feed' => [
         'sources' => [

@@ -500,6 +500,7 @@ An administrator or moderator is reviewing your application before your company 
             'url_invalid' => 'The link must be a valid URL (http or https).',
             'network_required' => 'Choose a network.',
         ],
+        'publications_upload_failed' => 'Could not save the thumbnail on the server. Try again without an image, or check hosting write permissions on storage.',
     ],
     'social_feed' => [
         'sources' => [

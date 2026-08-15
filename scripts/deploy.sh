@@ -100,5 +100,7 @@ $PHP_BIN artisan view:cache
 
 echo "→ permissions"
 chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || true
+mkdir -p storage/app/public/magazine-banner public/magazine-banner 2>/dev/null || true
+chmod -R ug+rwx storage/app/public/magazine-banner public/magazine-banner 2>/dev/null || true
 
 echo "✓ Déploiement terminé — $(date)"
