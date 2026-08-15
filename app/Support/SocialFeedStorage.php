@@ -16,8 +16,14 @@ class SocialFeedStorage
     public static function storeUpload(UploadedFile $file): string
     {
         try {
-            // Prefer storage/app/public (writable on Hostinger via deploy chmod + storage:link).
-            $path = $file->store(self::PUBLIC_DIR, 'public');
+            $disk = Storage::disk('public');
+            $directory = self::PUBLIC_DIR;
+
+            if (! $disk->exists($directory)) {
+                $disk->makeDirectory($directory);
+            }
+
+            $path = $file->store($directory, 'public');
         } catch (Throwable $exception) {
             Log::warning('SocialFeedStorage upload failed', [
                 'error' => $exception->getMessage(),

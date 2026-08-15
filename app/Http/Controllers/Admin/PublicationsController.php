@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PublicationsController extends Controller
@@ -33,7 +34,7 @@ class PublicationsController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'subtitle' => ['required', 'string', 'max:255'],
             'url' => ['required', 'url', 'max:2048'],
-            'thumbnail' => ['nullable', 'image', 'max:2048'],
+            'thumbnail' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $thumbnailPath = null;
@@ -70,7 +71,7 @@ class PublicationsController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'subtitle' => ['required', 'string', 'max:255'],
             'url' => ['required', 'url', 'max:2048'],
-            'thumbnail' => ['nullable', 'image', 'max:2048'],
+            'thumbnail' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         if ($request->hasFile('thumbnail')) {
@@ -118,23 +119,37 @@ class PublicationsController extends Controller
             'post_subtitle' => ['required', 'string', 'max:255'],
             'post_url' => ['required', 'url', 'max:2048'],
             'post_network' => ['required', Rule::in(SocialPost::NETWORKS)],
-            'post_thumbnail' => ['nullable', 'image', 'max:2048'],
+            'post_thumbnail' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
-        $thumbnailPath = null;
+        try {
+            $thumbnailPath = null;
 
-        if ($request->hasFile('post_thumbnail')) {
-            $thumbnailPath = SocialFeedStorage::storeUpload($request->file('post_thumbnail'));
+            if ($request->hasFile('post_thumbnail')) {
+                $thumbnailPath = SocialFeedStorage::storeUpload($request->file('post_thumbnail'));
+            }
+
+            SocialPost::pushPost([
+                'title' => $validated['post_title'],
+                'subtitle' => $validated['post_subtitle'],
+                'url' => $validated['post_url'],
+                'network' => $validated['post_network'],
+                'thumbnail' => $thumbnailPath,
+                'created_by' => $request->user()->id,
+            ]);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => __('talenma.admin.publications_upload_failed'),
+                ], 500);
+            }
+
+            throw $exception;
         }
-
-        SocialPost::pushPost([
-            'title' => $validated['post_title'],
-            'subtitle' => $validated['post_subtitle'],
-            'url' => $validated['post_url'],
-            'network' => $validated['post_network'],
-            'thumbnail' => $thumbnailPath,
-            'created_by' => $request->user()->id,
-        ]);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -154,20 +169,34 @@ class PublicationsController extends Controller
             'post_subtitle' => ['required', 'string', 'max:255'],
             'post_url' => ['required', 'url', 'max:2048'],
             'post_network' => ['required', Rule::in(SocialPost::NETWORKS)],
-            'post_thumbnail' => ['nullable', 'image', 'max:2048'],
+            'post_thumbnail' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
-        if ($request->hasFile('post_thumbnail')) {
-            SocialFeedStorage::delete($socialPost->thumbnail);
-            $socialPost->thumbnail = SocialFeedStorage::storeUpload($request->file('post_thumbnail'));
-        }
+        try {
+            if ($request->hasFile('post_thumbnail')) {
+                SocialFeedStorage::delete($socialPost->thumbnail);
+                $socialPost->thumbnail = SocialFeedStorage::storeUpload($request->file('post_thumbnail'));
+            }
 
-        $socialPost->fill([
-            'title' => $validated['post_title'],
-            'subtitle' => $validated['post_subtitle'],
-            'url' => $validated['post_url'],
-            'network' => $validated['post_network'],
-        ])->save();
+            $socialPost->fill([
+                'title' => $validated['post_title'],
+                'subtitle' => $validated['post_subtitle'],
+                'url' => $validated['post_url'],
+                'network' => $validated['post_network'],
+            ])->save();
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => __('talenma.admin.publications_upload_failed'),
+                ], 500);
+            }
+
+            throw $exception;
+        }
 
         if ($request->wantsJson()) {
             return response()->json([
