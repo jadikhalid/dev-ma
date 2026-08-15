@@ -7917,7 +7917,27 @@ document.addEventListener('submit', async (event) => {
     const timeoutError = form.dataset.timeoutErrorMessage
         || pageMessages?.dataset.ajaxTimeoutError
         || networkError;
-    const formData = new FormData(form);
+    // Hostinger / some proxies reject multipart when the original filename has spaces
+    // or unusual characters — rename before send (storage already uses a hash path).
+    const formData = new FormData();
+    for (const [key, value] of new FormData(form).entries()) {
+        if (value instanceof File && value.size > 0) {
+            const safeName = value.name
+                .normalize('NFKD')
+                .replace(/[^\w.\-]+/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^\.+/, '')
+                || 'upload.bin';
+            formData.append(
+                key,
+                safeName === value.name
+                    ? value
+                    : new File([value], safeName, { type: value.type, lastModified: value.lastModified }),
+            );
+        } else {
+            formData.append(key, value);
+        }
+    }
     const hasUploadFiles = [...formData.values()].some((value) => value instanceof File && value.size > 0);
     const isDelete = String(formData.get('_method') || '').toUpperCase() === 'DELETE';
     const loadingTargetId = form.dataset.loadingTarget || null;

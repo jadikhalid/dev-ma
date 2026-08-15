@@ -130,14 +130,7 @@ class PublicationsController extends Controller
             $thumbnailPath = null;
 
             if ($request->hasFile('post_thumbnail')) {
-                $file = $request->file('post_thumbnail');
-                \Log::info('Social post upload attempt', [
-                    'original' => $file?->getClientOriginalName(),
-                    'mime' => $file?->getMimeType(),
-                    'size' => $file?->getSize(),
-                    'url_len' => strlen((string) $validated['post_url']),
-                ]);
-                $thumbnailPath = SocialFeedStorage::storeUpload($file);
+                $thumbnailPath = SocialFeedStorage::storeUpload($request->file('post_thumbnail'));
             }
 
             SocialPost::pushPost([
@@ -155,7 +148,7 @@ class PublicationsController extends Controller
 
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => __('talenma.admin.publications_upload_failed').' '.$exception->getMessage(),
+                    'message' => __('talenma.admin.publications_upload_failed'),
                 ], 500);
             }
 
