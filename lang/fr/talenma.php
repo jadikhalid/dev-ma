@@ -508,7 +508,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
             'linkedin' => 'LinkedIn',
             'facebook' => 'Facebook',
             'instagram' => 'Instagram',
-            'x' => 'X',
+            'x' => 'X.COM',
             'youtube' => 'YouTube',
             'other' => 'Autre',
         ],

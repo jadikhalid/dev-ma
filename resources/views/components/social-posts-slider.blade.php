@@ -80,7 +80,7 @@
                                          x-cloak
                                          @load="measure()">
                                     <div class="absolute inset-0 bg-gradient-to-t from-gray-900/50 via-transparent to-transparent"></div>
-                                    <span class="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-700 shadow-sm"
+                                    <span class="absolute left-3 top-3 inline-flex items-center rounded-full bg-indigo-600 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm"
                                           x-text="item.network"></span>
                                 </div>
 

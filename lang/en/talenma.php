@@ -508,7 +508,7 @@ An administrator or moderator is reviewing your application before your company 
             'linkedin' => 'LinkedIn',
             'facebook' => 'Facebook',
             'instagram' => 'Instagram',
-            'x' => 'X',
+            'x' => 'X.COM',
             'youtube' => 'YouTube',
             'other' => 'Other',
         ],
