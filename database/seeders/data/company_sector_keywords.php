@@ -27,6 +27,8 @@ return [
         ['label_fr' => 'Cybersécurité entreprise', 'label_en' => 'Enterprise cybersecurity'],
         ['label_fr' => 'Data / analytics', 'label_en' => 'Data / analytics'],
         ['label_fr' => 'Scale-up tech', 'label_en' => 'Tech scale-up'],
+        ['label_fr' => 'Sales / business development', 'label_en' => 'Sales / business development'],
+        ['label_fr' => 'Marketing produit B2B', 'label_en' => 'B2B product marketing'],
     ],
     'construction' => [
         ['label_fr' => 'Maître d\'ouvrage', 'label_en' => 'Project owner'],

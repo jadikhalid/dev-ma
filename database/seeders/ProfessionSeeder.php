@@ -101,5 +101,65 @@ class ProfessionSeeder extends Seeder
         ProfessionSector::query()
             ->where('slug', 'technicians')
             ->update(['is_active' => false]);
+
+        $this->remapLegacyItProfessions();
+    }
+
+    /**
+     * Réassocie profils / offres encore liés aux anciens métiers IT (catalogue 2026-06).
+     */
+    private function remapLegacyItProfessions(): void
+    {
+        $slugMap = [
+            'web-developer' => 'full-stack-developer',
+            'mobile-developer' => 'full-stack-developer',
+            'data-specialist' => 'data-engineer',
+            'designer' => 'content-manager',
+            'cybersecurity' => 'cybersecurity-soc',
+            'product-manager' => 'product-owner',
+        ];
+
+        $professions = Profession::query()
+            ->whereIn('slug', array_merge(array_keys($slugMap), array_values($slugMap), ['data-scientist']))
+            ->get(['id', 'slug'])
+            ->keyBy('slug');
+
+        foreach ($slugMap as $oldSlug => $newSlug) {
+            $old = $professions->get($oldSlug);
+            $new = $professions->get($newSlug);
+
+            if (! $old || ! $new || $old->id === $new->id) {
+                continue;
+            }
+
+            \App\Models\Profile::query()
+                ->where('profession_id', $old->id)
+                ->update(['profession_id' => $new->id]);
+
+            if (\Illuminate\Support\Facades\Schema::hasTable('job_postings')) {
+                \App\Models\JobPosting::query()
+                    ->where('profession_id', $old->id)
+                    ->update(['profession_id' => $new->id]);
+            }
+        }
+
+        $dataEngineer = $professions->get('data-engineer');
+        $dataScientist = $professions->get('data-scientist');
+
+        if (! $dataEngineer || ! $dataScientist) {
+            return;
+        }
+
+        $scientistPattern = '/scientist|machine learning|deep learning|\bia\b|\bai\b/i';
+
+        \App\Models\Profile::query()
+            ->where('profession_id', $dataEngineer->id)
+            ->whereNotNull('specialization')
+            ->get(['id', 'specialization'])
+            ->each(function (\App\Models\Profile $profile) use ($scientistPattern, $dataScientist) {
+                if (preg_match($scientistPattern, (string) $profile->specialization)) {
+                    $profile->update(['profession_id' => $dataScientist->id]);
+                }
+            });
     }
 }
