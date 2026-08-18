@@ -103,24 +103,49 @@ class ProfessionSeeder extends Seeder
             ->update(['is_active' => false]);
 
         $this->remapLegacyItProfessions();
+        $this->remapLegacyHealthProfessions();
     }
 
     /**
-     * Réassocie profils / offres encore liés aux anciens métiers IT (catalogue 2026-06).
+     * Réassocie profils / offres encore liés aux anciens métiers santé (catalogue 2026-06).
      */
-    private function remapLegacyItProfessions(): void
+    private function remapLegacyHealthProfessions(): void
     {
-        $slugMap = [
-            'web-developer' => 'full-stack-developer',
-            'mobile-developer' => 'full-stack-developer',
-            'data-specialist' => 'data-engineer',
-            'designer' => 'content-manager',
-            'cybersecurity' => 'cybersecurity-soc',
-            'product-manager' => 'product-owner',
-        ];
+        $this->remapProfessionSlugs([
+            'nurse' => 'registered-nurse-ide',
+            'doctor' => 'medical-coordinator-director',
+            'care-assistant' => 'care-assistant-social',
+            'physiotherapist' => 'registered-nurse-ide',
+            'pharmacist' => 'medical-delegate',
+        ]);
 
+        $nurseManager = Profession::query()->where('slug', 'health-nurse-manager')->first();
+        $registeredNurse = Profession::query()->where('slug', 'registered-nurse-ide')->first();
+
+        if (! $nurseManager || ! $registeredNurse) {
+            return;
+        }
+
+        $managerPattern = '/cadre|coordinateur|coordination|encadrement|manager/i';
+
+        \App\Models\Profile::query()
+            ->where('profession_id', $registeredNurse->id)
+            ->whereNotNull('specialization')
+            ->get(['id', 'specialization'])
+            ->each(function (\App\Models\Profile $profile) use ($managerPattern, $nurseManager) {
+                if (preg_match($managerPattern, (string) $profile->specialization)) {
+                    $profile->update(['profession_id' => $nurseManager->id]);
+                }
+            });
+    }
+
+    /**
+     * @param  array<string, string>  $slugMap
+     */
+    private function remapProfessionSlugs(array $slugMap): void
+    {
         $professions = Profession::query()
-            ->whereIn('slug', array_merge(array_keys($slugMap), array_values($slugMap), ['data-scientist']))
+            ->whereIn('slug', array_merge(array_keys($slugMap), array_values($slugMap)))
             ->get(['id', 'slug'])
             ->keyBy('slug');
 
@@ -142,6 +167,28 @@ class ProfessionSeeder extends Seeder
                     ->update(['profession_id' => $new->id]);
             }
         }
+    }
+
+    /**
+     * Réassocie profils / offres encore liés aux anciens métiers IT (catalogue 2026-06).
+     */
+    private function remapLegacyItProfessions(): void
+    {
+        $slugMap = [
+            'web-developer' => 'full-stack-developer',
+            'mobile-developer' => 'full-stack-developer',
+            'data-specialist' => 'data-engineer',
+            'designer' => 'content-manager',
+            'cybersecurity' => 'cybersecurity-soc',
+            'product-manager' => 'product-owner',
+        ];
+
+        $this->remapProfessionSlugs($slugMap);
+
+        $professions = Profession::query()
+            ->whereIn('slug', ['data-engineer', 'data-scientist'])
+            ->get(['id', 'slug'])
+            ->keyBy('slug');
 
         $dataEngineer = $professions->get('data-engineer');
         $dataScientist = $professions->get('data-scientist');

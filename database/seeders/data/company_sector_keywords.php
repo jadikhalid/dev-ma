@@ -10,12 +10,14 @@ return [
     'health-social' => [
         ['label_fr' => 'Clinique / hôpital', 'label_en' => 'Clinic / hospital'],
         ['label_fr' => 'EHPAD / médico-social', 'label_en' => 'Nursing home / social care'],
-        ['label_fr' => 'Télémédecine', 'label_en' => 'Telemedicine'],
+        ['label_fr' => 'Télémédecine / e-santé', 'label_en' => 'Telemedicine / e-health'],
         ['label_fr' => 'Dispositifs médicaux', 'label_en' => 'Medical devices'],
+        ['label_fr' => 'Industrie pharmaceutique', 'label_en' => 'Pharmaceutical industry'],
+        ['label_fr' => 'Recherche clinique', 'label_en' => 'Clinical research'],
         ['label_fr' => 'Laboratoire d\'analyses', 'label_en' => 'Medical laboratory'],
         ['label_fr' => 'Candidature soignants', 'label_en' => 'Healthcare staffing'],
         ['label_fr' => 'Ouverture de service', 'label_en' => 'New care unit opening'],
-        ['label_fr' => 'Sous-traitance médicale', 'label_en' => 'Medical outsourcing'],
+        ['label_fr' => 'Partenariats institutionnels', 'label_en' => 'Institutional partnerships'],
     ],
     'it-digital' => [
         ['label_fr' => 'Éditeur logiciel / SaaS', 'label_en' => 'Software / SaaS vendor'],
