@@ -41,6 +41,8 @@ return [
         ['label_fr' => 'VRD / infrastructure', 'label_en' => 'Civil infrastructure'],
         ['label_fr' => 'Sous-traitance chantier', 'label_en' => 'Site subcontracting'],
         ['label_fr' => 'Promotion immobilière', 'label_en' => 'Property development'],
+        ['label_fr' => 'Matériaux / prescription', 'label_en' => 'Materials / specification'],
+        ['label_fr' => 'Compagnons / exécution', 'label_en' => 'Trades / site execution'],
     ],
     'industry' => [
         ['label_fr' => 'Usine / production', 'label_en' => 'Plant / manufacturing'],
@@ -51,6 +53,8 @@ return [
         ['label_fr' => 'Agroalimentaire', 'label_en' => 'Agri-food industry'],
         ['label_fr' => 'Automobile / équipementier', 'label_en' => 'Automotive / supplier'],
         ['label_fr' => 'Sous-traitance industrielle', 'label_en' => 'Industrial subcontracting'],
+        ['label_fr' => 'Ventes B2B / grands comptes', 'label_en' => 'B2B sales / key accounts'],
+        ['label_fr' => 'Opérateurs / atelier', 'label_en' => 'Operators / shop floor'],
     ],
     'energy' => [
         ['label_fr' => 'Énergies renouvelables', 'label_en' => 'Renewable energy'],

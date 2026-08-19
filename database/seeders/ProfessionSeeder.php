@@ -104,6 +104,29 @@ class ProfessionSeeder extends Seeder
 
         $this->remapLegacyItProfessions();
         $this->remapLegacyHealthProfessions();
+        $this->remapLegacyIndustryProfessions();
+        $this->remapLegacyConstructionProfessions();
+    }
+
+    /**
+     * Réassocie profils / offres encore liés aux anciens métiers BTP (catalogue 2026-06).
+     */
+    private function remapLegacyConstructionProfessions(): void
+    {
+        $this->remapProfessionSlugs([
+            'civil-engineer' => 'structural-engineer',
+        ]);
+    }
+
+    /**
+     * Réassocie profils / offres encore liés aux anciens métiers industrie (catalogue 2026-06).
+     */
+    private function remapLegacyIndustryProfessions(): void
+    {
+        $this->remapProfessionSlugs([
+            'quality-technician' => 'qhse-manager',
+            'mechanic' => 'maintenance-technician',
+        ]);
     }
 
     /**
