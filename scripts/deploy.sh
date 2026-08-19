@@ -90,7 +90,7 @@ fi
 echo "→ migrations"
 $PHP_BIN artisan migrate --force
 
-echo "→ seed (référence prod : services, métiers, social — sans toucher à l'admin)"
+echo "→ seed (référence prod : services, métiers — publications sociales inchangées si déjà présentes)"
 $PHP_BIN artisan db:seed --force --class=ProductionDataSeeder
 
 echo "→ cache"

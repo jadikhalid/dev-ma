@@ -9,6 +9,10 @@ class SocialPostSeeder extends Seeder
 {
     public function run(): void
     {
+        if (SocialPost::query()->exists()) {
+            return;
+        }
+
         $defaults = [
             [
                 'title' => 'Talents du Maroc — la plateforme qui connecte',
@@ -37,10 +41,6 @@ class SocialPostSeeder extends Seeder
         ];
 
         foreach ($defaults as $item) {
-            if (SocialPost::query()->where('url', $item['url'])->exists()) {
-                continue;
-            }
-
             SocialPost::create($item);
         }
     }
