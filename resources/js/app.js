@@ -1431,6 +1431,10 @@ Alpine.data('registerWizard', (config) => ({
     passwordConfirmation: '',
     sector: config.initialSector ?? '',
     description: config.initialDescription ?? '',
+    cvLanguage: config.initialCvLanguage ?? '',
+    hasCv: Boolean(config.initialHasCv),
+    cvFileName: '',
+    cvFileSizeLabel: '',
     documentsCount: config.initialDocumentsCount ?? 0,
     documentFiles: [],
     companyDescription: config.initialCompanyDescription ?? '',
@@ -1440,6 +1444,7 @@ Alpine.data('registerWizard', (config) => ({
     dataProcessingConsent: Boolean(config.initialDataProcessingConsent),
     validationMessages: config.validationMessages ?? {},
     fieldErrors: {},
+    submitting: false,
     namePattern: /^[\p{L}\p{M}][\p{L}\p{M}\s'\-\.]*$/u,
 
     init() {
@@ -1447,7 +1452,12 @@ Alpine.data('registerWizard', (config) => ({
             this.step = 1;
             this.documentFiles = [];
             this.documentsCount = 0;
+            this.cvLanguage = '';
+            this.hasCv = false;
+            this.cvFileName = '';
+            this.cvFileSizeLabel = '';
             this.dataProcessingConsent = false;
+            this.submitting = false;
             this.clearFieldErrors();
         });
 
@@ -1498,8 +1508,8 @@ Alpine.data('registerWizard', (config) => ({
     get talentStep2Valid() {
         return this.sector !== ''
             && this.description.trim().length >= 255
-            && this.documentsCount >= 1
-            && this.documentsCount <= 5
+            && this.cvLanguage !== ''
+            && this.hasCv
             && this.dataProcessingConsent;
     },
 
@@ -1537,7 +1547,7 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get canGoBack() {
-        return this.hasRole && this.step > 1;
+        return this.hasRole && this.step > 1 && ! this.submitting;
     },
 
     get showNext() {
@@ -1549,7 +1559,7 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get canGoNext() {
-        return this.showNext && this.currentStepValid;
+        return this.showNext && this.currentStepValid && ! this.submitting;
     },
 
     get showSubmit() {
@@ -1557,7 +1567,7 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get canSubmit() {
-        if (! this.hasRole) {
+        if (this.submitting || ! this.hasRole) {
             return false;
         }
 
@@ -1630,6 +1640,10 @@ Alpine.data('registerWizard', (config) => ({
                 return this.sector === '';
             case 'description':
                 return this.description.trim() === '';
+            case 'cv':
+                return ! this.hasCv;
+            case 'cv_language':
+                return this.cvLanguage === '';
             case 'documents':
                 return this.documentsCount === 0;
             case 'company_description':
@@ -1678,7 +1692,7 @@ Alpine.data('registerWizard', (config) => ({
         }
 
         if (this.isTalent && this.step === 2) {
-            return ['sector', 'description', 'documents', 'data_processing_consent'].includes(field);
+            return ['sector', 'description', 'cv', 'cv_language', 'data_processing_consent'].includes(field);
         }
 
         return false;
@@ -1847,18 +1861,22 @@ Alpine.data('registerWizard', (config) => ({
                 return null;
             }
             case 'documents': {
-                if (this.isTalent) {
-                    if (this.documentsCount < 1) {
-                        return messages.documents_required ?? null;
-                    }
-
-                    if (this.documentsCount > 5) {
-                        return messages.documents_max ?? null;
-                    }
-                }
-
                 if (this.isCompany && this.documentsCount > 2) {
                     return messages.documents_max_company ?? null;
+                }
+
+                return null;
+            }
+            case 'cv': {
+                if (! this.hasCv) {
+                    return messages.cv_required ?? null;
+                }
+
+                return null;
+            }
+            case 'cv_language': {
+                if (this.cvLanguage === '') {
+                    return messages.cv_language_required ?? null;
                 }
 
                 return null;
@@ -1904,6 +1922,103 @@ Alpine.data('registerWizard', (config) => ({
             default:
                 return null;
         }
+    },
+
+    onCvChange(event) {
+        const input = event.target;
+        const file = input.files?.[0] ?? null;
+        const scrollState = this._registerScrollState ?? this.captureRegisterScroll();
+
+        if (! file) {
+            this.hasCv = false;
+            this.cvFileName = '';
+            this.cvFileSizeLabel = '';
+            this.onFieldInput('cv');
+            this.restoreRegisterScroll(scrollState);
+
+            return;
+        }
+
+        const rejection = this.validateDocumentFile(file);
+
+        if (rejection) {
+            this.hasCv = false;
+            this.cvFileName = '';
+            this.cvFileSizeLabel = '';
+            input.value = '';
+            this.fieldErrors.cv = true;
+            this.$dispatch('toast-push', {
+                type: 'error',
+                message: rejection,
+            });
+            this.restoreRegisterScroll(scrollState);
+
+            return;
+        }
+
+        this.hasCv = true;
+        this.cvFileName = file.name;
+        this.cvFileSizeLabel = this.formatCvSize(file.size);
+        this.onFieldInput('cv');
+        this.restoreRegisterScroll(scrollState);
+
+        // Le navigateur peut encore recentrer sur l'input après le dialogue fichier.
+        window.requestAnimationFrame(() => this.restoreRegisterScroll(scrollState));
+        window.setTimeout(() => {
+            input.blur();
+            this.restoreRegisterScroll(scrollState);
+        }, 0);
+    },
+
+    rememberRegisterScroll() {
+        this._registerScrollState = this.captureRegisterScroll();
+    },
+
+    captureRegisterScroll() {
+        const panel = this.$root?.querySelector?.('.overflow-y-auto') ?? null;
+
+        return {
+            windowY: window.scrollY,
+            panel,
+            panelTop: panel ? panel.scrollTop : 0,
+        };
+    },
+
+    restoreRegisterScroll(state = null) {
+        const snapshot = state ?? this._registerScrollState ?? this.captureRegisterScroll();
+
+        window.scrollTo(0, snapshot.windowY);
+
+        if (snapshot.panel) {
+            snapshot.panel.scrollTop = snapshot.panelTop;
+        }
+    },
+
+    clearCv() {
+        this.hasCv = false;
+        this.cvFileName = '';
+        this.cvFileSizeLabel = '';
+
+        const input = this.$refs.talentCv;
+
+        if (input) {
+            input.value = '';
+            input.blur();
+        }
+
+        this.onFieldInput('cv');
+    },
+
+    formatCvSize(bytes) {
+        if (! Number.isFinite(bytes) || bytes <= 0) {
+            return '';
+        }
+
+        if (bytes >= 1024 * 1024) {
+            return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+        }
+
+        return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
     },
 
     onDocumentsChange(event) {
@@ -2041,11 +2156,17 @@ Alpine.data('registerWizard', (config) => ({
         this.passwordConfirmation = '';
         this.sector = '';
         this.description = '';
+        this.cvLanguage = '';
+        this.hasCv = false;
+        this.cvFileName = '';
+        this.cvFileSizeLabel = '';
         this.documentsCount = 0;
         this.documentFiles = [];
         this.companyDescription = '';
         this.companyWebsite = '';
         this.companyCountry = this.defaultCompanyCountry;
+        this.dataProcessingConsent = false;
+        this.submitting = false;
         this.clearFieldErrors();
 
         // Les inputs fichiers ne sont pas liables en x-model : on vide le DOM.
@@ -2091,9 +2212,19 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     onSubmit(event) {
+        if (this.submitting) {
+            event.preventDefault();
+
+            return;
+        }
+
         if (! this.canSubmit) {
             event.preventDefault();
+
+            return;
         }
+
+        this.submitting = true;
     },
 }));
 

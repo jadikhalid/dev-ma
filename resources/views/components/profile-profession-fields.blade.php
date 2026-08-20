@@ -16,9 +16,14 @@
         initialProfession: @js($profession),
         initialKeyword: @js($specialization),
         keywordMode: true,
+        maxKeywords: 10,
         specializationSelectProfessionLabel: @js(__('talenma.talent.specialization_select_sector')),
         keywordPlaceholder: @js(__('talenma.talent.specialization_keyword_placeholder')),
-    })"
+        keywordsMaxLabel: @js(__('talenma.talent.specialization_max_reached')),
+        validationMessages: {
+            keywordsMax: @js(__('talenma.talent.specialization_max')),
+        },
+    })")
     class="space-y-4"
 >
     <div class="grid sm:grid-cols-2 gap-4">
@@ -124,8 +129,9 @@
                 <template x-for="item in unselectedSpecializations" :key="item">
                     <button
                         type="button"
-                        class="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800"
+                        class="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:bg-transparent disabled:hover:text-gray-700"
                         @click="addKeyword(item)"
+                        :disabled="keywordsAtMax"
                         x-text="`+ ${item}`"
                     ></button>
                 </template>
@@ -133,5 +139,6 @@
         </div>
 
         <x-input-error :messages="$errors->get('specialization')" class="mt-2" />
+        <p class="mt-2 text-xs text-gray-500" x-show="keywordsAtMax" x-text="keywordsMaxLabel"></p>
     </div>
 </div>

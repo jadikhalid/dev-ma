@@ -139,6 +139,12 @@ class ProfessionCatalogService
                 ]);
             }
 
+            if (count($keywords) > 10) {
+                throw ValidationException::withMessages([
+                    'specialization' => __('talenma.talent.specialization_max'),
+                ]);
+            }
+
             foreach ($keywords as $keyword) {
                 if (! in_array($keyword, $validLabels, true)) {
                     throw ValidationException::withMessages([

@@ -25,6 +25,7 @@ class RegisteredUserController extends Controller
         return view('auth.register', [
             'defaultRole' => $defaultRole,
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
+            'cvLanguageOptions' => \App\Services\ProfileDocumentService::cvLanguageOptions(),
             'companyCountryOptions' => \App\Models\CompanyProfile::countryOptions(),
         ]);
     }

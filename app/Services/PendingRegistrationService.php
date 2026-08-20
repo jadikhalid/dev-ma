@@ -44,8 +44,18 @@ class PendingRegistrationService
         ]);
 
         if ($validated['role'] === 'dev') {
+            $cv = $request->file('cv');
+
             $pending->update([
-                'document_paths' => $this->storeDocuments($pending, $request->file('documents', [])),
+                'document_paths' => $cv instanceof UploadedFile
+                    ? [$this->storePendingDocument(
+                        $pending,
+                        $cv,
+                        1,
+                        ProfileDocument::TYPE_CV,
+                        $validated['cv_language'],
+                    )]
+                    : [],
             ]);
         }
 
@@ -273,30 +283,54 @@ class PendingRegistrationService
                 continue;
             }
 
-            $path = $file->store(
-                'pending-registrations/'.$pending->id,
-                'local',
-            );
-
-            $stored[] = [
-                'path' => $path,
-                'original_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
-                'size' => (int) $file->getSize(),
-                'sort_order' => $index + 1,
-            ];
+            $stored[] = $this->storePendingDocument($pending, $file, $index + 1);
         }
 
         return $stored;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function storePendingDocument(
+        PendingRegistration $pending,
+        UploadedFile $file,
+        int $sortOrder,
+        string $documentType = ProfileDocument::TYPE_REGISTRATION,
+        ?string $language = null,
+    ): array {
+        $path = $file->store(
+            'pending-registrations/'.$pending->id,
+            'local',
+        );
+
+        if ($documentType === ProfileDocument::TYPE_CV && filled($language)) {
+            $languageIndex = array_search($language, ProfileDocument::CV_LANGUAGES, true);
+            $sortOrder = $languageIndex === false ? $sortOrder : ($languageIndex + 1);
+        }
+
+        return [
+            'path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
+            'size' => (int) $file->getSize(),
+            'sort_order' => $sortOrder,
+            'document_type' => $documentType,
+            'language' => $language,
+        ];
+    }
+
     private function attachDocuments(\App\Models\Profile $profile, PendingRegistration $pending): void
     {
         foreach ($pending->document_paths ?? [] as $document) {
-            $this->copyDocumentToProfile($document, function (array $attrs) use ($profile) {
+            $documentType = $document['document_type'] ?? ProfileDocument::TYPE_REGISTRATION;
+            $language = $document['language'] ?? null;
+
+            $this->copyDocumentToProfile($document, function (array $attrs) use ($profile, $documentType, $language) {
                 ProfileDocument::query()->create(array_merge($attrs, [
                     'profile_id' => $profile->id,
-                    'document_type' => ProfileDocument::TYPE_REGISTRATION,
+                    'document_type' => $documentType,
+                    'language' => $language,
                 ]));
             }, 'profile-documents/'.$profile->id);
         }

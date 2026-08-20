@@ -105,12 +105,22 @@ class RegisterRequest extends FormRequest
                 'min:255',
                 'max:2550',
             ],
-            'documents' => [
+            'cv' => [
                 Rule::requiredIf(fn () => $this->input('role') === 'dev'),
                 'nullable',
+                'file',
+                'max:1024',
+                'mimes:pdf,jpg,jpeg,png,webp',
+            ],
+            'cv_language' => [
+                Rule::requiredIf(fn () => $this->input('role') === 'dev'),
+                'nullable',
+                'string',
+                Rule::in(\App\Models\ProfileDocument::CV_LANGUAGES),
+            ],
+            'documents' => [
+                'nullable',
                 'array',
-                Rule::when($this->input('role') === 'dev', 'min:1'),
-                Rule::when($this->input('role') === 'dev', 'max:5'),
                 Rule::when($this->input('role') === 'company', 'max:2'),
             ],
             'documents.*' => [
@@ -172,6 +182,8 @@ class RegisterRequest extends FormRequest
             'role' => __('talenma.auth.register_as'),
             'sector' => __('talenma.auth.sector'),
             'description' => __('talenma.auth.registration_description'),
+            'cv' => __('talenma.talent.cv'),
+            'cv_language' => __('talenma.talent.cv_language'),
             'documents' => __('talenma.auth.registration_documents'),
             'representative_name' => __('talenma.auth.representative_name'),
             'company_description' => __('talenma.company.description'),
@@ -221,6 +233,11 @@ class RegisterRequest extends FormRequest
             'description.required' => __('talenma.auth.validation.description_required'),
             'description.min' => __('talenma.auth.validation.description_min'),
             'description.max' => __('talenma.auth.validation.description_max'),
+            'cv.required' => __('talenma.talent.cv_required'),
+            'cv.max' => __('talenma.auth.validation.documents_size'),
+            'cv.mimes' => __('talenma.auth.validation.documents_type'),
+            'cv_language.required' => __('talenma.talent.cv_language_required'),
+            'cv_language.in' => __('talenma.talent.cv_language_invalid'),
             'documents.required' => __('talenma.auth.validation.documents_required'),
             'documents.min' => __('talenma.auth.validation.documents_min'),
             'documents.max' => $this->input('role') === 'company'

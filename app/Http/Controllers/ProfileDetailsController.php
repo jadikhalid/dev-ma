@@ -186,7 +186,7 @@ class ProfileDetailsController extends Controller
             'profession' => [
                 'sector' => ['required', 'string', 'max:64'],
                 'profession' => ['required', 'string', 'max:64'],
-                'specialization' => ['required', 'string', 'max:500'],
+                'specialization' => ['required', 'string', 'max:1000'],
             ],
             'presentation' => [
                 'bio' => ['required', 'string', 'min:30', 'max:5000'],

@@ -372,13 +372,22 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function initials(): string
     {
+        $first = trim((string) ($this->first_name ?: ''));
+        $last = trim((string) ($this->last_name ?: ''));
+
+        if ($first !== '' && $last !== '') {
+            return strtoupper(mb_substr($first, 0, 1).mb_substr($last, 0, 1));
+        }
+
         $parts = preg_split('/\s+/u', trim($this->name)) ?: [];
 
         if (count($parts) >= 2) {
             return strtoupper(mb_substr($parts[0], 0, 1).mb_substr(end($parts), 0, 1));
         }
 
-        return strtoupper(mb_substr($this->name, 0, 2));
+        $fallback = $first !== '' ? $first : ($last !== '' ? $last : $this->name);
+
+        return strtoupper(mb_substr((string) $fallback, 0, 2));
     }
 
     /**

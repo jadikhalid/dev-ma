@@ -4,8 +4,8 @@
     if (old('role') === 'dev' && (
         $errors->has('sector')
         || $errors->has('description')
-        || $errors->has('documents')
-        || $errors->has('documents.*')
+        || $errors->has('cv')
+        || $errors->has('cv_language')
         || $errors->has('data_processing_consent')
     )) {
         $initialStep = 2;
@@ -56,6 +56,9 @@
         'description_required' => __('talenma.auth.validation.description_required'),
         'description_min' => __('talenma.auth.validation.description_min'),
         'description_max' => __('talenma.auth.validation.description_max'),
+        'cv_required' => __('talenma.talent.cv_required'),
+        'cv_language_required' => __('talenma.talent.cv_language_required'),
+        'cv_language_invalid' => __('talenma.talent.cv_language_invalid'),
         'documents_required' => __('talenma.auth.validation.documents_required'),
         'documents_max' => __('talenma.auth.validation.documents_max'),
         'documents_max_company' => __('talenma.auth.validation.documents_max_company'),
@@ -103,6 +106,7 @@
         class="flex flex-col h-full min-h-0"
         @submit="onSubmit($event)"
         @keydown.enter="onEnterKey($event)"
+        :aria-busy="submitting"
         x-data="registerWizard({
             initialRole: @js(old('role', $defaultRole ?? '')),
             initialStep: @js($initialStep),
@@ -112,6 +116,8 @@
             initialEmail: @js(old('email', '')),
             initialSector: @js(old('sector', '')),
             initialDescription: @js(old('description', '')),
+            initialCvLanguage: @js(old('cv_language', '')),
+            initialHasCv: @js(false),
             initialDocumentsCount: @js(is_array(old('documents')) ? count(old('documents')) : 0),
             initialCompanyDescription: @js(old('company_description', '')),
             initialCompanyWebsite: @js(old('company_website', '')),
@@ -468,37 +474,88 @@
                     <p class="mt-0.5 text-sm sm:text-xs text-gray-500 text-right"><span x-text="description.length"></span>/2550</p>
                     <x-input-error :messages="$errors->get('description')" class="mt-1" />
                 </div>
-                <div>
-                    <x-input-label for="documents" :value="__('talenma.auth.registration_documents')" class="!text-base sm:!text-sm" />
-                    <input
-                        id="documents"
-                        x-ref="talentDocuments"
-                        name="documents[]"
-                        type="file"
-                        x-bind:disabled="!isTalent"
-                        @change="onDocumentsChange($event)"
-                        @blur="onFieldBlur('documents')"
-                        x-bind:class="fieldInvalidClass('documents')"
-                        class="mt-1 block w-full text-sm sm:text-sm text-gray-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:text-sm sm:file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                        accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
-                        multiple
-                    >
-                    <ul x-show="documentFiles.length > 0" class="mt-2 space-y-1.5" x-cloak>
-                        <template x-for="(file, index) in documentFiles" :key="documentFileKey(file)">
-                            <li class="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm sm:text-xs text-gray-700">
-                                <span class="min-w-0 truncate" x-text="file.name"></span>
+                <div
+                    class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 sm:p-4 space-y-3"
+                    :class="{ 'border-red-300 bg-red-50/40': fieldErrors.cv || fieldErrors.cv_language }"
+                >
+                    <div>
+                        <p class="text-base sm:text-sm font-semibold text-gray-900">{{ __('talenma.auth.registration_cv_title') }}</p>
+                        <p class="mt-0.5 text-sm sm:text-xs text-gray-500">{{ __('talenma.auth.registration_cv_intro') }}</p>
+                    </div>
+
+                    <div>
+                        <p class="text-sm sm:text-xs font-medium text-gray-700 mb-1.5">{{ __('talenma.talent.cv_language') }}</p>
+                        <div class="grid grid-cols-4 gap-1.5" role="radiogroup" aria-label="{{ __('talenma.talent.cv_language') }}">
+                            @foreach ($cvLanguageOptions as $code => $label)
                                 <button
                                     type="button"
-                                    class="shrink-0 font-semibold text-red-600 hover:text-red-700"
-                                    @click="removeDocument(index)"
-                                    :aria-label="@js(__('talenma.auth.registration_documents_remove'))"
-                                >{{ __('talenma.auth.registration_documents_remove') }}</button>
-                            </li>
-                        </template>
-                    </ul>
-                    <p class="mt-0.5 text-sm sm:text-xs text-gray-500">{{ __('talenma.auth.registration_documents_hint') }}</p>
-                    <x-input-error :messages="$errors->get('documents')" class="mt-1" />
-                    <x-input-error :messages="$errors->get('documents.*')" class="mt-1" />
+                                    role="radio"
+                                    :aria-checked="cvLanguage === @js($code)"
+                                    x-bind:disabled="!isTalent"
+                                    @click="cvLanguage = @js($code); onFieldInput('cv_language')"
+                                    class="rounded-lg border px-1.5 py-2 text-center text-sm sm:text-xs font-semibold transition"
+                                    :class="cvLanguage === @js($code)
+                                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                                        : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'"
+                                >
+                                    <span class="block uppercase tracking-wide">{{ strtoupper($code) }}</span>
+                                    <span class="mt-0.5 block text-[10px] sm:text-[11px] font-medium opacity-80 truncate">{{ $label }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                        <input type="hidden" name="cv_language" :value="cvLanguage" x-bind:disabled="!isTalent">
+                        <x-input-error :messages="$errors->get('cv_language')" class="mt-1.5" />
+                    </div>
+
+                    <div>
+                        <p class="text-sm sm:text-xs font-medium text-gray-700 mb-1.5">{{ __('talenma.talent.cv') }}</p>
+                        <div
+                            class="relative rounded-lg border border-dashed transition"
+                            :class="hasCv
+                                ? 'border-indigo-300 bg-white'
+                                : (fieldErrors.cv ? 'border-red-300 bg-white' : 'border-gray-300 bg-white hover:border-indigo-400 hover:bg-indigo-50/50')"
+                        >
+                            <div class="pointer-events-none flex items-center gap-3 px-3 py-3">
+                                <span
+                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                                    :class="hasCv ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'"
+                                >
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-sm sm:text-xs font-semibold text-gray-900" x-text="hasCv ? cvFileName : @js(__('talenma.auth.registration_cv_choose'))"></span>
+                                    <span class="mt-0.5 block text-sm sm:text-xs text-gray-500" x-text="hasCv ? cvFileSizeLabel : @js(__('talenma.auth.registration_cv_formats'))"></span>
+                                </span>
+                                <span
+                                    class="shrink-0 text-sm sm:text-xs font-semibold"
+                                    :class="hasCv ? 'text-indigo-700' : 'text-indigo-600'"
+                                    x-text="hasCv ? @js(__('talenma.auth.registration_cv_change')) : @js(__('talenma.auth.registration_cv_browse'))"
+                                ></span>
+                            </div>
+                            <input
+                                id="cv"
+                                name="cv"
+                                type="file"
+                                x-ref="talentCv"
+                                x-bind:disabled="!isTalent"
+                                @pointerdown="rememberRegisterScroll()"
+                                @change="onCvChange($event)"
+                                @focus="restoreRegisterScroll()"
+                                class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+                            >
+                        </div>
+                        <div x-show="hasCv" x-cloak class="relative z-20 mt-2 flex justify-end">
+                            <button
+                                type="button"
+                                class="text-sm sm:text-xs font-semibold text-red-600 hover:text-red-700"
+                                @click="clearCv()"
+                            >{{ __('talenma.talent.document_cancel_selection') }}</button>
+                        </div>
+                        <x-input-error :messages="$errors->get('cv')" class="mt-1.5" />
+                    </div>
                 </div>
                 <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
                     <label class="flex items-start gap-2.5 cursor-pointer">
@@ -529,7 +586,7 @@
             <button
                 type="button"
                 @click="prev()"
-                :disabled="!canGoBack"
+                :disabled="!canGoBack || submitting"
                 :class="canGoBack
                     ? 'inline-flex items-center gap-1 px-3.5 py-3 sm:px-3 sm:py-2 text-base sm:text-sm font-semibold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition'
                     : 'inline-flex items-center gap-1 px-3.5 py-3 sm:px-3 sm:py-2 text-base sm:text-sm font-semibold text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed bg-gray-50'"
@@ -560,14 +617,31 @@
                     type="submit"
                     x-show="showSubmit"
                     x-cloak
-                    :disabled="!canSubmit"
-                    :class="canSubmit
+                    :disabled="!canSubmit || submitting"
+                    :aria-busy="submitting"
+                    class="relative overflow-hidden"
+                    :class="(canSubmit || submitting)
                         ? (isCompany
-                            ? 'inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition'
-                            : 'inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition')
+                            ? 'inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition disabled:hover:bg-emerald-600'
+                            : 'inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition disabled:hover:bg-indigo-600')
                         : 'inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-gray-200 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-gray-400 cursor-not-allowed'"
                 >
-                    {{ __('talenma.auth.register_btn') }}
+                    <span class="inline-flex items-center gap-2" :class="submitting ? 'opacity-0' : ''">
+                        {{ __('talenma.auth.register_btn') }}
+                    </span>
+                    <span
+                        x-show="submitting"
+                        x-cloak
+                        class="absolute inset-0 flex items-center justify-center gap-2"
+                        :class="isCompany ? 'bg-emerald-600/90' : 'bg-indigo-600/90'"
+                        aria-hidden="true"
+                    >
+                        <svg class="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-base sm:text-sm font-semibold text-white">{{ __('talenma.auth.register_submitting') }}</span>
+                    </span>
                 </button>
             </div>
         </div>

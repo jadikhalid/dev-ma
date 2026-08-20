@@ -121,8 +121,13 @@ class ProfileController extends Controller
                 $emailChanged = true;
             }
         } else {
+            $firstName = $validated['first_name'];
+            $lastName = $validated['last_name'];
+
             $user->fill([
-                'name' => $validated['name'],
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'name' => trim($firstName.' '.$lastName),
                 'email' => $validated['email'],
             ]);
 

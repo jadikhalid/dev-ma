@@ -51,7 +51,7 @@
                     x-show="previewUrl"
                     x-cloak
                     :src="previewUrl"
-                    alt="{{ $user->name }}"
+                    alt="{{ $user->formalDisplayName() }}"
                     class="w-32 h-32 rounded-full object-cover shrink-0 ring-2 ring-indigo-100"
                 >
                 <span
@@ -130,12 +130,9 @@
                     />
                 </div>
             </div>
-        @else
+        @elseif ($useCompanyBranding)
             <div>
-                <x-input-label
-                    for="name"
-                    :value="$useCompanyBranding ? __('talenma.account.name_company') : __('talenma.account.name')"
-                />
+                <x-input-label for="name" :value="__('talenma.account.name_company')" />
                 <x-text-input
                     id="name"
                     name="name"
@@ -144,11 +141,45 @@
                     :value="old('name', $user->name)"
                     required
                     autofocus
-                    autocomplete="name"
+                    autocomplete="organization"
                     data-required
-                    data-required-message="{{ $useCompanyBranding ? __('talenma.account.name_company') : __('talenma.account.name') }}"
+                    data-required-message="{{ __('talenma.account.name_company') }}"
                 />
                 <x-input-error class="mt-2" :messages="$errors->get('name')" />
+            </div>
+        @else
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="first_name" :value="__('talenma.auth.first_name')" />
+                    <x-text-input
+                        id="first_name"
+                        name="first_name"
+                        type="text"
+                        class="mt-1 block w-full"
+                        :value="old('first_name', $user->first_name)"
+                        required
+                        autofocus
+                        autocomplete="given-name"
+                        data-required
+                        data-required-message="{{ __('talenma.auth.validation.first_name_required') }}"
+                    />
+                    <x-input-error class="mt-2" :messages="$errors->get('first_name')" />
+                </div>
+                <div>
+                    <x-input-label for="last_name" :value="__('talenma.auth.last_name')" />
+                    <x-text-input
+                        id="last_name"
+                        name="last_name"
+                        type="text"
+                        class="mt-1 block w-full"
+                        :value="old('last_name', $user->last_name)"
+                        required
+                        autocomplete="family-name"
+                        data-required
+                        data-required-message="{{ __('talenma.auth.validation.last_name_required') }}"
+                    />
+                    <x-input-error class="mt-2" :messages="$errors->get('last_name')" />
+                </div>
             </div>
         @endif
 
