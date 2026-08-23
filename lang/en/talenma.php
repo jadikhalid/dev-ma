@@ -53,6 +53,14 @@ return [
             'cta' => 'Go to my account',
             'closing' => 'Best regards, The Talents du Maroc team',
         ],
+        'talent_profile_completion_reminder' => [
+            'subject' => 'Complete your profile on Talents du Maroc',
+            'greeting' => 'Hello :name,',
+            'body' => 'Your talent account on Talents du Maroc was validated a few days ago, but your profile is not yet complete enough to appear in company searches.',
+            'body_followup' => 'In just a few minutes, you can add your profession, specialization and the essential details to become visible to recruiters on Talents du Maroc.',
+            'cta' => 'Complete my profile',
+            'closing' => 'Best regards, The Talents du Maroc team',
+        ],
         'talent_rejected' => [
             'subject' => 'Regarding your Talents du Maroc registration',
             'greeting' => 'Hello :name,',

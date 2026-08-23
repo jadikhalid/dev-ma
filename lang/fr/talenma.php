@@ -53,6 +53,14 @@ return [
             'cta' => 'Accéder à mon espace',
             'closing' => 'Cordialement, L\'équipe Talents du Maroc',
         ],
+        'talent_profile_completion_reminder' => [
+            'subject' => 'Finalisez votre profil sur Talents du Maroc',
+            'greeting' => 'Bonjour :name,',
+            'body' => 'Votre compte talent sur Talents du Maroc a été validé il y a quelques jours, mais votre profil n\'est pas encore suffisamment complet pour apparaître dans les recherches des entreprises.',
+            'body_followup' => 'En quelques minutes, vous pouvez renseigner votre métier, votre spécialisation et les informations essentielles pour être visible par les recruteurs sur Talents du Maroc.',
+            'cta' => 'Compléter mon profil',
+            'closing' => 'Cordialement, L\'équipe Talents du Maroc',
+        ],
         'talent_rejected' => [
             'subject' => 'Suite à votre inscription sur Talents du Maroc',
             'greeting' => 'Bonjour :name,',

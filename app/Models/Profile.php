@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ProfileCityCatalog;
+use App\Support\UsStateCatalog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -80,14 +82,14 @@ class Profile extends Model
     public static function citiesByCountry(): array
     {
         return [
-            self::COUNTRY_MA => ['Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Agadir'],
-            self::COUNTRY_FR => ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Lille'],
-            self::COUNTRY_ES => ['Madrid', 'Barcelone', 'Valence', 'Séville', 'Bilbao'],
-            self::COUNTRY_BE => ['Bruxelles', 'Anvers', 'Gand', 'Liège', 'Charleroi'],
-            self::COUNTRY_DE => ['Berlin', 'Munich', 'Hambourg', 'Francfort', 'Cologne'],
-            self::COUNTRY_US => ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Miami'],
-            self::COUNTRY_CA => ['Toronto', 'Montréal', 'Vancouver', 'Calgary', 'Ottawa'],
-            self::COUNTRY_OTHER => ['Londres', 'Dubaï', 'Genève', 'Amsterdam', 'Autre'],
+            self::COUNTRY_MA => ProfileCityCatalog::forCountry(self::COUNTRY_MA),
+            self::COUNTRY_FR => ProfileCityCatalog::forCountry(self::COUNTRY_FR),
+            self::COUNTRY_ES => ProfileCityCatalog::forCountry(self::COUNTRY_ES),
+            self::COUNTRY_BE => ProfileCityCatalog::forCountry(self::COUNTRY_BE),
+            self::COUNTRY_DE => ProfileCityCatalog::forCountry(self::COUNTRY_DE),
+            self::COUNTRY_US => UsStateCatalog::labels(),
+            self::COUNTRY_CA => ProfileCityCatalog::forCountry(self::COUNTRY_CA),
+            self::COUNTRY_OTHER => ProfileCityCatalog::forCountry(self::COUNTRY_OTHER),
         ];
     }
 

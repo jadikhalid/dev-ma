@@ -49,4 +49,12 @@ return [
     | (talent aujourd’hui ; entreprises : même mécanisme à l’inscription).
     */
     'data_processing_consent_version' => '2026-08-12',
+
+    /*
+    | Relance profil talent : délai après validation (heures) avant envoi
+    | si le profil minimum (catalogue) n'est pas complet.
+    */
+    'profile_completion_reminder' => [
+        'delay_hours' => (int) env('TALENMA_PROFILE_REMINDER_DELAY_HOURS', 48),
+    ],
 ];
