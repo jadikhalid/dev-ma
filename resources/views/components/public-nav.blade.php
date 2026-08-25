@@ -18,9 +18,6 @@
                 <x-brand-logo href="{{ route('home') }}" size="sm" />
             </div>
 
-            <div class="hidden md:flex items-center">
-                <x-social-links />
-            </div>
             <div class="flex items-center gap-2.5 sm:gap-3">
                 <div class="hidden lg:block">
                     <x-locale-switcher />

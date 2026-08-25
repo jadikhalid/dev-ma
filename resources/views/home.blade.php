@@ -4,6 +4,8 @@
 <x-news-ticker />
 
 <section class="relative overflow-hidden bg-white hero-section" aria-label="hero">
+    <div class="home-hero-wide-atmosphere" aria-hidden="true"></div>
+
     {{-- Petit écran : header (4rem) + panneau marque = 100svh au chargement --}}
     <div class="sm:hidden relative isolate flex h-[calc(100svh-5rem)] min-h-[calc(100svh-5rem)] flex-col justify-center overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-b from-indigo-600 via-indigo-600 to-teal-600" aria-hidden="true"></div>
@@ -33,10 +35,10 @@
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8 sm:pt-12 lg:pt-16 lg:pb-10">
-        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+    <div class="home-shell relative z-10 pt-6 pb-8 sm:pt-12 lg:pt-16 lg:pb-10">
+        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 2xl:gap-14 items-center">
             {{-- Colonne texte --}}
-            <div>
+            <div class="max-w-xl 2xl:max-w-2xl">
                 <div class="hidden sm:block">
                     <p class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-100 text-indigo-800 text-sm font-semibold mb-4 ring-1 ring-indigo-200/70">
                         {{ __('talenma.home.badge') }}
@@ -84,8 +86,8 @@
             </div>
         </div>
 
-        {{-- Panneau recherche pleine largeur --}}
-        <div class="mt-8 lg:mt-10 w-full hero-search-panel rounded-xl border border-gray-100 bg-white overflow-visible">
+        {{-- Panneau recherche : largeur confortable même sur écrans très larges --}}
+        <div class="mt-8 lg:mt-10 w-full 2xl:mx-auto 2xl:max-w-7xl hero-search-panel rounded-xl border border-gray-100 bg-white overflow-visible">
             <div class="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 bg-gray-50/80">
                 <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -112,7 +114,7 @@
         </div>
 
         @if ($talentsCount > 0)
-            <p class="mt-3 text-sm sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
+            <p class="mt-3 text-sm sm:text-sm text-gray-500 2xl:mx-auto 2xl:max-w-7xl">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
         @endif
 
         {{-- Bandeau réassurance style Malt --}}
@@ -147,10 +149,10 @@
 </section>
 
 <section class="py-20 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="home-shell">
         <h2 class="text-3xl font-bold text-center">{{ __('talenma.home.modes_title') }}</h2>
         <p class="text-center text-gray-600 mt-3 max-w-2xl mx-auto">{{ __('talenma.home.modes_subtitle') }}</p>
-        <div class="mt-14 grid md:grid-cols-3 gap-8">
+        <div class="mt-14 grid md:grid-cols-3 gap-8 2xl:gap-10">
             <div class="p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
                 <span class="text-3xl">🎯</span>
                 <h3 class="mt-4 text-xl font-bold">{{ __('talenma.home.mode_direct_title') }}</h3>
@@ -171,7 +173,7 @@
 </section>
 
 <section class="py-20 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-8">
+    <div class="home-shell grid md:grid-cols-2 gap-8 2xl:gap-10">
         <div class="bg-white p-8 rounded-2xl border shadow-sm">
             <h3 class="text-xl font-bold">{{ __('talenma.home.talent_card_title') }}</h3>
             <p class="mt-3 text-gray-600">{{ __('talenma.home.talent_card_desc') }}</p>

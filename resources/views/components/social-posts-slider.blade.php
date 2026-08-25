@@ -13,7 +13,7 @@
 @endphp
 
 <section id="publications" class="py-20 scroll-mt-28">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="home-shell">
         <div class="max-w-2xl">
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">{{ __('talenma.home.social_feed_eyebrow') }}</p>
             <h2 class="mt-3 text-3xl font-bold text-gray-900">{{ __('talenma.home.social_feed_title') }}</h2>

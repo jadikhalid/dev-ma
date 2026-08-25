@@ -2,7 +2,7 @@
 
 @if ($companies->isNotEmpty())
 <section id="entreprises" class="scroll-mt-28 border-y border-gray-100 bg-gray-50 py-16">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="home-shell">
         <div class="max-w-2xl">
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">{{ __('talenma.home.companies_marquee_eyebrow') }}</p>
             <h2 class="mt-3 text-3xl font-bold text-gray-900">{{ __('talenma.home.companies_marquee_title') }}</h2>
