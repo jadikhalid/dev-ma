@@ -74,6 +74,7 @@ return [
         ['label_fr' => 'Équipementier télécoms', 'label_en' => 'Telecom equipment vendor'],
         ['label_fr' => 'Intégrateur / sous-traitance réseau', 'label_en' => 'Network integrator / subcontracting'],
         ['label_fr' => 'Solutions B2B / entreprises', 'label_en' => 'B2B / enterprise solutions'],
+        ['label_fr' => 'Mobile Money / paiements', 'label_en' => 'Mobile Money / payments'],
         ['label_fr' => 'Retail / boutiques opérateur', 'label_en' => 'Operator retail / stores'],
         ['label_fr' => 'OSS / BSS / billing', 'label_en' => 'OSS / BSS / billing'],
     ],

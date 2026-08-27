@@ -1110,6 +1110,18 @@ return [
                 ],
             ],
             [
+                'slug' => 'telecom-digital-pmo',
+                'name_fr' => 'PMO / Chef de Projet Services Digitaux Télécoms',
+                'name_en' => 'Telecom Digital Services PMO / Project Manager',
+                'suggestions' => [
+                    ['label_fr' => 'Mobile Money / paiements', 'label_en' => 'Mobile Money / payments', 'keywords' => 'mobile money paiement wallet'],
+                    ['label_fr' => 'Intégrations partenaires', 'label_en' => 'Partner integrations', 'keywords' => 'integration partenaires api'],
+                    ['label_fr' => 'SIT / UAT / mise en production', 'label_en' => 'SIT / UAT / go-live', 'keywords' => 'sit uat mise en production'],
+                    ['label_fr' => 'Incidents & anomalies', 'label_en' => 'Incidents & defects', 'keywords' => 'anomalies incidents techniques'],
+                    ['label_fr' => 'Reporting & réconciliation', 'label_en' => 'Reporting & reconciliation', 'keywords' => 'reporting reconciliation donnees'],
+                ],
+            ],
+            [
                 'slug' => 'network-architect-telecom',
                 'name_fr' => 'Architecte / Ingénieur Réseau Télécoms',
                 'name_en' => 'Telecom Network Architect / Engineer',
