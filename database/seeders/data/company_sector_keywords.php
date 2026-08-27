@@ -65,6 +65,18 @@ return [
         ['label_fr' => 'Utilities / concession', 'label_en' => 'Utilities / concession'],
         ['label_fr' => 'Projet EPC', 'label_en' => 'EPC project'],
     ],
+    'telecom' => [
+        ['label_fr' => 'Opérateur télécoms', 'label_en' => 'Telecom operator'],
+        ['label_fr' => 'Réseau mobile 4G / 5G', 'label_en' => '4G / 5G mobile network'],
+        ['label_fr' => 'Fibre / FTTH', 'label_en' => 'Fibre / FTTH'],
+        ['label_fr' => 'Déploiement sites / BTS', 'label_en' => 'Site / BTS rollout'],
+        ['label_fr' => 'NOC / supervision', 'label_en' => 'NOC / monitoring'],
+        ['label_fr' => 'Équipementier télécoms', 'label_en' => 'Telecom equipment vendor'],
+        ['label_fr' => 'Intégrateur / sous-traitance réseau', 'label_en' => 'Network integrator / subcontracting'],
+        ['label_fr' => 'Solutions B2B / entreprises', 'label_en' => 'B2B / enterprise solutions'],
+        ['label_fr' => 'Retail / boutiques opérateur', 'label_en' => 'Operator retail / stores'],
+        ['label_fr' => 'OSS / BSS / billing', 'label_en' => 'OSS / BSS / billing'],
+    ],
     'finance' => [
         ['label_fr' => 'Banque de détail', 'label_en' => 'Retail banking'],
         ['label_fr' => 'Banque d\'affaires', 'label_en' => 'Investment banking'],
