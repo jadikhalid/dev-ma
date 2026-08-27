@@ -323,6 +323,14 @@ An administrator or moderator is reviewing your application before your company 
             'reject_btn' => 'Reject',
             'reject_reason' => 'Reason (optional)',
             'delete_btn' => 'Delete',
+            'edit_profile_btn' => 'Edit',
+            'edit_profile_title' => 'Edit profile',
+            'edit_profile_subtitle_talent' => 'Editing talent profile — :name',
+            'edit_profile_subtitle_company' => 'Editing company profile — :name',
+            'edit_profile_back' => 'Back to list',
+            'edit_profile_unavailable' => 'This account cannot be edited here.',
+            'edit_profile_company_org_missing' => 'No company profile is linked to this account.',
+            'edit_profile_saved' => 'Profile updated.',
             'delete_confirm' => 'Permanently delete this account?',
             'delete_modal_title' => 'Delete this account?',
             'delete_modal_text' => 'You are about to permanently delete the account:',
@@ -364,6 +372,10 @@ An administrator or moderator is reviewing your application before your company 
                 'accounts.delete' => [
                     'label' => 'Accounts — delete',
                     'description' => 'Permanently delete an account and its data.',
+                ],
+                'profiles.edit' => [
+                    'label' => 'Profiles — edit',
+                    'description' => 'Edit talent and company profiles (profession, presentation, company fiche, etc.).',
                 ],
                 'sourcing.manage' => [
                     'label' => 'Sourcing / intermediation',

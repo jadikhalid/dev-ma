@@ -69,6 +69,13 @@ class ProfileDetailsController extends Controller
             return redirect()->route('dashboard');
         }
 
+        return $this->updateForUser($request, $user);
+    }
+
+    public function updateForUser(Request $request, \App\Models\User $user, ?string $redirectRoute = null): RedirectResponse|JsonResponse
+    {
+        abort_unless($user->isTalent(), 404);
+
         $section = $request->validate([
             'section' => ['required', 'string', Rule::in(self::SECTIONS)],
         ])['section'];
@@ -78,13 +85,13 @@ class ProfileDetailsController extends Controller
         if ($section === 'documents') {
             $this->updateDocuments($request, $profile);
 
-            return $this->sectionResponse($request, $section);
+            return $this->sectionResponse($request, $section, [], $redirectRoute);
         }
 
         if ($section === 'certifications') {
             $this->updateCertifications($request, $profile);
 
-            return $this->sectionResponse($request, $section);
+            return $this->sectionResponse($request, $section, [], $redirectRoute);
         }
 
         $messages = $section === 'links' ? $this->linksValidationMessages() : [];
@@ -108,18 +115,24 @@ class ProfileDetailsController extends Controller
             ];
         }
 
-        return $this->sectionResponse($request, $section, $extra);
+        return $this->sectionResponse($request, $section, $extra, $redirectRoute);
     }
 
     /**
      * @param  array<string, mixed>  $extra
      */
-    private function sectionResponse(Request $request, string $section, array $extra = []): RedirectResponse|JsonResponse
+    private function sectionResponse(Request $request, string $section, array $extra = [], ?string $redirectRoute = null): RedirectResponse|JsonResponse
     {
         $message = __('talenma.talent.section_updated.'.$section);
 
         if ($request->wantsJson()) {
             return response()->json(array_merge(['message' => $message], $extra));
+        }
+
+        if ($redirectRoute) {
+            return redirect()
+                ->to($redirectRoute)
+                ->with('toast_success', $message);
         }
 
         return redirect()

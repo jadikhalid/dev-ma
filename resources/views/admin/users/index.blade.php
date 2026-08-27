@@ -155,6 +155,19 @@
                             @endif
 
                             @if (
+                                ($canEditProfiles ?? false)
+                                && ($user->isTalent() || $user->isCompany())
+                                && ! $user->isAdmin()
+                            )
+                                <a
+                                    href="{{ route('admin.users.profile.edit', $user) }}"
+                                    class="px-3 py-2 text-sm border rounded-lg text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+                                >
+                                    {{ __('talenma.admin.users.edit_profile_btn') }}
+                                </a>
+                            @endif
+
+                            @if (
                                 ($canDeleteAccounts ?? false)
                                 && ! $user->isAdmin()
                                 && (! $user->isModerator() || Auth::user()->isAdmin())

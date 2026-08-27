@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountStatusController;
 use App\Http\Controllers\Admin\CompanyProfileDocumentController;
 use App\Http\Controllers\Admin\DirectHireController as AdminDirectHireController;
 use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
+use App\Http\Controllers\Admin\ManagedProfileController;
 use App\Http\Controllers\Admin\ProfileDocumentController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\RecruitmentRequestController as AdminRecruitmentRequestController;
@@ -111,6 +112,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])
             ->middleware('moderator.permission:accounts.delete')
             ->name('users.destroy');
+
+        Route::middleware('moderator.permission:profiles.edit')->group(function () {
+            Route::get('/users/{user}/profile', [ManagedProfileController::class, 'edit'])->name('users.profile.edit');
+            Route::post('/users/{user}/profile', [ManagedProfileController::class, 'update'])->name('users.profile.update');
+            Route::post('/users/{user}/profile/avatar', [ManagedProfileController::class, 'updateAvatar'])->name('users.profile.avatar');
+            Route::delete('/profile-documents/{profileDocument}', [ProfileDocumentController::class, 'destroy'])->name('profile-documents.destroy');
+        });
 
         Route::middleware('moderator.permission:sourcing.manage')->group(function () {
             Route::get('/recruitment', [AdminRecruitmentRequestController::class, 'index'])->name('recruitment.index');

@@ -1,4 +1,7 @@
 {{-- Expects: $user, $profile, $memberships, $professionSectors, $sectorSlug, $employeeCountOptions, $countryOptions, $citiesByCountry --}}
+@php
+    $companyProfileUpdateUrl = $companyProfileUpdateUrl ?? route('company.profile.update');
+@endphp
 @if (session('status') === 'company-profile-updated' && session('updated_section'))
     <div class="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm">
         {{ __('talenma.company.section_updated.'.session('updated_section')) }}
@@ -9,7 +12,7 @@
 <form
     id="company-identity-card"
     method="POST"
-    action="{{ route('company.profile.update') }}"
+    action="{{ $companyProfileUpdateUrl }}"
     class="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8 space-y-6"
     data-ajax
     data-loading-target="company-identity-card"
@@ -136,7 +139,7 @@
 <form
     id="company-presentation-card"
     method="POST"
-    action="{{ route('company.profile.update') }}"
+    action="{{ $companyProfileUpdateUrl }}"
     class="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8 space-y-6"
     data-ajax
     data-loading-target="company-presentation-card"
@@ -179,7 +182,7 @@
 <form
     id="company-hiring-card"
     method="POST"
-    action="{{ route('company.profile.update') }}"
+    action="{{ $companyProfileUpdateUrl }}"
     class="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8 space-y-6"
     data-ajax
     data-loading-target="company-hiring-card"

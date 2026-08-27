@@ -1,6 +1,11 @@
 ﻿{{-- Expects: $user, $profile, profession/docs/options vars from ProfileController --}}
+@php
+    $profileUpdateUrl = $profileUpdateUrl ?? route('profile.details.update');
+    $isAdminProfileEdit = (bool) ($isAdminProfileEdit ?? false);
+    $talentVideoEditable = (bool) ($talentVideoEditable ?? true);
+@endphp
 <div class="space-y-8">
-<form method="POST" action="{{ route('profile.details.update') }}" class="bg-white rounded-2xl border p-3 space-y-3" data-ajax novalidate data-error-message="{{ __('talenma.talent.save_error') }}">
+<form method="POST" action="{{ $profileUpdateUrl }}" class="bg-white rounded-2xl border p-3 space-y-3" data-ajax novalidate data-error-message="{{ __('talenma.talent.save_error') }}">
             @csrf
             <input type="hidden" name="section" value="visibility">
 
@@ -31,7 +36,7 @@
         <form
             id="talent-profession-card"
             method="POST"
-            action="{{ route('profile.details.update') }}"
+            action="{{ $profileUpdateUrl }}"
             class="relative bg-white rounded-2xl border p-6 sm:p-8 space-y-6"
             data-ajax
             data-loading-target="talent-profession-card"
@@ -67,7 +72,7 @@
         <div id="talent-presentation-card" class="relative bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
             <form
                 method="POST"
-                action="{{ route('profile.details.update') }}"
+                action="{{ $profileUpdateUrl }}"
                 enctype="multipart/form-data"
                 class="space-y-6"
                 data-ajax
@@ -165,7 +170,7 @@
                                         <p class="text-xs text-gray-500">{{ $document->formattedSize() }}</p>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
-                                        <a href="{{ route('profile.documents.show', $document) }}" target="_blank" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.talent.document_view') }}</a>
+                                        <a href="{{ $isAdminProfileEdit ? route('admin.profile-documents.show', $document) : route('profile.documents.show', $document) }}" target="_blank" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.talent.document_view') }}</a>
                                         <button
                                             type="submit"
                                             form="delete-cert-{{ $document->id }}"
@@ -225,7 +230,7 @@
                 <form
                     id="delete-cert-{{ $document->id }}"
                     method="POST"
-                    action="{{ route('profile.documents.destroy', $document) }}"
+                    action="{{ $isAdminProfileEdit ? route('admin.profile-documents.destroy', $document) : route('profile.documents.destroy', $document) }}"
                     data-ajax
                     data-refresh="presentation"
                     data-loading-target="talent-presentation-card"
@@ -241,7 +246,7 @@
 
         <x-talent-video-snapshot
             class="!h-auto"
-            :editable="true"
+            :editable="$talentVideoEditable"
             :video-url="$profile->presentation_video_url ?? null"
             :person-name="trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: $user->name"
         />
@@ -266,8 +271,8 @@
                             </p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
-                            <a href="{{ route('profile.documents.show', $document) }}" target="_blank" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.talent.document_view') }}</a>
-                            <form method="POST" action="{{ route('profile.documents.destroy', $document) }}" data-ajax data-refresh="documents" data-loading-target="talent-documents-card" data-confirm="{{ __('talenma.talent.document_delete_confirm') }}" data-error-message="{{ __('talenma.talent.save_error') }}">
+                            <a href="{{ $isAdminProfileEdit ? route('admin.profile-documents.show', $document) : route('profile.documents.show', $document) }}" target="_blank" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.talent.document_view') }}</a>
+                            <form method="POST" action="{{ $isAdminProfileEdit ? route('admin.profile-documents.destroy', $document) : route('profile.documents.destroy', $document) }}" data-ajax data-refresh="documents" data-loading-target="talent-documents-card" data-confirm="{{ __('talenma.talent.document_delete_confirm') }}" data-error-message="{{ __('talenma.talent.save_error') }}">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-sm font-semibold text-red-600 hover:text-red-700">{{ __('talenma.talent.document_remove') }}</button>
@@ -281,7 +286,7 @@
 
             <form
                 method="POST"
-                action="{{ route('profile.details.update') }}"
+                action="{{ $profileUpdateUrl }}"
                 enctype="multipart/form-data"
                 data-ajax
                 data-refresh="documents"
@@ -370,7 +375,7 @@
         <form
             id="talent-availability-card"
             method="POST"
-            action="{{ route('profile.details.update') }}"
+            action="{{ $profileUpdateUrl }}"
             class="relative bg-white rounded-2xl border p-6 sm:p-8 space-y-6"
             data-ajax
             data-loading-target="talent-availability-card"
@@ -429,7 +434,7 @@
         <form
             id="talent-links-card"
             method="POST"
-            action="{{ route('profile.details.update') }}"
+            action="{{ $profileUpdateUrl }}"
             class="relative bg-white rounded-2xl border p-6 sm:p-8 space-y-6"
             data-ajax
             data-loading-target="talent-links-card"

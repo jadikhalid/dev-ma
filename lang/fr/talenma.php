@@ -323,6 +323,14 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
             'reject_btn' => 'Refuser',
             'reject_reason' => 'Motif (optionnel)',
             'delete_btn' => 'Supprimer',
+            'edit_profile_btn' => 'Modifier',
+            'edit_profile_title' => 'Modifier le profil',
+            'edit_profile_subtitle_talent' => 'Modification du profil talent — :name',
+            'edit_profile_subtitle_company' => 'Modification de la fiche entreprise — :name',
+            'edit_profile_back' => 'Retour à la liste',
+            'edit_profile_unavailable' => 'Ce compte ne peut pas être modifié ici.',
+            'edit_profile_company_org_missing' => 'Aucune fiche entreprise associée à ce compte.',
+            'edit_profile_saved' => 'Profil mis à jour.',
             'delete_confirm' => 'Supprimer définitivement ce compte ?',
             'delete_modal_title' => 'Supprimer ce compte ?',
             'delete_modal_text' => 'Vous êtes sur le point de supprimer définitivement le compte :',
@@ -364,6 +372,10 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
                 'accounts.delete' => [
                     'label' => 'Comptes — supprimer',
                     'description' => 'Supprimer définitivement un compte et ses données.',
+                ],
+                'profiles.edit' => [
+                    'label' => 'Profils — modifier',
+                    'description' => 'Modifier les profils talents et entreprises (métier, présentation, fiche entreprise, etc.).',
                 ],
                 'sourcing.manage' => [
                     'label' => 'Sourcing / intermédiation',

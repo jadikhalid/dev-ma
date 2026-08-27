@@ -12,6 +12,8 @@ final class ModeratorPermissionCatalog
 
     public const ACCOUNTS_DELETE = 'accounts.delete';
 
+    public const PROFILES_EDIT = 'profiles.edit';
+
     public const SOURCING_MANAGE = 'sourcing.manage';
 
     public const DIRECT_HIRE_MANAGE = 'direct_hire.manage';
@@ -32,6 +34,7 @@ final class ModeratorPermissionCatalog
             self::ACCOUNTS_APPROVE,
             self::ACCOUNTS_REJECT,
             self::ACCOUNTS_DELETE,
+            self::PROFILES_EDIT,
             self::SOURCING_MANAGE,
             self::DIRECT_HIRE_MANAGE,
             self::JOBS_MANAGE,

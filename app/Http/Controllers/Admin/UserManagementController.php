@@ -88,6 +88,7 @@ class UserManagementController extends Controller
             'canApproveAccounts' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_APPROVE),
             'canRejectAccounts' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_REJECT),
             'canDeleteAccounts' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_DELETE),
+            'canEditProfiles' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::PROFILES_EDIT),
         ]);
     }
 

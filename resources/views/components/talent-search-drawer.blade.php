@@ -1,7 +1,8 @@
+<template x-teleport="body">
 <div
     x-show="drawerOpen"
     x-cloak
-    class="fixed inset-0 z-[60]"
+    class="fixed inset-0 z-[80]"
     role="dialog"
     aria-modal="true"
     :aria-label="drawerLabels.title"
@@ -243,3 +244,4 @@
         </div>
     </div>
 </div>
+</template>

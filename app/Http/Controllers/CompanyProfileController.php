@@ -36,14 +36,19 @@ class CompanyProfileController extends Controller
             return redirect()->route('dashboard');
         }
 
+        $profile = $user->companyProfile()->firstOrCreate(['user_id' => $user->id]);
+
+        return $this->updateForProfile($request, $profile);
+    }
+
+    public function updateForProfile(Request $request, \App\Models\CompanyProfile $profile, ?string $redirectRoute = null): RedirectResponse|JsonResponse
+    {
         $section = $request->validate([
             'section' => ['required', 'string', Rule::in(self::SECTIONS)],
         ])['section'];
 
         $data = $request->validate($this->rulesForSection($section));
         $payload = $this->payloadForSection($section, $data);
-
-        $profile = $user->companyProfile()->firstOrCreate(['user_id' => $user->id]);
 
         $profile->update($payload);
 
@@ -64,10 +69,44 @@ class CompanyProfileController extends Controller
             return response()->json(array_merge(['message' => $message], $extra));
         }
 
+        if ($redirectRoute) {
+            return redirect()
+                ->to($redirectRoute)
+                ->with('status', 'company-profile-updated')
+                ->with('updated_section', $section)
+                ->with('toast_success', $message);
+        }
+
         return redirect()
             ->route('profile.edit', ['panel' => 'company'])
             ->with('status', 'company-profile-updated')
             ->with('updated_section', $section);
+    }
+
+    /**
+     * @return array{
+     *     profile: \App\Models\CompanyProfile,
+     *     memberships: \Illuminate\Database\Eloquent\Collection,
+     *     professionSectors: \Illuminate\Support\Collection,
+     *     sectorSlug: string,
+     *     employeeCountOptions: array<string, string>,
+     *     countryOptions: array<string, string>,
+     *     citiesByCountry: array<string, list<string>>
+     * }
+     */
+    public function panelData(\App\Models\CompanyProfile $profile): array
+    {
+        $profile->loadMissing(['memberships.user']);
+
+        return [
+            'profile' => $profile,
+            'memberships' => $profile->memberships,
+            'professionSectors' => $this->professionCatalog->sectorsForLocale(),
+            'sectorSlug' => old('sector', $this->professionCatalog->sectorSlugFromLabel($profile->sector) ?? ''),
+            'employeeCountOptions' => $this->employeeCountOptions(),
+            'countryOptions' => \App\Models\CompanyProfile::countryOptions(),
+            'citiesByCountry' => \App\Models\CompanyProfile::citiesByCountry(),
+        ];
     }
 
     /**
