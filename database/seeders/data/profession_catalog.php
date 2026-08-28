@@ -891,6 +891,21 @@ return [
                 ],
             ],
             [
+                'slug' => 'industrial-mechanical-energy-engineer',
+                'name_fr' => 'Ingénieur Génie Mécanique & Énergétique',
+                'name_en' => 'Mechanical & Energy Systems Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'R&D & conception mécanique', 'label_en' => 'Mechanical design R&D', 'keywords' => 'conception mecanique r&d'],
+                    ['label_fr' => 'NPI / industrialisation produit', 'label_en' => 'NPI / product industrialization', 'keywords' => 'npi industrialisation lancement'],
+                    ['label_fr' => 'Bureau d\'études / CAO', 'label_en' => 'Design office / CAD', 'keywords' => 'cao solidworks catia bureau etudes'],
+                    ['label_fr' => 'Simulation FEM / CFD', 'label_en' => 'FEM / CFD simulation', 'keywords' => 'fem cfd ansys simulation'],
+                    ['label_fr' => 'Optimisation systèmes industriels', 'label_en' => 'Industrial systems optimization', 'keywords' => 'optimisation performance systeme'],
+                    ['label_fr' => 'Projet industriel / équipements lourds', 'label_en' => 'Industrial project / heavy equipment', 'keywords' => 'equipement lourd projet industriel'],
+                    ['label_fr' => 'Maintenance & fiabilité mécanique', 'label_en' => 'Mechanical maintenance & reliability', 'keywords' => 'fiabilite maintenance mecanique'],
+                    ['label_fr' => 'Mécanique des fluides industriels', 'label_en' => 'Industrial fluid mechanics', 'keywords' => 'fluides hydraulique pneumatique'],
+                ],
+            ],
+            [
                 'slug' => 'industrial-business-developer',
                 'name_fr' => 'Ingénieur d\'Affaires Industriel / Business Developer B2B',
                 'name_en' => 'Industrial Business Developer / B2B Sales Engineer',
@@ -1069,6 +1084,23 @@ return [
                 'suggestions' => [
                     ['label_fr' => 'Ingénieur énergies renouvelables', 'label_en' => 'Renewable energy engineer', 'keywords' => 'solaire eolien photovoltaique'],
                     ['label_fr' => 'Ingénieur efficacité énergétique', 'label_en' => 'Energy efficiency engineer', 'keywords' => 'audit energetique'],
+                    ['label_fr' => 'Transition énergétique', 'label_en' => 'Energy transition', 'keywords' => 'transition decarbonation'],
+                    ['label_fr' => 'Réseaux & utilities', 'label_en' => 'Grids & utilities', 'keywords' => 'utilities reseau energie'],
+                ],
+            ],
+            [
+                'slug' => 'mechanical-energy-engineer',
+                'name_fr' => 'Ingénieur Génie Mécanique & Énergétique',
+                'name_en' => 'Mechanical & Energy Systems Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'Efficacité énergétique & décarbonation', 'label_en' => 'Energy efficiency & decarbonization', 'keywords' => 'efficacite decarbonation performance energetique'],
+                    ['label_fr' => 'Systèmes thermiques & fluides', 'label_en' => 'Thermal & fluid systems', 'keywords' => 'thermique fluides echangeurs'],
+                    ['label_fr' => 'Turbomachines / équipements rotatifs', 'label_en' => 'Turbomachinery / rotating equipment', 'keywords' => 'turbine compresseur pompe rotateur'],
+                    ['label_fr' => 'Simulation thermique / CFD', 'label_en' => 'Thermal simulation / CFD', 'keywords' => 'cfd simulation thermique fluent'],
+                    ['label_fr' => 'Audit & performance énergétique', 'label_en' => 'Energy audit & performance', 'keywords' => 'audit bilan energetique'],
+                    ['label_fr' => 'Équipements sous pression', 'label_en' => 'Pressure equipment', 'keywords' => 'pression esv recipient'],
+                    ['label_fr' => 'Nucléaire civil / énergie', 'label_en' => 'Civil nuclear / power generation', 'keywords' => 'nucleaire centrale generateur'],
+                    ['label_fr' => 'Hydrogène & stockage énergie', 'label_en' => 'Hydrogen & energy storage', 'keywords' => 'hydrogene stockage batterie'],
                 ],
             ],
             [

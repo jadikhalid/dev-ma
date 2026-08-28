@@ -55,6 +55,9 @@ return [
         ['label_fr' => 'Sous-traitance industrielle', 'label_en' => 'Industrial subcontracting'],
         ['label_fr' => 'Ventes B2B / grands comptes', 'label_en' => 'B2B sales / key accounts'],
         ['label_fr' => 'Opérateurs / atelier', 'label_en' => 'Operators / shop floor'],
+        ['label_fr' => 'Génie mécanique / bureau d\'études', 'label_en' => 'Mechanical engineering / design office'],
+        ['label_fr' => 'NPI / lancement produit', 'label_en' => 'NPI / product launch'],
+        ['label_fr' => 'Équipements lourds / turbomachines', 'label_en' => 'Heavy equipment / turbomachinery'],
     ],
     'energy' => [
         ['label_fr' => 'Énergies renouvelables', 'label_en' => 'Renewable energy'],
@@ -64,6 +67,9 @@ return [
         ['label_fr' => 'Eau & assainissement', 'label_en' => 'Water & sanitation'],
         ['label_fr' => 'Utilities / concession', 'label_en' => 'Utilities / concession'],
         ['label_fr' => 'Projet EPC', 'label_en' => 'EPC project'],
+        ['label_fr' => 'Génie mécanique & énergétique', 'label_en' => 'Mechanical & energy engineering'],
+        ['label_fr' => 'Décarbonation / transition', 'label_en' => 'Decarbonization / transition'],
+        ['label_fr' => 'Turbomachines / nucléaire civil', 'label_en' => 'Turbomachinery / civil nuclear'],
     ],
     'telecom' => [
         ['label_fr' => 'Opérateur télécoms', 'label_en' => 'Telecom operator'],
