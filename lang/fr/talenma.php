@@ -694,6 +694,8 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
         'news_ticker_trends_prefix' => 'TENDANCES',
         'news_ticker_scroll_prev' => 'Faire défiler vers les actualités précédentes',
         'news_ticker_scroll_next' => 'Faire défiler vers les actualités plus récentes',
+        'news_ticker_new_badge' => 'Nouveau',
+        'news_ticker_today_badge' => 'Aujourd\'hui',
         'companies_marquee_eyebrow' => 'Sur la plateforme',
         'companies_marquee_title' => 'Entreprises partenaires',
         'companies_marquee_scroll_prev' => 'Faire défiler vers les entreprises précédentes',

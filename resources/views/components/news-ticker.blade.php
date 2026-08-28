@@ -2,6 +2,7 @@
     use App\Models\SocialFeedItem;
 
     $newsItems = SocialFeedItem::forNewsTicker()->sortByDesc('created_at')->values();
+    $latestNewsDay = $newsItems->first()?->created_at?->startOfDay();
 @endphp
 
 @if ($newsItems->isNotEmpty())
@@ -85,20 +86,53 @@
                     data-initial-count="{{ $newsItems->count() }}"
                 >
                     @foreach ($newsItems as $item)
+                        @php
+                            $isLatestDay = $latestNewsDay && $item->created_at->isSameDay($latestNewsDay);
+                            $isLeadNews = $loop->first;
+                        @endphp
                         <a href="{{ $item->url }}"
                            target="_blank"
                            rel="noopener noreferrer"
-                           class="group flex items-center gap-3 shrink-0 px-6 sm:px-8 border-r border-gray-100 hover:bg-indigo-50/40 transition-colors duration-300">
+                           @class([
+                               'group flex items-center gap-3 shrink-0 px-6 sm:px-8 border-r transition-colors duration-300',
+                               'news-ticker-item--lead border-amber-200/80 bg-amber-50/50 hover:bg-amber-50/80' => $isLeadNews,
+                               'news-ticker-item--recent border-indigo-100/80 hover:bg-indigo-50/30' => $isLatestDay && ! $isLeadNews,
+                               'news-ticker-item--archive border-gray-100 hover:bg-gray-50/60 opacity-75 hover:opacity-100' => ! $isLatestDay,
+                           ])>
                             <div class="flex flex-col justify-center min-w-[12rem] sm:min-w-[16rem] max-w-xs sm:max-w-sm">
-                                <span class="text-[10px] sm:text-[11px] text-gray-400 tracking-wide">{{ $item->created_at->translatedFormat('d M Y') }}</span>
-                                <span class="mt-0.5 text-sm sm:text-base font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors duration-300 line-clamp-1">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span @class([
+                                        'text-[10px] sm:text-[11px] tracking-wide',
+                                        'font-semibold text-amber-700' => $isLeadNews,
+                                        'font-medium text-indigo-600' => $isLatestDay && ! $isLeadNews,
+                                        'text-gray-400' => ! $isLatestDay,
+                                    ])>{{ $item->created_at->translatedFormat('d M Y') }}</span>
+                                    @if ($isLeadNews)
+                                        <span class="news-ticker-badge news-ticker-badge--lead">{{ __('talenma.home.news_ticker_new_badge') }}</span>
+                                    @elseif ($isLatestDay && $item->created_at->isToday())
+                                        <span class="news-ticker-badge news-ticker-badge--recent">{{ __('talenma.home.news_ticker_today_badge') }}</span>
+                                    @endif
+                                </div>
+                                <span @class([
+                                    'mt-0.5 text-sm sm:text-base font-semibold transition-colors duration-300 line-clamp-1',
+                                    'text-gray-950 group-hover:text-amber-800' => $isLeadNews,
+                                    'text-gray-900 group-hover:text-indigo-600' => $isLatestDay && ! $isLeadNews,
+                                    'text-gray-600 group-hover:text-gray-800' => ! $isLatestDay,
+                                ])>
                                     {{ $item->title }}
                                 </span>
-                                <span class="mt-0.5 text-xs sm:text-sm text-gray-500 line-clamp-1">
+                                <span @class([
+                                    'mt-0.5 text-xs sm:text-sm line-clamp-1',
+                                    'text-gray-600' => $isLatestDay,
+                                    'text-gray-400' => ! $isLatestDay,
+                                ])>
                                     {{ $item->subtitle }}
                                 </span>
                             </div>
-                            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-lg shrink-0 overflow-hidden ring-1 ring-gray-200/80 shadow-sm bg-gradient-to-br from-indigo-400 to-indigo-600">
+                            <div @class([
+                                'w-12 h-12 sm:w-14 sm:h-14 rounded-lg shrink-0 overflow-hidden shadow-sm bg-gradient-to-br from-indigo-400 to-indigo-600',
+                                'grayscale-[35%]' => ! $isLatestDay,
+                            ])>
                                 @if ($item->thumbnailUrl())
                                     <img src="{{ $item->thumbnailUrl() }}" alt="" class="w-full h-full object-cover" loading="eager" decoding="async">
                                 @endif
