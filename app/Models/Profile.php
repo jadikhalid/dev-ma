@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'specialization',
     'bio',
     'experience_years',
+    'is_fresh_graduate',
     'education_level',
     'certifications',
     'availability',
@@ -153,17 +154,22 @@ class Profile extends Model
 
     public function experienceLabel(): string
     {
+        if ($this->is_fresh_graduate) {
+            return __('talenma.talents.experience_fresh_graduate');
+        }
+
         return self::experienceLabelFor($this->experience_years);
+    }
+
+    public function hasExperienceDeclared(): bool
+    {
+        return $this->is_fresh_graduate || ($this->experience_years !== null && $this->experience_years >= 1);
     }
 
     public static function experienceLabelFor(?int $years): string
     {
         if ($years === null) {
             return '';
-        }
-
-        if ($years === 0) {
-            return __('talenma.talents.experience_fresh_graduate');
         }
 
         return __('talenma.talents.experience', ['years' => $years]);
@@ -303,6 +309,7 @@ class Profile extends Model
             'work_modes' => 'array',
             'languages' => 'array',
             'is_public' => 'boolean',
+            'is_fresh_graduate' => 'boolean',
         ];
     }
 

@@ -315,15 +315,15 @@
                                         {{ $profile->professionLabel() }}
                                     </h3>
                                 @endif
-                                @if ($profile->sectorLabel() || $profile->experience_years !== null)
+                                @if ($profile->sectorLabel() || $profile->hasExperienceDeclared())
                                     <p class="mt-0.5 text-sm text-gray-600">
                                         @if ($profile->sectorLabel())
                                             <span class="font-medium text-indigo-600">{{ $profile->sectorLabel() }}</span>
                                         @endif
-                                        @if ($profile->sectorLabel() && $profile->experience_years !== null)
+                                        @if ($profile->sectorLabel() && $profile->hasExperienceDeclared())
                                             <span class="text-gray-300"> · </span>
                                         @endif
-                                        @if ($profile->experience_years !== null)
+                                        @if ($profile->hasExperienceDeclared())
                                             <span>{{ $profile->experienceLabel() }}</span>
                                         @endif
                                     </p>

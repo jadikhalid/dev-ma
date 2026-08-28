@@ -203,7 +203,14 @@ class ProfileDetailsController extends Controller
             ],
             'presentation' => [
                 'bio' => ['required', 'string', 'min:30', 'max:5000'],
-                'experience_years' => ['required', 'integer', 'min:0', 'max:50'],
+                'is_fresh_graduate' => ['nullable', 'boolean'],
+                'experience_years' => [
+                    Rule::requiredIf(fn () => ! request()->boolean('is_fresh_graduate')),
+                    'nullable',
+                    'integer',
+                    'min:1',
+                    'max:50',
+                ],
                 'education_level' => ['required', 'string', Rule::in(array_keys($this->educationOptions()))],
                 'languages' => ['required', 'array', 'min:1'],
                 'languages.*' => ['string', Rule::in(array_keys($this->languageOptions()))],
@@ -296,7 +303,10 @@ class ProfileDetailsController extends Controller
             ),
             'presentation' => [
                 'bio' => $data['bio'],
-                'experience_years' => $data['experience_years'],
+                'is_fresh_graduate' => (bool) ($data['is_fresh_graduate'] ?? false),
+                'experience_years' => ($data['is_fresh_graduate'] ?? false)
+                    ? null
+                    : $data['experience_years'],
                 'education_level' => $data['education_level'],
                 'languages' => $data['languages'],
             ],

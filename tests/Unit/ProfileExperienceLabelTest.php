@@ -7,33 +7,47 @@ use Tests\TestCase;
 
 class ProfileExperienceLabelTest extends TestCase
 {
-    public function test_zero_years_displays_fresh_graduate_label_in_french(): void
+    public function test_fresh_graduate_displays_dedicated_label_in_french(): void
     {
         app()->setLocale('fr');
 
-        $this->assertSame('Jeune diplômé(e)', Profile::experienceLabelFor(0));
+        $profile = new Profile([
+            'is_fresh_graduate' => true,
+            'experience_years' => null,
+        ]);
+
+        $this->assertSame('Jeune diplômé(e)', $profile->experienceLabel());
+        $this->assertTrue($profile->hasExperienceDeclared());
     }
 
-    public function test_zero_years_displays_fresh_graduate_label_in_english(): void
+    public function test_fresh_graduate_displays_dedicated_label_in_english(): void
     {
         app()->setLocale('en');
 
-        $this->assertSame('Fresh graduate', Profile::experienceLabelFor(0));
+        $profile = new Profile([
+            'is_fresh_graduate' => true,
+            'experience_years' => null,
+        ]);
+
+        $this->assertSame('Fresh graduate', $profile->experienceLabel());
     }
 
-    public function test_positive_years_keep_experience_format(): void
+    public function test_minimum_experience_starts_at_one_year(): void
     {
         app()->setLocale('fr');
 
+        $this->assertSame('1 ans d\'exp.', Profile::experienceLabelFor(1));
         $this->assertSame('5 ans d\'exp.', Profile::experienceLabelFor(5));
     }
 
-    public function test_profile_instance_uses_experience_label_helper(): void
+    public function test_experience_is_not_declared_when_neither_case_is_set(): void
     {
-        app()->setLocale('fr');
+        $profile = new Profile([
+            'is_fresh_graduate' => false,
+            'experience_years' => null,
+        ]);
 
-        $profile = new Profile(['experience_years' => 0]);
-
-        $this->assertSame('Jeune diplômé(e)', $profile->experienceLabel());
+        $this->assertFalse($profile->hasExperienceDeclared());
+        $this->assertSame('', $profile->experienceLabel());
     }
 }

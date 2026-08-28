@@ -118,10 +118,43 @@
                     <x-input-error :messages="$errors->get('bio')" class="mt-2" />
                 </div>
 
-                <div class="grid sm:grid-cols-2 gap-4">
+                <div class="grid sm:grid-cols-2 gap-4" x-data="{ freshGraduate: @js((bool) old('is_fresh_graduate', $profile->is_fresh_graduate)) }">
+                    <div class="sm:col-span-2">
+                        <label class="inline-flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50/80 px-4 py-3 cursor-pointer hover:border-indigo-200">
+                            <input
+                                type="hidden"
+                                name="is_fresh_graduate"
+                                value="0"
+                            >
+                            <input
+                                type="checkbox"
+                                name="is_fresh_graduate"
+                                value="1"
+                                class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                x-model="freshGraduate"
+                            >
+                            <span>
+                                <span class="block text-sm font-semibold text-gray-900">{{ __('talenma.talent.fresh_graduate') }}</span>
+                                <span class="mt-0.5 block text-sm text-gray-500">{{ __('talenma.talent.fresh_graduate_hint') }}</span>
+                            </span>
+                        </label>
+                        <x-input-error :messages="$errors->get('is_fresh_graduate')" class="mt-2" />
+                    </div>
                     <div>
                         <x-input-label for="experience_years" :value="__('talenma.talent.experience')" />
-                        <x-text-input id="experience_years" name="experience_years" type="number" class="mt-1 block w-full" :value="old('experience_years', $profile->experience_years)" min="0" max="50" required data-required data-required-message="{{ __('talenma.talent.required_experience') }}" />
+                        <x-text-input
+                            id="experience_years"
+                            name="experience_years"
+                            type="number"
+                            class="mt-1 block w-full disabled:bg-gray-50 disabled:text-gray-400"
+                            :value="old('experience_years', $profile->experience_years)"
+                            min="1"
+                            max="50"
+                            x-bind:disabled="freshGraduate"
+                            x-bind:required="!freshGraduate"
+                            x-bind:data-required="!freshGraduate ? '' : null"
+                            data-required-message="{{ __('talenma.talent.required_experience') }}"
+                        />
                         <x-input-error :messages="$errors->get('experience_years')" class="mt-2" />
                     </div>
                     <div>

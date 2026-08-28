@@ -557,14 +557,18 @@ Alpine.data('heroProgressiveSearch', (config) => ({
                 return true;
             }
 
-            const years = Number(talent.experience_years ?? 0);
-
-            if (this.filterExperience === '0-1') {
-                return years >= 0 && years <= 1;
+            if (talent.is_fresh_graduate) {
+                return this.filterExperience === '0-1';
             }
 
+            if (this.filterExperience === '0-1') {
+                return false;
+            }
+
+            const years = Number(talent.experience_years ?? 0);
+
             if (this.filterExperience === '1-5') {
-                return years > 1 && years <= 5;
+                return years >= 1 && years <= 5;
             }
 
             if (this.filterExperience === '5-10') {

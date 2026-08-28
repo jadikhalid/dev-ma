@@ -105,7 +105,7 @@ class TalentProfileCompletionService
     {
         return $this->buildSection(__('talenma.dashboard.talent.section_presentation'), [
             ['label' => __('talenma.dashboard.talent.check_bio'), 'done' => filled($profile->bio) && strlen(trim((string) $profile->bio)) >= 30, 'required' => true],
-            ['label' => __('talenma.dashboard.talent.check_experience'), 'done' => $profile->experience_years !== null, 'required' => true],
+            ['label' => __('talenma.dashboard.talent.check_experience'), 'done' => $profile->hasExperienceDeclared(), 'required' => true],
             ['label' => __('talenma.dashboard.talent.check_education'), 'done' => filled($profile->education_level), 'required' => true],
             ['label' => __('talenma.dashboard.talent.check_languages'), 'done' => is_array($profile->languages) && count($profile->languages) > 0, 'required' => true],
         ]);

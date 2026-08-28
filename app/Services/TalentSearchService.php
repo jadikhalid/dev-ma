@@ -166,8 +166,9 @@ class TalentSearchService
             'employer_label' => $profile?->employerLabel(),
             'specialization' => $profile?->specialization,
             'experience_years' => $experienceYears,
-            'experience_label' => $experienceYears !== null
-                ? Profile::experienceLabelFor($experienceYears)
+            'is_fresh_graduate' => (bool) ($profile?->is_fresh_graduate ?? false),
+            'experience_label' => $profile?->hasExperienceDeclared()
+                ? $profile->experienceLabel()
                 : null,
             'availability' => $availability,
             'availability_label' => $profile?->statusLabel(),

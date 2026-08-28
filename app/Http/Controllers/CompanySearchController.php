@@ -212,10 +212,14 @@ class CompanySearchController extends Controller
         if ($experience !== '' && $experience !== 'all') {
             $query->whereHas('profile', function ($q) use ($experience) {
                 match ($experience) {
-                    '0-1' => $q->whereBetween('experience_years', [0, 1]),
-                    '1-5' => $q->where('experience_years', '>', 1)->where('experience_years', '<=', 5),
-                    '5-10' => $q->where('experience_years', '>', 5)->where('experience_years', '<=', 10),
-                    '10+' => $q->where('experience_years', '>', 10),
+                    '0-1' => $q->where('is_fresh_graduate', true),
+                    '1-5' => $q->where('is_fresh_graduate', false)
+                        ->whereBetween('experience_years', [1, 5]),
+                    '5-10' => $q->where('is_fresh_graduate', false)
+                        ->where('experience_years', '>', 5)
+                        ->where('experience_years', '<=', 10),
+                    '10+' => $q->where('is_fresh_graduate', false)
+                        ->where('experience_years', '>', 10),
                     default => null,
                 };
             });
@@ -279,8 +283,9 @@ class CompanySearchController extends Controller
             'sector_label' => $profile?->sectorLabel(),
             'specialization' => $profile?->specialization,
             'experience_years' => $experienceYears,
-            'experience_label' => $experienceYears !== null
-                ? Profile::experienceLabelFor($experienceYears)
+            'is_fresh_graduate' => (bool) ($profile?->is_fresh_graduate ?? false),
+            'experience_label' => $profile?->hasExperienceDeclared()
+                ? $profile->experienceLabel()
                 : null,
             'availability_label' => $profile?->statusLabel(),
             'availability_tone' => $profile?->statusTone(),
@@ -328,7 +333,7 @@ class CompanySearchController extends Controller
             'employer_label' => $profile?->employerLabel($forceReveal),
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
-            'experience_label' => $profile?->experience_years !== null
+            'experience_label' => $profile?->hasExperienceDeclared()
                 ? $profile->experienceLabel()
                 : null,
             'availability_label' => $profile?->statusLabel(),

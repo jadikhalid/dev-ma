@@ -259,7 +259,7 @@ class DirectHireController extends Controller
             'employer_label' => $profile?->employerLabel($forceReveal),
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
-            'experience_label' => $profile?->experience_years !== null
+            'experience_label' => $profile?->hasExperienceDeclared()
                 ? $profile->experienceLabel()
                 : null,
             'availability_label' => $profile?->statusLabel(),

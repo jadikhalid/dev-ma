@@ -118,10 +118,9 @@ class TalentDossierPresenter
             'profession' => $profile->professionLabel(),
             'specialization' => $this->text($profile->specialization),
             'bio' => $this->text($profile->bio),
-            'experience_years' => $profile->experience_years !== null
-                ? (string) $profile->experience_years
-                : null,
-            'experience_label' => $profile->experience_years !== null
+            'experience_years' => $profile->experience_years,
+            'is_fresh_graduate' => $profile->is_fresh_graduate,
+            'experience_label' => $profile->hasExperienceDeclared()
                 ? $profile->experienceLabel()
                 : null,
             'education_level' => $this->text($profile->education_level),

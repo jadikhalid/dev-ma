@@ -49,8 +49,9 @@
                 'sector_label' => $profile?->sectorLabel(),
                 'specialization' => $profile?->specialization,
                 'experience_years' => $experienceYears,
-                'experience_label' => $experienceYears !== null
-                    ? \App\Models\Profile::experienceLabelFor($experienceYears)
+                'is_fresh_graduate' => (bool) ($profile?->is_fresh_graduate ?? false),
+                'experience_label' => $profile?->hasExperienceDeclared()
+                    ? $profile->experienceLabel()
                     : null,
                 'availability_label' => $profile?->statusLabel(),
                 'availability_tone' => $profile?->statusTone(),
