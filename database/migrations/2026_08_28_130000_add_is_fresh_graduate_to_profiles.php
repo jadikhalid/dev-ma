@@ -9,8 +9,15 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasColumn('profiles', 'is_fresh_graduate')) {
+            Schema::table('profiles', function (Blueprint $table) {
+                $table->boolean('is_fresh_graduate')->default(false)->after('experience_years');
+            });
+        }
+
+        // Nullable must be applied before backfilling null experience_years.
         Schema::table('profiles', function (Blueprint $table) {
-            $table->boolean('is_fresh_graduate')->default(false)->after('experience_years');
+            $table->integer('experience_years')->nullable()->default(null)->change();
         });
 
         DB::table('profiles')
@@ -19,10 +26,6 @@ return new class extends Migration
                 'is_fresh_graduate' => true,
                 'experience_years' => null,
             ]);
-
-        Schema::table('profiles', function (Blueprint $table) {
-            $table->integer('experience_years')->nullable()->default(null)->change();
-        });
     }
 
     public function down(): void
