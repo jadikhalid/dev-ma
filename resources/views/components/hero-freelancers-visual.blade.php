@@ -35,7 +35,7 @@
                     <p class="hero-mosaic__name">{{ $tile['name'] }}</p>
                     <p class="hero-mosaic__role">{{ $tile['role'] }}</p>
                     <div class="hero-mosaic__footer">
-                        <span>📍 {{ $tile['city'] }}</span>
+                        <span class="hero-mosaic__location" title="{{ $tile['city'] }}">📍 {{ $tile['city'] }}</span>
                         @php
                             $status = $tile['availability'] ?? 'available';
                             $statusLabel = __('talenma.home.hero_availability.'.$status);
