@@ -87,7 +87,7 @@
     <div class="py-10 max-w-4xl mx-auto px-4 sm:px-6">
         <div class="bg-white rounded-2xl border p-6 sm:p-8">
             <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-6">
-                <span>💼 {{ __('talenma.talents.experience', ['years' => $profile->experience_years]) }}</span>
+                <span>💼 {{ $profile->experienceLabel() }}</span>
                 <span>⏱ {{ $profile->statusLabel() }}</span>
             </div>
 

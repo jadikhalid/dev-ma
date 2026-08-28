@@ -121,6 +121,9 @@ class TalentDossierPresenter
             'experience_years' => $profile->experience_years !== null
                 ? (string) $profile->experience_years
                 : null,
+            'experience_label' => $profile->experience_years !== null
+                ? $profile->experienceLabel()
+                : null,
             'education_level' => $this->text($profile->education_level),
             'city' => $this->text($profile->city),
             'country' => $this->text($profile->countryLabel()),

@@ -260,7 +260,7 @@ class DirectHireController extends Controller
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
             'experience_label' => $profile?->experience_years !== null
-                ? __('talenma.talents.experience', ['years' => $profile->experience_years])
+                ? $profile->experienceLabel()
                 : null,
             'availability_label' => $profile?->statusLabel(),
             'availability_tone' => $profile?->statusTone(),

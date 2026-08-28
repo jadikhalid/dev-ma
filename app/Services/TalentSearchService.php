@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Profession;
+use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -166,7 +167,7 @@ class TalentSearchService
             'specialization' => $profile?->specialization,
             'experience_years' => $experienceYears,
             'experience_label' => $experienceYears !== null
-                ? __('talenma.talents.experience', ['years' => $experienceYears])
+                ? Profile::experienceLabelFor($experienceYears)
                 : null,
             'availability' => $availability,
             'availability_label' => $profile?->statusLabel(),

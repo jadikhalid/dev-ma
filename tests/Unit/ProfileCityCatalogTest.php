@@ -19,14 +19,17 @@ class ProfileCityCatalogTest extends TestCase
         $this->assertContains('Casablanca', $cities);
     }
 
-    public function test_france_offers_ten_major_cities(): void
+    public function test_france_offers_major_cities_and_regions(): void
     {
         app()->setLocale('fr');
 
         $cities = Profile::citiesForCountry(Profile::COUNTRY_FR);
 
-        $this->assertCount(10, $cities);
+        $this->assertGreaterThanOrEqual(28, count($cities));
         $this->assertContains('Paris', $cities);
+        $this->assertContains('Lyon', $cities);
+        $this->assertContains('Bourgogne-Franche-Comté', $cities);
+        $this->assertNotContains('Belfort', $cities);
     }
 
     public function test_other_country_offers_ten_major_cities(): void

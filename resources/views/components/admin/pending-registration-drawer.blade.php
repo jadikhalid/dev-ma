@@ -194,9 +194,9 @@
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.bio') }}</dt>
                                 <dd class="mt-2 text-gray-700 whitespace-pre-line leading-relaxed" x-text="user.current_profile.bio"></dd>
                             </div>
-                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.experience_years">
+                            <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.experience_label">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.experience') }}</dt>
-                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.experience_years"></dd>
+                                <dd class="mt-1 font-medium text-gray-900" x-text="user.current_profile.experience_label"></dd>
                             </div>
                             <div class="rounded-xl border border-gray-200 px-4 py-3" x-show="user.current_profile?.education_level">
                                 <dt class="text-xs text-gray-500">{{ __('talenma.talent.education') }}</dt>

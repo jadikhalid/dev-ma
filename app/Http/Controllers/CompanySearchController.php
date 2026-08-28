@@ -280,7 +280,7 @@ class CompanySearchController extends Controller
             'specialization' => $profile?->specialization,
             'experience_years' => $experienceYears,
             'experience_label' => $experienceYears !== null
-                ? __('talenma.talents.experience', ['years' => $experienceYears])
+                ? Profile::experienceLabelFor($experienceYears)
                 : null,
             'availability_label' => $profile?->statusLabel(),
             'availability_tone' => $profile?->statusTone(),
@@ -329,7 +329,7 @@ class CompanySearchController extends Controller
             'profession_label' => $profile?->professionLabel(),
             'sector_label' => $profile?->sectorLabel(),
             'experience_label' => $profile?->experience_years !== null
-                ? __('talenma.talents.experience', ['years' => $profile->experience_years])
+                ? $profile->experienceLabel()
                 : null,
             'availability_label' => $profile?->statusLabel(),
             'availability_tone' => $profile?->statusTone(),

@@ -324,7 +324,7 @@
                                             <span class="text-gray-300"> · </span>
                                         @endif
                                         @if ($profile->experience_years !== null)
-                                            <span>{{ __('talenma.talents.experience', ['years' => $profile->experience_years]) }}</span>
+                                            <span>{{ $profile->experienceLabel() }}</span>
                                         @endif
                                     </p>
                                 @endif

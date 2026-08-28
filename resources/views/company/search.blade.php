@@ -50,7 +50,7 @@
                 'specialization' => $profile?->specialization,
                 'experience_years' => $experienceYears,
                 'experience_label' => $experienceYears !== null
-                    ? __('talenma.talents.experience', ['years' => $experienceYears])
+                    ? \App\Models\Profile::experienceLabelFor($experienceYears)
                     : null,
                 'availability_label' => $profile?->statusLabel(),
                 'availability_tone' => $profile?->statusTone(),

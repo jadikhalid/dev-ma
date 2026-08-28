@@ -43,7 +43,14 @@ final class ProfileCityCatalog
      */
     private static function france(string $locale): array
     {
-        return ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Montpellier', 'Bordeaux', 'Lille'];
+        $locations = array_merge(
+            FranceRegionCatalog::majorCities(),
+            FranceRegionCatalog::labels($locale),
+        );
+
+        sort($locations, SORT_LOCALE_STRING);
+
+        return array_values(array_unique($locations));
     }
 
     /**

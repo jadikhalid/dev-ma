@@ -151,6 +151,24 @@ class Profile extends Model
         return $key ? __('talenma.talent.'.$key) : $this->education_level;
     }
 
+    public function experienceLabel(): string
+    {
+        return self::experienceLabelFor($this->experience_years);
+    }
+
+    public static function experienceLabelFor(?int $years): string
+    {
+        if ($years === null) {
+            return '';
+        }
+
+        if ($years === 0) {
+            return __('talenma.talents.experience_fresh_graduate');
+        }
+
+        return __('talenma.talents.experience', ['years' => $years]);
+    }
+
     public function statusTone(): string
     {
         return match ($this->availability) {
