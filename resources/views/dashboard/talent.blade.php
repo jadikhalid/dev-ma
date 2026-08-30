@@ -70,6 +70,21 @@
             </div>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{{ route('talent.cv-builder.index') }}" class="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 sm:p-6 hover:border-indigo-300 hover:shadow-md transition">
+                <p class="text-xs font-semibold uppercase tracking-wide text-indigo-600">{{ __('talenma.cv_builder.badge') }}</p>
+                <h2 class="mt-2 text-lg font-bold text-gray-900 group-hover:text-indigo-800">{{ __('talenma.dashboard.talent.cv_builder_card_title') }}</h2>
+                <p class="mt-2 text-sm text-gray-600 leading-relaxed">{{ __('talenma.dashboard.talent.cv_builder_card_desc') }}</p>
+                <p class="mt-4 text-sm font-semibold text-indigo-600">{{ __('talenma.dashboard.talent.cv_builder_card_cta') }} →</p>
+            </a>
+            <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 p-5 sm:p-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ __('talenma.talent_kit.badge') }}</p>
+                <h2 class="mt-2 text-lg font-bold text-gray-700">{{ __('talenma.dashboard.talent.kit_card_title') }}</h2>
+                <p class="mt-2 text-sm text-gray-500 leading-relaxed">{{ __('talenma.dashboard.talent.kit_card_desc') }}</p>
+                <p class="mt-4 text-sm font-medium text-gray-400">{{ __('talenma.dashboard.talent.kit_card_soon') }}</p>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-5 lg:gap-6 items-start">
             {{-- Colonne gauche : activité --}}
             <section class="space-y-4 min-w-0">

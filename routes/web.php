@@ -16,11 +16,13 @@ use App\Http\Controllers\CompanyJobController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanySearchController;
 use App\Http\Controllers\CompanyUserController;
+use App\Http\Controllers\CvBuilderGateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\JobAccessGateController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\MarketingCvPreviewController;
 use App\Http\Controllers\ModeratorModeController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PrivacyController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\RecruitmentRequestController;
 use App\Http\Controllers\SkillSuggestionController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\Talent\DirectHireController as TalentDirectHireController;
+use App\Http\Controllers\TalentCvBuilderController;
 use App\Http\Controllers\TalentJobController;
 use App\Http\Controllers\TalentProfileDocumentController;
 use App\Http\Controllers\TalentPresentationVideoController;
@@ -42,11 +45,17 @@ Route::get('/locale/suggest-from-ip', [LocaleController::class, 'suggest'])
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/outils/apercu-cv/{template}', [MarketingCvPreviewController::class, 'show'])
+    ->whereIn('template', ['classic', 'modern'])
+    ->name('marketing.cv-preview');
 Route::get('/privacy', [PrivacyController::class, 'show'])->name('privacy');
 Route::get('/annonces/acces/{job?}', JobAccessGateController::class)
     ->middleware('auth')
     ->whereNumber('job')
     ->name('jobs.gate');
+Route::get('/cv-builder/acces', CvBuilderGateController::class)
+    ->middleware('auth')
+    ->name('cv-builder.gate');
 Route::get('/profile/email/confirm/{token}', [ProfileController::class, 'confirmPendingEmail'])
     ->middleware('throttle:20,1')
     ->name('profile.email.confirm');
@@ -190,6 +199,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/talent/direct-hire/{directHire}', [TalentDirectHireController::class, 'show'])->name('talent.direct-hire.show');
         Route::post('/talent/direct-hire/{directHire}/decide', [TalentDirectHireController::class, 'decide'])->name('talent.direct-hire.decide');
         Route::post('/talent/direct-hire/{directHire}/messages', [TalentDirectHireController::class, 'storeMessage'])->name('talent.direct-hire.messages.store');
+
+        Route::get('/talent/cv-builder', [TalentCvBuilderController::class, 'show'])->name('talent.cv-builder.index');
+        Route::put('/talent/cv-builder', [TalentCvBuilderController::class, 'update'])->name('talent.cv-builder.update');
+        Route::match(['get', 'post'], '/talent/cv-builder/preview', [TalentCvBuilderController::class, 'preview'])->name('talent.cv-builder.preview');
+        Route::match(['get', 'post'], '/talent/cv-builder/export', [TalentCvBuilderController::class, 'export'])->name('talent.cv-builder.export');
     });
 
     Route::middleware('account.approved')->group(function () {

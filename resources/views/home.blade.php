@@ -211,4 +211,8 @@
     </div>
 </section>
 @endguest
+
+@if ($showCvBuilderAnnouncement ?? false)
+    <x-cv-builder-announcement-drawer />
+@endif
 @endsection

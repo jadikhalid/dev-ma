@@ -8273,6 +8273,327 @@ document.addEventListener('submit', async (event) => {
     }
 });
 
+Alpine.data('cvBuilderAnnouncement', (config = {}) => ({
+    open: false,
+    storageKey: 'tdm_cv_builder_announcement_v2',
+    previewImage: config.previewImage ?? null,
+
+    init() {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        try {
+            if (window.localStorage.getItem(this.storageKey) === '1') {
+                return;
+            }
+        } catch {
+            // Private browsing may block storage — still show the panel.
+        }
+
+        const reveal = () => {
+            window.setTimeout(() => {
+                this.open = true;
+            }, 700);
+        };
+
+        if (! this.previewImage) {
+            reveal();
+
+            return;
+        }
+
+        const img = new Image();
+        img.onload = () => reveal();
+        img.onerror = () => reveal();
+        img.src = this.previewImage;
+    },
+
+    close() {
+        this.open = false;
+    },
+
+    dismissForever() {
+        try {
+            window.localStorage.setItem(this.storageKey, '1');
+        } catch {
+            // ignore
+        }
+
+        this.close();
+    },
+}));
+
+Alpine.data('talentCvBuilder', (config = {}) => ({
+    data: config.data ?? {},
+    template: config.template ?? 'classic',
+    locale: config.locale ?? 'fr',
+    templates: config.templates ?? {},
+    urls: config.urls ?? {},
+    messages: config.messages ?? {},
+    profileAvatarUrl: config.profileAvatarUrl ?? null,
+    mobilePanel: 'edit',
+    exporting: false,
+    _previewTimer: null,
+    _saveTimer: null,
+
+    init() {
+        if (! this.data.photo_base64) {
+            this.data.photo_base64 = '';
+        }
+        this.$nextTick(() => this.refreshPreview());
+    },
+
+    serializeData() {
+        return JSON.parse(JSON.stringify(this.data));
+    },
+
+    payload() {
+        return {
+            template: this.template,
+            locale: this.locale,
+            data: this.serializeData(),
+        };
+    },
+
+    photoPreview() {
+        const custom = String(this.data.photo_base64 ?? '').trim();
+        if (custom !== '') {
+            return custom.startsWith('data:') ? custom : `data:image/jpeg;base64,${custom}`;
+        }
+
+        return this.profileAvatarUrl || null;
+    },
+
+    onPhotoFile(event) {
+        const file = event.target.files?.[0];
+        if (! file) {
+            return;
+        }
+
+        if (file.size > 1024 * 1024) {
+            window.alert(this.messages.photo_too_large ?? 'Max 1 MB');
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.data.photo_base64 = reader.result ?? '';
+            this.onDataChange();
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    },
+
+    useProfilePhoto() {
+        this.data.photo_base64 = '';
+        this.onDataChange();
+    },
+
+    removeCustomPhoto() {
+        this.data.photo_base64 = '';
+        this.onDataChange();
+    },
+
+    csrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+    },
+
+    onDataChange() {
+        this.schedulePreview();
+        this.scheduleSave();
+    },
+
+    onSettingsChange() {
+        window.clearTimeout(this._saveTimer);
+        this.schedulePreview();
+        this.saveDraft({ toast: true });
+    },
+
+    showMobilePanel(panel) {
+        this.mobilePanel = panel;
+
+        if (panel === 'preview') {
+            this.$nextTick(() => this.refreshPreview());
+        }
+    },
+
+    schedulePreview() {
+        window.clearTimeout(this._previewTimer);
+        this._previewTimer = window.setTimeout(() => this.refreshPreview(), 400);
+    },
+
+    scheduleSave() {
+        window.clearTimeout(this._saveTimer);
+        this._saveTimer = window.setTimeout(() => this.saveDraft(), 1200);
+    },
+
+    pushToast(type, message) {
+        if (! message) {
+            return;
+        }
+
+        this.$dispatch('toast-push', { type, message });
+    },
+
+    async refreshPreview() {
+        try {
+            const response = await fetch(this.urls.preview, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'text/html',
+                    'X-CSRF-TOKEN': this.csrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify(this.payload()),
+            });
+
+            if (! response.ok) {
+                return;
+            }
+
+            const html = await response.text();
+            if (this.$refs.previewFrame) {
+                this.$refs.previewFrame.srcdoc = html;
+            }
+        } catch {
+            // ignore preview errors
+        }
+    },
+
+    async saveDraft({ toast = false } = {}) {
+        try {
+            const response = await fetch(this.urls.save, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': this.csrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify(this.payload()),
+            });
+
+            if (! response.ok) {
+                if (toast) {
+                    this.pushToast('error', this.messages.save_error ?? '');
+                }
+
+                return;
+            }
+
+            if (toast) {
+                this.pushToast('success', this.messages.saved ?? '');
+            }
+        } catch {
+            if (toast) {
+                this.pushToast('error', this.messages.save_error ?? '');
+            }
+        }
+    },
+
+    async exportPdf() {
+        this.exporting = true;
+        try {
+            await this.saveDraft();
+            window.location.href = this.urls.export;
+        } finally {
+            window.setTimeout(() => {
+                this.exporting = false;
+            }, 1500);
+        }
+    },
+
+    addExperience() {
+        this.data.experiences.push({
+            title: '',
+            company: '',
+            location: '',
+            start: '',
+            end: '',
+            current: false,
+            bullets: [''],
+        });
+        this.onDataChange();
+    },
+
+    removeExperience(index) {
+        if (this.data.experiences.length <= 1) {
+            return;
+        }
+        this.data.experiences.splice(index, 1);
+        this.onDataChange();
+    },
+
+    addBullet(expIndex) {
+        this.data.experiences[expIndex].bullets.push('');
+        this.onDataChange();
+    },
+
+    removeBullet(expIndex, bulletIndex) {
+        const bullets = this.data.experiences[expIndex].bullets;
+        if (bullets.length <= 1) {
+            return;
+        }
+        bullets.splice(bulletIndex, 1);
+        this.onDataChange();
+    },
+
+    addSkillGroup() {
+        this.data.skill_groups.push({ label: '', items: '' });
+        this.onDataChange();
+    },
+
+    removeSkillGroup(index) {
+        if (this.data.skill_groups.length <= 1) {
+            return;
+        }
+        this.data.skill_groups.splice(index, 1);
+        this.onDataChange();
+    },
+
+    addEducation() {
+        this.data.education.push({ degree: '', school: '', year: '' });
+        this.onDataChange();
+    },
+
+    removeEducation(index) {
+        if (this.data.education.length <= 1) {
+            return;
+        }
+        this.data.education.splice(index, 1);
+        this.onDataChange();
+    },
+
+    addLanguage() {
+        this.data.languages.push({ name: '', level: '' });
+        this.onDataChange();
+    },
+
+    removeLanguage(index) {
+        if (this.data.languages.length <= 1) {
+            return;
+        }
+        this.data.languages.splice(index, 1);
+        this.onDataChange();
+    },
+
+    addCert() {
+        this.data.certifications.push('');
+        this.onDataChange();
+    },
+
+    removeCert(index) {
+        if (this.data.certifications.length <= 1) {
+            return;
+        }
+        this.data.certifications.splice(index, 1);
+        this.onDataChange();
+    },
+}));
+
 Alpine.start();
 
 // Revalidate auth pages restored from the browser back-forward cache
