@@ -5,10 +5,15 @@
     <style>
         @page { margin: 0; }
         * { box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 9pt; color: #1e293b; margin: 0; line-height: 1.38; }
-        table.layout { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td.sidebar { width: 32%; background: #1e3a5f; color: #f8fafc; vertical-align: top; padding: 16px 12px; }
-        td.main { width: 68%; vertical-align: top; padding: 18px 16px 18px 14px; background: #fff; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 9pt; color: #1e293b; margin: 0; line-height: 1.38; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @include('talent.cv-builder.templates.partials.cv-layout-shell', [
+            'sidebarSide' => 'left',
+            'sidebarWidth' => '32%',
+            'mainWidth' => '68%',
+            'sidebarBg' => '#1e3a5f',
+        ])
+        .sidebar { color: #f8fafc; padding: 16px 12px; }
+        .main { padding: 18px 16px 18px 14px; }
         .photo-wrap { text-align: center; margin-bottom: 12px; }
         .photo { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid #93c5fd; }
         .sidebar-name { font-size: 13pt; font-weight: bold; text-align: center; margin: 0 0 4px; line-height: 1.2; color: #fff; }
@@ -19,7 +24,11 @@
         .sidebar-text { font-size: 8pt; margin: 0 0 3px; color: #e2e8f0; word-wrap: break-word; }
         .sidebar-text a { color: #e2e8f0; text-decoration: none; }
         .social-links { margin: 6px 0 2px; line-height: 1; }
-        .social-link { display: inline-block; margin-right: 10px; vertical-align: middle; }
+        @media print {
+            .social-links { margin-top: 14px; margin-bottom: 12px; }
+        }
+        .social-link { display: inline-block; margin-right: 16px; vertical-align: middle; }
+        .social-link:last-child { margin-right: 0; }
         .social-link img { width: 14px; height: 14px; display: block; border: 0; }
         .skill-label { font-weight: bold; color: #fff; font-size: 8pt; }
         .skill-items { font-size: 7.5pt; color: #cbd5e1; }
@@ -28,7 +37,8 @@
         .section-title { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #1e3a5f; border-bottom: 2px solid #1e3a5f; margin: 0 0 5px; padding-bottom: 2px; font-weight: bold; }
         .summary { margin: 0; text-align: justify; font-size: 9pt; }
         .entry { margin-bottom: 7px; }
-        .entry-head { width: 100%; }
+        .entry-head { width: 100%; overflow: hidden; }
+        .entry-head::after { content: ""; display: block; clear: both; }
         .entry-title { font-weight: bold; font-size: 9.5pt; }
         .entry-dates { float: right; font-size: 8pt; color: #64748b; }
         .entry-company { font-style: italic; font-size: 8.5pt; color: #475569; margin: 1px 0 3px; }
@@ -54,9 +64,12 @@
         'portfolio' => (string) ($d['portfolio_url'] ?? ''),
     ])->filter(fn (string $url) => $has($url));
 @endphp
-<table class="layout" cellpadding="0" cellspacing="0">
-<tr>
+<div class="cv-document">
+    <div class="cv-sidebar-band" aria-hidden="true"></div>
+    <table class="cv-columns" cellpadding="0" cellspacing="0">
+    <tr>
     <td class="sidebar">
+        <div class="sidebar-inner">
         <div class="photo-wrap">
             @if (! empty($photoSrc))
                 <img src="{{ $photoSrc }}" alt="" class="photo">
@@ -125,8 +138,10 @@
                 <p class="sidebar-text">{{ $d['availability_line'] }}</p>
             </div>
         @endif
+        </div>
     </td>
     <td class="main">
+        <div class="main-inner">
         @if ($has($d['summary'] ?? ''))
             <div class="section">
                 <p class="section-title">{{ $t('summary') }}</p>
@@ -173,8 +188,10 @@
                 @endforeach
             </div>
         @endif
+        </div>
     </td>
-</tr>
-</table>
+    </tr>
+    </table>
+</div>
 </body>
 </html>

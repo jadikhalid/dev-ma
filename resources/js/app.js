@@ -8437,6 +8437,9 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
     exporting: false,
     _previewTimer: null,
     _saveTimer: null,
+    _previewRequestId: 0,
+    _previewAbort: null,
+    _previewQueue: Promise.resolve(),
 
     init() {
         if (! this.data.photo_source) {
@@ -8449,7 +8452,41 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
             this.data.photo_base64 = '';
         }
 
-        this.$nextTick(() => this.refreshPreview());
+        this.clearPreviewFrame();
+
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                this.clearPreviewFrame();
+                this.enqueuePreviewRefresh();
+            }
+        });
+
+        this.$nextTick(() => this.schedulePreview());
+    },
+
+    clearPreviewFrame() {
+        if (this.$refs.previewFrame) {
+            this.$refs.previewFrame.srcdoc = '';
+        }
+    },
+
+    previewSignature() {
+        return `${this.template}:${this.locale}`;
+    },
+
+    previewUrl() {
+        const params = new URLSearchParams({
+            template: this.template,
+            locale: this.locale,
+        });
+
+        return `${this.urls.preview}?${params.toString()}`;
+    },
+
+    previewHtmlMatchesTemplate(html, expectedTemplate) {
+        const match = html.match(/name="cv-template"\s+content="([^"]+)"/i);
+
+        return ! match || match[1] === expectedTemplate;
     },
 
     serializeData() {
@@ -8535,21 +8572,43 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
 
     onSettingsChange() {
         window.clearTimeout(this._saveTimer);
-        this.schedulePreview();
-        this.saveDraft({ toast: true });
+        window.clearTimeout(this._previewTimer);
+        this._previewRequestId += 1;
+
+        if (this._previewAbort) {
+            this._previewAbort.abort();
+            this._previewAbort = null;
+        }
+
+        this.clearPreviewFrame();
+
+        void this.persistSettingsChange();
+    },
+
+    async persistSettingsChange() {
+        await this.saveDraft({ toast: true });
+        this.enqueuePreviewRefresh();
     },
 
     showMobilePanel(panel) {
         this.mobilePanel = panel;
 
         if (panel === 'preview') {
-            this.$nextTick(() => this.refreshPreview());
+            this.$nextTick(() => this.enqueuePreviewRefresh());
         }
     },
 
     schedulePreview() {
         window.clearTimeout(this._previewTimer);
-        this._previewTimer = window.setTimeout(() => this.refreshPreview(), 400);
+        this._previewTimer = window.setTimeout(() => this.enqueuePreviewRefresh(), 400);
+    },
+
+    enqueuePreviewRefresh() {
+        const signature = this.previewSignature();
+
+        this._previewQueue = this._previewQueue
+            .catch(() => {})
+            .then(() => this.runPreviewRefresh(signature));
     },
 
     scheduleSave() {
@@ -8565,7 +8624,21 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
         this.$dispatch('toast-push', { type, message });
     },
 
-    async refreshPreview() {
+    async runPreviewRefresh(expectedSignature) {
+        if (expectedSignature !== this.previewSignature()) {
+            return;
+        }
+
+        const requestId = ++this._previewRequestId;
+        const expectedTemplate = this.template;
+        const body = JSON.stringify(this.payload());
+
+        if (this._previewAbort) {
+            this._previewAbort.abort();
+        }
+
+        this._previewAbort = new AbortController();
+
         try {
             const response = await fetch(this.urls.preview, {
                 method: 'POST',
@@ -8575,19 +8648,52 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
                     'X-CSRF-TOKEN': this.csrfToken(),
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify(this.payload()),
+                body,
+                signal: this._previewAbort.signal,
             });
+
+            if (requestId !== this._previewRequestId) {
+                return;
+            }
+
+            if (expectedSignature !== this.previewSignature()) {
+                return;
+            }
 
             if (! response.ok) {
                 return;
             }
 
+            const responseTemplate = response.headers.get('X-Cv-Template');
+            if (responseTemplate && responseTemplate !== expectedTemplate) {
+                return;
+            }
+
             const html = await response.text();
+
+            if (requestId !== this._previewRequestId) {
+                return;
+            }
+
+            if (expectedSignature !== this.previewSignature()) {
+                return;
+            }
+
+            if (! this.previewHtmlMatchesTemplate(html, expectedTemplate)) {
+                return;
+            }
+
             if (this.$refs.previewFrame) {
                 this.$refs.previewFrame.srcdoc = html;
             }
-        } catch {
-            // ignore preview errors
+        } catch (error) {
+            if (error?.name === 'AbortError') {
+                return;
+            }
+        } finally {
+            if (requestId === this._previewRequestId) {
+                this._previewAbort = null;
+            }
         }
     },
 

@@ -41,9 +41,9 @@
         <div class="mb-4 flex flex-wrap items-center justify-end gap-2">
             <label class="text-xs font-semibold text-gray-500 uppercase">{{ __('talenma.cv_builder.template_label') }}</label>
             <select x-model="template" @change="onSettingsChange()" class="rounded-lg border-gray-300 text-sm">
-                <template x-for="(label, key) in templates" :key="key">
-                    <option :value="key" x-text="label"></option>
-                </template>
+                @foreach ($templates as $key => $label)
+                    <option value="{{ $key }}">{{ $label }}</option>
+                @endforeach
             </select>
             <label class="text-xs font-semibold text-gray-500 uppercase ml-2">{{ __('talenma.cv_builder.locale_label') }}</label>
             <select x-model="locale" @change="onSettingsChange()" class="rounded-lg border-gray-300 text-sm">

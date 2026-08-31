@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Support\TalentCv\TalentCvDraftDefaults;
 use App\Support\TalentCv\TalentCvPhotoResolver;
 use App\Support\TalentCv\TalentCvTemplateCatalog;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\App;
 use Illuminate\View\View;
@@ -72,11 +71,12 @@ class TalentCvBuilderService
 
     public function exportPdf(TalentCvDraft $draft, User $user): Response
     {
-        $html = view(TalentCvTemplateCatalog::viewName($draft->template), $this->templateData($draft, $user))->render();
+        $html = view(
+            TalentCvTemplateCatalog::viewName($draft->template),
+            $this->templateData($draft, $user)
+        )->render();
 
-        $pdf = Pdf::loadHTML($html)->setPaper('a4');
-
-        return $pdf->download($this->safeFilename($draft));
+        return app(TalentCvPdfExporter::class)->download($html, $this->safeFilename($draft));
     }
 
     /** @return array<string, mixed> */

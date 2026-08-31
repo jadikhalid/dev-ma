@@ -31,6 +31,11 @@ return [
         'admin_recruitment' => 'Sourcing',
         'admin_direct_hire' => 'Recruitment',
         'admin_jobs' => 'Jobs',
+        'apps_launcher_open' => 'Open talent tools',
+        'apps_launcher_title' => 'My applications',
+        'apps_launcher_cv_builder' => 'CV builder',
+        'apps_launcher_library' => 'Library',
+        'apps_launcher_library_soon' => 'Coming soon',
         'back_home' => '← Back to home',
     ],
     'roles' => [

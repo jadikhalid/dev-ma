@@ -57,4 +57,17 @@ return [
     'profile_completion_reminder' => [
         'delay_hours' => (int) env('TALENMA_PROFILE_REMINDER_DELAY_HOURS', 48),
     ],
+
+    /*
+    | Créateur de CV — export PDF (Browsershot/Chrome ou DomPDF).
+    | Browsershot produit un rendu fidèle à l’aperçu navigateur (bande latérale pleine hauteur).
+    | DomPDF reste disponible pour les tests CI et secours si Chrome est indisponible.
+    */
+    'cv_builder' => [
+        'pdf_driver' => env('CV_PDF_DRIVER', 'dompdf'),
+        'chrome_path' => env('CHROME_PATH'),
+        'node_binary' => env('NODE_BINARY'),
+        'npm_binary' => env('NPM_BINARY'),
+        'browsershot_timeout' => (int) env('CV_PDF_BROWSERSHOT_TIMEOUT', 120),
+    ],
 ];

@@ -5,10 +5,15 @@
     <style>
         @page { margin: 0; }
         * { box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 8.5pt; color: #1f2937; margin: 0; line-height: 1.35; }
-        table.layout { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td.sidebar { width: 31%; vertical-align: top; background: #454545; color: #f8fafc; padding: 16px 12px 18px; }
-        td.main { width: 69%; vertical-align: top; background: #fff; padding: 16px 16px 18px 14px; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 8.5pt; color: #1f2937; margin: 0; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @include('talent.cv-builder.templates.partials.cv-layout-shell', [
+            'sidebarSide' => 'left',
+            'sidebarWidth' => '31%',
+            'mainWidth' => '69%',
+            'sidebarBg' => '#454545',
+        ])
+        .sidebar { color: #f8fafc; padding: 16px 12px 18px; }
+        .main { padding: 16px 16px 18px 14px; }
 
         .photo-wrap { text-align: center; margin-bottom: 14px; }
         .photo { width: 92px; height: 92px; border-radius: 50%; object-fit: cover; border: 2px solid #d1d5db; }
@@ -29,7 +34,11 @@
         .contact-wrap { text-align: right; font-size: 7.6pt; color: #374151; line-height: 1.45; }
         .contact-line { margin: 0 0 2px; }
         .social-links { margin-top: 4px; line-height: 1; }
-        .social-link { display: inline-block; margin-left: 8px; vertical-align: middle; }
+        @media print {
+            .social-links { margin-top: 12px; margin-bottom: 10px; }
+        }
+        .social-link { display: inline-block; margin-left: 14px; vertical-align: middle; }
+        .social-link:first-child { margin-left: 0; }
         .social-link img { width: 12px; height: 12px; display: block; border: 0; }
 
         .section { margin-top: 12px; page-break-inside: avoid; }
@@ -65,9 +74,12 @@
         'portfolio' => (string) ($d['portfolio_url'] ?? ''),
     ])->filter(fn (string $url) => $has($url));
 @endphp
-<table class="layout" cellpadding="0" cellspacing="0">
-<tr>
+<div class="cv-document">
+    <div class="cv-sidebar-band" aria-hidden="true"></div>
+    <table class="cv-columns" cellpadding="0" cellspacing="0">
+    <tr>
     <td class="sidebar">
+        <div class="sidebar-inner">
         <div class="photo-wrap">
             @if (! empty($photoSrc))
                 <img src="{{ $photoSrc }}" alt="" class="photo">
@@ -119,8 +131,10 @@
                 <p class="sidebar-text">{{ $d['availability_line'] }}</p>
             </div>
         @endif
+        </div>
     </td>
     <td class="main">
+        <div class="main-inner">
         <table style="width:100%;border-collapse:collapse;margin-bottom:4px;">
             <tr>
                 <td style="width:58%;vertical-align:top;">
@@ -204,8 +218,10 @@
                 @endforeach
             </div>
         @endif
+        </div>
     </td>
-</tr>
-</table>
+    </tr>
+    </table>
+</div>
 </body>
 </html>

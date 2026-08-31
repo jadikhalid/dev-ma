@@ -5,10 +5,16 @@
     <style>
         @page { margin: 0; }
         * { box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 9pt; color: #1e293b; margin: 0; line-height: 1.38; }
-        table.layout { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td.main { width: 66%; vertical-align: top; padding: 18px 16px 18px 18px; background: #fff; }
-        td.sidebar { width: 34%; vertical-align: top; padding: 16px 14px; background: #ecfdf5; border-left: 3px solid #0d9488; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 9pt; color: #1e293b; margin: 0; line-height: 1.38; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @include('talent.cv-builder.templates.partials.cv-layout-shell', [
+            'sidebarSide' => 'right',
+            'sidebarWidth' => '34%',
+            'mainWidth' => '66%',
+            'sidebarBg' => '#ecfdf5',
+            'sidebarExtra' => 'border-left: 3px solid #0d9488;',
+        ])
+        .main { padding: 18px 16px 18px 18px; }
+        .sidebar { padding: 16px 14px; color: #334155; }
 
         .hero-name { font-size: 19pt; font-weight: bold; margin: 0 0 4px; color: #0f766e; line-height: 1.12; }
         .hero-headline { font-size: 9pt; color: #475569; margin: 0 0 14px; line-height: 1.35; font-weight: bold; }
@@ -22,7 +28,11 @@
         .sidebar-text { font-size: 8pt; margin: 0 0 3px; color: #334155; word-wrap: break-word; }
         .sidebar-text a { color: #334155; text-decoration: none; }
         .social-links { margin: 6px 0 2px; line-height: 1; }
-        .social-link { display: inline-block; margin-right: 10px; vertical-align: middle; }
+        @media print {
+            .social-links { margin-top: 14px; margin-bottom: 12px; }
+        }
+        .social-link { display: inline-block; margin-right: 16px; vertical-align: middle; }
+        .social-link:last-child { margin-right: 0; }
         .social-link img { width: 14px; height: 14px; display: block; border: 0; }
         .skill-label { font-weight: bold; color: #0f766e; font-size: 8pt; }
         .skill-items { font-size: 7.5pt; color: #475569; }
@@ -31,7 +41,8 @@
         .section-title { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #fff; background: #0d9488; margin: 0 0 6px; padding: 4px 8px; font-weight: bold; }
         .summary { margin: 0; text-align: justify; font-size: 9pt; color: #334155; }
         .entry { margin-bottom: 7px; }
-        .entry-head { width: 100%; }
+        .entry-head { width: 100%; overflow: hidden; }
+        .entry-head::after { content: ""; display: block; clear: both; }
         .entry-title { font-weight: bold; font-size: 9.5pt; color: #0f766e; }
         .entry-dates { float: right; font-size: 8pt; color: #64748b; }
         .entry-company { font-style: italic; font-size: 8.5pt; color: #475569; margin: 1px 0 3px; }
@@ -57,9 +68,12 @@
         'portfolio' => (string) ($d['portfolio_url'] ?? ''),
     ])->filter(fn (string $url) => $has($url));
 @endphp
-<table class="layout" cellpadding="0" cellspacing="0">
-<tr>
+<div class="cv-document">
+    <div class="cv-sidebar-band" aria-hidden="true"></div>
+    <table class="cv-columns" cellpadding="0" cellspacing="0">
+    <tr>
     <td class="main">
+        <div class="main-inner">
         @if ($has($d['full_name'] ?? ''))
             <p class="hero-name">{{ $d['full_name'] }}</p>
         @endif
@@ -113,8 +127,10 @@
                 @endforeach
             </div>
         @endif
+        </div>
     </td>
     <td class="sidebar">
+        <div class="sidebar-inner">
         <div class="photo-wrap">
             @if (! empty($photoSrc))
                 <img src="{{ $photoSrc }}" alt="" class="photo">
@@ -172,8 +188,10 @@
                 <p class="sidebar-text">{{ $d['availability_line'] }}</p>
             </div>
         @endif
+        </div>
     </td>
-</tr>
-</table>
+    </tr>
+    </table>
+</div>
 </body>
 </html>
