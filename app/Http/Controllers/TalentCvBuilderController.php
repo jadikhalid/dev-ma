@@ -90,8 +90,14 @@ class TalentCvBuilderController extends Controller
 
         if ($request->has('data') && is_array($request->input('data'))) {
             validator(
-                ['photo_base64' => $request->input('data.photo_base64')],
-                ['photo_base64' => ['nullable', 'string', 'max:700000']],
+                [
+                    'photo_base64' => $request->input('data.photo_base64'),
+                    'photo_source' => $request->input('data.photo_source'),
+                ],
+                [
+                    'photo_base64' => ['nullable', 'string', 'max:1400000'],
+                    'photo_source' => ['nullable', 'string', 'in:custom,profile,sample'],
+                ],
             )->validate();
 
             $validated['data'] = $request->input('data');

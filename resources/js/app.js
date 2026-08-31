@@ -8275,23 +8275,74 @@ document.addEventListener('submit', async (event) => {
 
 Alpine.data('cvBuilderAnnouncement', (config = {}) => ({
     open: false,
-    storageKey: 'tdm_cv_builder_announcement_v2',
+    storageKeys: {
+        dismissed: 'tdm_cv_builder_announcement_v3_dismissed',
+        lastShown: 'tdm_cv_builder_announcement_v3_last_shown',
+        legacyDismissed: 'tdm_cv_builder_announcement_v2',
+    },
+    snoozeMs: 15 * 60 * 1000,
     previewImage: config.previewImage ?? null,
+
+    isDismissedForever() {
+        try {
+            if (window.localStorage.getItem(this.storageKeys.dismissed) === '1') {
+                return true;
+            }
+
+            if (window.localStorage.getItem(this.storageKeys.legacyDismissed) === '1') {
+                return true;
+            }
+        } catch {
+            // Private browsing may block storage — treat as not dismissed forever.
+        }
+
+        return false;
+    },
+
+    isSnoozed() {
+        try {
+            const raw = window.localStorage.getItem(this.storageKeys.lastShown);
+
+            if (raw === null || raw === '') {
+                return false;
+            }
+
+            const lastShown = Number(raw);
+
+            if (! Number.isFinite(lastShown)) {
+                return false;
+            }
+
+            return Date.now() - lastShown < this.snoozeMs;
+        } catch {
+            return false;
+        }
+    },
+
+    markShown() {
+        try {
+            window.localStorage.setItem(this.storageKeys.lastShown, String(Date.now()));
+        } catch {
+            // ignore
+        }
+    },
+
+    shouldShow() {
+        return ! this.isDismissedForever() && ! this.isSnoozed();
+    },
 
     init() {
         if (typeof window === 'undefined') {
             return;
         }
 
-        try {
-            if (window.localStorage.getItem(this.storageKey) === '1') {
-                return;
-            }
-        } catch {
-            // Private browsing may block storage — still show the panel.
+        if (! this.shouldShow()) {
+            return;
         }
 
         const reveal = () => {
+            this.markShown();
+
             window.setTimeout(() => {
                 this.open = true;
             }, 700);
@@ -8315,7 +8366,7 @@ Alpine.data('cvBuilderAnnouncement', (config = {}) => ({
 
     dismissForever() {
         try {
-            window.localStorage.setItem(this.storageKey, '1');
+            window.localStorage.setItem(this.storageKeys.dismissed, '1');
         } catch {
             // ignore
         }
@@ -8323,6 +8374,56 @@ Alpine.data('cvBuilderAnnouncement', (config = {}) => ({
         this.close();
     },
 }));
+
+const compressCvPhotoFile = (file, { maxDimension = 800, maxPayloadChars = 550000 } = {}) => new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+
+        let { width, height } = image;
+        const scale = Math.min(1, maxDimension / Math.max(width, height, 1));
+        width = Math.max(1, Math.round(width * scale));
+        height = Math.max(1, Math.round(height * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+
+        if (! context) {
+            reject(new Error('canvas_unavailable'));
+
+            return;
+        }
+
+        context.drawImage(image, 0, 0, width, height);
+
+        let quality = 0.88;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+        while (dataUrl.length > maxPayloadChars && quality > 0.45) {
+            quality -= 0.06;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        if (dataUrl.length > maxPayloadChars) {
+            reject(new Error('photo_too_large'));
+
+            return;
+        }
+
+        resolve(dataUrl);
+    };
+
+    image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('photo_read_failed'));
+    };
+
+    image.src = objectUrl;
+});
 
 Alpine.data('talentCvBuilder', (config = {}) => ({
     data: config.data ?? {},
@@ -8338,9 +8439,16 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
     _saveTimer: null,
 
     init() {
+        if (! this.data.photo_source) {
+            this.data.photo_source = String(this.data.photo_base64 ?? '').trim() !== ''
+                ? 'custom'
+                : 'sample';
+        }
+
         if (! this.data.photo_base64) {
             this.data.photo_base64 = '';
         }
+
         this.$nextTick(() => this.refreshPreview());
     },
 
@@ -8357,43 +8465,63 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
     },
 
     photoPreview() {
+        const source = this.data.photo_source ?? 'sample';
+
+        if (source === 'profile') {
+            return this.profileAvatarUrl || null;
+        }
+
         const custom = String(this.data.photo_base64 ?? '').trim();
         if (custom !== '') {
             return custom.startsWith('data:') ? custom : `data:image/jpeg;base64,${custom}`;
         }
 
-        return this.profileAvatarUrl || null;
+        return null;
     },
 
-    onPhotoFile(event) {
+    async onPhotoFile(event) {
         const file = event.target.files?.[0];
         if (! file) {
             return;
         }
 
-        if (file.size > 1024 * 1024) {
+        event.target.value = '';
+
+        if (file.size > 5 * 1024 * 1024) {
             window.alert(this.messages.photo_too_large ?? 'Max 1 MB');
-            event.target.value = '';
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = () => {
-            this.data.photo_base64 = reader.result ?? '';
-            this.onDataChange();
-        };
-        reader.readAsDataURL(file);
-        event.target.value = '';
+        try {
+            this.data.photo_source = 'custom';
+            this.data.photo_base64 = await compressCvPhotoFile(file);
+            await this.onPhotoChange();
+        } catch {
+            window.alert(this.messages.photo_too_large ?? 'Max 1 MB');
+        }
     },
 
     useProfilePhoto() {
+        this.data.photo_source = 'profile';
         this.data.photo_base64 = '';
-        this.onDataChange();
+        this.onPhotoChange();
     },
 
     removeCustomPhoto() {
+        if (this.profileAvatarUrl) {
+            this.data.photo_source = 'profile';
+        } else {
+            this.data.photo_source = 'sample';
+        }
+
         this.data.photo_base64 = '';
-        this.onDataChange();
+        this.onPhotoChange();
+    },
+
+    onPhotoChange() {
+        this.schedulePreview();
+        window.clearTimeout(this._saveTimer);
+        this.saveDraft({ errorToast: true });
     },
 
     csrfToken() {
@@ -8463,7 +8591,7 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
         }
     },
 
-    async saveDraft({ toast = false } = {}) {
+    async saveDraft({ toast = false, errorToast = false } = {}) {
         try {
             const response = await fetch(this.urls.save, {
                 method: 'PUT',
@@ -8477,20 +8605,24 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
             });
 
             if (! response.ok) {
-                if (toast) {
+                if (toast || errorToast) {
                     this.pushToast('error', this.messages.save_error ?? '');
                 }
 
-                return;
+                return false;
             }
 
             if (toast) {
                 this.pushToast('success', this.messages.saved ?? '');
             }
+
+            return true;
         } catch {
-            if (toast) {
+            if (toast || errorToast) {
                 this.pushToast('error', this.messages.save_error ?? '');
             }
+
+            return false;
         }
     },
 

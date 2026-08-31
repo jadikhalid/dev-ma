@@ -12,6 +12,12 @@ class TalentCvPhotoResolver
      */
     public function resolve(array $data, ?User $user): ?string
     {
+        $source = (string) ($data['photo_source'] ?? '');
+
+        if ($source === 'profile') {
+            return $this->resolveUserAvatar($user);
+        }
+
         $embedded = trim((string) ($data['photo_base64'] ?? ''));
 
         if ($embedded !== '') {
@@ -22,6 +28,15 @@ class TalentCvPhotoResolver
             return 'data:image/jpeg;base64,'.$embedded;
         }
 
+        if ($source === 'sample' || $source === '') {
+            return TalentCvSampleAvatar::dataUri();
+        }
+
+        return $this->resolveUserAvatar($user);
+    }
+
+    private function resolveUserAvatar(?User $user): ?string
+    {
         if (! $user?->avatar_path) {
             return null;
         }

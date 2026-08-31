@@ -11,6 +11,8 @@ class TalentCvDraft extends Model
 
     public const TEMPLATE_MODERN = 'modern';
 
+    public const TEMPLATE_EXECUTIVE = 'executive';
+
     public const LOCALE_FR = 'fr';
 
     public const LOCALE_EN = 'en';

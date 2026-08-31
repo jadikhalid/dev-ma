@@ -41,6 +41,7 @@ class TalentCvDraftDefaults
             ],
             'certifications' => [''],
             'availability_line' => '',
+            'photo_source' => 'sample',
             'photo_base64' => '',
         ];
     }
@@ -56,6 +57,8 @@ class TalentCvDraftDefaults
         if (self::isBlank($merged['photo_base64'] ?? null)) {
             $merged['photo_base64'] = TalentCvSampleAvatar::dataUri();
         }
+
+        $merged['photo_source'] = 'sample';
 
         return $merged;
     }
@@ -103,8 +106,9 @@ class TalentCvDraftDefaults
             $merged['certifications'] = $sample['certifications'];
         }
 
-        if (self::isBlank($merged['photo_base64'] ?? null)) {
+        if (($merged['photo_source'] ?? 'sample') !== 'profile' && self::isBlank($merged['photo_base64'] ?? null)) {
             $merged['photo_base64'] = $sample['photo_base64'] ?? TalentCvSampleAvatar::dataUri();
+            $merged['photo_source'] = 'sample';
         }
 
         return self::merge($merged);
@@ -190,8 +194,21 @@ class TalentCvDraftDefaults
         $merged['languages'] = self::normalizeList($merged['languages'] ?? [], ['name' => '', 'level' => '']);
         $merged['certifications'] = self::normalizeStrings($merged['certifications'] ?? ['']);
 
+        if (isset($incoming['photo_source'])) {
+            $source = (string) $incoming['photo_source'];
+            $merged['photo_source'] = in_array($source, ['custom', 'profile', 'sample'], true) ? $source : 'sample';
+        }
+
         if (isset($incoming['photo_base64'])) {
             $merged['photo_base64'] = is_string($incoming['photo_base64']) ? $incoming['photo_base64'] : '';
+        }
+
+        if (($merged['photo_source'] ?? 'sample') === 'profile') {
+            $merged['photo_base64'] = '';
+        } elseif (! self::isBlank($merged['photo_base64'] ?? null)) {
+            $merged['photo_source'] = 'custom';
+        } elseif (! isset($merged['photo_source'])) {
+            $merged['photo_source'] = 'sample';
         }
 
         return $merged;

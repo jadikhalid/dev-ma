@@ -12,6 +12,7 @@ class TalentCvTemplateCatalog
         return [
             TalentCvDraft::TEMPLATE_CLASSIC,
             TalentCvDraft::TEMPLATE_MODERN,
+            TalentCvDraft::TEMPLATE_EXECUTIVE,
         ];
     }
 
@@ -33,6 +34,7 @@ class TalentCvTemplateCatalog
         return [
             TalentCvDraft::TEMPLATE_CLASSIC => __('talenma.cv_builder.templates.classic'),
             TalentCvDraft::TEMPLATE_MODERN => __('talenma.cv_builder.templates.modern'),
+            TalentCvDraft::TEMPLATE_EXECUTIVE => __('talenma.cv_builder.templates.executive'),
         ];
     }
 

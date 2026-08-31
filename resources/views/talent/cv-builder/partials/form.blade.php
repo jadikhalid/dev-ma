@@ -16,10 +16,10 @@
                 {{ __('talenma.cv_builder.form.upload_photo') }}
                 <input type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="onPhotoFile($event)">
             </label>
-            <button type="button" x-show="profileAvatarUrl" @click="useProfilePhoto()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 text-left">
+            <button type="button" x-show="profileAvatarUrl && data.photo_source !== 'profile'" @click="useProfilePhoto()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 text-left">
                 {{ __('talenma.cv_builder.form.use_profile_photo') }}
             </button>
-            <button type="button" x-show="data.photo_base64" @click="removeCustomPhoto()" class="text-xs text-gray-500 hover:text-red-600 text-left">
+            <button type="button" x-show="data.photo_source === 'custom' && data.photo_base64" @click="removeCustomPhoto()" class="text-xs text-gray-500 hover:text-red-600 text-left">
                 {{ __('talenma.cv_builder.form.remove_custom_photo') }}
             </button>
             <p class="text-[11px] text-gray-400">{{ __('talenma.cv_builder.form.photo_hint') }}</p>

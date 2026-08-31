@@ -11,6 +11,22 @@ class TalentCvBuilderTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_executive_template_preview_renders_timeline_layout(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_EXECUTIVE,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('timeline', false)
+            ->assertSee('lang-track', false)
+            ->assertSee('454545', false);
+    }
+
     public function test_modern_template_preview_includes_photo_header(): void
     {
         $talent = User::factory()->talent()->create();
@@ -97,6 +113,73 @@ class TalentCvBuilderTest extends TestCase
             ->get(route('talent.cv-builder.index'))
             ->assertOk()
             ->assertSee(__('talenma.cv_builder.page_title'));
+    }
+
+    public function test_talent_can_save_profile_photo_source_in_draft(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->putJson(route('talent.cv-builder.update'), [
+                'template' => TalentCvDraft::TEMPLATE_CLASSIC,
+                'locale' => 'fr',
+                'data' => array_merge(
+                    \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+                    [
+                        'photo_source' => 'profile',
+                        'photo_base64' => '',
+                    ],
+                ),
+            ])
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        $draft = TalentCvDraft::query()->where('user_id', $talent->id)->first();
+
+        $this->assertSame('profile', $draft->data['photo_source'] ?? null);
+        $this->assertSame('', $draft->data['photo_base64'] ?? null);
+
+        $this->actingAs($talent)
+            ->get(route('talent.cv-builder.index'))
+            ->assertOk();
+
+        $reloaded = TalentCvDraft::query()->where('user_id', $talent->id)->first();
+
+        $this->assertSame('profile', $reloaded->data['photo_source'] ?? null);
+        $this->assertSame('', $reloaded->data['photo_base64'] ?? null);
+    }
+
+    public function test_talent_can_save_custom_photo_in_draft(): void
+    {
+        $talent = User::factory()->talent()->create();
+        $photoDataUri = 'data:image/jpeg;base64,'.base64_encode(str_repeat('a', 120_000));
+
+        $this->actingAs($talent)
+            ->putJson(route('talent.cv-builder.update'), [
+                'template' => TalentCvDraft::TEMPLATE_CLASSIC,
+                'locale' => 'fr',
+                'data' => array_merge(
+                    \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+                    [
+                        'photo_source' => 'custom',
+                        'photo_base64' => $photoDataUri,
+                    ],
+                ),
+            ])
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        $draft = TalentCvDraft::query()->where('user_id', $talent->id)->first();
+
+        $this->assertSame($photoDataUri, $draft->data['photo_base64'] ?? null);
+
+        $this->actingAs($talent)
+            ->get(route('talent.cv-builder.index'))
+            ->assertOk();
+
+        $reloaded = TalentCvDraft::query()->where('user_id', $talent->id)->first();
+
+        $this->assertSame($photoDataUri, $reloaded->data['photo_base64'] ?? null);
     }
 
     public function test_talent_can_save_draft_and_export_pdf(): void

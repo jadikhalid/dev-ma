@@ -18,6 +18,11 @@ class MarketingCvPreviewTest extends TestCase
         $this->get(route('marketing.cv-preview', ['template' => 'modern']))
             ->assertOk()
             ->assertSee('social-link', false);
+
+        $this->get(route('marketing.cv-preview', ['template' => 'executive']))
+            ->assertOk()
+            ->assertSee('timeline', false)
+            ->assertSee('lang-track', false);
     }
 
     public function test_invalid_cv_preview_template_returns_not_found(): void

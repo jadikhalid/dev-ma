@@ -17,6 +17,8 @@ for (const [template, locale, filename] of [
     ['modern', 'en', 'marketing-preview-modern-en.png'],
     ['classic', 'fr', 'marketing-preview-classic-fr.png'],
     ['classic', 'en', 'marketing-preview-classic-en.png'],
+    ['executive', 'fr', 'marketing-preview-executive-fr.png'],
+    ['executive', 'en', 'marketing-preview-executive-en.png'],
 ]) {
     const url = `${baseUrl}/outils/apercu-cv/${template}?locale=${locale}`;
     await page.goto(url, { waitUntil: 'networkidle' });

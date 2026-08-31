@@ -46,7 +46,7 @@ Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('local
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/outils/apercu-cv/{template}', [MarketingCvPreviewController::class, 'show'])
-    ->whereIn('template', ['classic', 'modern'])
+    ->whereIn('template', ['classic', 'modern', 'executive'])
     ->name('marketing.cv-preview');
 Route::get('/privacy', [PrivacyController::class, 'show'])->name('privacy');
 Route::get('/annonces/acces/{job?}', JobAccessGateController::class)
