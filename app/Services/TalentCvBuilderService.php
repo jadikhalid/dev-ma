@@ -66,21 +66,21 @@ class TalentCvBuilderService
 
     public function previewView(TalentCvDraft $draft, User $user): View
     {
-        return view(TalentCvTemplateCatalog::viewName($draft->template), $this->templateData($draft, $user));
+        return view(TalentCvTemplateCatalog::viewName($draft->template), $this->templateData($draft, $user, false));
     }
 
     public function exportPdf(TalentCvDraft $draft, User $user): Response
     {
         $html = view(
             TalentCvTemplateCatalog::viewName($draft->template),
-            $this->templateData($draft, $user)
+            $this->templateData($draft, $user, true)
         )->render();
 
         return app(TalentCvPdfExporter::class)->download($html, $this->safeFilename($draft));
     }
 
     /** @return array<string, mixed> */
-    private function templateData(TalentCvDraft $draft, User $user): array
+    private function templateData(TalentCvDraft $draft, User $user, bool $forPdf = false): array
     {
         $photoResolver = app(TalentCvPhotoResolver::class);
 
@@ -90,6 +90,7 @@ class TalentCvBuilderService
             'preview' => true,
             'user' => $user,
             'photoSrc' => $photoResolver->resolve($draft->data ?? [], $user),
+            'forPdf' => $forPdf,
         ];
     }
 

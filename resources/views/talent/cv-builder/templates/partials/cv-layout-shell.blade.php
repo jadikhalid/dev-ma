@@ -10,7 +10,11 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            {{ $sidebarSide === 'right' ? 'right: 0;' : 'left: 0;' }}
+            @if ($sidebarSide === 'right')
+            left: {{ $mainWidth }};
+            @else
+            left: 0;
+            @endif
             width: {{ $sidebarWidth }};
             background: {{ $sidebarBg }};
             z-index: 0;

@@ -6,18 +6,14 @@
         @page { margin: 0; }
         * { box-sizing: border-box; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 9pt; color: #1e293b; margin: 0; line-height: 1.38; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        @include('talent.cv-builder.templates.partials.cv-layout-shell', [
-            'sidebarSide' => 'right',
-            'sidebarWidth' => '34%',
-            'mainWidth' => '66%',
-            'sidebarBg' => '#ecfdf5',
-            'sidebarExtra' => 'border-left: 3px solid #0d9488;',
-        ])
-        .main { padding: 18px 16px 18px 18px; }
-        .sidebar { padding: 16px 14px; color: #334155; }
+        table.layout { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        td.main { width: 66%; vertical-align: top; padding: 18px 16px 18px 18px; background: #fff; }
+        td.sidebar { width: 34%; vertical-align: top; padding: 16px 14px; background: #ecfdf5; border-left: 3px solid #0d9488; }
 
         .hero-name { font-size: 19pt; font-weight: bold; margin: 0 0 4px; color: #0f766e; line-height: 1.12; }
         .hero-headline { font-size: 9pt; color: #475569; margin: 0 0 14px; line-height: 1.35; font-weight: bold; }
+        .sidebar-hero-name { font-size: 13pt; font-weight: bold; text-align: center; margin: 0 0 4px; color: #0f766e; line-height: 1.15; }
+        .sidebar-hero-headline { font-size: 8pt; text-align: center; color: #475569; margin: 0 0 12px; line-height: 1.35; font-weight: bold; }
 
         .photo-wrap { text-align: center; margin-bottom: 14px; }
         .photo { width: 96px; height: 96px; border-radius: 8px; object-fit: cover; border: 2px solid #0d9488; }
@@ -68,17 +64,16 @@
         'portfolio' => (string) ($d['portfolio_url'] ?? ''),
     ])->filter(fn (string $url) => $has($url));
 @endphp
-<div class="cv-document">
-    <div class="cv-sidebar-band" aria-hidden="true"></div>
-    <table class="cv-columns" cellpadding="0" cellspacing="0">
-    <tr>
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr>
     <td class="main">
-        <div class="main-inner">
-        @if ($has($d['full_name'] ?? ''))
-            <p class="hero-name">{{ $d['full_name'] }}</p>
-        @endif
-        @if ($has($d['headline'] ?? ''))
-            <p class="hero-headline">{{ $d['headline'] }}</p>
+        @if (! ($forPdf ?? false))
+            @if ($has($d['full_name'] ?? ''))
+                <p class="hero-name">{{ $d['full_name'] }}</p>
+            @endif
+            @if ($has($d['headline'] ?? ''))
+                <p class="hero-headline">{{ $d['headline'] }}</p>
+            @endif
         @endif
 
         @if ($has($d['summary'] ?? ''))
@@ -127,10 +122,16 @@
                 @endforeach
             </div>
         @endif
-        </div>
     </td>
     <td class="sidebar">
-        <div class="sidebar-inner">
+        @if ($forPdf ?? false)
+            @if ($has($d['full_name'] ?? ''))
+                <p class="sidebar-hero-name">{{ $d['full_name'] }}</p>
+            @endif
+            @if ($has($d['headline'] ?? ''))
+                <p class="sidebar-hero-headline">{{ $d['headline'] }}</p>
+            @endif
+        @endif
         <div class="photo-wrap">
             @if (! empty($photoSrc))
                 <img src="{{ $photoSrc }}" alt="" class="photo">
@@ -188,10 +189,8 @@
                 <p class="sidebar-text">{{ $d['availability_line'] }}</p>
             </div>
         @endif
-        </div>
     </td>
-    </tr>
-    </table>
-</div>
+</tr>
+</table>
 </body>
 </html>
