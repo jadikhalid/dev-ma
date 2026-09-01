@@ -5,7 +5,7 @@
 
 @if ($jobs->isNotEmpty())
     <section
-        class="mt-10 lg:mt-12 w-full 2xl:mx-auto 2xl:max-w-7xl rounded-2xl border border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-teal-50/40 p-5 sm:p-6 lg:p-7 shadow-sm ring-1 ring-indigo-100/60"
+        class="mt-10 lg:mt-12 w-full rounded-2xl border border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-teal-50/40 p-5 sm:p-6 lg:p-7 shadow-sm ring-1 ring-indigo-100/60"
         aria-label="{{ __('talenma.home.latest_jobs_title') }}"
     >
         <div class="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">

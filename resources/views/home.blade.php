@@ -86,8 +86,8 @@
             </div>
         </div>
 
-        {{-- Panneau recherche : largeur confortable même sur écrans très larges --}}
-        <div class="mt-8 lg:mt-10 w-full 2xl:mx-auto 2xl:max-w-7xl hero-search-panel rounded-xl border border-gray-100 bg-white overflow-visible">
+        {{-- Panneau recherche : même largeur que le reste du shell (dont Opportunités) --}}
+        <div class="mt-8 lg:mt-10 w-full hero-search-panel rounded-xl border border-gray-100 bg-white overflow-visible">
             <div class="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 bg-gray-50/80">
                 <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -114,7 +114,7 @@
         </div>
 
         @if ($talentsCount > 0)
-            <p class="mt-3 text-sm sm:text-sm text-gray-500 2xl:mx-auto 2xl:max-w-7xl">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
+            <p class="mt-3 text-sm sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
         @endif
 
         {{-- Bandeau réassurance style Malt --}}
