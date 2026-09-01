@@ -8273,17 +8273,29 @@ document.addEventListener('submit', async (event) => {
     }
 });
 
-Alpine.data('cvBuilderAnnouncement', (config = {}) => ({
+Alpine.data('cvBuilderAnnouncement', () => ({
     open: false,
     storageKeys: {
-        dismissed: 'tdm_cv_builder_announcement_v3_dismissed',
-        lastShown: 'tdm_cv_builder_announcement_v3_last_shown',
+        dismissed: 'tdm_cv_builder_announcement_v5_dismissed',
+        lastShown: 'tdm_cv_builder_announcement_v6_last_shown',
         legacyDismissed: 'tdm_cv_builder_announcement_v2',
     },
-    snoozeMs: 15 * 60 * 1000,
-    previewImage: config.previewImage ?? null,
+    snoozeMs: 5 * 60 * 1000,
+    _revealTimer: null,
+
+    isDevEnvironment() {
+        try {
+            return Boolean(import.meta.env?.DEV);
+        } catch {
+            return false;
+        }
+    },
 
     isDismissedForever() {
+        if (this.isDevEnvironment()) {
+            return false;
+        }
+
         try {
             if (window.localStorage.getItem(this.storageKeys.dismissed) === '1') {
                 return true;
@@ -8300,6 +8312,10 @@ Alpine.data('cvBuilderAnnouncement', (config = {}) => ({
     },
 
     isSnoozed() {
+        if (this.isDevEnvironment()) {
+            return false;
+        }
+
         try {
             const raw = window.localStorage.getItem(this.storageKeys.lastShown);
 
@@ -8320,6 +8336,10 @@ Alpine.data('cvBuilderAnnouncement', (config = {}) => ({
     },
 
     markShown() {
+        if (this.isDevEnvironment()) {
+            return;
+        }
+
         try {
             window.localStorage.setItem(this.storageKeys.lastShown, String(Date.now()));
         } catch {
@@ -8332,46 +8352,37 @@ Alpine.data('cvBuilderAnnouncement', (config = {}) => ({
     },
 
     init() {
-        if (typeof window === 'undefined') {
+        if (typeof window === 'undefined' || ! this.shouldShow()) {
             return;
         }
 
-        if (! this.shouldShow()) {
+        if (this._revealTimer !== null) {
             return;
         }
 
-        const reveal = () => {
-            this.markShown();
-
-            window.setTimeout(() => {
-                this.open = true;
-            }, 700);
-        };
-
-        if (! this.previewImage) {
-            reveal();
-
-            return;
-        }
-
-        const img = new Image();
-        img.onload = () => reveal();
-        img.onerror = () => reveal();
-        img.src = this.previewImage;
+        this._revealTimer = window.setTimeout(() => {
+            this._revealTimer = null;
+            this.open = true;
+        }, 500);
     },
 
     close() {
         this.open = false;
+        this.markShown();
     },
 
     dismissForever() {
+        this.open = false;
+
+        if (this.isDevEnvironment()) {
+            return;
+        }
+
         try {
             window.localStorage.setItem(this.storageKeys.dismissed, '1');
         } catch {
             // ignore
         }
-
-        this.close();
     },
 }));
 

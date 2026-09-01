@@ -15,7 +15,7 @@ class HomeCvBuilderAnnouncementTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('cvBuilderAnnouncement', false)
-            ->assertSee('marketing-preview-classic', false)
+            ->assertSee(__('talenma.home.cv_builder_announcement.logo_alt'), false)
             ->assertSee(__('talenma.home.cv_builder_announcement.title'), false)
             ->assertSee(__('talenma.home.cv_builder_announcement.cta'), false)
             ->assertSee(route('cv-builder.gate'), false);

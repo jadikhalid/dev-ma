@@ -723,6 +723,7 @@ An administrator or moderator is reviewing your application before your company 
             'dismiss' => 'Don\'t show again',
             'later' => 'Later',
             'close' => 'Close announcement',
+            'logo_alt' => 'Professional CV and PDF export illustration',
         ],
         'cta_title' => 'Join today',
         'cta_subtitle' => 'The platform bridging Moroccan talents and national and international companies.',
