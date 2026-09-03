@@ -1,6 +1,7 @@
 
 
 import Alpine from 'alpinejs';
+import { buildCvPrintFilename, downloadCvPdf } from './cv-print-export.js';
 
 window.Alpine = Alpine;
 
@@ -8743,15 +8744,72 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
         }
     },
 
+    async fetchPreviewHtml() {
+        const response = await fetch(this.urls.preview, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'text/html',
+                'X-CSRF-TOKEN': this.csrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify(this.payload()),
+        });
+
+        if (! response.ok) {
+            return '';
+        }
+
+        const html = await response.text();
+        const expectedTemplate = this.template;
+
+        if (! this.previewHtmlMatchesTemplate(html, expectedTemplate)) {
+            return '';
+        }
+
+        return html;
+    },
+
+    exportPdfViaServer() {
+        window.location.href = this.urls.export;
+    },
+
     async exportPdf() {
         this.exporting = true;
+
         try {
-            await this.saveDraft();
-            window.location.href = this.urls.export;
+            const saved = await this.saveDraft({ errorToast: true });
+
+            if (! saved) {
+                return;
+            }
+
+            await this.runPreviewRefresh(this.previewSignature());
+
+            let html = String(this.$refs.previewFrame?.srcdoc ?? '').trim();
+
+            if (! html) {
+                html = await this.fetchPreviewHtml();
+            }
+
+            if (! html) {
+                this.pushToast('error', this.messages.export_error ?? '');
+                this.exportPdfViaServer();
+
+                return;
+            }
+
+            const filename = buildCvPrintFilename(this.data.full_name, this.locale);
+            const result = await downloadCvPdf(html, filename);
+
+            if (! result.ok) {
+                this.pushToast('info', this.messages.export_error ?? '');
+                this.exportPdfViaServer();
+
+                return;
+            }
         } finally {
-            window.setTimeout(() => {
-                this.exporting = false;
-            }, 1500);
+            this.exporting = false;
         }
     },
 

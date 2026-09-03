@@ -13,14 +13,13 @@
             'sidebarBg' => '#1e3a5f',
         ])
         .sidebar { color: #f8fafc; padding: 16px 12px; }
-        .main { padding: 18px 16px 18px 14px; }
         .photo-wrap { text-align: center; margin-bottom: 12px; }
-        .photo { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid #93c5fd; }
+        .photo { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid #93c5fd; display: block; margin: 0 auto; }
         .sidebar-name { font-size: 13pt; font-weight: bold; text-align: center; margin: 0 0 4px; line-height: 1.2; color: #fff; }
         .sidebar-headline { font-size: 7.5pt; text-align: center; color: #bfdbfe; margin: 0 0 0; line-height: 1.3; }
         .sidebar-divider { border: none; border-top: 1px solid #4b6478; margin: 11px 0; height: 0; }
         .sidebar-block { margin-bottom: 0; }
-        .sidebar-title { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.08em; color: #93c5fd; border-bottom: 1px solid #334155; margin: 0 0 5px; padding-bottom: 2px; font-weight: bold; }
+        .sidebar-title { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.08em; color: #93c5fd; border-bottom: 1px solid #334155; margin: 0 0 8px; padding-bottom: 5px; font-weight: bold; }
         .sidebar-text { font-size: 8pt; margin: 0 0 3px; color: #e2e8f0; word-wrap: break-word; }
         .sidebar-text a { color: #e2e8f0; text-decoration: none; }
         .social-links { margin: 6px 0 2px; line-height: 1; }
@@ -34,14 +33,14 @@
         .skill-items { font-size: 7.5pt; color: #cbd5e1; }
         .main-headline { font-size: 11pt; color: #1e3a5f; font-weight: bold; margin: 0 0 12px; }
         .section { margin-bottom: 11px; page-break-inside: avoid; }
-        .section-title { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #1e3a5f; border-bottom: 2px solid #1e3a5f; margin: 0 0 5px; padding-bottom: 2px; font-weight: bold; }
+        .section-title { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #1e3a5f; border-bottom: 2px solid #1e3a5f; margin: 0 0 8px; padding-bottom: 5px; font-weight: bold; }
         .summary { margin: 0; text-align: justify; font-size: 9pt; }
         .entry { margin-bottom: 7px; }
-        .entry-head { width: 100%; overflow: hidden; }
-        .entry-head::after { content: ""; display: block; clear: both; }
-        .entry-title { font-weight: bold; font-size: 9.5pt; }
+        .entry-head { width: 100%; }
+        .entry-head::after { content: ""; display: table; clear: both; }
+        .entry-title { font-weight: bold; font-size: 9.5pt; margin-bottom: 2px; }
         .entry-dates { float: right; font-size: 8pt; color: #64748b; }
-        .entry-company { font-style: italic; font-size: 8.5pt; color: #475569; margin: 1px 0 3px; }
+        .entry-company { font-style: italic; font-size: 8.5pt; color: #475569; margin: 2px 0 6px; }
         .bullets { margin: 0; padding-left: 14px; font-size: 8.5pt; }
         .bullets li { margin-bottom: 2px; }
         .edu-row { font-size: 8.5pt; margin: 0 0 3px; }
@@ -65,7 +64,6 @@
     ])->filter(fn (string $url) => $has($url));
 @endphp
 <div class="cv-document">
-    <div class="cv-sidebar-band" aria-hidden="true"></div>
     <table class="cv-columns" cellpadding="0" cellspacing="0">
     <tr>
     <td class="sidebar">

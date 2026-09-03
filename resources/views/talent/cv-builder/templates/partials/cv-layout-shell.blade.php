@@ -5,40 +5,28 @@
     $sidebarBg = $sidebarBg ?? '#1e3a5f';
     $sidebarExtra = $sidebarExtra ?? '';
 @endphp
-        .cv-document { position: relative; width: 100%; }
-        .cv-sidebar-band {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            @if ($sidebarSide === 'right')
-            left: {{ $mainWidth }};
-            @else
-            left: 0;
-            @endif
-            width: {{ $sidebarWidth }};
-            background: {{ $sidebarBg }};
-            z-index: 0;
-            {{ $sidebarExtra }}
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
+        .cv-document { width: 100%; }
         table.cv-columns {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            position: relative;
-            z-index: 1;
         }
         td.sidebar {
             width: {{ $sidebarWidth }};
             vertical-align: top;
-            background: transparent;
+            background-color: {{ $sidebarBg }};
+            {{ $sidebarExtra }}
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         td.main {
             width: {{ $mainWidth }};
             vertical-align: top;
-            background: #fff;
+            background-color: #ffffff;
+            padding: 18px 16px 18px 14px;
         }
+        td.main .section-title { margin-bottom: 8px; }
+        td.main .entry-title { margin-bottom: 4px; }
         .sidebar-inner,
         .main-inner {
             width: 100%;

@@ -46,9 +46,9 @@
                                                 <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
                                                 <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
                                             </span>
-                                        @endforeach
+                @endforeach
                                         <span class="sr-only">{{ __('talenma.recruitment.nav_new') }}</span>
-                                    @endif
+        @endif
                                 </p>
                                 <p class="text-xs text-slate-500">{{ __('talenma.dashboard.admin.activity_subtitle') }}</p>
                             </div>
@@ -88,12 +88,12 @@
                                                         <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $tone }}">
                                                             {{ $req->statusLabel() }}
                                                         </span>
-                                                    </div>
+                        </div>
                                                     <p class="mt-1 text-xs text-slate-500">{{ $req->companyDisplayName() }}</p>
-                                                </div>
+                        </div>
                                                 <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $req->created_at?->toIso8601String() }}">{{ $req->created_at?->diffForHumans() }}</time>
-                                            </div>
-                                        </div>
+                        </div>
+                        </div>
                                         @if ($reqUnseen)
                                             <span class="relative flex h-2.5 w-2.5 shrink-0 self-center" title="{{ __('talenma.recruitment.nav_new') }}">
                                                 <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
@@ -169,7 +169,7 @@
                                     >
                                         <div class="min-w-0 flex-1">
                                             <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                                                <div class="min-w-0">
+                                    <div class="min-w-0">
                                                     <div class="flex flex-wrap items-center gap-2">
                                                         <span class="text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $hire->shortSubject() }}</span>
                                                         <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $tone }}">
@@ -177,7 +177,7 @@
                                                         </span>
                                                         <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $originTone }}">
                                                             {{ $hire->hireOriginLabel() }}
-                                                        </span>
+                                            </span>
                                                     </div>
                                                     <p class="mt-1.5 text-xs font-medium text-slate-400">
                                                         {{ $hire->talentDisplayName() }}
@@ -360,9 +360,9 @@
                                             <p class="text-sm font-medium leading-snug text-slate-900">{{ $label }}</p>
                                             <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
                                         </div>
-                                    @endif
+                                                @endif
                                 </li>
-                            @endforeach
+                                    @endforeach
                         </ol>
                     @endif
                 </section>
@@ -407,16 +407,16 @@
                                                     <div class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 {{ $rowClass }}">
                                                         <span class="min-w-0 text-xs leading-snug text-slate-600">{{ $item['label'] }}</span>
                                                         <span class="shrink-0 text-sm font-bold tabular-nums {{ $valueClass }}">{{ $item['value'] }}</span>
-                                                    </div>
-                                                @endif
+                            </div>
+                        @endif
                                             </li>
                                         @endforeach
                                     </ul>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-                </section>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </section>
             </aside>
         </div>
     </div>

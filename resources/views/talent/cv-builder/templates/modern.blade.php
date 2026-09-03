@@ -6,7 +6,7 @@
         @page { margin: 0; }
         * { box-sizing: border-box; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 9pt; color: #1e293b; margin: 0; line-height: 1.38; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        table.layout { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        table.layout { width: 100%; border-collapse: collapse; table-layout: fixed; height: 100%; min-height: 1122px; }
         td.main { width: 66%; vertical-align: top; padding: 18px 16px 18px 18px; background: #fff; }
         td.sidebar { width: 34%; vertical-align: top; padding: 16px 14px; background: #ecfdf5; border-left: 3px solid #0d9488; }
 
@@ -16,11 +16,11 @@
         .sidebar-hero-headline { font-size: 8pt; text-align: center; color: #475569; margin: 0 0 12px; line-height: 1.35; font-weight: bold; }
 
         .photo-wrap { text-align: center; margin-bottom: 14px; }
-        .photo { width: 96px; height: 96px; border-radius: 8px; object-fit: cover; border: 2px solid #0d9488; }
+        .photo { width: 96px; height: 96px; border-radius: 8px; object-fit: cover; border: 2px solid #0d9488; display: block; margin: 0 auto; }
         .photo-placeholder { width: 96px; height: 96px; border-radius: 8px; background: #ccfbf1; border: 2px solid #0d9488; line-height: 92px; font-size: 28pt; color: #0f766e; text-align: center; margin: 0 auto; }
 
         .sidebar-block { margin-bottom: 12px; }
-        .sidebar-title { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.08em; color: #0f766e; border-bottom: 1px solid #99f6e4; margin: 0 0 5px; padding-bottom: 2px; font-weight: bold; }
+        .sidebar-title { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.08em; color: #0f766e; border-bottom: 1px solid #99f6e4; margin: 0 0 8px; padding-bottom: 5px; font-weight: bold; }
         .sidebar-text { font-size: 8pt; margin: 0 0 3px; color: #334155; word-wrap: break-word; }
         .sidebar-text a { color: #334155; text-decoration: none; }
         .social-links { margin: 6px 0 2px; line-height: 1; }
@@ -34,14 +34,14 @@
         .skill-items { font-size: 7.5pt; color: #475569; }
 
         .section { margin-bottom: 11px; page-break-inside: avoid; }
-        .section-title { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #fff; background: #0d9488; margin: 0 0 6px; padding: 4px 8px; font-weight: bold; }
+        .section-title { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: #fff; background: #0d9488; margin: 0 0 8px; padding: 5px 8px; font-weight: bold; }
         .summary { margin: 0; text-align: justify; font-size: 9pt; color: #334155; }
         .entry { margin-bottom: 7px; }
-        .entry-head { width: 100%; overflow: hidden; }
+        .entry-head { width: 100%; }
         .entry-head::after { content: ""; display: block; clear: both; }
-        .entry-title { font-weight: bold; font-size: 9.5pt; color: #0f766e; }
+        .entry-title { font-weight: bold; font-size: 9.5pt; color: #0f766e; margin-bottom: 2px; }
         .entry-dates { float: right; font-size: 8pt; color: #64748b; }
-        .entry-company { font-style: italic; font-size: 8.5pt; color: #475569; margin: 1px 0 3px; }
+        .entry-company { font-style: italic; font-size: 8.5pt; color: #475569; margin: 2px 0 6px; }
         .bullets { margin: 0; padding-left: 14px; font-size: 8.5pt; color: #334155; }
         .bullets li { margin-bottom: 2px; }
         .edu-row { font-size: 8.5pt; margin: 0 0 3px; color: #334155; }

@@ -34,6 +34,9 @@
                 'saved' => __('talenma.cv_builder.saved'),
                 'save_error' => __('talenma.common.save_error'),
                 'export' => __('talenma.cv_builder.export_pdf'),
+                'export_print_ready' => __('talenma.cv_builder.export_print_ready'),
+                'export_popup_blocked' => __('talenma.cv_builder.export_popup_blocked'),
+                'export_error' => __('talenma.cv_builder.export_error'),
                 'photo_too_large' => __('talenma.cv_builder.form.photo_too_large'),
             ],
         ]))"

@@ -16,10 +16,10 @@
         .main { padding: 16px 16px 18px 14px; }
 
         .photo-wrap { text-align: center; margin-bottom: 14px; }
-        .photo { width: 92px; height: 92px; border-radius: 50%; object-fit: cover; border: 2px solid #d1d5db; }
+        .photo { width: 92px; height: 92px; border-radius: 50%; object-fit: cover; border: 2px solid #d1d5db; display: block; margin: 0 auto; }
         .photo-placeholder { width: 92px; height: 92px; border-radius: 50%; background: #5b5b5b; border: 2px solid #d1d5db; line-height: 88px; font-size: 26pt; color: #e5e7eb; text-align: center; margin: 0 auto; }
 
-        .sidebar-title { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.1em; color: #f8fafc; border-bottom: 1px solid #737373; margin: 0 0 6px; padding-bottom: 3px; font-weight: bold; }
+        .sidebar-title { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.1em; color: #f8fafc; border-bottom: 1px solid #737373; margin: 0 0 8px; padding-bottom: 5px; font-weight: bold; }
         .sidebar-block { margin-bottom: 12px; }
         .sidebar-text { font-size: 7.8pt; margin: 0 0 4px; color: #e5e7eb; text-align: left; word-wrap: break-word; }
         .skill-label { font-weight: bold; color: #fff; font-size: 8pt; }
@@ -42,7 +42,7 @@
         .social-link img { width: 12px; height: 12px; display: block; border: 0; }
 
         .section { margin-top: 12px; page-break-inside: avoid; }
-        .section-title { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.05em; color: #374151; border-bottom: 1px solid #d1d5db; margin: 0 0 8px; padding-bottom: 3px; font-weight: bold; }
+        .section-title { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.05em; color: #374151; border-bottom: 1px solid #d1d5db; margin: 0 0 8px; padding-bottom: 5px; font-weight: bold; }
         table.timeline { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
         td.tl-meta { width: 24%; vertical-align: top; font-size: 7.6pt; color: #4b5563; padding-right: 6px; }
         td.tl-meta strong { display: block; color: #374151; font-size: 7.8pt; margin-bottom: 2px; }
@@ -75,7 +75,6 @@
     ])->filter(fn (string $url) => $has($url));
 @endphp
 <div class="cv-document">
-    <div class="cv-sidebar-band" aria-hidden="true"></div>
     <table class="cv-columns" cellpadding="0" cellspacing="0">
     <tr>
     <td class="sidebar">

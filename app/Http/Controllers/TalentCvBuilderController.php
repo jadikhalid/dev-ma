@@ -41,7 +41,7 @@ class TalentCvBuilderController extends Controller
         ]);
     }
 
-    public function preview(Request $request): View
+    public function preview(Request $request): Response|View
     {
         $user = $request->user();
         abort_unless($user->isTalent(), 403);
@@ -62,7 +62,12 @@ class TalentCvBuilderController extends Controller
             }
         }
 
-        return $this->builder->previewView($draft, $user);
+        return response()
+            ->view(
+                TalentCvTemplateCatalog::viewName($draft->template),
+                $this->builder->previewData($draft, $user)
+            )
+            ->header('X-Cv-Template', $draft->template);
     }
 
     public function export(Request $request): Response

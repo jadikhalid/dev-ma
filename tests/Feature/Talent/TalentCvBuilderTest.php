@@ -27,6 +27,42 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('454545', false);
     }
 
+    public function test_simple_template_preview_renders_single_column_layout(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_SIMPLE,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('contact-bar', false)
+            ->assertSee('0f766e', false)
+            ->assertSee('Prénom Nom', false)
+            ->assertDontSee('cv-sidebar-band', false);
+    }
+
+    public function test_vibrant_template_preview_uses_cobalt_amber_palette(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_VIBRANT,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('contact-bar', false)
+            ->assertSee('1e40af', false)
+            ->assertSee('f59e0b', false)
+            ->assertSee('header-accent', false)
+            ->assertSee('Prénom Nom', false)
+            ->assertDontSee('cv-sidebar-band', false);
+    }
+
     public function test_modern_template_preview_includes_photo_header(): void
     {
         $talent = User::factory()->talent()->create();

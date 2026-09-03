@@ -19,12 +19,18 @@ for (const [template, locale, filename] of [
     ['classic', 'en', 'marketing-preview-classic-en.png'],
     ['executive', 'fr', 'marketing-preview-executive-fr.png'],
     ['executive', 'en', 'marketing-preview-executive-en.png'],
+    ['simple', 'fr', 'marketing-preview-simple-fr.png'],
+    ['simple', 'en', 'marketing-preview-simple-en.png'],
+    ['vibrant', 'fr', 'marketing-preview-vibrant-fr.png'],
+    ['vibrant', 'en', 'marketing-preview-vibrant-en.png'],
 ]) {
     const url = `${baseUrl}/outils/apercu-cv/${template}?locale=${locale}`;
     await page.goto(url, { waitUntil: 'networkidle' });
-    await page.waitForSelector('table.layout');
 
-    const locator = page.locator('table.layout').first();
+    const selector = ['simple', 'vibrant'].includes(template) ? 'body' : 'table.layout';
+    await page.waitForSelector(selector);
+
+    const locator = page.locator(selector).first();
     await locator.screenshot({
         path: path.join(outDir, filename),
         type: 'png',

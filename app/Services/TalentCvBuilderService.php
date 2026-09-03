@@ -66,7 +66,13 @@ class TalentCvBuilderService
 
     public function previewView(TalentCvDraft $draft, User $user): View
     {
-        return view(TalentCvTemplateCatalog::viewName($draft->template), $this->templateData($draft, $user, false));
+        return view(TalentCvTemplateCatalog::viewName($draft->template), $this->previewData($draft, $user));
+    }
+
+    /** @return array<string, mixed> */
+    public function previewData(TalentCvDraft $draft, User $user): array
+    {
+        return $this->templateData($draft, $user, false);
     }
 
     public function exportPdf(TalentCvDraft $draft, User $user): Response

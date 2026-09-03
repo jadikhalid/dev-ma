@@ -23,6 +23,19 @@ class MarketingCvPreviewTest extends TestCase
             ->assertOk()
             ->assertSee('timeline', false)
             ->assertSee('lang-track', false);
+
+        $this->get(route('marketing.cv-preview', ['template' => 'simple']))
+            ->assertOk()
+            ->assertSee('contact-bar', false)
+            ->assertSee('0f766e', false)
+            ->assertSee('Prénom Nom', false);
+
+        $this->get(route('marketing.cv-preview', ['template' => 'vibrant']))
+            ->assertOk()
+            ->assertSee('contact-bar', false)
+            ->assertSee('1e40af', false)
+            ->assertSee('f59e0b', false)
+            ->assertSee('Prénom Nom', false);
     }
 
     public function test_invalid_cv_preview_template_returns_not_found(): void

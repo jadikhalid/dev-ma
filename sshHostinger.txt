@@ -1,0 +1,3 @@
+ssh -p 65002 u282907555@46.202.182.44
+cd ~/domains/talentsdumaroc.com/laravel
+bash scripts/deploy.sh

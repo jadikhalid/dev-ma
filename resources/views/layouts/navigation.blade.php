@@ -58,7 +58,7 @@
                     </x-nav-link>
                     @if ($actingAsModerator)
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_VIEW))
-                            <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
+                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE))
                             <x-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">
@@ -221,7 +221,7 @@
                         </button>
                         <span class="text-[11px] font-semibold {{ $actingAsModerator ? 'text-purple-700' : 'text-gray-400' }}">{{ __('talenma.roles.moderator') }}</span>
                     </form>
-                @endif
+                    @endif
                 <span class="text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap {{ $authUser->roleBadgeClasses() }}">
                     {{ $authUser->roleLabel() }}
                 </span>
@@ -322,7 +322,7 @@
                     @endif
                     @if ($actingAsModerator)
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_VIEW))
-                            <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-responsive-nav-link>
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE))
                             <x-responsive-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">
