@@ -71,10 +71,13 @@
             padding: 8px 28px;
             font-size: 8pt;
             color: #134e4a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
         }
-        .contact-bar-table { width: 100%; border-collapse: collapse; }
-        .contact-bar-info { vertical-align: middle; }
-        .contact-bar-social { vertical-align: middle; text-align: right; white-space: nowrap; width: 1%; }
+        .contact-bar-info { flex: 1 1 auto; min-width: 0; }
+        .contact-bar-social { flex: 0 0 auto; white-space: nowrap; }
         .contact-bar span { white-space: nowrap; }
         .contact-sep { color: #5eead4; padding: 0 7px; }
         .contact-bar a { color: #134e4a; text-decoration: none; }
@@ -167,27 +170,23 @@
 
 @if ($contactParts->isNotEmpty() || $socialLinks->isNotEmpty())
     <div class="contact-bar">
-        <table class="contact-bar-table" cellpadding="0" cellspacing="0">
-            <tr>
-                <td class="contact-bar-info">
-                    @foreach ($contactParts as $i => $part)
-                        @if ($i > 0)<span class="contact-sep">·</span>@endif
-                        <span>{{ $part }}</span>
+        <div class="contact-bar-info">
+            @foreach ($contactParts as $i => $part)
+                @if ($i > 0)<span class="contact-sep">·</span>@endif
+                <span>{{ $part }}</span>
+            @endforeach
+        </div>
+        @if ($socialLinks->isNotEmpty())
+            <div class="contact-bar-social">
+                <span class="social-links">
+                    @foreach ($socialLinks as $type => $url)
+                        <a href="{{ \App\Support\TalentCv\TalentCvLinkHelper::href($url) }}" class="social-link" title="{{ $url }}">
+                            <img src="{{ \App\Support\TalentCv\TalentCvLinkHelper::iconSrc($type, '#0f766e') }}" alt="{{ $type }}">
+                        </a>
                     @endforeach
-                </td>
-                @if ($socialLinks->isNotEmpty())
-                    <td class="contact-bar-social">
-                        <span class="social-links">
-                            @foreach ($socialLinks as $type => $url)
-                                <a href="{{ \App\Support\TalentCv\TalentCvLinkHelper::href($url) }}" class="social-link" title="{{ $url }}">
-                                    <img src="{{ \App\Support\TalentCv\TalentCvLinkHelper::iconSrc($type, '#0f766e') }}" alt="{{ $type }}">
-                                </a>
-                            @endforeach
-                        </span>
-                    </td>
-                @endif
-            </tr>
-        </table>
+                </span>
+            </div>
+        @endif
     </div>
 @endif
 
