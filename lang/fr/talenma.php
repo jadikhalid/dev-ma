@@ -723,7 +723,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
             'dismiss' => 'Ne plus afficher',
             'later' => 'Plus tard',
             'close' => 'Fermer l\'annonce',
-            'logo_alt' => 'Illustration d\'un CV professionnel et export PDF',
+            'logo_alt' => 'Illustration d\'un agent qui génère un CV PDF à partir d\'un formulaire',
         ],
         'cta_title' => 'Rejoignez aujourd\'hui',
         'cta_subtitle' => 'La plateforme qui fait le pont entre les talents du Maroc et les entreprises nationales et internationales.',

@@ -85,11 +85,16 @@
                                 </ul>
                             </div>
 
-                            <figure
-                                class="w-full sm:w-[200px] shrink-0 overflow-hidden rounded-2xl border-2 border-white/60 shadow-lg ring-2 ring-indigo-200/80"
-                                aria-label="{{ __('talenma.home.cv_builder_announcement.logo_alt') }}"
-                            >
-                                <x-cv-builder-tool-mark class="block h-auto w-full" />
+                            <figure class="mx-auto w-full max-w-[240px] sm:mx-0 sm:w-[220px] shrink-0">
+                                <img
+                                    src="{{ asset('images/cv-builder/announcement-agent.png') }}"
+                                    alt="{{ __('talenma.home.cv_builder_announcement.logo_alt') }}"
+                                    class="block h-auto w-full object-contain"
+                                    width="501"
+                                    height="441"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
                             </figure>
                         </div>
                     </div>

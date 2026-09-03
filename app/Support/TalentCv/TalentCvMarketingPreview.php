@@ -14,7 +14,8 @@ class TalentCvMarketingPreview
         $filename = match ($template) {
             TalentCvDraft::TEMPLATE_CLASSIC => "marketing-preview-classic-{$locale}.png",
             TalentCvDraft::TEMPLATE_MODERN => "marketing-preview-modern-{$locale}.png",
-            default => "marketing-preview-executive-{$locale}.png",
+            TalentCvDraft::TEMPLATE_EXECUTIVE => "marketing-preview-executive-{$locale}.png",
+            default => "marketing-preview-modern-{$locale}.png",
         };
 
         return asset('images/cv-builder/'.$filename);
@@ -29,7 +30,8 @@ class TalentCvMarketingPreview
         $filename = match ($template) {
             TalentCvDraft::TEMPLATE_CLASSIC => "marketing-preview-classic-{$locale}.png",
             TalentCvDraft::TEMPLATE_MODERN => "marketing-preview-modern-{$locale}.png",
-            default => "marketing-preview-executive-{$locale}.png",
+            TalentCvDraft::TEMPLATE_EXECUTIVE => "marketing-preview-executive-{$locale}.png",
+            default => "marketing-preview-modern-{$locale}.png",
         };
 
         $path = public_path('images/cv-builder/'.$filename);
