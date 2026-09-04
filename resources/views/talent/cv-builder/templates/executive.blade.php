@@ -2,6 +2,7 @@
 <html lang="{{ $locale }}">
 <head>
     <meta charset="utf-8">
+    <meta name="cv-template" content="executive">
     <style>
         @page { margin: 0; }
         * { box-sizing: border-box; }
@@ -222,5 +223,6 @@
     </tr>
     </table>
 </div>
+@include('talent.cv-builder.templates.partials.cv-preview-page-pads')
 </body>
 </html>

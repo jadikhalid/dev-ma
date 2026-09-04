@@ -2,6 +2,7 @@
 <html lang="{{ $locale }}">
 <head>
     <meta charset="utf-8">
+    <meta name="cv-template" content="simple">
     <style>
         /* Page 2+ : air en haut/bas. Page 1 : plein écran pour le bandeau teal. */
         @page {
@@ -104,11 +105,11 @@
         }
 
         .entry { margin: 0 0 10px; page-break-inside: avoid; }
-        .entry-head { width: 100%; overflow: hidden; }
-        .entry-head::after { content: ""; display: block; clear: both; }
-        .entry-title { font-weight: bold; font-size: 10pt; color: #111827; }
+        .entry-head { width: 100%; }
+        .entry-head::after { content: ""; display: table; clear: both; }
+        .entry-title { font-weight: bold; font-size: 10pt; color: #111827; margin-bottom: 2px; }
         .entry-dates { float: right; font-size: 8.5pt; color: #6b7280; }
-        .entry-meta { margin: 2px 0 4px; font-size: 8.5pt; color: #4b5563; font-style: italic; }
+        .entry-meta { margin: 2px 0 6px; font-size: 8.5pt; color: #4b5563; font-style: italic; }
         .bullets { margin: 0; padding-left: 15px; font-size: 9pt; color: #374151; }
         .bullets li { margin-bottom: 2px; }
 
@@ -274,5 +275,6 @@
         </div>
     @endif
 </div>
+@include('talent.cv-builder.templates.partials.cv-preview-page-pads')
 </body>
 </html>

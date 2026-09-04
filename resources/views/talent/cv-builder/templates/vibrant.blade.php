@@ -2,6 +2,7 @@
 <html lang="{{ $locale }}">
 <head>
     <meta charset="utf-8">
+    <meta name="cv-template" content="vibrant">
     <style>
         /* DomPDF-safe single column (like Model 4), bold cobalt + amber palette. */
         @page {
@@ -25,15 +26,16 @@
         .header {
             background: #1e40af;
             color: #ffffff;
-            padding: 20px 28px 0;
+            padding: 0;
         }
         .header-inner {
-            padding-bottom: 18px;
+            padding: 20px 28px 18px;
         }
         .header-accent {
             height: 6px;
             background: #f59e0b;
-            margin: 0 -28px;
+            margin: 0;
+            width: 100%;
         }
         .header-table { width: 100%; border-collapse: collapse; }
         .header-text { vertical-align: middle; }
@@ -115,11 +117,11 @@
         }
 
         .entry { margin: 0 0 10px; page-break-inside: avoid; }
-        .entry-head { width: 100%; overflow: hidden; }
-        .entry-head::after { content: ""; display: block; clear: both; }
-        .entry-title { font-weight: bold; font-size: 10pt; color: #1e3a8a; }
+        .entry-head { width: 100%; }
+        .entry-head::after { content: ""; display: table; clear: both; }
+        .entry-title { font-weight: bold; font-size: 10pt; color: #1e3a8a; margin-bottom: 2px; }
         .entry-dates { float: right; font-size: 8.5pt; color: #b45309; font-weight: bold; }
-        .entry-meta { margin: 2px 0 4px; font-size: 8.5pt; color: #4b5563; font-style: italic; }
+        .entry-meta { margin: 2px 0 6px; font-size: 8.5pt; color: #4b5563; font-style: italic; }
         .bullets { margin: 0; padding-left: 15px; font-size: 9pt; color: #374151; }
         .bullets li { margin-bottom: 2px; }
 
@@ -288,5 +290,6 @@
         </div>
     @endif
 </div>
+@include('talent.cv-builder.templates.partials.cv-preview-page-pads')
 </body>
 </html>

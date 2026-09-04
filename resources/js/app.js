@@ -8447,11 +8447,14 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
     profileAvatarUrl: config.profileAvatarUrl ?? null,
     mobilePanel: 'edit',
     exporting: false,
+    previewScale: 1,
+    previewContentHeight: 1122,
     _previewTimer: null,
     _saveTimer: null,
     _previewRequestId: 0,
     _previewAbort: null,
     _previewQueue: Promise.resolve(),
+    _previewResizeObserver: null,
 
     init() {
         if (! this.data.photo_source) {
@@ -8473,7 +8476,65 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
             }
         });
 
-        this.$nextTick(() => this.schedulePreview());
+        this.$nextTick(() => {
+            this.bindPreviewStageResize();
+            this.schedulePreview();
+        });
+    },
+
+    bindPreviewStageResize() {
+        const stage = this.$refs.previewStage;
+        if (! stage || typeof ResizeObserver === 'undefined') {
+            return;
+        }
+
+        this._previewResizeObserver?.disconnect();
+        this._previewResizeObserver = new ResizeObserver(() => this.updatePreviewFit());
+        this._previewResizeObserver.observe(stage);
+        this.updatePreviewFit();
+    },
+
+    previewScalerBoxStyle() {
+        const scale = this.previewScale;
+        const height = this.previewContentHeight;
+
+        return {
+            width: `${Math.round(794 * scale)}px`,
+            height: `${Math.round(height * scale)}px`,
+        };
+    },
+
+    previewFrameStyle() {
+        return {
+            width: '794px',
+            height: `${this.previewContentHeight}px`,
+            transform: `scale(${this.previewScale})`,
+            transformOrigin: 'top left',
+        };
+    },
+
+    updatePreviewFit() {
+        const stage = this.$refs.previewStage;
+        const frame = this.$refs.previewFrame;
+
+        if (! stage) {
+            return;
+        }
+
+        const availableWidth = Math.max(120, stage.clientWidth);
+        this.previewScale = Math.min(1, availableWidth / 794);
+
+        try {
+            const doc = frame?.contentDocument;
+            if (doc?.body) {
+                const measured = Math.max(doc.body.scrollHeight, doc.documentElement?.scrollHeight || 0);
+                if (measured > 0) {
+                    this.previewContentHeight = measured;
+                }
+            }
+        } catch {
+            // Ignore cross-origin / unloaded frame.
+        }
     },
 
     clearPreviewFrame() {
@@ -8606,7 +8667,10 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
         this.mobilePanel = panel;
 
         if (panel === 'preview') {
-            this.$nextTick(() => this.enqueuePreviewRefresh());
+            this.$nextTick(() => {
+                this.updatePreviewFit();
+                this.enqueuePreviewRefresh();
+            });
         }
     },
 
@@ -8696,7 +8760,15 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
             }
 
             if (this.$refs.previewFrame) {
-                this.$refs.previewFrame.srcdoc = html;
+                const frame = this.$refs.previewFrame;
+                const onLoad = () => {
+                    // Wait for in-document page-pad script to settle, then fit scale.
+                    window.setTimeout(() => this.updatePreviewFit(), 180);
+                    window.setTimeout(() => this.updatePreviewFit(), 450);
+                };
+
+                frame.addEventListener('load', onLoad, { once: true });
+                frame.srcdoc = html;
             }
         } catch (error) {
             if (error?.name === 'AbortError') {
@@ -8784,8 +8856,8 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
                 return;
             }
 
-            await this.runPreviewRefresh(this.previewSignature());
-
+            // Never reload the visible preview iframe (avoids flicker).
+            // Prefer current srcdoc; fall back to a silent fetch.
             let html = String(this.$refs.previewFrame?.srcdoc ?? '').trim();
 
             if (! html) {

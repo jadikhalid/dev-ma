@@ -113,12 +113,19 @@
                 <div class="shrink-0 hidden xl:flex items-center px-5 py-3 border-b border-gray-100 bg-gray-50">
                     <h2 class="text-sm font-bold uppercase tracking-wide text-gray-700">{{ __('talenma.cv_builder.preview_title') }}</h2>
                 </div>
-                <div class="flex-1 min-h-0 bg-gray-100 p-3">
-                    <iframe
-                        x-ref="previewFrame"
-                        class="w-full h-full min-h-[calc(100vh-18rem)] xl:min-h-[480px] bg-white rounded-lg shadow-sm border-0 block"
-                        title="{{ __('talenma.cv_builder.preview_title') }}"
-                    ></iframe>
+                <div class="flex-1 min-h-0 bg-gray-100 p-3 overflow-y-auto overflow-x-hidden" x-ref="previewStage">
+                    {{-- Scaler: visual zoom only. iframe stays at true A4 width (794px) for PDF HTML. --}}
+                    <div
+                        class="mx-auto overflow-hidden"
+                        :style="previewScalerBoxStyle()"
+                    >
+                        <iframe
+                            x-ref="previewFrame"
+                            class="bg-white rounded-lg shadow-sm border-0 block max-w-none"
+                            :style="previewFrameStyle()"
+                            title="{{ __('talenma.cv_builder.preview_title') }}"
+                        ></iframe>
+                    </div>
                 </div>
             </div>
         </div>

@@ -2,13 +2,21 @@
 <html lang="{{ $locale }}">
 <head>
     <meta charset="utf-8">
+    <meta name="cv-template" content="modern">
     <style>
         @page { margin: 0; }
         * { box-sizing: border-box; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 9pt; color: #1e293b; margin: 0; line-height: 1.38; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        table.layout { width: 100%; border-collapse: collapse; table-layout: fixed; height: 100%; min-height: 1122px; }
+        table.layout { width: 100%; border-collapse: collapse; table-layout: fixed; }
         td.main { width: 66%; vertical-align: top; padding: 18px 16px 18px 18px; background: #fff; }
-        td.sidebar { width: 34%; vertical-align: top; padding: 16px 14px; background: #ecfdf5; border-left: 3px solid #0d9488; }
+        td.sidebar { width: 34%; vertical-align: top; padding: 16px 14px; background: #ecfdf5; border-left: 3px solid #0d9488; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .sidebar-inner,
+        .main-inner {
+            width: 100%;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
 
         .hero-name { font-size: 19pt; font-weight: bold; margin: 0 0 4px; color: #0f766e; line-height: 1.12; }
         .hero-headline { font-size: 9pt; color: #475569; margin: 0 0 14px; line-height: 1.35; font-weight: bold; }
@@ -38,7 +46,7 @@
         .summary { margin: 0; text-align: justify; font-size: 9pt; color: #334155; }
         .entry { margin-bottom: 7px; }
         .entry-head { width: 100%; }
-        .entry-head::after { content: ""; display: block; clear: both; }
+        .entry-head::after { content: ""; display: table; clear: both; }
         .entry-title { font-weight: bold; font-size: 9.5pt; color: #0f766e; margin-bottom: 2px; }
         .entry-dates { float: right; font-size: 8pt; color: #64748b; }
         .entry-company { font-style: italic; font-size: 8.5pt; color: #475569; margin: 2px 0 6px; }
@@ -67,6 +75,7 @@
 <table class="layout" cellpadding="0" cellspacing="0">
 <tr>
     <td class="main">
+        <div class="main-inner">
         @if (! ($forPdf ?? false))
             @if ($has($d['full_name'] ?? ''))
                 <p class="hero-name">{{ $d['full_name'] }}</p>
@@ -122,8 +131,10 @@
                 @endforeach
             </div>
         @endif
+        </div>
     </td>
     <td class="sidebar">
+        <div class="sidebar-inner">
         @if ($forPdf ?? false)
             @if ($has($d['full_name'] ?? ''))
                 <p class="sidebar-hero-name">{{ $d['full_name'] }}</p>
@@ -189,8 +200,10 @@
                 <p class="sidebar-text">{{ $d['availability_line'] }}</p>
             </div>
         @endif
+        </div>
     </td>
 </tr>
 </table>
+@include('talent.cv-builder.templates.partials.cv-preview-page-pads')
 </body>
 </html>

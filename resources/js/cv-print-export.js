@@ -1,4 +1,5 @@
-import html2pdf from 'html2pdf.js';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 export function buildCvPrintFilename(fullName, locale) {
     const base = String(fullName ?? 'cv')
@@ -12,70 +13,88 @@ export function buildCvPrintFilename(fullName, locale) {
 
 /**
  * A4 page height in pixels at 96 DPI.
- * 297mm × (96 / 25.4) ≈ 1122.52 → use 1123 to avoid sub-pixel rounding issues.
+ * 297mm × (96 / 25.4) ≈ 1122.52
  */
 const A4_HEIGHT_PX = 1122;
+const A4_WIDTH_PX = 794;
 
 /**
- * Render the CV HTML to a real PDF and trigger a direct download.
+ * Render CV HTML to PDF without html2pdf's parent-page overlay
+ * (that overlay was pushing the centered layout left for ~500ms).
  *
- * Strategy:
- * 1. Inject the HTML into a hidden iframe (off-screen, NOT visibility:hidden).
- * 2. Let the browser render it at exactly 794px wide (A4 width at 96 DPI).
- * 3. Measure the natural content height.
- * 4. Round it UP to the nearest A4 page boundary.
- * 5. Set html, body, and the two-column table to that exact height so the
- *    sidebar background-color fills the remainder of the last page.
- * 6. Re-measure (the browser reflows), then capture with html2canvas.
+ * Flow: isolated 0×0 iframe → html2canvas on iframe DOM → jsPDF pages.
  */
 export async function downloadCvPdf(html, filename) {
     return new Promise((resolve) => {
+        const host = document.createElement('div');
+        host.setAttribute('aria-hidden', 'true');
+        host.style.cssText = [
+            'position:fixed',
+            'top:0',
+            'left:0',
+            'width:0',
+            'height:0',
+            'overflow:hidden',
+            'opacity:0',
+            'pointer-events:none',
+            'z-index:-1',
+            'border:0',
+            'margin:0',
+            'padding:0',
+            'contain:strict',
+        ].join(';');
+
         const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'position: fixed; top: 0; left: 200vw; width: 794px; border: none; z-index: -9999; pointer-events: none;';
-        document.body.appendChild(iframe);
+        iframe.setAttribute('tabindex', '-1');
+        iframe.setAttribute('aria-hidden', 'true');
+        // Keep the iframe element small in the parent tree; content can still layout inside.
+        iframe.style.cssText = `width:${A4_WIDTH_PX}px;height:${A4_HEIGHT_PX}px;border:0;display:block;position:absolute;left:0;top:0;`;
+        host.appendChild(iframe);
+        document.body.appendChild(host);
+
+        const cleanup = () => {
+            host.remove();
+        };
 
         iframe.onload = async () => {
             try {
                 const doc = iframe.contentDocument;
                 const win = iframe.contentWindow;
 
-                // -- Step 1: let browser render at natural height ---------
-                doc.documentElement.style.cssText = 'margin:0; padding:0;';
-                doc.body.style.cssText = 'margin:0; padding:0; background:#fff;';
-                iframe.style.height = '30000px'; // tall enough for any CV
+                doc.documentElement.style.cssText = 'margin:0;padding:0;';
+                doc.body.style.cssText = 'margin:0;padding:0;background:#fff;';
 
-                // Wait for images
                 const images = Array.from(doc.images);
                 if (images.length > 0) {
                     await Promise.race([
-                        Promise.all(images.map(img =>
+                        Promise.all(images.map((img) => (
                             img.complete
                                 ? Promise.resolve()
-                                : new Promise(r => { img.onload = r; img.onerror = r; })
-                        )),
-                        new Promise(r => setTimeout(r, 5000)),
+                                : new Promise((r) => { img.onload = r; img.onerror = r; })
+                        ))),
+                        new Promise((r) => setTimeout(r, 5000)),
                     ]);
                 }
 
-                // Let CSS settle
-                await new Promise(r => setTimeout(r, 400));
+                // Allow in-document page-pad script + CSS to settle.
+                await new Promise((r) => setTimeout(r, 450));
 
-                // -- Step 2: measure natural content height ---------------
-                const naturalHeight = doc.body.scrollHeight;
-
-                // -- Step 3: compute target height = next A4 boundary -----
+                const naturalHeight = Math.max(
+                    doc.body.scrollHeight,
+                    doc.documentElement.scrollHeight,
+                );
                 const pages = Math.max(1, Math.ceil(naturalHeight / A4_HEIGHT_PX));
                 const targetHeight = pages * A4_HEIGHT_PX;
 
-                // -- Step 4: stretch everything to targetHeight -----------
-                // This forces the table (and its td.sidebar) to fill the page.
                 const cssOverride = doc.createElement('style');
                 cssOverride.textContent = `
                     html, body {
+                        width: ${A4_WIDTH_PX}px !important;
                         height: ${targetHeight}px !important;
                         min-height: ${targetHeight}px !important;
                         margin: 0 !important;
                         padding: 0 !important;
+                        background: #fff !important;
                     }
                     .cv-document,
                     table.cv-columns,
@@ -86,50 +105,72 @@ export async function downloadCvPdf(html, filename) {
                 `;
                 doc.head.appendChild(cssOverride);
 
-                // Let the reflow happen
-                await new Promise(r => setTimeout(r, 200));
-
-                // -- Step 5: set iframe to exact target height ------------
+                // Grow iframe viewport to full CV height for a faithful capture,
+                // still clipped by the 0×0 host (never expands parent scroll).
                 iframe.style.height = `${targetHeight}px`;
+                await new Promise((r) => setTimeout(r, 200));
 
-                // Final settle
-                await new Promise(r => setTimeout(r, 200));
+                const canvas = await html2canvas(doc.documentElement, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    windowWidth: A4_WIDTH_PX,
+                    windowHeight: targetHeight,
+                    width: A4_WIDTH_PX,
+                    height: targetHeight,
+                    scrollX: 0,
+                    scrollY: 0,
+                    x: 0,
+                    y: 0,
+                });
 
-                // -- Step 6: capture with html2canvas via html2pdf --------
-                await html2pdf()
-                    .set({
-                        margin: 0,
-                        filename: filename,
-                        image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: {
-                            scale: 2,
-                            useCORS: true,
-                            window: win,
-                            scrollX: 0,
-                            scrollY: 0,
-                        },
-                        jsPDF: {
-                            unit: 'mm',
-                            format: 'a4',
-                            orientation: 'portrait',
-                        },
-                        pagebreak: { mode: ['css', 'legacy'] },
-                    })
-                    .from(doc.documentElement)
-                    .save();
+                const pdf = new jsPDF({
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait',
+                    compress: true,
+                });
 
+                const pageWidthMm = pdf.internal.pageSize.getWidth();
+                const pageHeightMm = pdf.internal.pageSize.getHeight();
+                const imgWidthMm = pageWidthMm;
+                const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+                let heightLeft = imgHeightMm;
+                let position = 0;
+
+                pdf.addImage(imgData, 'JPEG', 0, position, imgWidthMm, imgHeightMm, undefined, 'FAST');
+                heightLeft -= pageHeightMm;
+
+                while (heightLeft > 0.5) {
+                    position = heightLeft - imgHeightMm;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, imgWidthMm, imgHeightMm, undefined, 'FAST');
+                    heightLeft -= pageHeightMm;
+                }
+
+                pdf.save(filename);
                 resolve({ ok: true });
             } catch (error) {
                 console.error('[cv-pdf-export]', error);
                 resolve({ ok: false, reason: 'render_failed' });
             } finally {
-                document.body.removeChild(iframe);
+                cleanup();
             }
         };
 
-        const doc = iframe.contentDocument;
-        doc.open();
-        doc.write(html);
-        doc.close();
+        try {
+            const doc = iframe.contentDocument;
+            doc.open();
+            doc.write(html);
+            doc.close();
+        } catch (error) {
+            console.error('[cv-pdf-export]', error);
+            cleanup();
+            resolve({ ok: false, reason: 'render_failed' });
+        }
     });
 }
