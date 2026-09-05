@@ -418,7 +418,10 @@ class CompanyJobController extends Controller
     private function presentJobCard(JobPosting $job, CompanyProfile $viewerOrg): array
     {
         $ownsJob = $job->company_profile_id === $viewerOrg->id;
-        $companyName = $job->companyProfile?->displayName() ?? '';
+        $companyName = $job->advertiserName();
+        if ($companyName === '—') {
+            $companyName = '';
+        }
 
         $summaryParts = array_filter([
             (! $ownsJob && $companyName !== '') ? $companyName : null,

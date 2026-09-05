@@ -276,6 +276,7 @@ class JobPostingService
     public function purgeCompletely(JobPosting $job): void
     {
         $jobId = (int) $job->id;
+        $logoPath = $job->external_company_logo_path;
 
         JobApplication::query()
             ->where('job_posting_id', $jobId)
@@ -286,5 +287,7 @@ class JobPostingService
             ->delete();
 
         $job->delete();
+
+        \App\Support\JobExternalLogoStorage::delete($logoPath);
     }
 }

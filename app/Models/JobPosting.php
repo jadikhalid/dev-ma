@@ -22,6 +22,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'remote_ok',
     'work_modes',
     'status',
+    'application_mode',
+    'external_company_name',
+    'external_company_logo_path',
+    'external_apply_url',
     'published_at',
     'closed_at',
     'company_seen_at',
@@ -47,6 +51,15 @@ class JobPosting extends Model
         self::STATUS_CLOSED,
         self::STATUS_HIDDEN,
         self::STATUS_POSTPONED,
+    ];
+
+    public const APPLICATION_INTERNAL = 'internal';
+
+    public const APPLICATION_EXTERNAL = 'external';
+
+    public const APPLICATION_MODES = [
+        self::APPLICATION_INTERNAL,
+        self::APPLICATION_EXTERNAL,
     ];
 
     public const CONTRACT_TYPES = [
@@ -139,6 +152,53 @@ class JobPosting extends Model
     public function isPostponed(): bool
     {
         return $this->status === self::STATUS_POSTPONED;
+    }
+
+    public function isExternalApplication(): bool
+    {
+        return $this->application_mode === self::APPLICATION_EXTERNAL;
+    }
+
+    public function advertiserName(): string
+    {
+        if ($this->isExternalApplication()) {
+            $name = trim((string) ($this->external_company_name ?? ''));
+
+            return $name !== '' ? $name : '—';
+        }
+
+        $this->loadMissing('companyProfile.user');
+
+        return $this->companyProfile?->displayName() ?: '—';
+    }
+
+    public function advertiserLogoUrl(): ?string
+    {
+        if ($this->isExternalApplication()) {
+            return \App\Support\JobExternalLogoStorage::url($this->external_company_logo_path);
+        }
+
+        $this->loadMissing('companyProfile.user');
+
+        return $this->companyProfile?->logoUrl();
+    }
+
+    public function advertiserInitials(): string
+    {
+        $name = $this->advertiserName();
+
+        if ($name === '' || $name === '—') {
+            return '—';
+        }
+
+        $parts = preg_split('/\s+/u', $name) ?: [];
+        $initials = '';
+
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $initials .= mb_strtoupper(mb_substr($part, 0, 1));
+        }
+
+        return $initials !== '' ? $initials : mb_strtoupper(mb_substr($name, 0, 2));
     }
 
     public function locationLabel(): string
@@ -436,6 +496,18 @@ class JobPosting extends Model
     public function creatorAttribution(): array
     {
         $this->loadMissing(['creator', 'companyProfile.user']);
+
+        if ($this->isExternalApplication()) {
+            $creator = $this->creator;
+
+            return [
+                'company' => $this->advertiserName(),
+                'person' => $creator?->formalDisplayName(),
+                'role' => $creator?->isStaff()
+                    ? __('talenma.jobs.external_staff_role')
+                    : null,
+            ];
+        }
 
         $company = trim((string) ($this->companyProfile?->displayName() ?? ''));
         if ($company === '') {

@@ -12,7 +12,15 @@
         <div>
             <h2 class="text-xl font-bold text-gray-900">{{ $job->title }}</h2>
             <p class="mt-1 text-sm text-gray-500">
-                {{ $job->companyProfile?->displayName() }}
+                <span class="inline-flex items-center gap-2">
+                    @if ($job->advertiserLogoUrl())
+                        <img src="{{ $job->advertiserLogoUrl() }}" alt="" class="h-6 w-6 rounded object-cover ring-1 ring-slate-200">
+                    @endif
+                    <span>{{ $job->advertiserName() }}</span>
+                </span>
+                @if ($job->isExternalApplication())
+                    <span class="inline-flex ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-800 align-middle">{{ __('talenma.jobs.external_badge') }}</span>
+                @endif
                 @if ($job->professionSummary() !== '')
                     · {{ $job->professionSummary() }}
                 @endif
@@ -123,6 +131,25 @@
                                 @endforeach
                             </ol>
                         @endif
+                    </div>
+                @elseif ($job->isPublished() && $job->isExternalApplication())
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('talenma.jobs.apply_external_title') }}</h3>
+                            <p class="mt-0.5 text-xs text-slate-500">{{ __('talenma.jobs.apply_external_hint') }}</p>
+                        </div>
+                        <a
+                            href="{{ $job->external_apply_url }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
+                        >
+                            {{ __('talenma.jobs.apply_external_cta') }}
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                            </svg>
+                        </a>
+                        <p class="text-xs text-slate-500">{{ __('talenma.jobs.apply_external_disclaimer', ['company' => $job->advertiserName()]) }}</p>
                     </div>
                 @elseif ($job->isPublished())
                     <div id="talent-job-apply-card" class="relative space-y-4">

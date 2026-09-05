@@ -170,6 +170,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::middleware('moderator.permission:jobs.manage')->group(function () {
             Route::get('/jobs', [AdminJobPostingController::class, 'index'])->name('jobs.index');
+            Route::get('/jobs/create', [AdminJobPostingController::class, 'create'])->name('jobs.create');
+            Route::post('/jobs', [AdminJobPostingController::class, 'store'])->name('jobs.store');
             Route::get('/jobs/{job}', [AdminJobPostingController::class, 'show'])->name('jobs.show');
             Route::get('/jobs/{job}/edit', [AdminJobPostingController::class, 'edit'])->name('jobs.edit');
             Route::put('/jobs/{job}', [AdminJobPostingController::class, 'update'])->name('jobs.update');

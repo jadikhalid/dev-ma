@@ -178,7 +178,14 @@
                                             x-text="job.location"
                                         ></span>
                                     </div>
-                                    <p class="truncate text-xs text-slate-600" x-text="job.company"></p>
+                                    <p class="truncate text-xs text-slate-600">
+                                        <span x-text="job.company"></span>
+                                        <span
+                                            x-show="job.external"
+                                            class="ml-1 inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-800"
+                                            x-text="job.external_badge"
+                                        ></span>
+                                    </p>
                                     <p class="truncate text-xs font-medium text-indigo-700" x-show="job.summary" x-text="job.summary"></p>
                                 </div>
                             </a>

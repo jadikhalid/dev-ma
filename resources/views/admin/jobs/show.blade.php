@@ -21,6 +21,32 @@
                     'backUrl' => route('admin.jobs.index'),
                     'backLinkClass' => 'text-indigo-700 hover:text-indigo-900',
                 ])
+                @php $publicShareUrl = route('jobs.gate', $job); @endphp
+                <div
+                    class="mt-3 flex flex-col gap-1.5"
+                    x-data="{ copied: false }"
+                >
+                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        {{ __('talenma.jobs.public_share_url_label') }}
+                    </span>
+                    <div class="min-w-0 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5">
+                        <a
+                            href="{{ $publicShareUrl }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="min-w-0 truncate text-xs font-medium text-indigo-700 hover:text-indigo-900"
+                            title="{{ $publicShareUrl }}"
+                        >{{ $publicShareUrl }}</a>
+                        <button
+                            type="button"
+                            class="shrink-0 inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+                            @click="navigator.clipboard.writeText(@js($publicShareUrl)).then(() => { copied = true; setTimeout(() => copied = false, 1600) })"
+                        >
+                            <span x-show="!copied">{{ __('talenma.jobs.public_share_url_copy') }}</span>
+                            <span x-cloak x-show="copied">{{ __('talenma.jobs.public_share_url_copied') }}</span>
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="flex flex-wrap gap-2 sm:w-1/2 sm:justify-end">
                 @if ($job->isClosed())
@@ -243,6 +269,18 @@
         <section class="rounded-2xl border bg-white p-6 sm:p-8 space-y-4">
             <h3 class="text-lg font-semibold text-gray-900">{{ __('talenma.jobs.applications') }}</h3>
 
+            @if ($job->isExternalApplication())
+                <div class="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 space-y-1">
+                    <p>{{ __('talenma.jobs.external_applications_notice') }}</p>
+                    @if (filled($job->external_apply_url))
+                        <p>
+                            <a href="{{ $job->external_apply_url }}" target="_blank" rel="noopener noreferrer" class="font-semibold underline underline-offset-2 break-all">
+                                {{ $job->external_apply_url }}
+                            </a>
+                        </p>
+                    @endif
+                </div>
+            @else
             @forelse ($job->applications as $application)
                 @php
                     $talent = $application->talent;
@@ -350,6 +388,7 @@
             @empty
                 <p class="text-sm text-gray-500">{{ __('talenma.jobs.applications_empty') }}</p>
             @endforelse
+            @endif
         </section>
 
         <a href="{{ route('admin.jobs.index') }}" class="inline-flex text-sm font-medium text-indigo-700 hover:text-indigo-900">← {{ __('talenma.jobs.back') }}</a>

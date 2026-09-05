@@ -7,9 +7,11 @@ use App\Models\CompanyProfile;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\JobPostingActivityEvent;
+use App\Models\ProfessionSector;
 use App\Models\Profile;
 use App\Services\JobPostingService;
 use App\Services\ProfessionCatalogService;
+use App\Support\JobExternalLogoStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +41,7 @@ class JobPostingController extends Controller
                 $query->where(function ($inner) use ($q): void {
                     $inner->where('title', 'like', '%'.$q.'%')
                         ->orWhere('description', 'like', '%'.$q.'%')
+                        ->orWhere('external_company_name', 'like', '%'.$q.'%')
                         ->orWhereHas('companyProfile', function ($company) use ($q): void {
                             $company->where('representative_name', 'like', '%'.$q.'%')
                                 ->orWhereHas('user', fn ($user) => $user->where('name', 'like', '%'.$q.'%')
@@ -66,6 +69,46 @@ class JobPostingController extends Controller
         return view('admin.jobs.show', compact('job'));
     }
 
+    public function create(): View
+    {
+        return view('admin.jobs.external-form', [
+            'job' => new JobPosting([
+                'application_mode' => JobPosting::APPLICATION_EXTERNAL,
+            ]),
+            'professionSectors' => $this->professions->sectorsForLocale(),
+            'sectorSlug' => old('sector', ''),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $this->validatedExternal($request);
+        $data['application_mode'] = JobPosting::APPLICATION_EXTERNAL;
+        $data['company_profile_id'] = null;
+        $data['created_by'] = $request->user()->id;
+        $data['status'] = JobPosting::STATUS_DRAFT;
+        $data['staff_seen_at'] = now();
+        $data['profession_id'] = null;
+        $data['experience_level'] = null;
+        $data['contract_type'] = null;
+        $data['location_country'] = null;
+        $data['location_city'] = null;
+        $data['work_modes'] = null;
+        $data['remote_ok'] = false;
+
+        if ($request->hasFile('external_company_logo')) {
+            $data['external_company_logo_path'] = JobExternalLogoStorage::storeUpload(
+                $request->file('external_company_logo')
+            );
+        }
+
+        $job = JobPosting::query()->create($data);
+
+        return redirect()
+            ->route('admin.jobs.show', $job)
+            ->with('toast_success', __('talenma.jobs.created'));
+    }
+
     public function edit(JobPosting $job): View|RedirectResponse
     {
         if ($job->isClosed()) {
@@ -75,6 +118,14 @@ class JobPostingController extends Controller
         }
 
         $slugs = $this->professions->slugsFromProfile($job->profession_sector_id, $job->profession_id);
+
+        if ($job->isExternalApplication()) {
+            return view('admin.jobs.external-form', [
+                'job' => $job,
+                'professionSectors' => $this->professions->sectorsForLocale(),
+                'sectorSlug' => old('sector', $slugs['sector']),
+            ]);
+        }
 
         return view('admin.jobs.form', [
             'job' => $job,
@@ -93,6 +144,30 @@ class JobPostingController extends Controller
             return $response;
         }
 
+        if ($job->isExternalApplication()) {
+            $data = $this->validatedExternal($request);
+            $previousLogo = $job->external_company_logo_path;
+
+            if ($request->boolean('remove_external_company_logo') && ! $request->hasFile('external_company_logo')) {
+                $data['external_company_logo_path'] = null;
+                JobExternalLogoStorage::delete($previousLogo);
+            }
+
+            if ($request->hasFile('external_company_logo')) {
+                $data['external_company_logo_path'] = JobExternalLogoStorage::storeUpload(
+                    $request->file('external_company_logo')
+                );
+                JobExternalLogoStorage::delete($previousLogo);
+            }
+
+            $job->update($data);
+            $this->jobs->flagUnseenForCompanyFromStaff($job);
+
+            return redirect()
+                ->route('admin.jobs.show', $job)
+                ->with('toast_success', __('talenma.jobs.updated'));
+        }
+
         $job->update($this->validated($request));
         $this->jobs->flagUnseenForCompanyFromStaff($job);
 
@@ -105,6 +180,18 @@ class JobPostingController extends Controller
     {
         if ($response = $this->rejectIfClosed($request, $job)) {
             return $response;
+        }
+
+        if ($job->isExternalApplication()) {
+            if (! filled($job->external_company_name) || ! filled($job->external_apply_url)) {
+                $message = __('talenma.jobs.external_publish_incomplete');
+
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => $message], 422);
+                }
+
+                return back()->with('toast_error', $message);
+            }
         }
 
         $job->update([
@@ -261,6 +348,40 @@ class JobPostingController extends Controller
         $data['profession_id'] = $resolved['profession_id'];
         $data['work_modes'] = array_values(array_unique($data['work_modes']));
         $data['remote_ok'] = in_array('remote', $data['work_modes'], true);
+
+        return $data;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatedExternal(Request $request): array
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'min:50', 'max:10000'],
+            'sector' => ['required', 'string', 'max:100'],
+            'external_company_name' => ['required', 'string', 'max:255'],
+            'external_apply_url' => ['required', 'url', 'max:2048'],
+            'external_company_logo' => ['nullable', 'image', 'max:2048'],
+            'remove_external_company_logo' => ['nullable', 'boolean'],
+        ]);
+
+        $sector = ProfessionSector::query()
+            ->where('slug', $data['sector'])
+            ->where('is_active', true)
+            ->first();
+
+        if (! $sector) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'sector' => [__('talenma.talent.sector_invalid')],
+            ]);
+        }
+
+        unset($data['sector'], $data['external_company_logo'], $data['remove_external_company_logo']);
+
+        $data['profession_sector_id'] = $sector->id;
+        $data['profession_id'] = null;
 
         return $data;
     }

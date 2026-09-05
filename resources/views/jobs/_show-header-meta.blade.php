@@ -7,7 +7,7 @@
     $backUrl = $backUrl ?? null;
     $backLinkClass = $backLinkClass ?? 'text-emerald-700 hover:text-emerald-900';
     $metaParts = array_values(array_filter([
-        $showCompanyInMeta ? ($job->companyProfile?->displayName() ?: null) : null,
+        $showCompanyInMeta ? ($job->advertiserName() !== '—' ? $job->advertiserName() : null) : null,
         $job->professionSummary() !== '' ? $job->professionSummary() : null,
         $job->locationLabel() !== '' ? $job->locationLabel() : null,
         $job->workModesSummary() !== '' ? $job->workModesSummary() : null,
@@ -20,6 +20,9 @@
 
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
             <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold {{ $statusBadge }}">{{ $job->statusLabel() }}</span>
+            @if ($job->isExternalApplication())
+                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800">{{ __('talenma.jobs.external_badge') }}</span>
+            @endif
             @foreach ($metaParts as $part)
                 <span class="text-slate-300" aria-hidden="true">·</span>
                 <span class="text-sm text-gray-500">{{ $part }}</span>

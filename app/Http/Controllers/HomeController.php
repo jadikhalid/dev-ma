@@ -89,17 +89,16 @@ class HomeController extends Controller
             ->orderByDesc('published_at')
             ->orderByDesc('id')
             ->limit(10)
-            ->get(['id', 'title', 'description', 'company_profile_id', 'profession_sector_id', 'published_at', 'created_at'])
+            ->get()
             ->map(function (JobPosting $job) use ($canBrowseTalentJobs, $canManageCompanyJobs, $viewerCompanyProfileId) {
                 $url = match (true) {
                     $canBrowseTalentJobs => route('talent.jobs.show', $job),
-                    $canManageCompanyJobs && $viewerCompanyProfileId === (int) $job->company_profile_id
+                    $canManageCompanyJobs && $viewerCompanyProfileId !== null && $viewerCompanyProfileId === (int) $job->company_profile_id
                         => route('company.jobs.show', $job),
                     $canManageCompanyJobs => route('company.jobs.index'),
                     default => route('jobs.gate', $job),
                 };
 
-                $profile = $job->companyProfile;
                 $publishedAt = $job->published_at ?? $job->created_at;
 
                 return [
@@ -108,9 +107,9 @@ class HomeController extends Controller
                         ->squish()
                         ->limit(110)
                         ->toString(),
-                    'company' => $profile?->displayName() ?: '—',
-                    'company_initials' => $profile?->initials() ?: '—',
-                    'logo_url' => $profile?->logoUrl(),
+                    'company' => $job->advertiserName(),
+                    'company_initials' => $job->advertiserInitials(),
+                    'logo_url' => $job->advertiserLogoUrl(),
                     'sector' => $job->professionSector?->localizedName() ?: null,
                     'date' => $publishedAt?->translatedFormat('d M Y') ?? '',
                     'url' => $url,

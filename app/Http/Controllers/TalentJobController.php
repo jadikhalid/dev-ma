@@ -169,6 +169,16 @@ class TalentJobController extends Controller
         abort_unless($user->isTalent() && $user->isApproved(), 403);
         abort_unless($job->isPublished() && ! $job->isClosed(), 404);
 
+        if ($job->isExternalApplication()) {
+            $message = __('talenma.jobs.external_apply_blocked');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return back()->with('toast_error', $message);
+        }
+
         $data = $request->validate([
             'cover_message' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -242,7 +252,9 @@ class TalentJobController extends Controller
             'id' => $job->id,
             'title' => $job->title,
             'url' => route('talent.jobs.show', $job),
-            'company' => $job->companyProfile?->displayName() ?? '—',
+            'company' => $job->advertiserName(),
+            'external' => $job->isExternalApplication(),
+            'external_badge' => __('talenma.jobs.external_badge'),
             'summary' => implode(' · ', $summaryParts),
             'location' => $job->locationLabel() !== '' ? $job->locationLabel() : '—',
             'applied' => $application !== null,
@@ -264,7 +276,7 @@ class TalentJobController extends Controller
 
         $application->loadMissing('talent');
 
-        $companyName = $job->companyProfile?->displayName();
+        $companyName = $job->advertiserName();
         $talentName = $application->talent?->name;
         $history = collect();
 
