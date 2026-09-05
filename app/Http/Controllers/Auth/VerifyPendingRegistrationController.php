@@ -33,8 +33,12 @@ class VerifyPendingRegistrationController extends Controller
 
     private function redirectAfterRegistration(User $user): RedirectResponse
     {
+        $toastKey = $user->isApproved()
+            ? 'talenma.auth.registration_verified_approved'
+            : 'talenma.auth.registration_verified_success';
+
         return redirect()
             ->route($user->homeRouteName())
-            ->with('toast_success', __('talenma.auth.registration_verified_success'));
+            ->with('toast_success', __($toastKey));
     }
 }

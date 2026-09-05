@@ -19,6 +19,15 @@
             </div>
 
             <div class="flex items-center gap-2.5 sm:gap-3">
+                <a
+                    href="{{ route('blog.index') }}"
+                    class="mr-1 sm:mr-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50"
+                >
+                    <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5"/>
+                    </svg>
+                    <span>{{ __('talenma.nav.blog') }}</span>
+                </a>
                 <div class="hidden lg:block">
                     <x-locale-switcher />
                 </div>
@@ -27,6 +36,9 @@
                     <span class="hidden sm:inline-flex text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap {{ $authUser->roleBadgeClasses() }}">
                         {{ $authUser->roleLabel() }}
                     </span>
+                    @if ($authUser->canAccessWorkspaceApps())
+                        <x-talent-apps-launcher />
+                    @endif
                     @if ($authUser->isTalent())
                         <x-dropdown align="right" width="48" :open-on-hover="true">
                             <x-slot name="trigger">
@@ -105,6 +117,7 @@
                         </x-dropdown>
                     @endif
                 @else
+                    <x-talent-apps-launcher :guest="true" />
                     <a
                         href="{{ route('login') }}"
                         class="inline-flex items-center px-4 py-2.5 sm:px-4 sm:py-2 text-base sm:text-sm font-semibold rounded-xl sm:rounded-lg transition-all duration-300 ease-in-out text-white/95 border border-white/30 bg-white/15 hover:bg-white/25 sm:text-indigo-600 sm:border-indigo-200/80 sm:bg-indigo-50/60 sm:hover:bg-indigo-100 sm:hover:border-indigo-300 sm:hover:text-indigo-700 sm:hover:shadow-sm"

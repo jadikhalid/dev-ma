@@ -16,7 +16,7 @@ class TalentCvBuilderController extends Controller
     public function show(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user->isTalent(), 403);
+        abort_unless($user->canAccessWorkspaceApps(), 403);
 
         $draft = $this->builder->draftForUser($user);
 
@@ -30,7 +30,7 @@ class TalentCvBuilderController extends Controller
     public function update(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user->isTalent(), 403);
+        abort_unless($user->canAccessWorkspaceApps(), 403);
 
         $draft = $this->builder->draftForUser($user);
         $draft = $this->builder->updateDraft($draft, $this->validatedBuilderPayload($request));
@@ -44,7 +44,7 @@ class TalentCvBuilderController extends Controller
     public function preview(Request $request): Response|View
     {
         $user = $request->user();
-        abort_unless($user->isTalent(), 403);
+        abort_unless($user->canAccessWorkspaceApps(), 403);
 
         $draft = $this->builder->draftForUser($user);
 
@@ -73,7 +73,7 @@ class TalentCvBuilderController extends Controller
     public function export(Request $request): Response
     {
         $user = $request->user();
-        abort_unless($user->isTalent(), 403);
+        abort_unless($user->canAccessWorkspaceApps(), 403);
 
         $draft = $this->builder->draftForUser($user);
 

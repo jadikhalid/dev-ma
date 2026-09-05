@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DirectHireRequest;
+use App\Models\PlatformSetting;
 use App\Models\RecruitmentRequest;
 use App\Services\AdminDashboardService;
 use App\Services\CompanyDashboardActivityService;
@@ -72,6 +73,8 @@ class DashboardController extends Controller
                     : false,
                 'canViewSourcing' => $user->hasModeratorPermission(\App\Models\ModeratorPermissionCatalog::SOURCING_MANAGE),
                 'canViewDirectHire' => $user->hasModeratorPermission(\App\Models\ModeratorPermissionCatalog::DIRECT_HIRE_MANAGE),
+                'canManagePlatformSettings' => $user->isAdmin(),
+                'requireTalentAdminValidation' => PlatformSetting::requiresTalentAdminValidation(),
             ]);
         }
 

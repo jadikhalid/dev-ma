@@ -248,12 +248,21 @@ class TalentCvBuilderTest extends TestCase
             ->assertHeader('content-type', 'application/pdf');
     }
 
-    public function test_company_cannot_access_cv_builder(): void
+    public function test_company_owner_can_access_cv_builder(): void
     {
         $company = User::factory()->companyOwner()->create();
 
         $this->actingAs($company)
             ->get(route('talent.cv-builder.index'))
-            ->assertForbidden();
+            ->assertOk();
+    }
+
+    public function test_company_member_can_access_cv_builder(): void
+    {
+        $member = User::factory()->companyMember()->create();
+
+        $this->actingAs($member)
+            ->get(route('talent.cv-builder.index'))
+            ->assertOk();
     }
 }

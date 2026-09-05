@@ -5,18 +5,17 @@ namespace App\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-class CvBuilderGateController extends Controller
+class AtsScoreGateController extends Controller
 {
     /**
-     * Guests reach this from the homepage announcement / apps launcher;
-     * auth middleware stores the intended URL for post-login return.
+     * Guests reach this from the public apps launcher; auth middleware stores the intended URL for post-login return.
      */
     public function __invoke(Request $request): RedirectResponse
     {
         $user = $request->user();
 
         if ($user->canAccessWorkspaceApps()) {
-            return redirect()->route('talent.cv-builder.index');
+            return redirect()->route('talent.ats-score.index');
         }
 
         return redirect()->route($user->homeRouteName());

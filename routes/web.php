@@ -1,14 +1,18 @@
 <?php
 
 use App\Http\Controllers\AccountStatusController;
+use App\Http\Controllers\Admin\BlogPostController;
 use App\Http\Controllers\Admin\CompanyProfileDocumentController;
 use App\Http\Controllers\Admin\DirectHireController as AdminDirectHireController;
 use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
 use App\Http\Controllers\Admin\ManagedProfileController;
 use App\Http\Controllers\Admin\ProfileDocumentController;
+use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\RecruitmentRequestController as AdminRecruitmentRequestController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\AtsScoreGateController;
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\Company\DirectHireController as CompanyDirectHireController;
 use App\Http\Controllers\CompanyAccompanimentController;
 use App\Http\Controllers\CompanyCatalogSearchController;
@@ -32,6 +36,7 @@ use App\Http\Controllers\RecruitmentRequestController;
 use App\Http\Controllers\SkillSuggestionController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\Talent\DirectHireController as TalentDirectHireController;
+use App\Http\Controllers\TalentAtsScoreController;
 use App\Http\Controllers\TalentCvBuilderController;
 use App\Http\Controllers\TalentJobController;
 use App\Http\Controllers\TalentProfileDocumentController;
@@ -45,6 +50,10 @@ Route::get('/locale/suggest-from-ip', [LocaleController::class, 'suggest'])
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])
+    ->where('slug', '[A-Za-z0-9\-]+')
+    ->name('blog.show');
 Route::get('/outils/apercu-cv/{template}', [MarketingCvPreviewController::class, 'show'])
     ->whereIn('template', ['classic', 'modern', 'executive', 'simple', 'vibrant'])
     ->name('marketing.cv-preview');
@@ -56,6 +65,9 @@ Route::get('/annonces/acces/{job?}', JobAccessGateController::class)
 Route::get('/cv-builder/acces', CvBuilderGateController::class)
     ->middleware('auth')
     ->name('cv-builder.gate');
+Route::get('/ats-score/acces', AtsScoreGateController::class)
+    ->middleware('auth')
+    ->name('ats-score.gate');
 Route::get('/profile/email/confirm/{token}', [ProfileController::class, 'confirmPendingEmail'])
     ->middleware('throttle:20,1')
     ->name('profile.email.confirm');
@@ -110,6 +122,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/users/{user}/moderator', [UserManagementController::class, 'grantModerator'])->name('users.moderator.grant');
             Route::put('/users/{user}/moderator/permissions', [UserManagementController::class, 'updateModeratorPermissions'])->name('users.moderator.permissions');
             Route::delete('/users/{user}/moderator', [UserManagementController::class, 'revokeModerator'])->name('users.moderator.revoke');
+            Route::put('/settings/talent-validation', [PlatformSettingController::class, 'updateTalentValidation'])
+                ->name('settings.talent-validation');
         });
 
         Route::post('/users/{user}/approve', [UserManagementController::class, 'approve'])
@@ -175,6 +189,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/publications/social-posts/{socialPost}', [PublicationsController::class, 'updateSocialPost'])->name('publications.social-posts.update');
             Route::delete('/publications/social-posts/{socialPost}', [PublicationsController::class, 'destroySocialPost'])->name('publications.social-posts.destroy');
 
+            Route::get('/blog', [BlogPostController::class, 'index'])->name('blog.index');
+            Route::get('/blog/create', [BlogPostController::class, 'create'])->name('blog.create');
+            Route::post('/blog', [BlogPostController::class, 'store'])->name('blog.store');
+            Route::get('/blog/{blogPost}/edit', [BlogPostController::class, 'edit'])->name('blog.edit');
+            Route::put('/blog/{blogPost}', [BlogPostController::class, 'update'])->name('blog.update');
+            Route::delete('/blog/{blogPost}', [BlogPostController::class, 'destroy'])->name('blog.destroy');
+
             Route::redirect('/magazine-banner', '/admin/publications');
             Route::redirect('/news', '/admin/publications');
             Route::redirect('/social-posts', '/admin/publications');
@@ -199,14 +220,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/talent/direct-hire/{directHire}', [TalentDirectHireController::class, 'show'])->name('talent.direct-hire.show');
         Route::post('/talent/direct-hire/{directHire}/decide', [TalentDirectHireController::class, 'decide'])->name('talent.direct-hire.decide');
         Route::post('/talent/direct-hire/{directHire}/messages', [TalentDirectHireController::class, 'storeMessage'])->name('talent.direct-hire.messages.store');
+    });
 
+    Route::middleware('account.approved')->group(function () {
         Route::get('/talent/cv-builder', [TalentCvBuilderController::class, 'show'])->name('talent.cv-builder.index');
         Route::put('/talent/cv-builder', [TalentCvBuilderController::class, 'update'])->name('talent.cv-builder.update');
         Route::match(['get', 'post'], '/talent/cv-builder/preview', [TalentCvBuilderController::class, 'preview'])->name('talent.cv-builder.preview');
         Route::match(['get', 'post'], '/talent/cv-builder/export', [TalentCvBuilderController::class, 'export'])->name('talent.cv-builder.export');
-    });
 
-    Route::middleware('account.approved')->group(function () {
+        Route::get('/talent/ats-score', [TalentAtsScoreController::class, 'show'])->name('talent.ats-score.index');
+        Route::post('/talent/ats-score', [TalentAtsScoreController::class, 'analyze'])->name('talent.ats-score.analyze');
+        Route::post('/talent/ats-score/optimize', [TalentAtsScoreController::class, 'optimize'])->name('talent.ats-score.optimize');
+        Route::get('/talent/ats-score/optimized.txt', [TalentAtsScoreController::class, 'downloadOptimized'])->name('talent.ats-score.download');
+
         Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
         Route::post('/inbox/conversations', [InboxController::class, 'store'])->name('inbox.store');
         Route::get('/inbox/talent-suggestions', [InboxController::class, 'searchTalents'])

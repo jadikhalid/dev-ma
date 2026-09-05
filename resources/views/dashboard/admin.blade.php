@@ -24,6 +24,41 @@
             </div>
         </div>
 
+        @if ($canManagePlatformSettings ?? false)
+            <section class="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50/90 via-white to-slate-50 p-4 sm:p-5">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold tracking-tight text-slate-900">{{ __('talenma.dashboard.admin.talent_validation_title') }}</p>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('talenma.dashboard.admin.talent_validation_help') }}</p>
+                        @if (session('status'))
+                            <p class="mt-2 text-xs font-medium text-emerald-700">{{ session('status') }}</p>
+                        @endif
+                    </div>
+                    <form method="POST" action="{{ route('admin.settings.talent-validation') }}" class="shrink-0">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="require_talent_admin_validation" value="{{ ($requireTalentAdminValidation ?? true) ? '0' : '1' }}">
+                        <button
+                            type="submit"
+                            role="switch"
+                            aria-checked="{{ ($requireTalentAdminValidation ?? true) ? 'true' : 'false' }}"
+                            class="group inline-flex items-center gap-3 rounded-xl border px-3 py-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 {{ ($requireTalentAdminValidation ?? true) ? 'border-violet-300 bg-white hover:bg-violet-50' : 'border-slate-200 bg-white hover:bg-slate-50' }}"
+                        >
+                            <span class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition {{ ($requireTalentAdminValidation ?? true) ? 'bg-violet-600' : 'bg-slate-300' }}">
+                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition {{ ($requireTalentAdminValidation ?? true) ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                            </span>
+                            <span class="text-left">
+                                <span class="block text-xs font-bold uppercase tracking-wide {{ ($requireTalentAdminValidation ?? true) ? 'text-violet-700' : 'text-slate-500' }}">
+                                    {{ ($requireTalentAdminValidation ?? true) ? __('talenma.dashboard.admin.talent_validation_on') : __('talenma.dashboard.admin.talent_validation_off') }}
+                                </span>
+                                <span class="block text-[11px] text-slate-500">{{ __('talenma.dashboard.admin.talent_validation_toggle_hint') }}</span>
+                            </span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+        @endif
+
         <div class="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_17.5rem] xl:grid-cols-[minmax(0,1fr)_19rem]">
             {{-- Colonne principale — flux opérationnel --}}
             <div class="space-y-6 min-w-0">

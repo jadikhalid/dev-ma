@@ -7,6 +7,7 @@ use App\Jobs\PurgePendingRegistrationJob;
 use App\Mail\VerifyRegistrationMail;
 use App\Models\CompanyProfileDocument;
 use App\Models\PendingRegistration;
+use App\Models\PlatformSetting;
 use App\Models\ProfessionSector;
 use App\Models\ProfileDocument;
 use App\Models\User;
@@ -135,6 +136,8 @@ class PendingRegistrationService
 
         return DB::transaction(function () use ($pending) {
             $payload = $pending->payload;
+            $isTalent = ($payload['role'] ?? null) === 'dev';
+            $autoApproveTalent = $isTalent && ! PlatformSetting::requiresTalentAdminValidation();
 
             $user = User::create([
                 'name' => $payload['name'],
@@ -149,8 +152,8 @@ class PendingRegistrationService
                     ? \Illuminate\Support\Carbon::parse($payload['data_processing_consent_at'])
                     : null,
                 'data_processing_consent_version' => $payload['data_processing_consent_version'] ?? null,
-                'approval_status' => User::APPROVAL_PENDING,
-                'approved_at' => null,
+                'approval_status' => $autoApproveTalent ? User::APPROVAL_APPROVED : User::APPROVAL_PENDING,
+                'approved_at' => $autoApproveTalent ? now() : null,
             ]);
 
             if ($user->role === 'company') {

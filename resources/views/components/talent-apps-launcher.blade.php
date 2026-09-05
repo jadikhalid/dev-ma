@@ -1,8 +1,17 @@
+@props([
+    'guest' => false,
+])
+
+@php
+    $cvUrl = $guest ? route('cv-builder.gate') : route('talent.cv-builder.index');
+    $atsUrl = $guest ? route('ats-score.gate') : route('talent.ats-score.index');
+@endphp
+
 <x-dropdown align="right" width="w-[17rem]" contentClasses="py-3 bg-white">
     <x-slot name="trigger">
         <button
             type="button"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 hover:bg-white/15 hover:text-white sm:text-gray-500 sm:hover:bg-gray-100 sm:hover:text-gray-700 transition"
             aria-label="{{ __('talenma.nav.apps_launcher_open') }}"
         >
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -27,7 +36,7 @@
         </div>
         <div class="grid grid-cols-2 gap-2 px-3 pb-1">
             <a
-                href="{{ route('talent.cv-builder.index') }}"
+                href="{{ $cvUrl }}"
                 class="flex flex-col items-center rounded-xl px-3 py-3 text-center hover:bg-indigo-50 transition group"
             >
                 <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 group-hover:bg-indigo-200 transition">
@@ -37,6 +46,21 @@
                 </span>
                 <span class="mt-2 text-xs font-semibold text-gray-800 leading-tight">
                     {{ __('talenma.nav.apps_launcher_cv_builder') }}
+                </span>
+            </a>
+
+            <a
+                href="{{ $atsUrl }}"
+                class="flex flex-col items-center rounded-xl px-3 py-3 text-center hover:bg-emerald-50 transition group"
+            >
+                <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200 transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z"/>
+                    </svg>
+                </span>
+                <span class="mt-2 text-xs font-semibold text-gray-800 leading-tight">
+                    {{ __('talenma.nav.apps_launcher_ats_score') }}
                 </span>
             </a>
 

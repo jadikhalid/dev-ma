@@ -26,9 +26,6 @@
             <span class="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-amber-200/70"></span>
             <p class="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 <span class="font-bold">{{ __('talenma.home.news_ticker_trends_prefix') }}</span>
-                <svg class="h-3.5 w-3.5 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"/>
-                </svg>
             </p>
             <span class="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-amber-200/70"></span>
         </div>

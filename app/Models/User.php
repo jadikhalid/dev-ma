@@ -172,6 +172,22 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->isCompany() && $this->company_seat === self::SEAT_MEMBER;
     }
 
+    /**
+     * CV builder, ATS Score and future shared workspace apps.
+     */
+    public function canAccessWorkspaceApps(): bool
+    {
+        if (! $this->isApproved()) {
+            return false;
+        }
+
+        if ($this->isCompany()) {
+            return true;
+        }
+
+        return $this->isTalent() && ! $this->isActingAsModerator();
+    }
+
     public function isDisabled(): bool
     {
         return $this->disabled_at !== null;

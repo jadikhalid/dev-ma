@@ -1,6 +1,6 @@
 @php
     $user = auth()->user();
-    $cvAnnouncementCtaUrl = ($user && $user->isTalent())
+    $cvAnnouncementCtaUrl = ($user && $user->canAccessWorkspaceApps())
         ? route('talent.cv-builder.index')
         : route('cv-builder.gate');
     $cvAnnouncementCtaLabel = __('talenma.home.cv_builder_announcement.cta');

@@ -104,6 +104,7 @@
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::PUBLICATIONS_MANAGE))
                             <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
+                            <x-nav-link :href="route('admin.blog.index')" :active="request()->routeIs('admin.blog.*')">{{ __('talenma.nav.admin_blog') }}</x-nav-link>
                         @endif
                         @if ($authUser->canAccessStaffMessaging())
                             <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
@@ -225,7 +226,7 @@
                 <span class="text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap {{ $authUser->roleBadgeClasses() }}">
                     {{ $authUser->roleLabel() }}
                 </span>
-                @if ($authUser->isTalent() && ! $pendingAccount && ! $actingAsModerator)
+                @if ($authUser->canAccessWorkspaceApps())
                     <x-talent-apps-launcher />
                 @endif
                 <x-dropdown align="right" width="48" :open-on-hover="true">
@@ -265,7 +266,7 @@
             </div>
             <div class="flex items-center gap-2 lg:hidden shrink-0">
                 <x-locale-switcher />
-                @if ($authUser->isTalent() && ! $pendingAccount && ! $actingAsModerator)
+                @if ($authUser->canAccessWorkspaceApps())
                     <x-talent-apps-launcher />
                 @endif
                 <button
@@ -368,6 +369,7 @@
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::PUBLICATIONS_MANAGE))
                             <x-responsive-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
+                            <x-responsive-nav-link :href="route('admin.blog.index')" :active="request()->routeIs('admin.blog.*')">{{ __('talenma.nav.admin_blog') }}</x-responsive-nav-link>
                         @endif
                         @if ($authUser->canAccessStaffMessaging())
                             <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
@@ -427,6 +429,15 @@
                                         </svg>
                                     </span>
                                     <span class="mt-2 text-xs font-semibold text-gray-800">{{ __('talenma.nav.apps_launcher_cv_builder') }}</span>
+                                </a>
+                                <a href="{{ route('talent.ats-score.index') }}" class="flex flex-col items-center rounded-xl border border-emerald-100 bg-emerald-50/50 px-3 py-3 text-center">
+                                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z"/>
+                                        </svg>
+                                    </span>
+                                    <span class="mt-2 text-xs font-semibold text-gray-800">{{ __('talenma.nav.apps_launcher_ats_score') }}</span>
                                 </a>
                                 <div class="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-center opacity-60 cursor-not-allowed" aria-disabled="true">
                                     <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
@@ -488,6 +499,38 @@
                                 {{ __('talenma.nav.talents') }}
                             </span>
                         </x-responsive-nav-link>
+                        <div class="px-4 py-2 border-t border-gray-100 mt-2 pt-3">
+                            <p class="px-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                                {{ __('talenma.nav.apps_launcher_title') }}
+                            </p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <a href="{{ route('talent.cv-builder.index') }}" class="flex flex-col items-center rounded-xl border border-indigo-100 bg-indigo-50/50 px-3 py-3 text-center">
+                                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z"/>
+                                        </svg>
+                                    </span>
+                                    <span class="mt-2 text-xs font-semibold text-gray-800">{{ __('talenma.nav.apps_launcher_cv_builder') }}</span>
+                                </a>
+                                <a href="{{ route('talent.ats-score.index') }}" class="flex flex-col items-center rounded-xl border border-emerald-100 bg-emerald-50/50 px-3 py-3 text-center">
+                                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z"/>
+                                        </svg>
+                                    </span>
+                                    <span class="mt-2 text-xs font-semibold text-gray-800">{{ __('talenma.nav.apps_launcher_ats_score') }}</span>
+                                </a>
+                                <div class="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-center opacity-60 cursor-not-allowed" aria-disabled="true">
+                                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/>
+                                        </svg>
+                                    </span>
+                                    <span class="mt-2 text-xs font-semibold text-gray-400">{{ __('talenma.nav.apps_launcher_library') }}</span>
+                                </div>
+                            </div>
+                        </div>
                     @endif
                 </div>
             @endunless
