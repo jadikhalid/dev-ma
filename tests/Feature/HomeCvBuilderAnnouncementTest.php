@@ -10,16 +10,13 @@ class HomeCvBuilderAnnouncementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_homepage_includes_cv_builder_announcement_for_guests(): void
+    public function test_homepage_does_not_include_cv_builder_announcement(): void
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('cvBuilderAnnouncement', false)
-            ->assertSee(__('talenma.home.cv_builder_announcement.logo_alt'))
-            ->assertSee('announcement-agent.png', false)
-            ->assertSee(__('talenma.home.cv_builder_announcement.title'), false)
-            ->assertSee(__('talenma.home.cv_builder_announcement.cta'), false)
-            ->assertSee(route('cv-builder.gate'), false);
+            ->assertDontSee('cvBuilderAnnouncement', false)
+            ->assertDontSee('announcement-agent.png', false)
+            ->assertDontSee('cv-builder-announcement-title', false);
     }
 
     public function test_guest_cv_builder_gate_redirects_to_login_then_cv_builder_after_auth(): void
@@ -39,26 +36,5 @@ class HomeCvBuilderAnnouncementTest extends TestCase
 
         $this->get(route('cv-builder.gate'))
             ->assertRedirect(route('talent.cv-builder.index'));
-    }
-
-    public function test_announcement_cta_links_talent_to_cv_builder(): void
-    {
-        $talent = User::factory()->talent()->create();
-
-        $this->actingAs($talent)
-            ->get(route('home'))
-            ->assertOk()
-            ->assertSee(route('talent.cv-builder.index'), false)
-            ->assertSee(__('talenma.home.cv_builder_announcement.cta'), false);
-    }
-
-    public function test_homepage_includes_cv_builder_announcement_for_company_users(): void
-    {
-        $company = User::factory()->companyOwner()->create();
-
-        $this->actingAs($company)
-            ->get(route('home'))
-            ->assertOk()
-            ->assertSee('cvBuilderAnnouncement', false);
     }
 }

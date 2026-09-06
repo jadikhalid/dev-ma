@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\DirectHireController as AdminDirectHireController
 use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
 use App\Http\Controllers\Admin\ManagedProfileController;
 use App\Http\Controllers\Admin\ProfileDocumentController;
+use App\Http\Controllers\Admin\NewsletterController;
+use App\Http\Controllers\Admin\NewsletterSubscriberController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\RecruitmentRequestController as AdminRecruitmentRequestController;
@@ -28,6 +30,7 @@ use App\Http\Controllers\JobAccessGateController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MarketingCvPreviewController;
 use App\Http\Controllers\ModeratorModeController;
+use App\Http\Controllers\NewsletterPreferenceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PrivacyController;
 use App\Http\Controllers\ProfileController;
@@ -48,6 +51,13 @@ Route::get('/locale/suggest-from-ip', [LocaleController::class, 'suggest'])
     ->middleware('throttle:30,1')
     ->name('locale.suggest');
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
+
+Route::get('/newsletter/unsubscribe/{token}', [NewsletterPreferenceController::class, 'unsubscribe'])
+    ->middleware('throttle:30,1')
+    ->name('newsletter.unsubscribe');
+Route::post('/newsletter/subscribe', [NewsletterPreferenceController::class, 'subscribe'])
+    ->middleware('throttle:10,1')
+    ->name('newsletter.subscribe');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
@@ -203,6 +213,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::redirect('/social-posts', '/admin/publications');
             Route::redirect('/social-feed', '/admin/publications');
         });
+
+        Route::middleware('moderator.permission:newsletter.manage')->group(function () {
+            Route::get('/newsletter', [NewsletterController::class, 'index'])->name('newsletter.index');
+            Route::get('/newsletter/create', [NewsletterController::class, 'create'])->name('newsletter.create');
+            Route::post('/newsletter', [NewsletterController::class, 'store'])->name('newsletter.store');
+            Route::get('/newsletter/subscribers', [NewsletterSubscriberController::class, 'index'])->name('newsletter.subscribers.index');
+            Route::post('/newsletter/subscribers', [NewsletterSubscriberController::class, 'store'])->name('newsletter.subscribers.store');
+            Route::delete('/newsletter/subscribers/{subscriber}', [NewsletterSubscriberController::class, 'destroy'])->name('newsletter.subscribers.destroy');
+            Route::get('/newsletter/{newsletter}', [NewsletterController::class, 'show'])->name('newsletter.show');
+            Route::get('/newsletter/{newsletter}/edit', [NewsletterController::class, 'edit'])->name('newsletter.edit');
+            Route::put('/newsletter/{newsletter}', [NewsletterController::class, 'update'])->name('newsletter.update');
+            Route::post('/newsletter/{newsletter}/preview', [NewsletterController::class, 'preview'])->name('newsletter.preview');
+            Route::post('/newsletter/{newsletter}/send', [NewsletterController::class, 'send'])->name('newsletter.send');
+            Route::post('/newsletter/{newsletter}/schedule', [NewsletterController::class, 'schedule'])->name('newsletter.schedule');
+            Route::post('/newsletter/{newsletter}/cancel', [NewsletterController::class, 'cancel'])->name('newsletter.cancel');
+            Route::delete('/newsletter/{newsletter}', [NewsletterController::class, 'destroy'])->name('newsletter.destroy');
+            Route::get('/newsletter-search/jobs', [NewsletterController::class, 'searchJobs'])->name('newsletter.search.jobs');
+            Route::get('/newsletter-search/blog', [NewsletterController::class, 'searchBlog'])->name('newsletter.search.blog');
+            Route::get('/newsletter-search/talents', [NewsletterController::class, 'searchTalents'])->name('newsletter.search.talents');
+            Route::get('/newsletter-search/companies', [NewsletterController::class, 'searchCompanies'])->name('newsletter.search.companies');
+        });
+    });
+
+    Route::middleware('account.approved')->group(function () {
+        Route::patch('/newsletter/preferences', [NewsletterPreferenceController::class, 'update'])->name('newsletter.preferences');
     });
 
     Route::middleware('talent.approved')->group(function () {

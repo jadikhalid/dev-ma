@@ -4832,6 +4832,102 @@ Alpine.data('publicationsAdmin', () => ({
     },
 }));
 
+Alpine.data('newsletterBuilder', (config = {}) => ({
+    blocks: Array.isArray(config.blocks) ? config.blocks : [],
+    picker: config.picker || {},
+    labels: config.labels || {},
+    blockTypes: ['header', 'hero', 'jobs', 'blog', 'social', 'talents', 'companies', 'stats', 'text', 'cta'],
+
+    idKeyFor(type) {
+        return ({
+            jobs: 'job_ids',
+            blog: 'post_ids',
+            social: 'social_ids',
+            talents: 'user_ids',
+            companies: 'company_profile_ids',
+        })[type] || 'ids';
+    },
+
+    emptyBlock(type) {
+        switch (type) {
+            case 'header':
+                return { type, title: '', subtitle: '' };
+            case 'hero':
+                return { type, image_url: '', alt: '' };
+            case 'jobs':
+                return { type, heading: '', job_ids: [] };
+            case 'blog':
+                return { type, heading: '', post_ids: [] };
+            case 'social':
+                return { type, heading: '', social_ids: [] };
+            case 'talents':
+                return { type, heading: '', user_ids: [] };
+            case 'companies':
+                return { type, heading: '', company_profile_ids: [] };
+            case 'stats':
+                return { type, items: [{ value: '', label: '' }, { value: '', label: '' }] };
+            case 'text':
+                return { type, body: '' };
+            case 'cta':
+                return { type, label: '', url: '' };
+            default:
+                return { type };
+        }
+    },
+
+    addBlock(type) {
+        this.blocks.push(this.emptyBlock(type));
+    },
+
+    removeBlock(index) {
+        this.blocks.splice(index, 1);
+    },
+
+    moveUp(index) {
+        if (index <= 0) {
+            return;
+        }
+        const item = this.blocks.splice(index, 1)[0];
+        this.blocks.splice(index - 1, 0, item);
+    },
+
+    moveDown(index) {
+        if (index >= this.blocks.length - 1) {
+            return;
+        }
+        const item = this.blocks.splice(index, 1)[0];
+        this.blocks.splice(index + 1, 0, item);
+    },
+
+    pickerFor(type) {
+        return Array.isArray(this.picker?.[type]) ? this.picker[type] : [];
+    },
+
+    selectedIds(block) {
+        const key = this.idKeyFor(block.type);
+        if (!Array.isArray(block[key])) {
+            block[key] = [];
+        }
+        return block[key];
+    },
+
+    isSelected(block, id) {
+        return this.selectedIds(block).map(Number).includes(Number(id));
+    },
+
+    toggleId(block, id, checked) {
+        const ids = this.selectedIds(block);
+        const numericId = Number(id);
+        const index = ids.findIndex((value) => Number(value) === numericId);
+
+        if (checked && index === -1) {
+            ids.push(numericId);
+        } else if (!checked && index !== -1) {
+            ids.splice(index, 1);
+        }
+    },
+}));
+
 Alpine.data('sourcingStatusForm', (config = {}) => ({
     currentStatus: config.currentStatus ?? 'pending',
     messages: config.messages ?? {},
@@ -8273,119 +8369,6 @@ document.addEventListener('submit', async (event) => {
         }
     }
 });
-
-Alpine.data('cvBuilderAnnouncement', () => ({
-    open: false,
-    storageKeys: {
-        dismissed: 'tdm_cv_builder_announcement_v5_dismissed',
-        lastShown: 'tdm_cv_builder_announcement_v6_last_shown',
-        legacyDismissed: 'tdm_cv_builder_announcement_v2',
-    },
-    snoozeMs: 5 * 60 * 1000,
-    _revealTimer: null,
-
-    isDevEnvironment() {
-        try {
-            return Boolean(import.meta.env?.DEV);
-        } catch {
-            return false;
-        }
-    },
-
-    isDismissedForever() {
-        if (this.isDevEnvironment()) {
-            return false;
-        }
-
-        try {
-            if (window.localStorage.getItem(this.storageKeys.dismissed) === '1') {
-                return true;
-            }
-
-            if (window.localStorage.getItem(this.storageKeys.legacyDismissed) === '1') {
-                return true;
-            }
-        } catch {
-            // Private browsing may block storage — treat as not dismissed forever.
-        }
-
-        return false;
-    },
-
-    isSnoozed() {
-        if (this.isDevEnvironment()) {
-            return false;
-        }
-
-        try {
-            const raw = window.localStorage.getItem(this.storageKeys.lastShown);
-
-            if (raw === null || raw === '') {
-                return false;
-            }
-
-            const lastShown = Number(raw);
-
-            if (! Number.isFinite(lastShown)) {
-                return false;
-            }
-
-            return Date.now() - lastShown < this.snoozeMs;
-        } catch {
-            return false;
-        }
-    },
-
-    markShown() {
-        if (this.isDevEnvironment()) {
-            return;
-        }
-
-        try {
-            window.localStorage.setItem(this.storageKeys.lastShown, String(Date.now()));
-        } catch {
-            // ignore
-        }
-    },
-
-    shouldShow() {
-        return ! this.isDismissedForever() && ! this.isSnoozed();
-    },
-
-    init() {
-        if (typeof window === 'undefined' || ! this.shouldShow()) {
-            return;
-        }
-
-        if (this._revealTimer !== null) {
-            return;
-        }
-
-        this._revealTimer = window.setTimeout(() => {
-            this._revealTimer = null;
-            this.open = true;
-        }, 500);
-    },
-
-    close() {
-        this.open = false;
-        this.markShown();
-    },
-
-    dismissForever() {
-        this.open = false;
-
-        if (this.isDevEnvironment()) {
-            return;
-        }
-
-        try {
-            window.localStorage.setItem(this.storageKeys.dismissed, '1');
-        } catch {
-            // ignore
-        }
-    },
-}));
 
 const compressCvPhotoFile = (file, { maxDimension = 800, maxPayloadChars = 550000 } = {}) => new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);

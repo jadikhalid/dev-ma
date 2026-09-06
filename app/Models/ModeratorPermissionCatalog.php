@@ -24,6 +24,8 @@ final class ModeratorPermissionCatalog
 
     public const PUBLICATIONS_MANAGE = 'publications.manage';
 
+    public const NEWSLETTER_MANAGE = 'newsletter.manage';
+
     /**
      * @return list<string>
      */
@@ -40,6 +42,7 @@ final class ModeratorPermissionCatalog
             self::JOBS_MANAGE,
             self::STAFF_MESSAGES_MANAGE,
             self::PUBLICATIONS_MANAGE,
+            self::NEWSLETTER_MANAGE,
         ];
     }
 

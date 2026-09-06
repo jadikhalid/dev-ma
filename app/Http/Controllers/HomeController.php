@@ -56,7 +56,6 @@ class HomeController extends Controller
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'canViewProfiles' => $canViewProfiles,
             'showCompanySearch' => $showCompanySearch,
-            'showCvBuilderAnnouncement' => true,
             'companyCountries' => $showCompanySearch
                 ? $this->companyCatalogSearch->availableCountries()
                 : [],

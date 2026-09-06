@@ -37,9 +37,11 @@ use Illuminate\Notifications\Notifiable;
     'disabled_at',
     'is_subscribed',
     'subscription_expires_at',
+    'newsletter_opt_in_at',
+    'newsletter_unsubscribe_token',
     'dashboard_activity_seen_at',
 ])]
-#[Hidden(['password', 'remember_token', 'pending_email_token'])]
+#[Hidden(['password', 'remember_token', 'pending_email_token', 'newsletter_unsubscribe_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     public const APPROVAL_PENDING = 'pending';
@@ -68,6 +70,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'is_subscribed' => 'boolean',
             'subscription_expires_at' => 'datetime',
+            'newsletter_opt_in_at' => 'datetime',
         ];
     }
 
@@ -374,6 +377,40 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->is_subscribed
             && $this->subscription_expires_at
             && $this->subscription_expires_at->isFuture();
+    }
+
+    public function wantsNewsletter(): bool
+    {
+        if ($this->newsletter_opt_in_at !== null) {
+            return true;
+        }
+
+        $subscriber = app(\App\Services\NewsletterSubscriberService::class)
+            ->findByEmail((string) $this->email);
+
+        return $subscriber?->isActive() ?? false;
+    }
+
+    public function ensureNewsletterUnsubscribeToken(): string
+    {
+        if (filled($this->newsletter_unsubscribe_token)) {
+            return (string) $this->newsletter_unsubscribe_token;
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $this->forceFill(['newsletter_unsubscribe_token' => $token])->save();
+
+        return $token;
+    }
+
+    public function optInToNewsletter(): void
+    {
+        app(\App\Services\NewsletterSubscriberService::class)->syncUserPreference($this, true);
+    }
+
+    public function optOutOfNewsletter(): void
+    {
+        app(\App\Services\NewsletterSubscriberService::class)->syncUserPreference($this, false);
     }
 
     public function avatarUrl(): ?string

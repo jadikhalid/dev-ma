@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('registrations:purge-expired')->everyMinute();
 Schedule::command('talents:send-profile-completion-reminders')->dailyAt('10:00');
+Schedule::command('newsletters:send-due')->everyMinute();

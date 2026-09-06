@@ -106,6 +106,9 @@
                             <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
                             <x-nav-link :href="route('admin.blog.index')" :active="request()->routeIs('admin.blog.*')">{{ __('talenma.nav.admin_blog') }}</x-nav-link>
                         @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::NEWSLETTER_MANAGE))
+                            <x-nav-link :href="route('admin.newsletter.index')" :active="request()->routeIs('admin.newsletter.*')">{{ __('talenma.nav.admin_newsletter') }}</x-nav-link>
+                        @endif
                         @if ($authUser->canAccessStaffMessaging())
                             <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
                                 <span class="inline-flex items-center gap-1.5">
@@ -370,6 +373,9 @@
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::PUBLICATIONS_MANAGE))
                             <x-responsive-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
                             <x-responsive-nav-link :href="route('admin.blog.index')" :active="request()->routeIs('admin.blog.*')">{{ __('talenma.nav.admin_blog') }}</x-responsive-nav-link>
+                        @endif
+                        @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::NEWSLETTER_MANAGE))
+                            <x-responsive-nav-link :href="route('admin.newsletter.index')" :active="request()->routeIs('admin.newsletter.*')">{{ __('talenma.nav.admin_newsletter') }}</x-responsive-nav-link>
                         @endif
                         @if ($authUser->canAccessStaffMessaging())
                             <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
