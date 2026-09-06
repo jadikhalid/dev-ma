@@ -98,32 +98,17 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
-    public function approved_talent_opt_in_adds_account_email_to_list(): void
+    public function profile_newsletter_preference_route_is_removed(): void
     {
         $talent = User::factory()->talent()->create();
 
         $this->actingAs($talent)
-            ->patch(route('newsletter.preferences'), ['newsletter_opt_in' => '1'])
-            ->assertRedirect();
-
-        $this->assertTrue($talent->fresh()->wantsNewsletter());
-        $this->assertDatabaseHas('newsletter_subscribers', [
-            'email' => strtolower($talent->email),
-            'source' => NewsletterSubscriber::SOURCE_ACCOUNT,
-        ]);
-
-        $this->actingAs($talent)
-            ->patch(route('newsletter.preferences'), ['newsletter_opt_in' => '0'])
-            ->assertRedirect();
-
-        $this->assertFalse($talent->fresh()->wantsNewsletter());
-        $this->assertNotNull(
-            NewsletterSubscriber::query()->where('email', strtolower($talent->email))->value('unsubscribed_at')
-        );
+            ->patch('/newsletter/preferences', ['newsletter_opt_in' => '1'])
+            ->assertNotFound();
     }
 
     #[Test]
-    public function unsubscribe_link_opts_out_subscriber(): void
+    public function unsubscribe_link_opts_out_open_list_subscriber(): void
     {
         $subscriber = app(NewsletterSubscriberService::class)->subscribe('bye@example.com');
 
@@ -135,14 +120,15 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
-    public function send_now_mails_only_active_open_list_subscribers(): void
+    public function send_now_includes_approved_talents_and_open_list(): void
     {
         Mail::fake();
 
         $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
         $service = app(NewsletterSubscriberService::class);
 
-        $active = $service->subscribe('actif@example.com');
+        $talent = User::factory()->talent()->create(['email' => 'talent@example.com']);
+        $open = $service->subscribe('ouvert@example.com');
         $inactive = $service->subscribe('inactif@example.com');
         $service->unsubscribe($inactive);
 
@@ -161,16 +147,12 @@ class NewsletterFeatureTest extends TestCase
             ->post(route('admin.newsletter.send', $newsletter))
             ->assertRedirect(route('admin.newsletter.show', $newsletter));
 
-        Mail::assertSent(NewsletterCampaignMail::class, function (NewsletterCampaignMail $mail) use ($active) {
-            return $mail->hasTo($active->email);
-        });
-
-        Mail::assertNotSent(NewsletterCampaignMail::class, function (NewsletterCampaignMail $mail) use ($inactive) {
-            return $mail->hasTo($inactive->email);
-        });
+        Mail::assertSent(NewsletterCampaignMail::class, fn (NewsletterCampaignMail $mail) => $mail->hasTo($talent->email));
+        Mail::assertSent(NewsletterCampaignMail::class, fn (NewsletterCampaignMail $mail) => $mail->hasTo($open->email));
+        Mail::assertNotSent(NewsletterCampaignMail::class, fn (NewsletterCampaignMail $mail) => $mail->hasTo($inactive->email));
 
         $this->assertSame(Newsletter::STATUS_SENT, $newsletter->fresh()->status);
-        $this->assertSame(1, $newsletter->fresh()->recipient_count);
+        $this->assertSame(2, $newsletter->fresh()->recipient_count);
     }
 
     #[Test]

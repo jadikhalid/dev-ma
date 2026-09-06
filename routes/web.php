@@ -236,10 +236,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
-    Route::middleware('account.approved')->group(function () {
-        Route::patch('/newsletter/preferences', [NewsletterPreferenceController::class, 'update'])->name('newsletter.preferences');
-    });
-
     Route::middleware('talent.approved')->group(function () {
         Route::get('/talent/profile', [ProfileDetailsController::class, 'edit'])->name('profile.details.edit');
         Route::post('/talent/profile', [ProfileDetailsController::class, 'update'])->name('profile.details.update');

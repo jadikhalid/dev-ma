@@ -6,6 +6,8 @@ use App\Jobs\SendNewsletterJob;
 use App\Mail\NewsletterCampaignMail;
 use App\Models\Newsletter;
 use App\Models\NewsletterSubscriber;
+use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -13,20 +15,47 @@ use Throwable;
 class NewsletterDeliveryService
 {
     public function __construct(
-        private NewsletterRenderer $renderer,
+        private NewsletterSubscriberService $subscribers,
     ) {}
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<NewsletterSubscriber>
+     * Destinataires : liste ouverte active + tous les talents approuvés (envoi systématique).
+     *
+     * @return Collection<int, NewsletterSubscriber>
      */
-    public function recipientsQuery()
+    public function recipients(): Collection
     {
-        return NewsletterSubscriber::query()->active();
+        $byEmail = [];
+
+        foreach (NewsletterSubscriber::query()->active()->orderBy('id')->cursor() as $subscriber) {
+            /** @var NewsletterSubscriber $subscriber */
+            $email = $this->subscribers->normalizeEmail($subscriber->email);
+            $byEmail[$email] = $subscriber;
+        }
+
+        $talents = User::query()
+            ->where('role', 'dev')
+            ->where('approval_status', User::APPROVAL_APPROVED)
+            ->whereNull('disabled_at')
+            ->whereNotNull('email_verified_at')
+            ->orderBy('id')
+            ->cursor();
+
+        foreach ($talents as $talent) {
+            $email = $this->subscribers->normalizeEmail((string) $talent->email);
+            if ($email === '') {
+                continue;
+            }
+
+            $byEmail[$email] = $this->subscribers->ensureTalentRecipient($talent);
+        }
+
+        return collect(array_values($byEmail));
     }
 
     public function recipientCount(): int
     {
-        return $this->recipientsQuery()->count();
+        return $this->recipients()->count();
     }
 
     public function schedule(Newsletter $newsletter, \DateTimeInterface $when): void
@@ -74,18 +103,15 @@ class NewsletterDeliveryService
         }
 
         $sent = 0;
-        $this->recipientsQuery()->orderBy('id')->chunkById(50, function ($subscribers) use ($locked, &$sent): void {
-            foreach ($subscribers as $subscriber) {
-                try {
-                    /** @var NewsletterSubscriber $subscriber */
-                    $subscriber->ensureUnsubscribeToken();
-                    Mail::to($subscriber->email)->send(new NewsletterCampaignMail($locked, $subscriber));
-                    $sent++;
-                } catch (Throwable) {
-                    // Continue remaining recipients.
-                }
+        foreach ($this->recipients() as $subscriber) {
+            try {
+                $subscriber->ensureUnsubscribeToken();
+                Mail::to($subscriber->email)->send(new NewsletterCampaignMail($locked, $subscriber));
+                $sent++;
+            } catch (Throwable) {
+                // Continue remaining recipients.
             }
-        });
+        }
 
         $locked->update([
             'status' => Newsletter::STATUS_SENT,

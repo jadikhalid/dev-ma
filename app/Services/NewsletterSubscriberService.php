@@ -137,23 +137,25 @@ class NewsletterSubscriberService
         return compact('added', 'reactivated', 'skipped');
     }
 
-    public function syncUserPreference(User $user, bool $optIn): void
+    /**
+     * Garantit une fiche abonné pour un talent (envoi systématique, sans opt-in compte).
+     * Réactive toujours l’e-mail talent même s’il avait cliqué un lien de désinscription.
+     */
+    public function ensureTalentRecipient(User $talent): NewsletterSubscriber
     {
-        if ($optIn) {
-            $this->subscribe(
-                (string) $user->email,
-                NewsletterSubscriber::SOURCE_ACCOUNT,
-                user: $user,
-            );
+        $normalized = $this->normalizeEmail((string) $talent->email);
 
-            return;
-        }
+        $subscriber = NewsletterSubscriber::query()->firstOrNew(['email' => $normalized]);
 
-        $subscriber = $this->findByEmail((string) $user->email);
-        if ($subscriber) {
-            $this->unsubscribe($subscriber);
-        } else {
-            $user->forceFill(['newsletter_opt_in_at' => null])->save();
-        }
+        $subscriber->fill([
+            'unsubscribe_token' => $subscriber->unsubscribe_token ?: bin2hex(random_bytes(32)),
+            'source' => NewsletterSubscriber::SOURCE_TALENT,
+            'subscribed_at' => $subscriber->subscribed_at ?? now(),
+            'unsubscribed_at' => null,
+            'user_id' => $talent->id,
+        ]);
+        $subscriber->save();
+
+        return $subscriber;
     }
 }

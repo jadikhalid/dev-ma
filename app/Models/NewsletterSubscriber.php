@@ -24,6 +24,8 @@ class NewsletterSubscriber extends Model
 
     public const SOURCE_ACCOUNT = 'account';
 
+    public const SOURCE_TALENT = 'talent';
+
     protected function casts(): array
     {
         return [

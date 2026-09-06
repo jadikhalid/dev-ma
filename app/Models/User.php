@@ -381,14 +381,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function wantsNewsletter(): bool
     {
-        if ($this->newsletter_opt_in_at !== null) {
-            return true;
-        }
-
-        $subscriber = app(\App\Services\NewsletterSubscriberService::class)
-            ->findByEmail((string) $this->email);
-
-        return $subscriber?->isActive() ?? false;
+        return true;
     }
 
     public function ensureNewsletterUnsubscribeToken(): string
@@ -401,16 +394,6 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->forceFill(['newsletter_unsubscribe_token' => $token])->save();
 
         return $token;
-    }
-
-    public function optInToNewsletter(): void
-    {
-        app(\App\Services\NewsletterSubscriberService::class)->syncUserPreference($this, true);
-    }
-
-    public function optOutOfNewsletter(): void
-    {
-        app(\App\Services\NewsletterSubscriberService::class)->syncUserPreference($this, false);
     }
 
     public function avatarUrl(): ?string
