@@ -7,7 +7,7 @@
 >
     <div @class([
         'w-full mx-auto',
-        'px-4 sm:px-6 lg:px-10 xl:px-12' => $fullWidth,
+        'home-align-wide px-4 sm:px-6 lg:px-10 xl:px-12 2xl:px-10' => $fullWidth,
         'max-w-7xl px-4 sm:px-6 lg:px-8' => ! $fullWidth,
     ])>
         <div class="flex items-center justify-between h-20 sm:h-16">

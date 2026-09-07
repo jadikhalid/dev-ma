@@ -22,24 +22,25 @@
         @mouseenter="onBannerEnter()"
         @mouseleave="onBannerLeave()"
     >
-        <div class="flex items-center justify-center gap-3 sm:gap-4 py-1 border-b border-gray-100/90 px-4">
-            <span class="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-amber-200/70"></span>
-            <p class="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                <span class="font-bold">{{ __('talenma.home.news_ticker_trends_prefix') }}</span>
-            </p>
-            <span class="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-amber-200/70"></span>
-        </div>
+        <div class="home-align-wide">
+            <div class="flex items-center justify-center gap-3 sm:gap-4 py-1 border-b border-gray-100/90 px-4 2xl:px-0">
+                <span class="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-amber-200/70"></span>
+                <p class="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    <span class="font-bold">{{ __('talenma.home.news_ticker_trends_prefix') }}</span>
+                </p>
+                <span class="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-amber-200/70"></span>
+            </div>
 
-        <div
-            x-ref="marqueeViewport"
-            class="magazine-marquee-viewport relative min-h-[5.5rem] w-full overflow-hidden"
-            :class="{ 'is-dragging': isDragging }"
-            @pointerdown="onPointerDown($event)"
-            @pointermove="onPointerMove($event)"
-            @pointerup="onPointerUp($event)"
-            @pointercancel="onPointerUp($event)"
-            @click.capture="onMarqueeClick($event)"
-        >
+            <div
+                x-ref="marqueeViewport"
+                class="magazine-marquee-viewport relative min-h-[5.5rem] w-full overflow-hidden"
+                :class="{ 'is-dragging': isDragging }"
+                @pointerdown="onPointerDown($event)"
+                @pointermove="onPointerMove($event)"
+                @pointerup="onPointerUp($event)"
+                @pointercancel="onPointerUp($event)"
+                @click.capture="onMarqueeClick($event)"
+            >
             <div class="absolute inset-y-0 left-0 w-12 sm:w-16 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none"></div>
             <div class="absolute inset-y-0 right-0 w-12 sm:w-16 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none"></div>
 
@@ -140,6 +141,7 @@
                     aria-hidden="true"
                 ></div>
             </div>
+        </div>
         </div>
     </section>
 </div>

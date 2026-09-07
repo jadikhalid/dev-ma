@@ -62,11 +62,22 @@
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
 }
 
+/*
+ * Align home header / news ticker with .home-shell on very wide screens only.
+ * Below 2xl they stay full-bleed (existing padding).
+ */
 @media (min-width: 1536px) {
-    .home-shell {
+    .home-shell,
+    .home-align-wide {
         max-width: 96rem; /* 1536px */
         padding-left: 2.5rem;
         padding-right: 2.5rem;
+    }
+
+    .home-align-wide {
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
     }
 }
 
