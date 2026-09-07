@@ -6,6 +6,32 @@
  * Arbitrary min/max width variants are unsupported when `sm` is a raw media query
  * (see tailwind.config.js). Restore the few needed cases here.
  */
+/*
+ * Brand logo: classic (MA) on all phone sizes; image logo on larger viewports.
+ * Phone = narrow OR short landscape (covers existing mobiles including landscape).
+ */
+.brand-logo-phone {
+    display: none;
+}
+
+.brand-logo-desktop {
+    display: flex;
+}
+
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
+    .brand-logo-phone {
+        display: flex !important;
+    }
+
+    .brand-logo-desktop {
+        display: none !important;
+    }
+
+    .brand-logo-classic-text {
+        display: none !important;
+    }
+}
+
 @media (max-width: 420px) {
     .max-w-420-hidden {
         display: none !important;

@@ -56,7 +56,7 @@
                 'mb-8' => ! $viewportFit,
                 'shrink-0 mb-4 sm:mb-3' => $viewportFit,
             ])>
-                <x-brand-logo href="{{ route('home') }}" />
+                <x-brand-logo href="{{ route('home') }}" classic />
                 <x-locale-switcher />
             </div>
             <div @class([

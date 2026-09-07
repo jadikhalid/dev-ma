@@ -39,10 +39,10 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center gap-2 sm:gap-4 min-w-0">
-                <div class="sm:hidden">
-                    <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" :light="true" />
+                <div class="brand-logo-phone">
+                    <x-brand-logo :href="route('home')" size="sm" classic :linked="! $pendingAccount" :light="true" />
                 </div>
-                <div class="hidden sm:block">
+                <div class="brand-logo-desktop">
                     <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" />
                 </div>
                 <div class="hidden lg:flex items-center gap-1 min-w-0">

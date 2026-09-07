@@ -11,10 +11,10 @@
         'max-w-7xl px-4 sm:px-6 lg:px-8' => ! $fullWidth,
     ])>
         <div class="flex items-center justify-between h-20 sm:h-16">
-            <div class="sm:hidden">
-                <x-brand-logo href="{{ route('home') }}" size="md" :light="true" />
+            <div class="brand-logo-phone">
+                <x-brand-logo href="{{ route('home') }}" size="md" classic :light="true" />
             </div>
-            <div class="hidden sm:block">
+            <div class="brand-logo-desktop">
                 <x-brand-logo href="{{ route('home') }}" size="sm" />
             </div>
 
