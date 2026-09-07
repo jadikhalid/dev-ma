@@ -28,7 +28,7 @@
 
             <div class="relative z-10 flex h-full min-h-0 w-full flex-col px-10 py-8 xl:px-14 xl:py-10">
                 <div class="flex shrink-0 items-center justify-between">
-                    <x-brand-logo href="{{ route('home') }}" light size="lg" :badge-border="true" />
+                    <x-brand-logo href="{{ route('home') }}" white size="lg" />
                     <x-locale-switcher />
                 </div>
 

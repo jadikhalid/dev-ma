@@ -3310,7 +3310,6 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
     scope: config.initialScope ?? 'all',
     sectorSlug: config.initialSector ?? '',
     professionSlug: config.initialProfession ?? '',
-    defaultSector: config.defaultSector ?? '',
     sectors: Array.isArray(config.sectors) ? config.sectors : [],
     counts: config.initialCounts ?? { all: 0, applied: 0, closed: 0 },
     jobs: Array.isArray(config.initialJobs) ? config.initialJobs : [],
@@ -3319,12 +3318,6 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
     loading: false,
     error: null,
     requestToken: 0,
-
-    init() {
-        if (this.scope === 'all' && ! this.sectorSlug && this.defaultSector) {
-            this.sectorSlug = this.defaultSector;
-        }
-    },
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
@@ -3373,8 +3366,6 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
 
         if (scope === 'applied' || scope === 'closed') {
             this.professionSlug = '';
-        } else if (! this.sectorSlug && this.defaultSector) {
-            this.sectorSlug = this.defaultSector;
         }
 
         this.refresh();

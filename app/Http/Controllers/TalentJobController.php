@@ -28,13 +28,10 @@ class TalentJobController extends Controller
         $user->loadMissing('profile');
         $requestedScope = $request->string('scope')->toString();
         $scope = in_array($requestedScope, ['applied', 'closed'], true) ? $requestedScope : 'all';
-        $defaultSectorSlug = $this->professions->slugsFromProfile(
-            $user->profile?->profession_sector_id,
-            null,
-        )['sector'];
+        // Empty sector = « Tous les secteurs » (no profile-based preselection).
         $sectorSlug = $request->has('sector')
             ? trim($request->string('sector')->toString())
-            : $defaultSectorSlug;
+            : '';
         $professionSlug = trim($request->string('profession')->toString());
 
         $applySearchFilters = $scope === 'all';
@@ -113,7 +110,7 @@ class TalentJobController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'scope' => $scope,
-                'sector' => $applySearchFilters ? $sectorSlug : $defaultSectorSlug,
+                'sector' => $applySearchFilters ? $sectorSlug : '',
                 'profession' => $applySearchFilters ? $professionSlug : '',
                 'total' => $presented->count(),
                 'counts' => $counts,
@@ -125,9 +122,8 @@ class TalentJobController extends Controller
             'jobs' => $presented,
             'scope' => $scope,
             'counts' => $counts,
-            'sectorSlug' => $applySearchFilters ? $sectorSlug : $defaultSectorSlug,
+            'sectorSlug' => $applySearchFilters ? $sectorSlug : '',
             'professionSlug' => $applySearchFilters ? $professionSlug : '',
-            'defaultSectorSlug' => $defaultSectorSlug,
             'professionSectors' => $this->professions->sectorsForLocale(),
         ]);
     }

@@ -15,7 +15,6 @@
             initialScope: @js($scope),
             initialSector: @js($sectorSlug),
             initialProfession: @js($professionSlug),
-            defaultSector: @js($defaultSectorSlug),
             sectors: @js($professionSectors),
             initialCounts: @js($counts),
             initialJobs: @js($jobs),
