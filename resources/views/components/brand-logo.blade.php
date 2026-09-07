@@ -1,4 +1,4 @@
-@props(['size' => 'md', 'light' => false, 'linked' => true, 'badgeBorder' => false])
+@props(['size' => 'md', 'light' => false, 'white' => false, 'linked' => true, 'badgeBorder' => false])
 
 @php
     // badgeBorder kept for backward compatibility with existing call sites.
@@ -8,9 +8,11 @@
         'lg' => 'h-[3.25rem]',
     ];
     $heightClass = $heights[$size] ?? $heights['md'];
-    $src = $light
-        ? asset('images/brand/logo-light.png')
-        : asset('images/brand/logo.png');
+    $src = match (true) {
+        $white => asset('images/brand/logo-white.png'),
+        $light => asset('images/brand/logo-light.png'),
+        default => asset('images/brand/logo.png'),
+    };
     $classes = $attributes->merge(['class' => 'inline-flex items-center shrink-0']);
 @endphp
 

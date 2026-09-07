@@ -2,7 +2,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="flex flex-col gap-6">
             <div class="flex items-start justify-between gap-4">
-                <x-brand-logo light size="sm" :linked="false" />
+                <x-brand-logo white size="sm" :linked="false" />
                 <div class="flex flex-col items-end gap-3 shrink-0">
                     <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">{{ __('talenma.footer.follow_us') }}</p>
                     <x-social-links variant="dark" />
