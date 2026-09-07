@@ -3,14 +3,21 @@
 ])
 
 <header
-    class="sticky top-0 z-50 w-full backdrop-blur-md bg-indigo-600/90 border-b border-white/10 sm:bg-white/90 sm:border-gray-100"
+    @class([
+        'sticky top-0 z-50 w-full backdrop-blur-md bg-indigo-600/90 sm:bg-white/90',
+        'border-b border-white/10 sm:border-gray-100' => ! $fullWidth,
+        'border-b border-white/10 sm:border-gray-100 2xl:border-b-0' => $fullWidth,
+    ])
 >
     <div @class([
         'w-full mx-auto',
         'home-align-wide px-4 sm:px-6 lg:px-10 xl:px-12 2xl:px-10' => $fullWidth,
         'max-w-7xl px-4 sm:px-6 lg:px-8' => ! $fullWidth,
     ])>
-        <div class="flex items-center justify-between h-20 sm:h-16">
+        <div @class([
+            'flex items-center justify-between h-20 sm:h-16',
+            '2xl:border-b 2xl:border-gray-100' => $fullWidth,
+        ])>
             <div class="brand-logo-phone">
                 <x-brand-logo href="{{ route('home') }}" size="md" classic :light="true" />
             </div>

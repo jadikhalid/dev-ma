@@ -18,11 +18,12 @@
         x-ref="banner"
         x-bind:style="bannerStyle()"
         x-bind:class="{ 'invisible': opacity < 0.01 }"
-        class="group/marquee fixed top-16 inset-x-0 z-40 w-full pt-4 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm will-change-[opacity,transform]"
+        class="group/marquee fixed top-16 inset-x-0 z-40 w-full pt-4 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm 2xl:border-b-0 2xl:shadow-none will-change-[opacity,transform]"
         @mouseenter="onBannerEnter()"
         @mouseleave="onBannerLeave()"
     >
         <div class="home-align-wide">
+            <div class="2xl:border-b 2xl:border-gray-200">
             <div class="flex items-center justify-center gap-3 sm:gap-4 py-1 border-b border-gray-100/90 px-4 2xl:px-0">
                 <span class="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-amber-200/70"></span>
                 <p class="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -142,6 +143,7 @@
                 ></div>
             </div>
         </div>
+            </div>
         </div>
     </section>
 </div>
