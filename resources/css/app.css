@@ -470,3 +470,27 @@
 .activity-scroll::-webkit-scrollbar-thumb:hover {
     background-color: rgb(148 163 184 / 0.9);
 }
+
+/* Horizontal template picker in CV builder */
+.cv-template-slider {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225 / 0.8) transparent;
+    -webkit-overflow-scrolling: touch;
+}
+
+.cv-template-slider::-webkit-scrollbar {
+    height: 6px;
+}
+
+.cv-template-slider::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cv-template-slider::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225 / 0.85);
+    border-radius: 9999px;
+}
+
+.cv-template-slider::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(148 163 184 / 0.95);
+}

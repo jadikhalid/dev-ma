@@ -148,7 +148,11 @@ class TalentCvBuilderTest extends TestCase
         $this->actingAs($talent)
             ->get(route('talent.cv-builder.index'))
             ->assertOk()
-            ->assertSee(__('talenma.cv_builder.page_title'));
+            ->assertSee(__('talenma.cv_builder.page_title'))
+            ->assertSee(__('talenma.cv_builder.templates.classic'))
+            ->assertSee(__('talenma.cv_builder.templates.vibrant'))
+            ->assertSee('selectTemplate', false)
+            ->assertSee('templatePreviewSrc', false);
     }
 
     public function test_talent_can_save_profile_photo_source_in_draft(): void

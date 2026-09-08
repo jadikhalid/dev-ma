@@ -22,7 +22,7 @@ class TalentCvBuilderController extends Controller
 
         return view('talent.cv-builder.index', [
             'draft' => $draft,
-            'templates' => TalentCvTemplateCatalog::templateLabels(),
+            'templateOptions' => TalentCvTemplateCatalog::pickerOptions(),
             'profileAvatarUrl' => $user->avatarUrl(),
         ]);
     }

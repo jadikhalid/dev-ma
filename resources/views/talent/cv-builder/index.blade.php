@@ -23,7 +23,7 @@
             'data' => $draft->data,
             'template' => $draft->template,
             'locale' => $draft->locale,
-            'templates' => $templates,
+            'templateOptions' => $templateOptions,
             'profileAvatarUrl' => $profileAvatarUrl,
             'urls' => [
                 'save' => route('talent.cv-builder.update'),
@@ -41,29 +41,62 @@
             ],
         ]))"
     >
-        <div class="mb-4 flex flex-wrap items-center justify-end gap-2">
-            <label class="text-xs font-semibold text-gray-500 uppercase">{{ __('talenma.cv_builder.template_label') }}</label>
-            <select x-model="template" @change="onSettingsChange()" class="rounded-lg border-gray-300 text-sm">
-                @foreach ($templates as $key => $label)
-                    <option value="{{ $key }}">{{ $label }}</option>
-                @endforeach
-            </select>
-            <label class="text-xs font-semibold text-gray-500 uppercase ml-2">{{ __('talenma.cv_builder.locale_label') }}</label>
-            <select x-model="locale" @change="onSettingsChange()" class="rounded-lg border-gray-300 text-sm">
-                <option value="fr">FR</option>
-                <option value="en">EN</option>
-            </select>
-            <button
-                type="button"
-                @click="exportPdf()"
-                :disabled="exporting"
-                class="ml-2 inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition"
-            >
-                <span x-text="messages.export"></span>
-            </button>
-        </div>
+        <div class="mb-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ __('talenma.cv_builder.template_label') }}</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="text-xs font-semibold text-gray-500 uppercase">{{ __('talenma.cv_builder.locale_label') }}</label>
+                    <select x-model="locale" @change="onSettingsChange()" class="rounded-lg border-gray-300 text-sm">
+                        <option value="fr">FR</option>
+                        <option value="en">EN</option>
+                    </select>
+                    <button
+                        type="button"
+                        @click="exportPdf()"
+                        :disabled="exporting"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition"
+                    >
+                        <span x-text="messages.export"></span>
+                    </button>
+                </div>
+            </div>
 
-        {{-- Onglets mobile : Rédaction / Aperçu --}}
+            <div class="relative">
+                <div
+                    class="cv-template-slider flex gap-2.5 sm:gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1 scroll-smooth snap-x snap-mandatory"
+                    role="radiogroup"
+                    aria-label="{{ __('talenma.cv_builder.template_label') }}"
+                >
+                    <template x-for="option in templateOptions" :key="option.key">
+                        <button
+                            type="button"
+                            role="radio"
+                            :aria-checked="template === option.key"
+                            @click="selectTemplate(option.key)"
+                            class="group shrink-0 w-[7.25rem] sm:w-[8.5rem] snap-start text-left rounded-xl border bg-white p-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            :class="template === option.key
+                                ? 'border-indigo-500 ring-2 ring-indigo-200 shadow-sm'
+                                : 'border-gray-200 hover:border-indigo-300 hover:shadow-sm'"
+                        >
+                            <div class="aspect-[3/4] overflow-hidden rounded-lg bg-gray-100 ring-1 ring-black/5">
+                                <img
+                                    :src="templatePreviewSrc(option)"
+                                    :alt="option.label"
+                                    class="h-full w-full object-cover object-top"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
+                            </div>
+                            <span
+                                class="mt-2 block text-center text-xs sm:text-sm font-semibold truncate"
+                                :class="template === option.key ? 'text-indigo-700' : 'text-gray-700 group-hover:text-indigo-700'"
+                                x-text="option.label"
+                            ></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>        {{-- Onglets mobile : Rédaction / Aperçu --}}
         <div class="xl:hidden mb-4 grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl" role="tablist" aria-label="{{ __('talenma.cv_builder.mobile_tabs_label') }}">
             <button
                 type="button"

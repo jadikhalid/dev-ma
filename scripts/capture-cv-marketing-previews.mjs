@@ -26,12 +26,16 @@ for (const [template, locale, filename] of [
 ]) {
     const url = `${baseUrl}/outils/apercu-cv/${template}?locale=${locale}`;
     await page.goto(url, { waitUntil: 'networkidle' });
+    await page.waitForSelector(`meta[name="cv-template"][content="${template}"]`, {
+        state: 'attached',
+    });
 
-    const selector = ['simple', 'vibrant'].includes(template) ? 'body' : 'table.layout';
-    await page.waitForSelector(selector);
+    const target =
+        (await page.$('table.cv-columns'))
+        ?? (await page.$('table.layout'))
+        ?? (await page.$('body'));
 
-    const locator = page.locator(selector).first();
-    await locator.screenshot({
+    await target.screenshot({
         path: path.join(outDir, filename),
         type: 'png',
     });

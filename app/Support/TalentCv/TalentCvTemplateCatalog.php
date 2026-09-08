@@ -42,6 +42,29 @@ class TalentCvTemplateCatalog
         ];
     }
 
+    /**
+     * Options for the CV builder thumbnail picker.
+     *
+     * @return list<array{key: string, label: string, previews: array{fr: string, en: string}}>
+     */
+    public static function pickerOptions(): array
+    {
+        $options = [];
+
+        foreach (self::templateKeys() as $key) {
+            $options[] = [
+                'key' => $key,
+                'label' => self::templateLabels()[$key],
+                'previews' => [
+                    'fr' => TalentCvMarketingPreview::imagePath($key, 'fr'),
+                    'en' => TalentCvMarketingPreview::imagePath($key, 'en'),
+                ],
+            ];
+        }
+
+        return $options;
+    }
+
     public static function viewName(string $template): string
     {
         return 'talent.cv-builder.templates.'.self::normalizeTemplate($template);

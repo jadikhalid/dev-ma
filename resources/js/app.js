@@ -8415,7 +8415,7 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
     data: config.data ?? {},
     template: config.template ?? 'classic',
     locale: config.locale ?? 'fr',
-    templates: config.templates ?? {},
+    templateOptions: Array.isArray(config.templateOptions) ? config.templateOptions : [],
     urls: config.urls ?? {},
     messages: config.messages ?? {},
     profileAvatarUrl: config.profileAvatarUrl ?? null,
@@ -8454,6 +8454,22 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
             this.bindPreviewStageResize();
             this.schedulePreview();
         });
+    },
+
+    selectTemplate(key) {
+        if (! key || this.template === key) {
+            return;
+        }
+
+        this.template = key;
+        this.onSettingsChange();
+    },
+
+    templatePreviewSrc(option) {
+        const previews = option?.previews ?? {};
+        const locale = this.locale === 'en' ? 'en' : 'fr';
+
+        return previews[locale] || previews.fr || previews.en || '';
     },
 
     bindPreviewStageResize() {
