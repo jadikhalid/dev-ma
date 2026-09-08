@@ -45,6 +45,7 @@ class TalentCvMarketingPreview
             TalentCvDraft::TEMPLATE_EXECUTIVE => "marketing-preview-executive-{$locale}.png",
             TalentCvDraft::TEMPLATE_SIMPLE => "marketing-preview-simple-{$locale}.png",
             TalentCvDraft::TEMPLATE_VIBRANT => "marketing-preview-vibrant-{$locale}.png",
+            TalentCvDraft::TEMPLATE_GIRLY => "marketing-preview-girly-{$locale}.png",
             default => "marketing-preview-modern-{$locale}.png",
         };
 

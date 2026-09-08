@@ -63,6 +63,26 @@ class TalentCvBuilderTest extends TestCase
             ->assertDontSee('cv-sidebar-band', false);
     }
 
+    public function test_girly_template_preview_uses_charcoal_and_pink_palette(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_GIRLY,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('cv-template" content="girly"', false)
+            ->assertSee('pink-corner', false)
+            ->assertSee('f4a9bb', false)
+            ->assertSee('3f3f3f', false)
+            ->assertSee('skills-grid', false)
+            ->assertSee('sidebar-name-first', false)
+            ->assertSee('Prénom', false);
+    }
+
     public function test_modern_template_preview_includes_photo_header(): void
     {
         $talent = User::factory()->talent()->create();
@@ -151,6 +171,7 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee(__('talenma.cv_builder.page_title'))
             ->assertSee(__('talenma.cv_builder.templates.classic'))
             ->assertSee(__('talenma.cv_builder.templates.vibrant'))
+            ->assertSee(__('talenma.cv_builder.templates.girly'))
             ->assertSee('selectTemplate', false)
             ->assertSee('templatePreviewSrc', false);
     }

@@ -38,6 +38,7 @@ use App\Http\Controllers\ProfileDetailsController;
 use App\Http\Controllers\RecruitmentRequestController;
 use App\Http\Controllers\SkillSuggestionController;
 use App\Http\Controllers\ServiceController;
+use App\Support\TalentCv\TalentCvTemplateCatalog;
 use App\Http\Controllers\Talent\DirectHireController as TalentDirectHireController;
 use App\Http\Controllers\TalentAtsScoreController;
 use App\Http\Controllers\TalentCvBuilderController;
@@ -65,7 +66,7 @@ Route::get('/blog/{slug}', [BlogController::class, 'show'])
     ->where('slug', '[A-Za-z0-9\-]+')
     ->name('blog.show');
 Route::get('/outils/apercu-cv/{template}', [MarketingCvPreviewController::class, 'show'])
-    ->whereIn('template', ['classic', 'modern', 'executive', 'simple', 'vibrant'])
+    ->whereIn('template', TalentCvTemplateCatalog::templateKeys())
     ->name('marketing.cv-preview');
 Route::get('/privacy', [PrivacyController::class, 'show'])->name('privacy');
 Route::get('/annonces/acces/{job?}', JobAccessGateController::class)

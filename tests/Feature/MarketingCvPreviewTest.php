@@ -36,6 +36,13 @@ class MarketingCvPreviewTest extends TestCase
             ->assertSee('1e40af', false)
             ->assertSee('f59e0b', false)
             ->assertSee('Prénom Nom', false);
+
+        $this->get(route('marketing.cv-preview', ['template' => 'girly']))
+            ->assertOk()
+            ->assertSee('pink-corner', false)
+            ->assertSee('f4a9bb', false)
+            ->assertSee('skills-grid', false)
+            ->assertSee('Prénom', false);
     }
 
     public function test_invalid_cv_preview_template_returns_not_found(): void

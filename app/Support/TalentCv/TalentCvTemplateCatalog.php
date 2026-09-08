@@ -15,6 +15,7 @@ class TalentCvTemplateCatalog
             TalentCvDraft::TEMPLATE_EXECUTIVE,
             TalentCvDraft::TEMPLATE_SIMPLE,
             TalentCvDraft::TEMPLATE_VIBRANT,
+            TalentCvDraft::TEMPLATE_GIRLY,
         ];
     }
 
@@ -39,6 +40,7 @@ class TalentCvTemplateCatalog
             TalentCvDraft::TEMPLATE_EXECUTIVE => __('talenma.cv_builder.templates.executive'),
             TalentCvDraft::TEMPLATE_SIMPLE => __('talenma.cv_builder.templates.simple'),
             TalentCvDraft::TEMPLATE_VIBRANT => __('talenma.cv_builder.templates.vibrant'),
+            TalentCvDraft::TEMPLATE_GIRLY => __('talenma.cv_builder.templates.girly'),
         ];
     }
 
