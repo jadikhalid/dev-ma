@@ -38,6 +38,10 @@
                 'export_popup_blocked' => __('talenma.cv_builder.export_popup_blocked'),
                 'export_error' => __('talenma.cv_builder.export_error'),
                 'photo_too_large' => __('talenma.cv_builder.form.photo_too_large'),
+                'choose_template' => __('talenma.cv_builder.choose_template'),
+                'selected_template' => __('talenma.cv_builder.selected_template'),
+                'templates_prev' => __('talenma.cv_builder.templates_prev'),
+                'templates_next' => __('talenma.cv_builder.templates_next'),
             ],
         ]))"
     >
@@ -61,42 +65,99 @@
                 </div>
             </div>
 
-            <div class="relative">
+            <div class="cv-template-rail relative">
+                <button
+                    type="button"
+                    class="cv-template-nav cv-template-nav--left"
+                    :class="{ 'is-disabled': ! templateSliderCanPrev }"
+                    :disabled="! templateSliderCanPrev"
+                    :aria-label="messages.templates_prev"
+                    @click="scrollTemplateSlider(-1)"
+                >
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+
                 <div
-                    class="cv-template-slider flex gap-2.5 sm:gap-3 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1 scroll-smooth snap-x snap-mandatory"
+                    x-ref="templateSlider"
+                    class="cv-template-slider flex gap-3 sm:gap-3.5 overflow-x-auto overflow-y-hidden py-4 px-10 sm:px-12 scroll-smooth snap-x snap-mandatory"
                     role="radiogroup"
                     aria-label="{{ __('talenma.cv_builder.template_label') }}"
+                    @scroll.passive="updateTemplateSliderNav()"
+                    @click.capture="onTemplateSliderBackgroundClick($event)"
                 >
                     <template x-for="option in templateOptions" :key="option.key">
-                        <button
-                            type="button"
+                        <div
+                            class="cv-template-card group relative shrink-0 w-[7.5rem] sm:w-[8.75rem] md:w-[9.25rem] snap-start rounded-xl border bg-white p-2 transition-[transform,box-shadow,border-color] duration-200 ease-out will-change-transform"
+                            :data-template-key="option.key"
+                            :class="{
+                                'is-selected border-indigo-500 ring-2 ring-indigo-200 shadow-sm': template === option.key,
+                                'is-previewed border-indigo-300 shadow-md': previewedTemplate === option.key && template !== option.key,
+                                'border-gray-200': template !== option.key && previewedTemplate !== option.key,
+                            }"
                             role="radio"
                             :aria-checked="template === option.key"
-                            @click="selectTemplate(option.key)"
-                            class="group shrink-0 w-[7.25rem] sm:w-[8.5rem] snap-start text-left rounded-xl border bg-white p-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                            :class="template === option.key
-                                ? 'border-indigo-500 ring-2 ring-indigo-200 shadow-sm'
-                                : 'border-gray-200 hover:border-indigo-300 hover:shadow-sm'"
+                            :aria-label="option.label"
+                            @mouseenter="onTemplateCardEnter(option.key)"
+                            @mouseleave="onTemplateCardLeave(option.key)"
+                            @click="onTemplateCardTap(option.key, $event)"
                         >
-                            <div class="aspect-[3/4] overflow-hidden rounded-lg bg-gray-100 ring-1 ring-black/5">
+                            <div class="relative aspect-[3/4] overflow-hidden rounded-lg bg-gray-100 ring-1 ring-black/5">
                                 <img
                                     :src="templatePreviewSrc(option)"
                                     :alt="option.label"
-                                    class="h-full w-full object-cover object-top"
+                                    class="cv-template-card-image h-full w-full object-cover object-top transition-transform duration-200 ease-out"
                                     loading="lazy"
                                     decoding="async"
+                                    draggable="false"
                                 >
+
+                                <div
+                                    class="cv-template-card-overlay absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-black/70 via-black/35 to-transparent px-1.5 pb-2 pt-8 pointer-events-none"
+                                >
+                                    <template x-if="template === option.key">
+                                        <span class="cv-template-banner inline-flex max-w-full items-center rounded-full bg-indigo-600 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-white shadow-sm">
+                                            <span class="truncate" x-text="messages.selected_template"></span>
+                                        </span>
+                                    </template>
+                                    <template x-if="template !== option.key">
+                                        <button
+                                            type="button"
+                                            class="cv-template-choose pointer-events-auto inline-flex max-w-full items-center rounded-full bg-white px-2.5 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-indigo-700 shadow-md ring-1 ring-indigo-100 transition hover:bg-indigo-50"
+                                            @click.stop="selectTemplate(option.key)"
+                                        >
+                                            <span class="truncate" x-text="messages.choose_template"></span>
+                                        </button>
+                                    </template>
+                                </div>
                             </div>
+
                             <span
                                 class="mt-2 block text-center text-xs sm:text-sm font-semibold truncate"
-                                :class="template === option.key ? 'text-indigo-700' : 'text-gray-700 group-hover:text-indigo-700'"
+                                :class="template === option.key ? 'text-indigo-700' : 'text-gray-700'"
                                 x-text="option.label"
                             ></span>
-                        </button>
+                        </div>
                     </template>
                 </div>
+
+                <button
+                    type="button"
+                    class="cv-template-nav cv-template-nav--right"
+                    :class="{ 'is-disabled': ! templateSliderCanNext }"
+                    :disabled="! templateSliderCanNext"
+                    :aria-label="messages.templates_next"
+                    @click="scrollTemplateSlider(1)"
+                >
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
             </div>
-        </div>        {{-- Onglets mobile : Rédaction / Aperçu --}}
+        </div>
+
+        {{-- Onglets mobile : Rédaction / Aperçu --}}
         <div class="xl:hidden mb-4 grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl" role="tablist" aria-label="{{ __('talenma.cv_builder.mobile_tabs_label') }}">
             <button
                 type="button"

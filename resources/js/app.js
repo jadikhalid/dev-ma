@@ -8421,6 +8421,9 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
     profileAvatarUrl: config.profileAvatarUrl ?? null,
     mobilePanel: 'edit',
     exporting: false,
+    previewedTemplate: null,
+    templateSliderCanPrev: false,
+    templateSliderCanNext: false,
     previewScale: 1,
     previewContentHeight: 1122,
     _previewTimer: null,
@@ -8429,6 +8432,7 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
     _previewAbort: null,
     _previewQueue: Promise.resolve(),
     _previewResizeObserver: null,
+    _templateSliderResizeObserver: null,
 
     init() {
         if (! this.data.photo_source) {
@@ -8452,17 +8456,151 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
 
         this.$nextTick(() => {
             this.bindPreviewStageResize();
+            this.bindTemplateSlider();
             this.schedulePreview();
+            this.scrollSelectedTemplateIntoView({ behavior: 'auto' });
         });
+    },
+
+    bindTemplateSlider() {
+        const slider = this.$refs.templateSlider;
+        if (! slider) {
+            return;
+        }
+
+        this.updateTemplateSliderNav();
+
+        this._templateSliderResizeObserver?.disconnect();
+        if (typeof ResizeObserver !== 'undefined') {
+            this._templateSliderResizeObserver = new ResizeObserver(() => {
+                this.updateTemplateSliderNav();
+                this.scrollSelectedTemplateIntoView({ behavior: 'auto' });
+            });
+            this._templateSliderResizeObserver.observe(slider);
+        }
+
+        window.addEventListener('resize', () => {
+            this.updateTemplateSliderNav();
+        }, { passive: true });
+    },
+
+    updateTemplateSliderNav() {
+        const slider = this.$refs.templateSlider;
+        if (! slider) {
+            this.templateSliderCanPrev = false;
+            this.templateSliderCanNext = false;
+
+            return;
+        }
+
+        const maxScroll = Math.max(0, slider.scrollWidth - slider.clientWidth);
+        const left = slider.scrollLeft;
+
+        this.templateSliderCanPrev = left > 4;
+        this.templateSliderCanNext = left < (maxScroll - 4);
+    },
+
+    scrollTemplateSlider(direction) {
+        const slider = this.$refs.templateSlider;
+        if (! slider) {
+            return;
+        }
+
+        const card = slider.querySelector('.cv-template-card');
+        const styles = window.getComputedStyle(slider);
+        const gap = Number.parseFloat(styles.columnGap || styles.gap || '12') || 12;
+        const step = ((card?.offsetWidth) || 140) + gap;
+
+        slider.scrollBy({
+            left: direction * step * Math.max(1, Math.floor(slider.clientWidth / step) || 1),
+            behavior: 'smooth',
+        });
+
+        window.setTimeout(() => this.updateTemplateSliderNav(), 280);
+    },
+
+    scrollSelectedTemplateIntoView(options = {}) {
+        const slider = this.$refs.templateSlider;
+        if (! slider || ! this.template) {
+            return;
+        }
+
+        const card = slider.querySelector(`.cv-template-card[data-template-key="${this.template}"]`);
+        if (! card) {
+            this.updateTemplateSliderNav();
+
+            return;
+        }
+
+        const behavior = options.behavior || 'smooth';
+        const sliderRect = slider.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        const fullyVisible = cardRect.left >= sliderRect.left + 4
+            && cardRect.right <= sliderRect.right - 4;
+
+        if (! fullyVisible) {
+            const targetLeft = card.offsetLeft - ((slider.clientWidth - card.offsetWidth) / 2);
+            slider.scrollTo({
+                left: Math.max(0, targetLeft),
+                behavior,
+            });
+        }
+
+        window.setTimeout(() => this.updateTemplateSliderNav(), behavior === 'smooth' ? 320 : 40);
+    },
+
+    hasFineHover() {
+        return typeof window !== 'undefined'
+            && typeof window.matchMedia === 'function'
+            && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    },
+
+    onTemplateCardEnter(key) {
+        if (this.hasFineHover()) {
+            this.previewedTemplate = key;
+        }
+    },
+
+    onTemplateCardLeave(key) {
+        if (this.hasFineHover() && this.previewedTemplate === key) {
+            this.previewedTemplate = null;
+        }
+    },
+
+    onTemplateCardTap(key, event) {
+        if (this.hasFineHover()) {
+            return;
+        }
+
+        if (event?.target?.closest?.('.cv-template-choose')) {
+            return;
+        }
+
+        this.previewedTemplate = this.previewedTemplate === key ? null : key;
+    },
+
+    onTemplateSliderBackgroundClick(event) {
+        if (this.hasFineHover()) {
+            return;
+        }
+
+        if (! event?.target?.closest?.('.cv-template-card')) {
+            this.previewedTemplate = null;
+        }
     },
 
     selectTemplate(key) {
         if (! key || this.template === key) {
+            this.previewedTemplate = null;
+            this.$nextTick(() => this.scrollSelectedTemplateIntoView());
+
             return;
         }
 
         this.template = key;
+        this.previewedTemplate = null;
         this.onSettingsChange();
+        this.$nextTick(() => this.scrollSelectedTemplateIntoView());
     },
 
     templatePreviewSrc(option) {

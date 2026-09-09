@@ -89,22 +89,32 @@
     }
 
     function otherColumn(el) {
-        var side = document.querySelector('.sidebar-inner') || document.querySelector('td.sidebar');
-        var main = document.querySelector('.main-inner') || document.querySelector('td.main');
+        var side = document.querySelector('.sidebar-inner')
+            || document.querySelector('td.sidebar')
+            || document.querySelector('td.col-left');
+        var main = document.querySelector('.main-inner')
+            || document.querySelector('td.main')
+            || document.querySelector('td.col-right');
         if (!side || !main) return null;
-        if (el.closest('.sidebar-inner, td.sidebar')) return main;
-        if (el.closest('.main-inner, td.main')) return side;
+        if (el.closest('.sidebar-inner, td.sidebar, td.col-left')) return main;
+        if (el.closest('.main-inner, td.main, td.col-right')) return side;
         return null;
     }
 
     function isSidebarContainer(container) {
         return container.classList.contains('sidebar-inner')
-            || (container.tagName === 'TD' && container.classList.contains('sidebar'));
+            || (container.tagName === 'TD' && (
+                container.classList.contains('sidebar')
+                || container.classList.contains('col-left')
+            ));
     }
 
     function isMainContainer(container) {
         return container.classList.contains('main-inner')
-            || (container.tagName === 'TD' && container.classList.contains('main'));
+            || (container.tagName === 'TD' && (
+                container.classList.contains('main')
+                || container.classList.contains('col-right')
+            ));
     }
 
     function blocksIn(container) {
@@ -115,10 +125,16 @@
         if (isSidebarContainer(container)) {
             Array.prototype.forEach.call(
                 container.querySelectorAll(
-                    '.photo-wrap, .sidebar-block, .sidebar-name, .sidebar-headline, .sidebar-divider, .sidebar-hero-name, .sidebar-hero-headline'
+                    '.photo-wrap, .sidebar-block, .sidebar-name, .sidebar-headline, .sidebar-divider, .sidebar-hero-name, .sidebar-hero-headline, .side-section'
                 ),
                 function (el) { nodes.push(el); }
             );
+            if (nodes.length === 0) {
+                Array.prototype.forEach.call(container.children, function (el) {
+                    if (el.classList && el.classList.contains('cv-page-pad')) return;
+                    nodes.push(el);
+                });
+            }
             return nodes;
         }
 
@@ -128,13 +144,19 @@
                 if (el.tagName === 'TABLE' && !el.classList.contains('timeline')) {
                     nodes.push(el);
                 }
-                if (el.classList && (el.classList.contains('hero-name') || el.classList.contains('hero-headline') || el.classList.contains('main-headline'))) {
+                if (el.classList && (
+                    el.classList.contains('hero-name')
+                    || el.classList.contains('hero-headline')
+                    || el.classList.contains('main-headline')
+                    || el.classList.contains('section')
+                    || el.classList.contains('profile-box')
+                )) {
                     nodes.push(el);
                 }
             });
             Array.prototype.forEach.call(
                 container.querySelectorAll(
-                    '.hero-name, .hero-headline, .main-headline, .section-title, table.timeline, .cert-row, .entry, .edu-row, .summary'
+                    '.hero-name, .hero-headline, .main-headline, .section-title, table.timeline, .cert-row, .entry, .edu-row, .summary, .profile-box'
                 ),
                 function (el) {
                     if (nodes.indexOf(el) === -1) nodes.push(el);
@@ -144,9 +166,9 @@
         }
 
         Array.prototype.forEach.call(container.querySelectorAll(
-            '.entry, .edu-row, .cert-row, .skill-row, .lang-row, .summary, .section-title, .sidebar-block, .section'
+            '.entry, .edu-row, .cert-row, .skill-row, .lang-row, .summary, .section-title, .sidebar-block, .section, .skills-row, .strengths'
         ), function (el) {
-            if (el.classList.contains('section') && el.querySelector('.entry, .edu-row, .summary, .cert-row, .skill-row, .lang-row, .section-title, table.timeline')) {
+            if (el.classList.contains('section') && el.querySelector('.entry, .edu-row, .summary, .cert-row, .skill-row, .lang-row, .section-title, table.timeline, .skills-row, .strengths')) {
                 return;
             }
             nodes.push(el);
@@ -157,11 +179,15 @@
 
     function blocks() {
         var nodes = [];
-        var header = document.querySelector('.header');
+        var header = document.querySelector('.header') || document.querySelector('.header-table');
         var contact = document.querySelector('.contact-bar');
-        var side = document.querySelector('.sidebar-inner') || document.querySelector('td.sidebar');
-        var main = document.querySelector('.main-inner') || document.querySelector('td.main');
-        var bodyCol = document.querySelector('.body');
+        var side = document.querySelector('.sidebar-inner')
+            || document.querySelector('td.sidebar')
+            || document.querySelector('td.col-left');
+        var main = document.querySelector('.main-inner')
+            || document.querySelector('td.main')
+            || document.querySelector('td.col-right');
+        var bodyCol = document.querySelector('.body') || document.querySelector('.cv-body');
 
         if (header) nodes.push(header);
         if (contact) nodes.push(contact);

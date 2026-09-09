@@ -43,6 +43,20 @@ class MarketingCvPreviewTest extends TestCase
             ->assertSee('f4a9bb', false)
             ->assertSee('skills-grid', false)
             ->assertSee('Prénom', false);
+
+        $this->get(route('marketing.cv-preview', ['template' => 'simple_plus']))
+            ->assertOk()
+            ->assertSee('profile-box', false)
+            ->assertSee('0f766e', false)
+            ->assertSee('tool-pill', false)
+            ->assertSee('Prénom', false);
+
+        $this->get(route('marketing.cv-preview', ['template' => 'starter']))
+            ->assertOk()
+            ->assertSee('2c84b5', false)
+            ->assertSee('skills-row', false)
+            ->assertSee('header-photo', false)
+            ->assertSee('PRÉNOM', false);
     }
 
     public function test_invalid_cv_preview_template_returns_not_found(): void

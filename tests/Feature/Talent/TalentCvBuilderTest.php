@@ -83,6 +83,45 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('Prénom', false);
     }
 
+    public function test_simple_plus_template_preview_uses_teal_editorial_layout(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_SIMPLE_PLUS,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('cv-template" content="simple_plus"', false)
+            ->assertSee('profile-box', false)
+            ->assertSee('0f766e', false)
+            ->assertSee('tool-pill', false)
+            ->assertSee('name-last', false)
+            ->assertSee('Prénom', false);
+    }
+
+    public function test_starter_template_preview_uses_blue_single_column_layout(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_STARTER,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('cv-template" content="starter"', false)
+            ->assertSee('2c84b5', false)
+            ->assertSee('strengths', false)
+            ->assertSee('skills-row', false)
+            ->assertSee('header-photo', false)
+            ->assertSee('cv-preview-page-pads', false)
+            ->assertSee('class="body"', false);
+    }
+
     public function test_modern_template_preview_includes_photo_header(): void
     {
         $talent = User::factory()->talent()->create();
@@ -172,6 +211,9 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee(__('talenma.cv_builder.templates.classic'))
             ->assertSee(__('talenma.cv_builder.templates.vibrant'))
             ->assertSee(__('talenma.cv_builder.templates.girly'))
+            ->assertSee(__('talenma.cv_builder.templates.simple_plus'))
+            ->assertSee(__('talenma.cv_builder.templates.starter'))
+            ->assertSee(__('talenma.cv_builder.choose_template'))
             ->assertSee('selectTemplate', false)
             ->assertSee('templatePreviewSrc', false);
     }
