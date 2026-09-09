@@ -143,6 +143,36 @@
                             {{ __('talenma.nav.apps_launcher_library') }}
                         </span>
                     </div>
+
+                    <div
+                        class="flex flex-col items-center rounded-xl px-3 py-3 text-center cursor-not-allowed"
+                        aria-disabled="true"
+                        title="{{ __('talenma.nav.apps_launcher_library_soon') }}"
+                    >
+                        <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"/>
+                            </svg>
+                        </span>
+                        <span class="mt-2 text-xs font-semibold text-gray-400 leading-tight">
+                            {{ __('talenma.nav.apps_launcher_videotheque') }}
+                        </span>
+                    </div>
+
+                    <div
+                        class="flex flex-col items-center rounded-xl px-3 py-3 text-center cursor-not-allowed"
+                        aria-disabled="true"
+                        title="{{ __('talenma.nav.apps_launcher_library_soon') }}"
+                    >
+                        <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.627 48.627 0 0 1 12 20.904a48.627 48.627 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.908.276-1.813.567-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"/>
+                            </svg>
+                        </span>
+                        <span class="mt-2 text-xs font-semibold text-gray-400 leading-tight">
+                            {{ __('talenma.nav.apps_launcher_e_academie') }}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

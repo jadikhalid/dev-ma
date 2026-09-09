@@ -40,6 +40,8 @@ return [
         'apps_launcher_ats_score' => 'ATS Score',
         'apps_launcher_library' => 'Bibliothèque',
         'apps_launcher_library_soon' => 'Bientôt',
+        'apps_launcher_videotheque' => 'Vidéothèque',
+        'apps_launcher_e_academie' => 'E Académie',
         'back_home' => '← Retour à l\'accueil',
     ],
     'roles' => [

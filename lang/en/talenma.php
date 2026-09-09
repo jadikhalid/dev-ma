@@ -40,6 +40,8 @@ return [
         'apps_launcher_ats_score' => 'ATS Score',
         'apps_launcher_library' => 'Library',
         'apps_launcher_library_soon' => 'Coming soon',
+        'apps_launcher_videotheque' => 'Video library',
+        'apps_launcher_e_academie' => 'E Academy',
         'back_home' => '← Back to home',
     ],
     'roles' => [
