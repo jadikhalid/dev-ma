@@ -20,12 +20,26 @@ class HomeLatestJobsTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee(__('talenma.home.latest_jobs_title'), false)
+            ->assertSee('id="opportunites"', false)
+            ->assertSee(route('home').'#opportunites', false)
             ->assertSee('Fullstack Maroc', false)
             ->assertSee('Description annonce publique.', false)
             ->assertSee('ACME Maroc', false)
             ->assertSee('Technologie', false)
             ->assertSee(route('jobs.gate', $job), false)
             ->assertSee(route('jobs.gate'), false);
+    }
+
+    public function test_home_header_exposes_fresh_job_timestamps_for_annonces_badge(): void
+    {
+        $fresh = $this->seedPublishedJob('Fresh job', publishedAt: now()->subHours(2));
+        $this->seedPublishedJob('Old job', publishedAt: now()->subDays(3));
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('homeAnnoncesNav', false)
+            ->assertSee((string) $fresh->published_at->getTimestamp(), false)
+            ->assertDontSee((string) now()->subDays(3)->getTimestamp(), false);
     }
 
     public function test_guest_job_gate_redirects_to_login_then_talent_job_after_auth(): void
@@ -128,7 +142,7 @@ class HomeLatestJobsTest extends TestCase
             ->assertDontSee('Annonce limite #01', false);
     }
 
-    private function seedPublishedJob(string $title): JobPosting
+    private function seedPublishedJob(string $title, ?\Illuminate\Support\Carbon $publishedAt = null): JobPosting
     {
         [$owner, $profile] = $this->makeCompanyOwner();
         $sector = ProfessionSector::query()->create([
@@ -146,7 +160,7 @@ class HomeLatestJobsTest extends TestCase
             'title' => $title,
             'description' => str_repeat('Description annonce publique. ', 3),
             'status' => JobPosting::STATUS_PUBLISHED,
-            'published_at' => now(),
+            'published_at' => $publishedAt ?? now(),
             'remote_ok' => true,
             'work_modes' => ['remote'],
             'location_city' => 'Rabat',

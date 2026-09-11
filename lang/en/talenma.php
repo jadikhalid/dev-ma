@@ -17,6 +17,7 @@ return [
         'my_profile' => 'My profile',
         'talents' => 'Talents',
         'jobs' => 'Jobs',
+        'annonces_with_new' => 'Jobs, :count new',
         'direct_hire' => 'Recrut',
         'sourcing' => 'Sourcing',
         'my_company' => 'Company profile',

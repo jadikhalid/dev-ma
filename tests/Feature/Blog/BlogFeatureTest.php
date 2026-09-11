@@ -143,6 +143,9 @@ class BlogFeatureTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee(route('blog.index'), false)
-            ->assertSee(__('talenma.nav.blog'), false);
+            ->assertSee(__('talenma.nav.blog'), false)
+            ->assertSee(route('home').'#opportunites', false)
+            ->assertSee(__('talenma.nav.jobs'), false)
+            ->assertSee('id="opportunites"', false);
     }
 }

@@ -9101,6 +9101,98 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
     },
 }));
 
+Alpine.data('homeAnnoncesNav', (config = {}) => ({
+    storageKey: config.storageKey || 'tdm.home.annonces.seen_at',
+    homeUrl: config.homeUrl || '/',
+    sectionId: config.sectionId || 'opportunites',
+    timestamps: Array.isArray(config.timestamps) ? config.timestamps.map(Number) : [],
+    badgeCount: 0,
+    _observer: null,
+
+    init() {
+        this.refreshBadge();
+        this.$nextTick(() => {
+            this.bindSectionObserver();
+            if (window.location.hash === `#${this.sectionId}`) {
+                this.markSeen();
+            }
+        });
+    },
+
+    destroy() {
+        this._observer?.disconnect();
+        this._observer = null;
+    },
+
+    seenAt() {
+        const raw = window.localStorage.getItem(this.storageKey);
+
+        return raw ? Number(raw) : 0;
+    },
+
+    refreshBadge() {
+        const seenAt = this.seenAt();
+        this.badgeCount = this.timestamps.filter((ts) => Number.isFinite(ts) && ts > seenAt).length;
+    },
+
+    markSeen() {
+        const latest = this.timestamps.length ? Math.max(...this.timestamps) : Math.floor(Date.now() / 1000);
+        const nextSeen = Math.max(this.seenAt(), latest, Math.floor(Date.now() / 1000));
+        window.localStorage.setItem(this.storageKey, String(nextSeen));
+        this.badgeCount = 0;
+    },
+
+    scrollToSection() {
+        const section = document.getElementById(this.sectionId);
+
+        if (! section) {
+            return false;
+        }
+
+        const headerOffset = 88;
+        const top = section.getBoundingClientRect().top + window.scrollY - headerOffset;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+
+        return true;
+    },
+
+    onClick(event) {
+        const onHome = Boolean(document.getElementById(this.sectionId));
+
+        if (onHome) {
+            event.preventDefault();
+            this.scrollToSection();
+            this.markSeen();
+
+            return;
+        }
+
+        this.markSeen();
+    },
+
+    bindSectionObserver() {
+        const section = document.getElementById(this.sectionId);
+
+        if (! section || typeof IntersectionObserver === 'undefined') {
+            return;
+        }
+
+        this._observer?.disconnect();
+        this._observer = new IntersectionObserver((entries) => {
+            const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.2);
+
+            if (visible) {
+                this.markSeen();
+            }
+        }, {
+            threshold: [0.2, 0.35, 0.5],
+            rootMargin: '-72px 0px -20% 0px',
+        });
+
+        this._observer.observe(section);
+    },
+}));
+
 Alpine.start();
 
 // Revalidate auth pages restored from the browser back-forward cache

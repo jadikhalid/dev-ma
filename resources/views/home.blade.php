@@ -141,10 +141,12 @@
             </div>
         </div>
 
-        <x-latest-jobs-marquee
-            :jobs="$latestJobs ?? collect()"
-            :index-url="$latestJobsIndexUrl ?? route('jobs.gate')"
-        />
+        <div id="opportunites" class="scroll-mt-24">
+            <x-latest-jobs-marquee
+                :jobs="$latestJobs ?? collect()"
+                :index-url="$latestJobsIndexUrl ?? route('jobs.gate')"
+            />
+        </div>
     </div>
 </section>
 
