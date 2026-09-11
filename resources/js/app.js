@@ -345,7 +345,10 @@ Alpine.data('magazineTicker', (config = {}) => ({
     onPointerDown(event) {
         // Touch / phone: never capture — first tap must open the job link (iOS Safari).
         if (this.isPhoneMarquee() || this.isTouchUi() || event.pointerType === 'touch') {
-            this.isBannerHovered = false;
+            // Pause while the finger is on a job card (do not clear the pause flag).
+            if (event.target.closest?.('a[href]')) {
+                this.isBannerHovered = true;
+            }
 
             return;
         }
@@ -398,11 +401,27 @@ Alpine.data('magazineTicker', (config = {}) => ({
             return;
         }
 
-        this.isBannerHovered = false;
+        const onLink = Boolean(event.target.closest?.('a[href]'));
+
         this._touchStart = {
             x: touch.clientX,
             y: touch.clientY,
+            onLink,
         };
+
+        // Phone only: stop the marquee as soon as a job card is pressed.
+        if (onLink) {
+            this.isBannerHovered = true;
+        }
+    },
+
+    onMarqueeTouchCancel() {
+        if (! this.isPhoneMarquee()) {
+            return;
+        }
+
+        this._touchStart = null;
+        this.isBannerHovered = false;
     },
 
     onMarqueeTouchEnd(event) {
@@ -415,26 +434,32 @@ Alpine.data('magazineTicker', (config = {}) => ({
         this._touchStart = null;
 
         if (! touch || ! start) {
+            this.isBannerHovered = false;
+
             return;
         }
 
         const dx = Math.abs(touch.clientX - start.x);
         const dy = Math.abs(touch.clientY - start.y);
 
-        // Ignore vertical page scrolls / accidental slides.
+        // Ignore vertical page scrolls / accidental slides — resume auto-scroll.
         if (dx > 12 || dy > 12) {
+            this.isBannerHovered = false;
+
             return;
         }
 
         const link = event.target.closest?.('a[href]');
 
         if (! link?.href) {
+            this.isBannerHovered = false;
+
             return;
         }
 
-        // Navigate on first finger-up (Android-like). preventDefault avoids a delayed 2nd ghost click.
+        // Keep paused and navigate on first finger-up. preventDefault avoids a delayed ghost click.
         event.preventDefault();
-        this.isBannerHovered = false;
+        this.isBannerHovered = true;
         window.location.href = link.href;
     },
 

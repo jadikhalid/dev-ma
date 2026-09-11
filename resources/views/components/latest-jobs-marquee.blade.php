@@ -52,6 +52,7 @@
                 @pointercancel="onPointerUp($event)"
                 @touchstart.passive="onMarqueeTouchStart($event)"
                 @touchend="onMarqueeTouchEnd($event)"
+                @touchcancel="onMarqueeTouchCancel()"
                 @click.capture="onMarqueeClick($event)"
             >
                 <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-white via-white/85 to-transparent sm:w-20"></div>
