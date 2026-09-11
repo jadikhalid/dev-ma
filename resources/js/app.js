@@ -31,6 +31,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
 
     isBannerHovered: false,
     isDragging: false,
+    _touchStart: null,
 
     init() {
         if (this._booted) {
@@ -293,6 +294,14 @@ Alpine.data('magazineTicker', (config = {}) => ({
     },
 
     onBannerEnter() {
+        // iOS Safari fires mouseenter on the first tap (sticky hover) and would
+        // pause the marquee without navigating — ignore non-desktop pointers.
+        if (! this.canHoverPause()) {
+            this.isBannerHovered = false;
+
+            return;
+        }
+
         this.isBannerHovered = true;
     },
 
@@ -320,13 +329,24 @@ Alpine.data('magazineTicker', (config = {}) => ({
         this.arrowHoldDirection = 0;
     },
 
+    canHoverPause() {
+        return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    },
+
     isPhoneMarquee() {
         return window.matchMedia('(max-width: 639px)').matches;
     },
 
+    isTouchUi() {
+        return window.matchMedia('(hover: none), (pointer: coarse)').matches
+            || ('ontouchstart' in window);
+    },
+
     onPointerDown(event) {
-        // Phones: never capture the pointer — cards must remain tappable (iOS Safari).
-        if (this.isPhoneMarquee()) {
+        // Touch / phone: never capture — first tap must open the job link (iOS Safari).
+        if (this.isPhoneMarquee() || this.isTouchUi() || event.pointerType === 'touch') {
+            this.isBannerHovered = false;
+
             return;
         }
 
@@ -342,7 +362,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
     },
 
     onPointerMove(event) {
-        if (this.isPhoneMarquee() || ! this.isDragging) {
+        if (this.isPhoneMarquee() || this.isTouchUi() || ! this.isDragging) {
             return;
         }
 
@@ -356,7 +376,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
     },
 
     onPointerUp(event) {
-        if (this.isPhoneMarquee() || ! this.isDragging) {
+        if (this.isPhoneMarquee() || this.isTouchUi() || ! this.isDragging) {
             return;
         }
 
@@ -367,8 +387,59 @@ Alpine.data('magazineTicker', (config = {}) => ({
         }
     },
 
+    onMarqueeTouchStart(event) {
+        if (! this.isPhoneMarquee()) {
+            return;
+        }
+
+        const touch = event.touches?.[0];
+
+        if (! touch) {
+            return;
+        }
+
+        this.isBannerHovered = false;
+        this._touchStart = {
+            x: touch.clientX,
+            y: touch.clientY,
+        };
+    },
+
+    onMarqueeTouchEnd(event) {
+        if (! this.isPhoneMarquee()) {
+            return;
+        }
+
+        const touch = event.changedTouches?.[0];
+        const start = this._touchStart;
+        this._touchStart = null;
+
+        if (! touch || ! start) {
+            return;
+        }
+
+        const dx = Math.abs(touch.clientX - start.x);
+        const dy = Math.abs(touch.clientY - start.y);
+
+        // Ignore vertical page scrolls / accidental slides.
+        if (dx > 12 || dy > 12) {
+            return;
+        }
+
+        const link = event.target.closest?.('a[href]');
+
+        if (! link?.href) {
+            return;
+        }
+
+        // Navigate on first finger-up (Android-like). preventDefault avoids a delayed 2nd ghost click.
+        event.preventDefault();
+        this.isBannerHovered = false;
+        window.location.href = link.href;
+    },
+
     onMarqueeClick(event) {
-        // Phones: never block navigation to the job card URL.
+        // Phones use touchend navigation; never block or double-handle here.
         if (this.isPhoneMarquee()) {
             this._dragMoved = false;
 

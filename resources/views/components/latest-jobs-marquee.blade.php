@@ -50,6 +50,8 @@
                 @pointermove="onPointerMove($event)"
                 @pointerup="onPointerUp($event)"
                 @pointercancel="onPointerUp($event)"
+                @touchstart.passive="onMarqueeTouchStart($event)"
+                @touchend="onMarqueeTouchEnd($event)"
                 @click.capture="onMarqueeClick($event)"
             >
                 <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-white via-white/85 to-transparent sm:w-20"></div>
@@ -97,11 +99,11 @@
                         @foreach ($jobs as $job)
                             <a
                                 href="{{ $job['url'] }}"
-                                class="group mx-2 flex shrink-0 items-center gap-4 rounded-xl border border-gray-100 bg-white px-5 py-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-md sm:mx-2.5 sm:gap-5 sm:px-6 sm:py-5"
+                                class="group mx-2 flex shrink-0 items-center gap-4 rounded-xl border border-gray-100 bg-white px-5 py-4 shadow-sm transition duration-300 sm:mx-2.5 sm:gap-5 sm:px-6 sm:py-5 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 [@media(hover:hover)_and_(pointer:fine)]:hover:border-indigo-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-indigo-50/50 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md"
                             >
                                 <div class="flex min-w-[13rem] max-w-xs flex-col justify-center sm:min-w-[17rem] sm:max-w-sm">
                                     <span class="text-[10px] font-medium uppercase tracking-wide text-indigo-500/80 sm:text-[11px]">{{ $job['date'] }}</span>
-                                    <span class="mt-1.5 line-clamp-1 text-sm font-bold text-gray-900 transition-colors duration-300 group-hover:text-indigo-700 sm:text-base">
+                                    <span class="mt-1.5 line-clamp-1 text-sm font-bold text-gray-900 transition-colors duration-300 sm:text-base [@media(hover:hover)_and_(pointer:fine)]:group-hover:text-indigo-700">
                                         {{ $job['title'] }}
                                     </span>
                                     @if ($job['excerpt'] !== '')
