@@ -40,9 +40,10 @@
             </div>
 
             <div class="flex items-center gap-2.5 sm:gap-3">
+                {{-- Desktop / tablette : liens directs --}}
                 <a
                     href="{{ route('home') }}#opportunites"
-                    class="relative mr-0.5 sm:mr-1 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50"
+                    class="relative mr-0.5 sm:mr-1 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50"
                     x-data="homeAnnoncesNav({
                         timestamps: @js($freshJobTimestamps),
                         homeUrl: @js(route('home')),
@@ -60,20 +61,101 @@
                             x-show="badgeCount > 0"
                             x-cloak
                             x-text="badgeCount > 99 ? '99+' : badgeCount"
-                            class="pointer-events-none absolute -top-2 -right-2.5 z-20 inline-flex h-4 min-w-4 items-center justify-center rounded-[50%] bg-rose-500 px-1 text-center text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-indigo-600 sm:ring-white"
+                            class="pointer-events-none absolute -top-2 -right-2.5 z-20 inline-flex h-4 min-w-4 items-center justify-center rounded-[50%] bg-rose-500 px-1 text-center text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white"
                         ></span>
                         <span>{{ __('talenma.nav.jobs') }}</span>
                     </span>
                 </a>
                 <a
                     href="{{ route('blog.index') }}"
-                    class="mr-1 sm:mr-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50"
+                    class="mr-1 sm:mr-2 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50"
                 >
                     <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5"/>
                     </svg>
                     <span>{{ __('talenma.nav.blog') }}</span>
                 </a>
+
+                {{-- Mobile : menu Annonces + Blog (badge visible sur le bouton) --}}
+                <div
+                    class="relative sm:hidden"
+                    x-data="homeAnnoncesNav({
+                        timestamps: @js($freshJobTimestamps),
+                        homeUrl: @js(route('home')),
+                        sectionId: 'opportunites',
+                        storageKey: 'tdm.home.annonces.seen_at',
+                    })"
+                    @keydown.escape.window="closeMenu()"
+                >
+                    <button
+                        type="button"
+                        class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/95 hover:bg-white/15 transition"
+                        @click="toggleMenu()"
+                        :aria-expanded="menuOpen.toString()"
+                        aria-haspopup="menu"
+                        :aria-label="badgeCount > 0 ? @js(__('talenma.nav.mobile_explore_with_new')).replace(':count', String(badgeCount)) : @js(__('talenma.nav.mobile_explore'))"
+                    >
+                        <span
+                            x-show="badgeCount > 0"
+                            x-cloak
+                            x-text="badgeCount > 99 ? '99+' : badgeCount"
+                            class="pointer-events-none absolute -top-0.5 -right-0.5 z-20 inline-flex h-4 min-w-4 items-center justify-center rounded-[50%] bg-rose-500 px-1 text-center text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-indigo-600"
+                        ></span>
+                        <svg x-show="!menuOpen" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                        </svg>
+                        <svg x-show="menuOpen" x-cloak class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+
+                    <div
+                        x-show="menuOpen"
+                        x-cloak
+                        x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100"
+                        x-transition:leave="transition ease-in duration-100"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        @click.outside="closeMenu()"
+                        class="fixed left-1/2 top-20 z-[60] w-[min(14rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/15 bg-indigo-700 p-1.5 shadow-2xl"
+                        role="menu"
+                        aria-label="{{ __('talenma.nav.mobile_explore') }}"
+                    >
+                        <a
+                            href="{{ route('home') }}#opportunites"
+                            role="menuitem"
+                            class="relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+                            @click="onClick($event)"
+                        >
+                            <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.875 1.975-1.95 1.975H5.7c-1.075 0-1.95-.881-1.95-1.975v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.875-1.954-1.95-1.954h-3.15V4.875C14.25 3.839 13.41 3 12.375 3h-0.75C10.59 3 9.75 3.839 9.75 4.875V6.752H6.6c-1.075 0-1.95.873-1.95 1.954v3.783c0 .655.287 1.252.75 1.661m16.5 0H3.75"/>
+                            </svg>
+                            <span class="relative inline-block leading-none">
+                                <span
+                                    x-show="badgeCount > 0"
+                                    x-cloak
+                                    x-text="badgeCount > 99 ? '99+' : badgeCount"
+                                    class="pointer-events-none absolute -top-2 -right-2.5 z-20 inline-flex h-4 min-w-4 items-center justify-center rounded-[50%] bg-rose-500 px-1 text-center text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-indigo-700"
+                                ></span>
+                                <span>{{ __('talenma.nav.jobs') }}</span>
+                            </span>
+                        </a>
+                        <a
+                            href="{{ route('blog.index') }}"
+                            role="menuitem"
+                            class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+                            @click="closeMenu()"
+                        >
+                            <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5"/>
+                            </svg>
+                            <span>{{ __('talenma.nav.blog') }}</span>
+                        </a>
+                    </div>
+                </div>
+
                 <div class="hidden lg:block">
                     <x-locale-switcher />
                 </div>

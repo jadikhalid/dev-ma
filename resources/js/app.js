@@ -320,7 +320,16 @@ Alpine.data('magazineTicker', (config = {}) => ({
         this.arrowHoldDirection = 0;
     },
 
+    isPhoneMarquee() {
+        return window.matchMedia('(max-width: 639px)').matches;
+    },
+
     onPointerDown(event) {
+        // Phones: never capture the pointer — cards must remain tappable (iOS Safari).
+        if (this.isPhoneMarquee()) {
+            return;
+        }
+
         if (this._canUseArrows && event.pointerType === 'mouse') {
             return;
         }
@@ -333,7 +342,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
     },
 
     onPointerMove(event) {
-        if (! this.isDragging) {
+        if (this.isPhoneMarquee() || ! this.isDragging) {
             return;
         }
 
@@ -347,7 +356,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
     },
 
     onPointerUp(event) {
-        if (! this.isDragging) {
+        if (this.isPhoneMarquee() || ! this.isDragging) {
             return;
         }
 
@@ -359,6 +368,13 @@ Alpine.data('magazineTicker', (config = {}) => ({
     },
 
     onMarqueeClick(event) {
+        // Phones: never block navigation to the job card URL.
+        if (this.isPhoneMarquee()) {
+            this._dragMoved = false;
+
+            return;
+        }
+
         if (this._dragMoved) {
             event.preventDefault();
             event.stopPropagation();
@@ -9107,6 +9123,7 @@ Alpine.data('homeAnnoncesNav', (config = {}) => ({
     sectionId: config.sectionId || 'opportunites',
     timestamps: Array.isArray(config.timestamps) ? config.timestamps.map(Number) : [],
     badgeCount: 0,
+    menuOpen: false,
     _observer: null,
 
     init() {
@@ -9142,6 +9159,14 @@ Alpine.data('homeAnnoncesNav', (config = {}) => ({
         this.badgeCount = 0;
     },
 
+    closeMenu() {
+        this.menuOpen = false;
+    },
+
+    toggleMenu() {
+        this.menuOpen = ! this.menuOpen;
+    },
+
     scrollToSection() {
         const section = document.getElementById(this.sectionId);
 
@@ -9163,11 +9188,13 @@ Alpine.data('homeAnnoncesNav', (config = {}) => ({
             event.preventDefault();
             this.scrollToSection();
             this.markSeen();
+            this.closeMenu();
 
             return;
         }
 
         this.markSeen();
+        this.closeMenu();
     },
 
     bindSectionObserver() {

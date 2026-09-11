@@ -18,6 +18,8 @@ return [
         'talents' => 'Talents',
         'jobs' => 'Jobs',
         'annonces_with_new' => 'Jobs, :count new',
+        'mobile_explore' => 'Jobs and Blog menu',
+        'mobile_explore_with_new' => 'Jobs and Blog menu, :count new job(s)',
         'direct_hire' => 'Recrut',
         'sourcing' => 'Sourcing',
         'my_company' => 'Company profile',
