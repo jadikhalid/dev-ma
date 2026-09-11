@@ -5,6 +5,7 @@
 @php
     $cvUrl = $guest ? route('cv-builder.gate') : route('talent.cv-builder.index');
     $atsUrl = $guest ? route('ats-score.gate') : route('talent.ats-score.index');
+    $libraryUrl = $guest ? route('library.gate') : route('talent.library.index');
 @endphp
 
 <div
@@ -130,19 +131,20 @@
                         </span>
                     </a>
 
-                    <div
-                        class="flex flex-col items-center rounded-xl px-3 py-3 text-center cursor-not-allowed"
-                        aria-disabled="true"
+                    <a
+                        href="{{ $libraryUrl }}"
+                        class="flex flex-col items-center rounded-xl px-3 py-3 text-center hover:bg-amber-50 transition group"
+                        @click="close()"
                     >
-                        <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                        <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700 group-hover:bg-amber-200 transition">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/>
                             </svg>
                         </span>
-                        <span class="mt-2 text-xs font-semibold text-gray-400 leading-tight">
+                        <span class="mt-2 text-xs font-semibold text-gray-800 leading-tight">
                             {{ __('talenma.nav.apps_launcher_library') }}
                         </span>
-                    </div>
+                    </a>
 
                     <div
                         class="flex flex-col items-center rounded-xl px-3 py-3 text-center cursor-not-allowed"

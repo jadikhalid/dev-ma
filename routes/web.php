@@ -13,7 +13,10 @@ use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\RecruitmentRequestController as AdminRecruitmentRequestController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\LibraryBookController as AdminLibraryBookController;
+use App\Http\Controllers\Admin\LibraryCategoryController as AdminLibraryCategoryController;
 use App\Http\Controllers\AtsScoreGateController;
+use App\Http\Controllers\LibraryGateController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\Company\DirectHireController as CompanyDirectHireController;
 use App\Http\Controllers\CompanyAccompanimentController;
@@ -42,6 +45,7 @@ use App\Support\TalentCv\TalentCvTemplateCatalog;
 use App\Http\Controllers\Talent\DirectHireController as TalentDirectHireController;
 use App\Http\Controllers\TalentAtsScoreController;
 use App\Http\Controllers\TalentCvBuilderController;
+use App\Http\Controllers\TalentLibraryController;
 use App\Http\Controllers\TalentJobController;
 use App\Http\Controllers\TalentProfileDocumentController;
 use App\Http\Controllers\TalentPresentationVideoController;
@@ -79,6 +83,9 @@ Route::get('/cv-builder/acces', CvBuilderGateController::class)
 Route::get('/ats-score/acces', AtsScoreGateController::class)
     ->middleware('auth')
     ->name('ats-score.gate');
+Route::get('/library/acces', LibraryGateController::class)
+    ->middleware('auth')
+    ->name('library.gate');
 Route::get('/profile/email/confirm/{token}', [ProfileController::class, 'confirmPendingEmail'])
     ->middleware('throttle:20,1')
     ->name('profile.email.confirm');
@@ -215,6 +222,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::redirect('/social-feed', '/admin/publications');
         });
 
+        Route::middleware('admin')->prefix('library')->name('library.')->group(function () {
+            Route::get('/categories', [AdminLibraryCategoryController::class, 'index'])->name('categories.index');
+            Route::post('/categories', [AdminLibraryCategoryController::class, 'store'])->name('categories.store');
+            Route::put('/categories/{category}', [AdminLibraryCategoryController::class, 'update'])->name('categories.update');
+            Route::delete('/categories/{category}', [AdminLibraryCategoryController::class, 'destroy'])->name('categories.destroy');
+
+            Route::get('/books', [AdminLibraryBookController::class, 'index'])->name('books.index');
+            Route::get('/books/create', [AdminLibraryBookController::class, 'create'])->name('books.create');
+            Route::post('/books', [AdminLibraryBookController::class, 'store'])->name('books.store');
+            Route::get('/books/{book}/edit', [AdminLibraryBookController::class, 'edit'])->name('books.edit');
+            Route::put('/books/{book}', [AdminLibraryBookController::class, 'update'])->name('books.update');
+            Route::delete('/books/{book}', [AdminLibraryBookController::class, 'destroy'])->name('books.destroy');
+        });
+
         Route::middleware('moderator.permission:newsletter.manage')->group(function () {
             Route::get('/newsletter', [NewsletterController::class, 'index'])->name('newsletter.index');
             Route::get('/newsletter/create', [NewsletterController::class, 'create'])->name('newsletter.create');
@@ -266,6 +287,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/talent/ats-score', [TalentAtsScoreController::class, 'analyze'])->name('talent.ats-score.analyze');
         Route::post('/talent/ats-score/optimize', [TalentAtsScoreController::class, 'optimize'])->name('talent.ats-score.optimize');
         Route::get('/talent/ats-score/optimized.txt', [TalentAtsScoreController::class, 'downloadOptimized'])->name('talent.ats-score.download');
+
+        Route::get('/talent/library', [TalentLibraryController::class, 'index'])->name('talent.library.index');
+        Route::get('/talent/library/books/{book}/download', [TalentLibraryController::class, 'download'])->name('talent.library.download');
 
         Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
         Route::post('/inbox/conversations', [InboxController::class, 'store'])->name('inbox.store');

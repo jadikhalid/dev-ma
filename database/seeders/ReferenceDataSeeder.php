@@ -16,6 +16,7 @@ class ReferenceDataSeeder extends Seeder
         $this->call([
             ServiceSeeder::class,
             ProfessionSeeder::class,
+            LibraryCategorySeeder::class,
             SocialFeedSeeder::class,
             SocialPostSeeder::class,
         ]);

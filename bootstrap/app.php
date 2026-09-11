@@ -37,4 +37,23 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->render(function (\Illuminate\Http\Exceptions\PostTooLargeException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'message' => __('talenma.admin.library.post_too_large'),
+                ], 413);
+            }
+
+            $fallback = url()->previous() !== url()->current()
+                ? url()->previous()
+                : route('home');
+
+            return redirect()
+                ->to($fallback)
+                ->withErrors([
+                    'file' => __('talenma.admin.library.post_too_large'),
+                ])
+                ->with('toast_error', __('talenma.admin.library.post_too_large'));
+        });
     })->create();

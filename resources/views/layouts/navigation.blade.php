@@ -106,6 +106,9 @@
                             <x-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-nav-link>
                             <x-nav-link :href="route('admin.blog.index')" :active="request()->routeIs('admin.blog.*')">{{ __('talenma.nav.admin_blog') }}</x-nav-link>
                         @endif
+                        @if ($authUser->isAdmin())
+                            <x-nav-link :href="route('admin.library.books.index')" :active="request()->routeIs('admin.library.*')">{{ __('talenma.nav.admin_library') }}</x-nav-link>
+                        @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::NEWSLETTER_MANAGE))
                             <x-nav-link :href="route('admin.newsletter.index')" :active="request()->routeIs('admin.newsletter.*')">{{ __('talenma.nav.admin_newsletter') }}</x-nav-link>
                         @endif
@@ -374,6 +377,9 @@
                             <x-responsive-nav-link :href="route('admin.publications.index')" :active="request()->routeIs('admin.publications.*')">{{ __('talenma.nav.admin_publications') }}</x-responsive-nav-link>
                             <x-responsive-nav-link :href="route('admin.blog.index')" :active="request()->routeIs('admin.blog.*')">{{ __('talenma.nav.admin_blog') }}</x-responsive-nav-link>
                         @endif
+                        @if ($authUser->isAdmin())
+                            <x-responsive-nav-link :href="route('admin.library.books.index')" :active="request()->routeIs('admin.library.*')">{{ __('talenma.nav.admin_library') }}</x-responsive-nav-link>
+                        @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::NEWSLETTER_MANAGE))
                             <x-responsive-nav-link :href="route('admin.newsletter.index')" :active="request()->routeIs('admin.newsletter.*')">{{ __('talenma.nav.admin_newsletter') }}</x-responsive-nav-link>
                         @endif
@@ -445,14 +451,14 @@
                                     </span>
                                     <span class="mt-2 text-xs font-semibold text-gray-800">{{ __('talenma.nav.apps_launcher_ats_score') }}</span>
                                 </a>
-                                <div class="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-center opacity-60 cursor-not-allowed" aria-disabled="true">
-                                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                                <a href="{{ route('talent.library.index') }}" class="flex flex-col items-center rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-3 text-center">
+                                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/>
                                         </svg>
                                     </span>
-                                    <span class="mt-2 text-xs font-semibold text-gray-400">{{ __('talenma.nav.apps_launcher_library') }}</span>
-                                </div>
+                                    <span class="mt-2 text-xs font-semibold text-gray-800">{{ __('talenma.nav.apps_launcher_library') }}</span>
+                                </a>
                                 <div class="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-center opacity-60 cursor-not-allowed" aria-disabled="true" title="{{ __('talenma.nav.apps_launcher_library_soon') }}">
                                     <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
@@ -543,14 +549,14 @@
                                     </span>
                                     <span class="mt-2 text-xs font-semibold text-gray-800">{{ __('talenma.nav.apps_launcher_ats_score') }}</span>
                                 </a>
-                                <div class="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-center opacity-60 cursor-not-allowed" aria-disabled="true">
-                                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                                <a href="{{ route('talent.library.index') }}" class="flex flex-col items-center rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-3 text-center">
+                                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/>
                                         </svg>
                                     </span>
-                                    <span class="mt-2 text-xs font-semibold text-gray-400">{{ __('talenma.nav.apps_launcher_library') }}</span>
-                                </div>
+                                    <span class="mt-2 text-xs font-semibold text-gray-800">{{ __('talenma.nav.apps_launcher_library') }}</span>
+                                </a>
                                 <div class="flex flex-col items-center rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-center opacity-60 cursor-not-allowed" aria-disabled="true" title="{{ __('talenma.nav.apps_launcher_library_soon') }}">
                                     <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
