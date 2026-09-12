@@ -3,6 +3,19 @@
     'indexUrl',
 ])
 
+@php
+    $jobCards = $jobs->map(fn ($job) => [
+        'url' => $job['url'],
+        'date' => $job['date'],
+        'title' => $job['title'],
+        'excerpt' => $job['excerpt'] ?? '',
+        'company' => $job['company'],
+        'sector' => $job['sector'] ?? '',
+        'logo_url' => $job['logo_url'] ?? null,
+        'company_initials' => $job['company_initials'] ?? '',
+    ])->values();
+@endphp
+
 @if ($jobs->isNotEmpty())
     <section
         class="mt-10 lg:mt-12 w-full rounded-2xl border border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-teal-50/40 p-5 sm:p-6 lg:p-7 shadow-sm ring-1 ring-indigo-100/60"
@@ -35,8 +48,89 @@
             </a>
         </div>
 
+        {{-- Phone only: manual slider (same interaction as « Nos publications ») — no auto-scroll --}}
         <div
-            class="group/marquee relative overflow-hidden rounded-2xl border border-white/80 bg-white/90 shadow-sm backdrop-blur-sm"
+            class="relative sm:hidden"
+            x-data="socialPostsSlider({
+                items: @js($jobCards),
+                prevLabel: @js(__('talenma.home.latest_jobs_scroll_prev')),
+                nextLabel: @js(__('talenma.home.latest_jobs_scroll_next')),
+            })"
+            x-init="init()"
+        >
+            <button
+                type="button"
+                class="social-posts-slider-nav social-posts-slider-nav--left"
+                @click="prev()"
+                :disabled="!canPrev"
+                :aria-label="prevLabel"
+            >
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clip-rule="evenodd" />
+                </svg>
+            </button>
+
+            <button
+                type="button"
+                class="social-posts-slider-nav social-posts-slider-nav--right"
+                @click="next()"
+                :disabled="!canNext"
+                :aria-label="nextLabel"
+            >
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" />
+                </svg>
+            </button>
+
+            <div x-ref="viewport" class="overflow-hidden px-1">
+                <div
+                    x-ref="track"
+                    class="social-posts-slider-track flex gap-5"
+                    :style="trackStyle()"
+                >
+                    <template x-for="(item, index) in items" :key="index">
+                        <a
+                            :href="item.url"
+                            class="group flex shrink-0 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
+                            :style="cardStyle()"
+                        >
+                            <div class="flex items-start gap-4 p-5">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-[10px] font-medium uppercase tracking-wide text-indigo-500/80" x-text="item.date"></p>
+                                    <h3 class="mt-1.5 text-base font-bold text-gray-900 line-clamp-2" x-text="item.title"></h3>
+                                    <p
+                                        class="mt-1 text-sm leading-relaxed text-gray-500 line-clamp-2"
+                                        x-show="item.excerpt"
+                                        x-text="item.excerpt"
+                                    ></p>
+                                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                                        <span
+                                            class="inline-flex max-w-full items-center truncate rounded-md bg-teal-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white ring-1 ring-teal-800/40"
+                                            x-text="item.company"
+                                        ></span>
+                                        <span
+                                            class="inline-flex max-w-full items-center truncate rounded-md bg-amber-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white ring-1 ring-amber-800/40"
+                                            x-show="item.sector"
+                                            x-text="item.sector"
+                                        ></span>
+                                    </div>
+                                </div>
+                                <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-600 text-sm font-bold text-white shadow-md shadow-indigo-600/20 ring-2 ring-white">
+                                    <template x-if="item.logo_url">
+                                        <img :src="item.logo_url" alt="" class="h-full w-full object-cover" loading="lazy" decoding="async" @load="measure()">
+                                    </template>
+                                    <span x-show="!item.logo_url" aria-hidden="true" x-text="item.company_initials"></span>
+                                </div>
+                            </div>
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        {{-- Tablet / desktop: auto-scrolling marquee --}}
+        <div
+            class="group/marquee relative hidden overflow-hidden rounded-2xl border border-white/80 bg-white/90 shadow-sm backdrop-blur-sm sm:block"
             x-data="magazineTicker({ inline: true })"
             @resize.window.passive="onResize()"
             @mouseenter="onBannerEnter()"
@@ -50,9 +144,6 @@
                 @pointermove="onPointerMove($event)"
                 @pointerup="onPointerUp($event)"
                 @pointercancel="onPointerUp($event)"
-                @touchstart.passive="onMarqueeTouchStart($event)"
-                @touchend="onMarqueeTouchEnd($event)"
-                @touchcancel="onMarqueeTouchCancel()"
                 @click.capture="onMarqueeClick($event)"
             >
                 <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-white via-white/85 to-transparent sm:w-20"></div>

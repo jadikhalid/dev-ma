@@ -56,6 +56,13 @@ Alpine.data('magazineTicker', (config = {}) => ({
     },
 
     async bootMarquee() {
+        // Phone: Opportunités uses the manual slider markup; keep this marquee idle.
+        if (this.inline && this.isPhoneMarquee()) {
+            this.stopAutoScroll();
+
+            return;
+        }
+
         await this.waitForMarqueeImages();
         this.setupMarquee(false);
 
@@ -90,10 +97,30 @@ Alpine.data('magazineTicker', (config = {}) => ({
 
     onResize() {
         clearTimeout(this._marqueeResizeTimer);
-        this._marqueeResizeTimer = setTimeout(() => this.setupMarquee(true), 200);
+        this._marqueeResizeTimer = setTimeout(() => {
+            if (this.inline && this.isPhoneMarquee()) {
+                this.stopAutoScroll();
+
+                return;
+            }
+
+            if (this.inline && ! this.marqueeDistance) {
+                this.bootMarquee();
+
+                return;
+            }
+
+            this.setupMarquee(true);
+        }, 200);
     },
 
     startAutoScroll() {
+        if (this.inline && this.isPhoneMarquee()) {
+            this.stopAutoScroll();
+
+            return;
+        }
+
         if (this._autoScrollFrame) {
             cancelAnimationFrame(this._autoScrollFrame);
         }
@@ -102,6 +129,10 @@ Alpine.data('magazineTicker', (config = {}) => ({
 
         const tick = (time) => {
             this._autoScrollFrame = requestAnimationFrame(tick);
+
+            if (this.inline && this.isPhoneMarquee()) {
+                return;
+            }
 
             if (this._lastAutoScrollTime === null) {
                 this._lastAutoScrollTime = time;
@@ -130,6 +161,15 @@ Alpine.data('magazineTicker', (config = {}) => ({
         };
 
         this._autoScrollFrame = requestAnimationFrame(tick);
+    },
+
+    stopAutoScroll() {
+        if (this._autoScrollFrame) {
+            cancelAnimationFrame(this._autoScrollFrame);
+            this._autoScrollFrame = null;
+        }
+
+        this._lastAutoScrollTime = null;
     },
 
     scheduleImageRelayout() {
