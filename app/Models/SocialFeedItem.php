@@ -46,6 +46,21 @@ class SocialFeedItem extends Model
         return SocialFeedStorage::url($this->thumbnail);
     }
 
+    /**
+     * Blog posts synced into the ticker use /blog/{slug} and should open in the same tab.
+     * Manually curated news items usually point to external URLs and keep target=_blank.
+     */
+    public function isInternalBlogPost(): bool
+    {
+        $path = parse_url((string) $this->url, PHP_URL_PATH);
+
+        if (! is_string($path) || $path === '') {
+            return false;
+        }
+
+        return (bool) preg_match('#^/blog/[^/]+/?$#', $path);
+    }
+
     public function localizedSourceLabel(): string
     {
         return __('talenma.social_feed.sources.'.$this->source);

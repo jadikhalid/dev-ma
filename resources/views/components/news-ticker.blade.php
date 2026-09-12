@@ -90,8 +90,10 @@
                             $isLeadNews = $loop->first;
                         @endphp
                         <a href="{{ $item->url }}"
-                           target="_blank"
-                           rel="noopener noreferrer"
+                           @if (! $item->isInternalBlogPost())
+                               target="_blank"
+                               rel="noopener noreferrer"
+                           @endif
                            @class([
                                'group flex items-center gap-3 shrink-0 px-6 sm:px-8 border-r transition-colors duration-300',
                                'news-ticker-item--lead border-amber-200/80 bg-amber-50/50 hover:bg-amber-50/80' => $isLeadNews,
