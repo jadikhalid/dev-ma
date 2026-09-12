@@ -70,4 +70,25 @@ TXT;
         $this->assertNotNull($finding);
         $this->assertSame('fail', $finding['status']);
     }
+
+    #[Test]
+    public function embedded_image_warns_no_photo_rule(): void
+    {
+        $text = str_repeat("Compétences Laravel Expérience 2020 email@test.com +212612345678 Casablanca\n", 10);
+
+        $withPhoto = (new AtsCompatibilityScorer)->scoreText($text, true);
+        $withoutPhoto = (new AtsCompatibilityScorer)->scoreText($text, false);
+
+        $warned = collect($withPhoto['findings'])->firstWhere('id', 'no_photo');
+        $passed = collect($withoutPhoto['findings'])->firstWhere('id', 'no_photo');
+
+        $this->assertNotNull($warned);
+        $this->assertSame('warn', $warned['status']);
+        $this->assertSame(0, $warned['earned']);
+
+        $this->assertNotNull($passed);
+        $this->assertSame('pass', $passed['status']);
+        $this->assertSame(4, $passed['earned']);
+        $this->assertGreaterThan($withPhoto['score'], $withoutPhoto['score']);
+    }
 }

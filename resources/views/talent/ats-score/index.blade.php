@@ -131,14 +131,32 @@
                         <label
                             for="ats-cv"
                             class="group relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-emerald-300/80 bg-gradient-to-b from-emerald-50/80 to-white px-6 py-10 transition hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-900/5"
+                            x-data="{ fileName: '' }"
+                            :class="fileName ? 'border-emerald-500 bg-emerald-50/90' : ''"
                         >
                             <span class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-100 transition group-hover:scale-105">
                                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
                                 </svg>
                             </span>
-                            <span class="text-sm font-semibold text-slate-800">{{ __('talenma.ats_score.upload_drop_title') }}</span>
-                            <span class="mt-1 text-xs text-slate-500">{{ __('talenma.ats_score.upload_drop_hint') }}</span>
+                            <template x-if="!fileName">
+                                <span class="flex flex-col items-center text-center">
+                                    <span class="text-sm font-semibold text-slate-800">{{ __('talenma.ats_score.upload_drop_title') }}</span>
+                                    <span class="mt-1 text-xs text-slate-500">{{ __('talenma.ats_score.upload_drop_hint') }}</span>
+                                </span>
+                            </template>
+                            <template x-if="fileName">
+                                <span class="flex max-w-full flex-col items-center text-center px-2">
+                                    <span class="text-xs font-semibold uppercase tracking-wide text-emerald-700">{{ __('talenma.ats_score.upload_selected') }}</span>
+                                    <span class="mt-1.5 inline-flex max-w-full items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm ring-1 ring-emerald-100">
+                                        <svg class="h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 9h6.75M8.25 15h3.75"/>
+                                        </svg>
+                                        <span class="truncate" x-text="fileName" :title="fileName"></span>
+                                    </span>
+                                    <span class="mt-2 text-xs text-slate-500">{{ __('talenma.ats_score.upload_change_hint') }}</span>
+                                </span>
+                            </template>
                             <input
                                 id="ats-cv"
                                 name="cv"
@@ -146,6 +164,7 @@
                                 accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
                                 required
                                 class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                @change="fileName = $event.target.files?.[0]?.name ?? ''"
                             />
                         </label>
                         @error('cv')
@@ -352,40 +371,92 @@
                         @if ($hasOptimized)
                             @php
                                 $optColor = $optScore >= 90 ? 'text-emerald-700' : ($optScore >= 70 ? 'text-amber-700' : 'text-rose-700');
+                                $suggestionList = is_array($suggestions ?? null) ? $suggestions : [];
                             @endphp
                             <div class="overflow-hidden rounded-3xl border border-emerald-200/80 bg-white shadow-sm">
                                 <div class="flex flex-col gap-4 border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-teal-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <p class="text-base font-bold text-slate-900">
-                                            {{ __('talenma.ats_score.optimized_score_label', ['score' => $optScore]) }}
+                                            {{ __('talenma.ats_score.suggestions_title', ['count' => count($suggestionList)]) }}
                                         </p>
                                         <p class="mt-1 text-sm font-medium text-slate-500">
+                                            {{ __('talenma.ats_score.projected_score_label') }}
                                             <span class="tabular-nums">{{ $score }}%</span>
                                             <span class="mx-1.5 text-emerald-500">→</span>
                                             <span class="tabular-nums font-bold {{ $optColor }}">{{ $optScore }}%</span>
+                                            <span class="block sm:inline sm:ml-1 text-xs font-normal text-slate-400">{{ __('talenma.ats_score.projected_score_hint') }}</span>
                                         </p>
                                     </div>
-                                    <a
-                                        href="{{ route('talent.ats-score.download') }}"
-                                        class="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-50"
-                                    >
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-                                        </svg>
-                                        {{ __('talenma.ats_score.download_optimized') }}
-                                    </a>
+                                    @if ($optimizedText)
+                                        <a
+                                            href="{{ route('talent.ats-score.download') }}"
+                                            class="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-50"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+                                            </svg>
+                                            {{ __('talenma.ats_score.download_suggestions') }}
+                                        </a>
+                                    @endif
                                 </div>
+
                                 <div class="space-y-4 p-5">
-                                    <p class="rounded-xl border border-amber-100 bg-amber-50/80 px-3.5 py-2.5 text-sm font-medium text-amber-900">
-                                        {{ __('talenma.ats_score.optimize_placeholder_note') }}
+                                    <p class="rounded-xl border border-sky-100 bg-sky-50/80 px-3.5 py-2.5 text-sm font-medium text-sky-900">
+                                        {{ __('talenma.ats_score.suggestions_intro') }}
                                     </p>
-                                    <label for="ats-optimized-text" class="sr-only">{{ __('talenma.ats_score.optimized_preview') }}</label>
-                                    <textarea
-                                        id="ats-optimized-text"
-                                        readonly
-                                        rows="16"
-                                        class="w-full rounded-2xl border-slate-200 bg-slate-50/80 text-sm text-slate-800 font-mono leading-relaxed shadow-inner focus:border-emerald-300 focus:ring-emerald-200"
-                                    >{{ $optimizedText }}</textarea>
+
+                                    @if ($suggestionList === [])
+                                        <div class="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-5 py-8 text-center">
+                                            <p class="text-sm font-semibold text-emerald-800">{{ __('talenma.ats_score.suggestions_empty') }}</p>
+                                        </div>
+                                    @else
+                                        <ul class="space-y-4">
+                                            @foreach ($suggestionList as $index => $suggestion)
+                                                @php
+                                                    $action = $suggestion['action'] ?? 'add';
+                                                    $actionTone = match ($action) {
+                                                        'add' => ['badge' => 'bg-emerald-50 text-emerald-800 ring-emerald-200', 'border' => 'border-emerald-100', 'label' => __('talenma.ats_score.action_add')],
+                                                        'remove' => ['badge' => 'bg-rose-50 text-rose-800 ring-rose-200', 'border' => 'border-rose-100', 'label' => __('talenma.ats_score.action_remove')],
+                                                        'rewrite' => ['badge' => 'bg-amber-50 text-amber-900 ring-amber-200', 'border' => 'border-amber-100', 'label' => __('talenma.ats_score.action_rewrite')],
+                                                        'move' => ['badge' => 'bg-sky-50 text-sky-900 ring-sky-200', 'border' => 'border-sky-100', 'label' => __('talenma.ats_score.action_move')],
+                                                        default => ['badge' => 'bg-slate-50 text-slate-700 ring-slate-200', 'border' => 'border-slate-100', 'label' => $action],
+                                                    };
+                                                    $example = trim((string) ($suggestion['example'] ?? ''));
+                                                @endphp
+                                                <li
+                                                    class="rounded-2xl border {{ $actionTone['border'] }} bg-white p-4 sm:p-5 shadow-sm"
+                                                    x-data="{ copied: false, text: @js($example) }"
+                                                >
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">{{ $index + 1 }}</span>
+                                                        <span class="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 {{ $actionTone['badge'] }}">
+                                                            {{ $actionTone['label'] }}
+                                                        </span>
+                                                    </div>
+                                                    <h3 class="mt-3 text-base font-bold text-slate-900">{{ $suggestion['title'] ?? '' }}</h3>
+                                                    <p class="mt-1.5 text-sm leading-relaxed text-slate-600">{{ $suggestion['why'] ?? '' }}</p>
+
+                                                    @if ($example !== '')
+                                                        <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-3.5">
+                                                            <div class="mb-2 flex items-center justify-between gap-2">
+                                                                <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">{{ __('talenma.ats_score.example_label') }}</p>
+                                                                <button
+                                                                    type="button"
+                                                                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                                                                    @click="
+                                                                        navigator.clipboard.writeText(text).then(() => { copied = true; setTimeout(() => copied = false, 1800); }).catch(() => {});
+                                                                    "
+                                                                >
+                                                                    <span x-text="copied ? @js(__('talenma.ats_score.copied')) : @js(__('talenma.ats_score.copy_example'))"></span>
+                                                                </button>
+                                                            </div>
+                                                            <pre class="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-slate-800">{{ $example }}</pre>
+                                                        </div>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
                                 </div>
                             </div>
                         @endif

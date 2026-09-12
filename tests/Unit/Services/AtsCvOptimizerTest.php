@@ -10,7 +10,7 @@ use Tests\TestCase;
 class AtsCvOptimizerTest extends TestCase
 {
     #[Test]
-    public function optimize_raises_score_near_ats_friendly_target(): void
+    public function optimize_returns_concrete_suggestions_not_a_full_cv(): void
     {
         $source = <<<'TXT'
 Ali Karim
@@ -23,11 +23,24 @@ TXT;
         $before = $scorer->scoreText($source);
         $optimized = (new AtsCvOptimizer($scorer))->optimize($source, $before, 'fr');
 
-        $this->assertGreaterThan($before['score'], $optimized['result']['score']);
-        $this->assertGreaterThanOrEqual(90, $optimized['result']['score']);
-        $this->assertStringContainsString('Profil', $optimized['text']);
-        $this->assertStringContainsString('Compétences', $optimized['text']);
-        $this->assertStringContainsString('Expérience', $optimized['text']);
-        $this->assertStringNotContainsString('🚀', $optimized['text']);
+        $this->assertNotEmpty($optimized['suggestions']);
+        $this->assertArrayHasKey('action', $optimized['suggestions'][0]);
+        $this->assertArrayHasKey('example', $optimized['suggestions'][0]);
+        $this->assertGreaterThanOrEqual($before['score'], $optimized['result']['score']);
+        $this->assertStringContainsString('Suggestions ATS', $optimized['text']);
+        $this->assertStringNotContainsString('Résumé complémentaire ATS', $optimized['text']);
+    }
+
+    #[Test]
+    public function emoji_finding_produces_remove_suggestion(): void
+    {
+        $text = "Profil motivé 🚀\nCompétences\nLaravel\nExpérience\n2020 2018\nemail@test.com\n+212612345678\nCasablanca\nlinkedin.com/in/x";
+        $scorer = new AtsCompatibilityScorer;
+        $result = $scorer->scoreText($text);
+        $optimized = (new AtsCvOptimizer($scorer))->optimize($text, $result, 'fr');
+
+        $emojiTip = collect($optimized['suggestions'])->firstWhere('id', 'no_emoji');
+        $this->assertNotNull($emojiTip);
+        $this->assertSame('remove', $emojiTip['action']);
     }
 }

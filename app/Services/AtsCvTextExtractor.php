@@ -12,7 +12,7 @@ class AtsCvTextExtractor
     public const MIN_CHARS = 80;
 
     /**
-     * @return array{text: string, char_count: int, extension: string}
+     * @return array{text: string, char_count: int, extension: string, has_embedded_image: bool}
      */
     public function extract(UploadedFile $file): array
     {
@@ -41,7 +41,74 @@ class AtsCvTextExtractor
             'text' => $text,
             'char_count' => $charCount,
             'extension' => $extension,
+            'has_embedded_image' => $this->hasEmbeddedImage($path, $extension),
         ];
+    }
+
+    /**
+     * Detect portrait/logo/decorative images that often hurt ATS parsing.
+     */
+    public function hasEmbeddedImage(string $path, string $extension): bool
+    {
+        return match ($extension) {
+            'pdf' => $this->pdfHasImage($path),
+            'docx' => $this->docxHasImage($path),
+            default => false,
+        };
+    }
+
+    private function pdfHasImage(string $path): bool
+    {
+        $handle = @fopen($path, 'rb');
+        if ($handle === false) {
+            return false;
+        }
+
+        $found = false;
+        while (! feof($handle)) {
+            $chunk = fread($handle, 1024 * 256);
+            if ($chunk === false || $chunk === '') {
+                break;
+            }
+
+            // PDF image XObjects / inline image markers.
+            if (
+                preg_match('/\/Subtype\s*\/Image\b/', $chunk)
+                || preg_match('/\bBI\b[\s\S]{0,200}\/W\s+\d+/', $chunk)
+            ) {
+                $found = true;
+                break;
+            }
+        }
+
+        fclose($handle);
+
+        return $found;
+    }
+
+    private function docxHasImage(string $path): bool
+    {
+        $zip = new ZipArchive;
+        if ($zip->open($path) !== true) {
+            return false;
+        }
+
+        $found = false;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if (! is_string($name)) {
+                continue;
+            }
+
+            if (preg_match('#^word/media/.+\.(png|jpe?g|gif|bmp|webp|tiff?|emf|wmf)$#i', $name)) {
+                $found = true;
+                break;
+            }
+        }
+
+        $zip->close();
+
+        return $found;
     }
 
     private function fromPdf(string $path): string

@@ -31,6 +31,7 @@ class TalentAtsScoreController extends Controller
             'filename' => is_string($payload['filename'] ?? null) ? $payload['filename'] : null,
             'optimizedText' => is_string($payload['optimized_text'] ?? null) ? $payload['optimized_text'] : null,
             'optimizedResult' => is_array($payload['optimized_result'] ?? null) ? $payload['optimized_result'] : null,
+            'suggestions' => is_array($payload['suggestions'] ?? null) ? $payload['suggestions'] : [],
             'remainingActions' => is_array($payload['remaining_actions'] ?? null) ? $payload['remaining_actions'] : [],
             'hasSourceText' => is_string($payload['source_text'] ?? null) && $payload['source_text'] !== '',
         ]);
@@ -59,7 +60,10 @@ class TalentAtsScoreController extends Controller
             ]);
         }
 
-        $result = $this->scorer->scoreText($extracted['text']);
+        $result = $this->scorer->scoreText(
+            $extracted['text'],
+            (bool) ($extracted['has_embedded_image'] ?? false),
+        );
 
         $request->session()->put('ats_score_last', [
             'filename' => $file->getClientOriginalName(),
@@ -67,6 +71,7 @@ class TalentAtsScoreController extends Controller
             'result' => $result,
             'optimized_text' => null,
             'optimized_result' => null,
+            'suggestions' => [],
             'remaining_actions' => [],
             'analyzed_at' => now()->toIso8601String(),
         ]);
@@ -96,6 +101,7 @@ class TalentAtsScoreController extends Controller
 
         $payload['optimized_text'] = $optimized['text'];
         $payload['optimized_result'] = $optimized['result'];
+        $payload['suggestions'] = $optimized['suggestions'];
         $payload['remaining_actions'] = $optimized['remaining_actions'];
         $payload['optimized_at'] = now()->toIso8601String();
         $request->session()->put('ats_score_last', $payload);
@@ -123,7 +129,7 @@ class TalentAtsScoreController extends Controller
 
         $base = pathinfo((string) ($payload['filename'] ?? 'cv'), PATHINFO_FILENAME);
         $base = preg_replace('/[^A-Za-z0-9_\-]+/', '-', $base) ?: 'cv';
-        $downloadName = $base.'-ats-friendly.txt';
+        $downloadName = $base.'-ats-suggestions.txt';
 
         return response($text, 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',

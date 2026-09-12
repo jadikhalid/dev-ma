@@ -19,7 +19,7 @@ class AtsCompatibilityScorer
      *     char_count: int
      * }
      */
-    public function scoreText(string $text): array
+    public function scoreText(string $text, bool $hasEmbeddedImage = false): array
     {
         $normalized = trim($text);
         $lower = mb_strtolower($normalized);
@@ -54,6 +54,7 @@ class AtsCompatibilityScorer
         $findings[] = $this->checkBullets($lines);
         $findings[] = $this->checkMeasurable($normalized);
         $findings[] = $this->checkNoEmoji($normalized);
+        $findings[] = $this->checkNoPhoto($hasEmbeddedImage);
         $findings[] = $this->checkLength($normalized);
         $findings[] = $this->checkContactBlock($normalized);
 
@@ -220,6 +221,20 @@ class AtsCompatibilityScorer
         $hasEmoji = (bool) preg_match('/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u', $text);
 
         return $this->finding('no_emoji', $hasEmoji ? 'fail' : 'pass', 'medium', $hasEmoji ? 0 : 4, 4);
+    }
+
+    /**
+     * Photos/logos in the file rarely help ATS matching and can hinder parsing.
+     *
+     * @return array{id: string, status: string, severity: string, earned: int, max: int}
+     */
+    private function checkNoPhoto(bool $hasEmbeddedImage): array
+    {
+        if ($hasEmbeddedImage) {
+            return $this->finding('no_photo', 'warn', 'medium', 0, 4);
+        }
+
+        return $this->finding('no_photo', 'pass', 'medium', 4, 4);
     }
 
     /**

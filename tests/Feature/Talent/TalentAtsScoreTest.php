@@ -107,9 +107,9 @@ TXT;
             ->get(route('talent.ats-score.index'))
             ->assertOk()
             ->assertSee(__('talenma.ats_score.optimize_free_badge'), false)
-            ->assertSee(__('talenma.ats_score.download_optimized'), false)
-            ->assertSee('Compétences', false)
-            ->assertSee('Expérience', false);
+            ->assertSee(__('talenma.ats_score.download_suggestions'), false)
+            ->assertSee(__('talenma.ats_score.suggestions_intro'), false)
+            ->assertSee(__('talenma.ats_score.action_add'), false);
 
         $this->actingAs($talent)
             ->get(route('talent.ats-score.download'))
