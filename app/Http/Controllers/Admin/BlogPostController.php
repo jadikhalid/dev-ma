@@ -57,6 +57,9 @@ class BlogPostController extends Controller
             'title' => $validated['title'],
             'slug' => $slug,
             'excerpt' => $validated['excerpt'],
+            'meta_description' => filled($validated['meta_description'] ?? null)
+                ? trim((string) $validated['meta_description'])
+                : null,
             'body' => $this->sanitizeBody($validated['body']),
             'cover_path' => $coverPath,
             'locale' => $validated['locale'],
@@ -112,6 +115,9 @@ class BlogPostController extends Controller
             'title' => $validated['title'],
             'slug' => $slug,
             'excerpt' => $validated['excerpt'],
+            'meta_description' => filled($validated['meta_description'] ?? null)
+                ? trim((string) $validated['meta_description'])
+                : null,
             'body' => $this->sanitizeBody($validated['body']),
             'locale' => $validated['locale'],
             'status' => $status,
@@ -151,6 +157,7 @@ class BlogPostController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
             'excerpt' => ['required', 'string', 'max:500'],
+            'meta_description' => ['nullable', 'string', 'max:320'],
             'body' => ['required', 'string', 'max:100000'],
             'locale' => ['required', Rule::in([BlogPost::LOCALE_FR, BlogPost::LOCALE_EN])],
             'status' => ['required', Rule::in([BlogPost::STATUS_DRAFT, BlogPost::STATUS_PUBLISHED])],

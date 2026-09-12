@@ -27,7 +27,10 @@ class AvatarService
         $path = 'avatars/'.$user->id.'.'.$extension;
         Storage::disk('public')->put($path, $contents);
 
-        $user->update(['avatar_path' => $path]);
+        // Path often stays identical on replace (avatars/{id}.jpg). Force a timestamp
+        // bump so avatarUrl() ?v= cache-busts the browser.
+        $user->forceFill(['avatar_path' => $path])->save();
+        $user->touch();
 
         return $path;
     }

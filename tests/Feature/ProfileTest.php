@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\AvatarService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -103,5 +106,32 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertNotNull($user->fresh());
+    }
+
+    public function test_replacing_avatar_bumps_cache_busting_query(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->talent()->create();
+        $avatars = app(AvatarService::class);
+
+        $avatars->store($user, UploadedFile::fake()->image('first.jpg', 200, 200));
+        $firstUrl = $user->fresh()->avatarUrl();
+        $firstVersion = (int) $user->fresh()->updated_at->getTimestamp();
+
+        $this->assertNotNull($firstUrl);
+        $this->assertStringContainsString('?v='.$firstVersion, $firstUrl);
+
+        sleep(1);
+
+        $avatars->store($user->fresh(), UploadedFile::fake()->image('second.jpg', 200, 200));
+        $fresh = $user->fresh();
+        $secondUrl = $fresh->avatarUrl();
+        $secondVersion = (int) $fresh->updated_at->getTimestamp();
+
+        $this->assertSame('avatars/'.$fresh->id.'.jpg', $fresh->avatar_path);
+        $this->assertGreaterThan($firstVersion, $secondVersion);
+        $this->assertStringContainsString('?v='.$secondVersion, $secondUrl);
+        $this->assertNotSame($firstUrl, $secondUrl);
     }
 }

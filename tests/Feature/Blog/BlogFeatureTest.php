@@ -76,6 +76,7 @@ class BlogFeatureTest extends TestCase
                 'title' => 'Nouveau sur la plateforme',
                 'slug' => 'nouveau-sur-la-plateforme',
                 'excerpt' => 'Un extrait utile',
+                'meta_description' => 'Description SEO pour les moteurs de recherche.',
                 'body' => '<p>Corps de l article</p>',
                 'locale' => 'fr',
                 'status' => BlogPost::STATUS_PUBLISHED,
@@ -86,12 +87,65 @@ class BlogFeatureTest extends TestCase
         $post = BlogPost::query()->where('slug', 'nouveau-sur-la-plateforme')->first();
         $this->assertNotNull($post);
         $this->assertTrue($post->isPublished());
+        $this->assertSame('Description SEO pour les moteurs de recherche.', $post->meta_description);
 
         $this->assertDatabaseHas('social_feed_items', [
             'source' => 'article',
             'title' => 'Nouveau sur la plateforme',
             'url' => route('blog.show', 'nouveau-sur-la-plateforme'),
         ]);
+    }
+
+    #[Test]
+    public function published_article_exposes_meta_description_in_head(): void
+    {
+        BlogPost::query()->create([
+            'title' => 'Article SEO',
+            'slug' => 'article-seo',
+            'excerpt' => 'Chapô visible',
+            'meta_description' => 'Meta SEO invisible dans le corps',
+            'body' => '<p>Contenu</p>',
+            'locale' => 'fr',
+            'status' => BlogPost::STATUS_PUBLISHED,
+            'show_in_ticker' => false,
+            'published_at' => now()->subHour(),
+            'created_by' => User::factory()->create(['role' => 'admin'])->id,
+        ]);
+
+        $this->get(route('blog.show', 'article-seo'))
+            ->assertOk()
+            ->assertSee('name="description"', false)
+            ->assertSee('content="Meta SEO invisible dans le corps"', false)
+            ->assertSee('Chapô visible', false)
+            ->assertDontSee('Meta SEO invisible dans le corps</p>', false);
+    }
+
+    #[Test]
+    public function ticker_item_reuses_blog_cover_as_thumbnail_without_deleting_it(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        $post = BlogPost::query()->create([
+            'title' => 'Avec couverture',
+            'slug' => 'avec-couverture',
+            'excerpt' => 'Excerpt',
+            'body' => '<p>Body</p>',
+            'cover_path' => 'blog-covers/demo-cover.jpg',
+            'locale' => 'fr',
+            'status' => BlogPost::STATUS_PUBLISHED,
+            'show_in_ticker' => true,
+            'published_at' => now()->subMinute(),
+            'created_by' => $admin->id,
+        ]);
+        $post->syncTicker();
+
+        $item = SocialFeedItem::query()->where('url', $post->tickerUrl())->first();
+        $this->assertNotNull($item);
+        $this->assertSame('blog-covers/demo-cover.jpg', $item->thumbnail);
+
+        $item->delete();
+
+        $this->assertSame('blog-covers/demo-cover.jpg', $post->fresh()->cover_path);
     }
 
     #[Test]

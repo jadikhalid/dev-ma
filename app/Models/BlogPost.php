@@ -22,6 +22,7 @@ class BlogPost extends Model
         'title',
         'slug',
         'excerpt',
+        'meta_description',
         'body',
         'cover_path',
         'locale',
@@ -55,6 +56,17 @@ class BlogPost extends Model
     public function coverUrl(): ?string
     {
         return BlogCoverStorage::url($this->cover_path);
+    }
+
+    public function seoDescription(): string
+    {
+        $meta = trim((string) $this->meta_description);
+
+        if ($meta !== '') {
+            return $meta;
+        }
+
+        return trim((string) $this->excerpt);
     }
 
     public function isPublished(): bool
@@ -130,8 +142,8 @@ class BlogPost extends Model
             'subtitle' => Str::limit($this->excerpt, 240),
             'url' => $url,
             'source' => 'article',
-            // Do not reuse cover_path: SocialFeedItem deletion would remove the blog cover file.
-            'thumbnail' => null,
+            // Reuse the blog cover path; SocialFeedStorage refuses to delete blog-covers files.
+            'thumbnail' => $this->cover_path,
             'created_by' => $this->created_by,
         ];
 

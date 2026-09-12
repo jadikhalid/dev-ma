@@ -3,8 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('talenma.meta.title') }}</title>
-    <meta name="description" content="{{ __('talenma.meta.description') }}">
+    @php
+        $pageTitle = trim($__env->yieldContent('title'));
+        $pageMetaDescription = trim($__env->yieldContent('meta_description'));
+    @endphp
+    <title>{{ $pageTitle !== '' ? $pageTitle : __('talenma.meta.title') }}</title>
+    <meta name="description" content="{{ $pageMetaDescription !== '' ? $pageMetaDescription : __('talenma.meta.description') }}">
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet">

@@ -1,5 +1,8 @@
 @extends('layouts.public')
 
+@section('title', $post->title.' — '.__('talenma.meta.title'))
+@section('meta_description', $post->seoDescription())
+
 @section('content')
     <article class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <a href="{{ route('blog.index') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800">

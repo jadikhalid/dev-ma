@@ -48,6 +48,20 @@
             </div>
 
             <div>
+                <label for="meta_description" class="block text-sm font-semibold text-gray-800">{{ __('talenma.blog.admin.field_meta_description') }}</label>
+                <textarea
+                    id="meta_description"
+                    name="meta_description"
+                    rows="3"
+                    maxlength="320"
+                    class="mt-1.5 w-full rounded-xl border-gray-300 text-sm"
+                    placeholder="{{ __('talenma.blog.admin.meta_description_placeholder') }}"
+                >{{ old('meta_description', $post->meta_description) }}</textarea>
+                <p class="mt-1 text-xs text-gray-500">{{ __('talenma.blog.admin.meta_description_help') }}</p>
+                @error('meta_description') <p class="mt-1 text-sm text-rose-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
                 <label for="body" class="block text-sm font-semibold text-gray-800">{{ __('talenma.blog.admin.field_body') }}</label>
                 <textarea id="body" name="body" rows="14" required class="mt-1.5 w-full rounded-xl border-gray-300 text-sm font-mono">{{ old('body', $post->body) }}</textarea>
                 <p class="mt-1 text-xs text-gray-500">{{ __('talenma.blog.admin.body_hint') }}</p>

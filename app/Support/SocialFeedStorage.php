@@ -82,6 +82,12 @@ class SocialFeedStorage
             return;
         }
 
+        // Blog covers may be referenced as ticker thumbnails — never delete those files here.
+        $normalized = str_replace('\\', '/', $path);
+        if (str_starts_with($normalized, BlogCoverStorage::PUBLIC_DIR.'/')) {
+            return;
+        }
+
         $publicFile = public_path($path);
 
         if (is_file($publicFile)) {
