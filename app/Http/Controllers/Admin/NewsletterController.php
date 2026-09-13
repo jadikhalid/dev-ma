@@ -113,6 +113,7 @@ class NewsletterController extends Controller
             'newsletter' => $newsletter,
             'previewHtml' => $this->renderer->renderHtml($newsletter),
             'recipientCount' => $this->delivery->recipientCount(),
+            'deliveryProgress' => $this->delivery->progress($newsletter),
         ]);
     }
 
@@ -143,7 +144,7 @@ class NewsletterController extends Controller
 
         return redirect()
             ->route('admin.newsletter.show', $newsletter)
-            ->with('toast_success', __('talenma.newsletter.sent', ['count' => $count]));
+            ->with('toast_success', __('talenma.newsletter.sending_started', ['count' => $count]));
     }
 
     public function schedule(Request $request, Newsletter $newsletter): RedirectResponse

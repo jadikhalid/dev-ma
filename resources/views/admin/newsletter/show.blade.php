@@ -17,6 +17,14 @@
                 <div class="mt-2 flex flex-wrap gap-2 items-center">
                     <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusBadge }}">{{ $newsletter->statusLabel() }}</span>
                     <span class="text-xs text-gray-500">{{ __('talenma.newsletter.admin_subtitle', ['count' => $recipientCount]) }}</span>
+                    @if ($newsletter->status === 'sending' || (($deliveryProgress['queued'] ?? 0) > 0 && $newsletter->status === 'sent'))
+                        <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800">
+                            {{ __('talenma.newsletter.delivery_progress', [
+                                'sent' => $deliveryProgress['sent'] ?? 0,
+                                'total' => max(1, (int) ($deliveryProgress['queued'] ?? 0)),
+                            ]) }}
+                        </span>
+                    @endif
                 </div>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -29,6 +37,24 @@
     </x-slot>
 
     <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        @if ($newsletter->status === 'sending')
+            <div class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-5 sm:p-6">
+                <h3 class="text-sm font-bold text-indigo-900">{{ __('talenma.newsletter.sending_title') }}</h3>
+                <p class="mt-1 text-sm text-indigo-800/90">{{ __('talenma.newsletter.sending_help') }}</p>
+                <p class="mt-3 text-sm font-semibold text-indigo-950">
+                    {{ __('talenma.newsletter.delivery_progress', [
+                        'sent' => $deliveryProgress['sent'] ?? 0,
+                        'total' => max(1, (int) ($deliveryProgress['queued'] ?? 0)),
+                    ]) }}
+                    @if (($deliveryProgress['failed'] ?? 0) > 0)
+                        <span class="font-medium text-rose-700">
+                            · {{ __('talenma.newsletter.delivery_failed', ['count' => $deliveryProgress['failed']]) }}
+                        </span>
+                    @endif
+                </p>
+            </div>
+        @endif
+
         @if ($newsletter->isEditable())
             <div class="rounded-2xl border bg-white p-5 sm:p-6 space-y-4">
                 <h3 class="text-sm font-bold uppercase tracking-wide text-slate-600">{{ __('talenma.newsletter.send_actions') }}</h3>

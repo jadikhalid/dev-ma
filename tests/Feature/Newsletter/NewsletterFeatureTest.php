@@ -147,6 +147,14 @@ class NewsletterFeatureTest extends TestCase
             ->post(route('admin.newsletter.send', $newsletter))
             ->assertRedirect(route('admin.newsletter.show', $newsletter));
 
+        // First email is sent immediately; the rest wait for the 1/minute processor.
+        Mail::assertSentCount(1);
+        $this->assertSame(Newsletter::STATUS_SENDING, $newsletter->fresh()->status);
+        $this->assertSame(2, \App\Models\NewsletterOutbox::query()->where('newsletter_id', $newsletter->id)->count());
+        $this->assertSame(1, \App\Models\NewsletterOutbox::query()->where('status', 'pending')->count());
+
+        app(\App\Services\NewsletterDeliveryService::class)->processNextPending();
+
         Mail::assertSent(NewsletterCampaignMail::class, fn (NewsletterCampaignMail $mail) => $mail->hasTo($talent->email));
         Mail::assertSent(NewsletterCampaignMail::class, fn (NewsletterCampaignMail $mail) => $mail->hasTo($open->email));
         Mail::assertNotSent(NewsletterCampaignMail::class, fn (NewsletterCampaignMail $mail) => $mail->hasTo($inactive->email));
