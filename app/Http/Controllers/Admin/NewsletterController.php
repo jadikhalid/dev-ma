@@ -147,6 +147,26 @@ class NewsletterController extends Controller
             ->with('toast_success', __('talenma.newsletter.sending_started', ['count' => $count]));
     }
 
+    public function sendTest(Request $request, Newsletter $newsletter): RedirectResponse
+    {
+        if ($newsletter->normalizedBlocks() === []) {
+            return back()->with('toast_error', __('talenma.newsletter.blocks_required'));
+        }
+
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ], [
+            'email.required' => __('talenma.newsletter.test_email_invalid'),
+            'email.email' => __('talenma.newsletter.test_email_invalid'),
+        ]);
+
+        $this->delivery->sendTest($newsletter, $data['email']);
+
+        return redirect()
+            ->route('admin.newsletter.show', $newsletter)
+            ->with('toast_success', __('talenma.newsletter.test_sent', ['email' => $data['email']]));
+    }
+
     public function schedule(Request $request, Newsletter $newsletter): RedirectResponse
     {
         if (in_array($newsletter->status, [Newsletter::STATUS_SENT, Newsletter::STATUS_SENDING], true)) {

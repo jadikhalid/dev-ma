@@ -55,6 +55,31 @@
             </div>
         @endif
 
+        @if ($newsletter->status !== 'sending')
+            <div class="rounded-2xl border bg-white p-5 sm:p-6 space-y-3">
+                <h3 class="text-sm font-bold uppercase tracking-wide text-slate-600">{{ __('talenma.newsletter.test_title') }}</h3>
+                <p class="text-sm text-slate-500">{{ __('talenma.newsletter.test_help') }}</p>
+                <form method="POST" action="{{ route('admin.newsletter.send-test', $newsletter) }}" class="flex flex-col sm:flex-row gap-2 sm:items-end">
+                    @csrf
+                    <div class="flex-1 min-w-0">
+                        <label class="block text-xs font-semibold text-slate-600" for="test_email">{{ __('talenma.newsletter.test_email_label') }}</label>
+                        <input
+                            id="test_email"
+                            type="email"
+                            name="email"
+                            required
+                            value="{{ old('email', auth()->user()->email) }}"
+                            class="mt-1 w-full rounded-lg border-gray-300 text-sm"
+                        >
+                        <x-input-error :messages="$errors->get('email')" class="mt-1" />
+                    </div>
+                    <button type="submit" class="inline-flex shrink-0 px-4 py-2.5 border border-amber-200 bg-amber-50 text-amber-900 text-sm font-semibold rounded-lg hover:bg-amber-100">
+                        {{ __('talenma.newsletter.test_send') }}
+                    </button>
+                </form>
+            </div>
+        @endif
+
         @if ($newsletter->isEditable())
             <div class="rounded-2xl border bg-white p-5 sm:p-6 space-y-4">
                 <h3 class="text-sm font-bold uppercase tracking-wide text-slate-600">{{ __('talenma.newsletter.send_actions') }}</h3>

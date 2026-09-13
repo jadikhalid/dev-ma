@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class NewsletterDeliveryService
@@ -297,6 +298,42 @@ class NewsletterDeliveryService
             'status' => Newsletter::STATUS_CANCELLED,
             'scheduled_at' => null,
         ]);
+    }
+
+    /**
+     * Send one preview copy without starting the campaign outbox.
+     */
+    public function sendTest(Newsletter $newsletter, string $email): void
+    {
+        if ($newsletter->normalizedBlocks() === []) {
+            throw ValidationException::withMessages([
+                'email' => [__('talenma.newsletter.blocks_required')],
+            ]);
+        }
+
+        $normalized = $this->subscribers->normalizeEmail($email);
+
+        if ($normalized === '' || ! filter_var($normalized, FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withMessages([
+                'email' => [__('talenma.newsletter.test_email_invalid')],
+            ]);
+        }
+
+        $subscriber = NewsletterSubscriber::query()->firstOrNew(['email' => $normalized]);
+
+        if (! $subscriber->exists) {
+            // Keep inactive so a test address is not added to the campaign list.
+            $subscriber->fill([
+                'unsubscribe_token' => bin2hex(random_bytes(32)),
+                'source' => NewsletterSubscriber::SOURCE_ADMIN,
+                'subscribed_at' => now(),
+                'unsubscribed_at' => now(),
+            ])->save();
+        } else {
+            $subscriber->ensureUnsubscribeToken();
+        }
+
+        Mail::to($normalized)->send(new NewsletterCampaignMail($newsletter, $subscriber, isTest: true));
     }
 
     /**

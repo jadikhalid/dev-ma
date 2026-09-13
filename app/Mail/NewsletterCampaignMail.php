@@ -18,13 +18,20 @@ class NewsletterCampaignMail extends Mailable
     public function __construct(
         public Newsletter $newsletter,
         public NewsletterSubscriber $subscriber,
+        public bool $isTest = false,
     ) {}
 
     public function envelope(): Envelope
     {
+        $subject = $this->newsletter->subject;
+
+        if ($this->isTest) {
+            $subject = '[TEST] '.$subject;
+        }
+
         return new Envelope(
             from: MailSender::from(),
-            subject: $this->newsletter->subject,
+            subject: $subject,
         );
     }
 

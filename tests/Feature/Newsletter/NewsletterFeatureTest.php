@@ -164,6 +164,44 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
+    public function admin_can_send_test_email_without_starting_campaign(): void
+    {
+        Mail::fake();
+
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'approval_status' => null,
+            'email' => 'admin@example.com',
+        ]);
+
+        $newsletter = Newsletter::query()->create([
+            'title' => 'Campagne',
+            'subject' => 'Sujet test',
+            'locale' => 'fr',
+            'status' => Newsletter::STATUS_DRAFT,
+            'body_blocks' => [
+                ['type' => 'header', 'title' => 'Hello', 'subtitle' => ''],
+            ],
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.newsletter.send-test', $newsletter), [
+                'email' => 'admin@example.com',
+            ])
+            ->assertRedirect(route('admin.newsletter.show', $newsletter));
+
+        Mail::assertSent(NewsletterCampaignMail::class, function (NewsletterCampaignMail $mail) {
+            return $mail->hasTo('admin@example.com')
+                && $mail->isTest === true
+                && $mail->envelope()->subject === '[TEST] Sujet test';
+        });
+
+        $this->assertSame(Newsletter::STATUS_DRAFT, $newsletter->fresh()->status);
+        $this->assertSame(0, \App\Models\NewsletterOutbox::query()->count());
+    }
+
+    #[Test]
     public function schedule_dispatches_delayed_job(): void
     {
         Queue::fake();

@@ -248,6 +248,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/newsletter/{newsletter}', [NewsletterController::class, 'update'])->name('newsletter.update');
             Route::post('/newsletter/{newsletter}/preview', [NewsletterController::class, 'preview'])->name('newsletter.preview');
             Route::post('/newsletter/{newsletter}/send', [NewsletterController::class, 'send'])->name('newsletter.send');
+            Route::post('/newsletter/{newsletter}/send-test', [NewsletterController::class, 'sendTest'])->name('newsletter.send-test');
             Route::post('/newsletter/{newsletter}/schedule', [NewsletterController::class, 'schedule'])->name('newsletter.schedule');
             Route::post('/newsletter/{newsletter}/cancel', [NewsletterController::class, 'cancel'])->name('newsletter.cancel');
             Route::delete('/newsletter/{newsletter}', [NewsletterController::class, 'destroy'])->name('newsletter.destroy');
