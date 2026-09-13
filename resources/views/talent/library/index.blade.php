@@ -97,6 +97,10 @@
                         }
 
                         this.$refs.results.innerHTML = html;
+                        const labelNode = this.$refs.results.querySelector('[data-library-results-label]');
+                        if (labelNode && this.$refs.resultsCount) {
+                            this.$refs.resultsCount.textContent = labelNode.getAttribute('data-library-results-label') || '';
+                        }
                         history.replaceState({}, '', url.pathname + url.search);
                     } catch (error) {
                         if (token === this.requestToken) {
@@ -253,13 +257,34 @@
                 </div>
             </div>
 
-            <div
-                class="relative"
-                :class="{ 'opacity-60 pointer-events-none': loading }"
-                x-ref="results"
-                @click="onResultsClick($event)"
-            >
-                @include('talent.library._results', ['books' => $books])
+            <div class="space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex min-w-0 items-center gap-2.5">
+                        <h2 class="text-lg font-semibold text-gray-900">{{ __('talenma.library.catalog_title') }}</h2>
+                        <span
+                            class="inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ring-1"
+                            :class="selectedCategoryId
+                                ? 'bg-amber-50 text-amber-800 ring-amber-200'
+                                : 'bg-slate-100 text-slate-600 ring-slate-200'"
+                            x-text="selectedCategoryId
+                                ? @js(__('talenma.library.catalog_badge_selection'))
+                                : @js(__('talenma.library.catalog_badge_all'))"
+                        ></span>
+                    </div>
+                    <p
+                        x-ref="resultsCount"
+                        class="shrink-0 text-sm text-gray-500"
+                    >{{ trans_choice('talenma.library.results_count', $books->total(), ['count' => $books->total()]) }}</p>
+                </div>
+
+                <div
+                    class="relative"
+                    :class="{ 'opacity-60 pointer-events-none': loading }"
+                    x-ref="results"
+                    @click="onResultsClick($event)"
+                >
+                    @include('talent.library._results', ['books' => $books])
+                </div>
             </div>
         </div>
 
