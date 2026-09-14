@@ -813,7 +813,7 @@ An administrator or moderator is reviewing your application before your company 
         'hr' => 'Human resources',
         'copyright' => 'MA — Talents du Maroc',
         'developed_by' => 'Developed by',
-        'jadi_digital' => 'JADI DIGITAL',
+        'jadi_digital' => 'KHALID JADI',
         'follow_us' => 'Follow us',
         'privacy' => 'Privacy policy',
     ],

@@ -813,7 +813,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
         'hr' => 'Ressources humaines',
         'copyright' => 'MA — Talents du maroc',
         'developed_by' => 'Développé par',
-        'jadi_digital' => 'JADI DIGITAL',
+        'jadi_digital' => 'KHALID JADI',
         'follow_us' => 'Nous suivre',
         'privacy' => 'Politique de confidentialité',
     ],
