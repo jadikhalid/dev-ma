@@ -166,9 +166,9 @@
         }
 
         Array.prototype.forEach.call(container.querySelectorAll(
-            '.entry, .edu-row, .cert-row, .skill-row, .lang-row, .summary, .section-title, .sidebar-block, .section, .skills-row, .strengths'
+            '.entry, .edu-row, .cert-row, .skill-row, .lang-row, .social-row, .summary, .section-title, .sidebar-block, .section, .skills-row, .strengths, table.timeline'
         ), function (el) {
-            if (el.classList.contains('section') && el.querySelector('.entry, .edu-row, .summary, .cert-row, .skill-row, .lang-row, .section-title, table.timeline, .skills-row, .strengths')) {
+            if (el.classList.contains('section') && el.querySelector('.entry, .edu-row, .summary, .cert-row, .skill-row, .lang-row, .social-row, .section-title, table.timeline, .skills-row, .strengths')) {
                 return;
             }
             nodes.push(el);

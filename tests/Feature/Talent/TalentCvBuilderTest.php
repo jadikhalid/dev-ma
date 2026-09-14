@@ -122,6 +122,28 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('class="body"', false);
     }
 
+    public function test_normal_template_preview_uses_minimal_timeline_layout(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_NORMAL,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('cv-template" content="normal"', false)
+            ->assertSee('skills-grid', false)
+            ->assertSee('timeline', false)
+            ->assertSee('skill-dots', false)
+            ->assertSee('Profil professionnel', false)
+            ->assertSee('Réseaux sociaux et liens', false)
+            ->assertSee('cv-preview-page-pads', false)
+            ->assertSee('header-photo', false)
+            ->assertDontSee('cv-sidebar-band', false);
+    }
+
     public function test_modern_template_preview_includes_photo_header(): void
     {
         $talent = User::factory()->talent()->create();
@@ -208,11 +230,12 @@ class TalentCvBuilderTest extends TestCase
             ->get(route('talent.cv-builder.index'))
             ->assertOk()
             ->assertSee(__('talenma.cv_builder.page_title'))
-            ->assertSee(__('talenma.cv_builder.templates.classic'))
-            ->assertSee(__('talenma.cv_builder.templates.vibrant'))
-            ->assertSee(__('talenma.cv_builder.templates.girly'))
-            ->assertSee(__('talenma.cv_builder.templates.simple_plus'))
-            ->assertSee(__('talenma.cv_builder.templates.starter'))
+            ->assertSee('marketing-preview-classic', false)
+            ->assertSee('marketing-preview-vibrant', false)
+            ->assertSee('marketing-preview-girly', false)
+            ->assertSee('marketing-preview-simple_plus', false)
+            ->assertSee('marketing-preview-starter', false)
+            ->assertSee('marketing-preview-normal', false)
             ->assertSee(__('talenma.cv_builder.choose_template'))
             ->assertSee('selectTemplate', false)
             ->assertSee('templatePreviewSrc', false);
