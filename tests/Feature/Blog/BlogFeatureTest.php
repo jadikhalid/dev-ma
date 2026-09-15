@@ -202,4 +202,29 @@ class BlogFeatureTest extends TestCase
             ->assertSee(__('talenma.nav.jobs'), false)
             ->assertSee('id="opportunites"', false);
     }
+
+    #[Test]
+    public function blog_pages_hide_annonces_header_link(): void
+    {
+        $this->get(route('blog.index'))
+            ->assertOk()
+            ->assertSee(__('talenma.nav.blog'), false)
+            ->assertDontSee(route('home').'#opportunites', false);
+
+        BlogPost::query()->create([
+            'title' => 'Article test header',
+            'slug' => 'article-test-header',
+            'excerpt' => 'Excerpt',
+            'body' => '<p>Body</p>',
+            'locale' => 'fr',
+            'status' => BlogPost::STATUS_PUBLISHED,
+            'show_in_ticker' => false,
+            'published_at' => now()->subHour(),
+            'created_by' => User::factory()->create(['role' => 'admin'])->id,
+        ]);
+
+        $this->get(route('blog.show', 'article-test-header'))
+            ->assertOk()
+            ->assertDontSee(route('home').'#opportunites', false);
+    }
 }
