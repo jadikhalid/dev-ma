@@ -4,6 +4,7 @@ return [
     'social' => [
         'x' => env('SOCIAL_X_URL', 'https://x.com/talentsdumaroc'),
         'instagram' => env('SOCIAL_INSTAGRAM_URL', 'https://www.instagram.com/talentsdumaroc/'),
+        'facebook' => env('SOCIAL_FACEBOOK_URL', 'https://www.facebook.com/profile.php?id=61594356899256'),
         'linkedin' => env('SOCIAL_LINKEDIN_URL', 'https://www.linkedin.com/company/talentsdumaroc/'),
         'youtube' => env('SOCIAL_YOUTUBE_URL', 'https://www.youtube.com/channel/UCjmtHFsH0U-Uddo5xM3mhgg'),
     ],

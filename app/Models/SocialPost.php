@@ -14,6 +14,7 @@ class SocialPost extends Model
         'linkedin',
         'x',
         'instagram',
+        'facebook',
     ];
 
     protected $fillable = [
@@ -61,6 +62,10 @@ class SocialPost extends Model
 
         if (str_contains($host, 'instagram.com')) {
             return 'instagram';
+        }
+
+        if (str_contains($host, 'facebook.com') || str_contains($host, 'fb.com') || str_contains($host, 'fb.me')) {
+            return 'facebook';
         }
 
         return 'linkedin';
