@@ -81,7 +81,7 @@
 
                 <div
                     x-ref="templateSlider"
-                    class="cv-template-slider flex gap-3 sm:gap-3.5 overflow-x-auto overflow-y-hidden py-4 px-10 sm:px-12 scroll-smooth snap-x snap-mandatory"
+                    class="cv-template-slider flex gap-3 sm:gap-3.5 overflow-x-auto overflow-y-hidden py-12 sm:py-14 px-10 sm:px-12 scroll-smooth snap-x snap-mandatory"
                     role="radiogroup"
                     aria-label="{{ __('talenma.cv_builder.template_label') }}"
                     @scroll.passive="updateTemplateSliderNav()"
@@ -89,12 +89,11 @@
                 >
                     <template x-for="option in templateOptions" :key="option.key">
                         <div
-                            class="cv-template-card group relative shrink-0 w-[7.5rem] sm:w-[8.75rem] md:w-[9.25rem] snap-start rounded-xl border bg-white p-2 transition-[transform,box-shadow,border-color] duration-200 ease-out will-change-transform"
+                            class="cv-template-card group relative shrink-0 w-[10.5rem] sm:w-[11.5rem] md:w-[12rem] snap-start rounded-xl bg-white p-2 transition-[transform,box-shadow,border-color] duration-200 ease-out will-change-transform"
                             :data-template-key="option.key"
                             :class="{
-                                'is-selected border-indigo-500 ring-2 ring-indigo-200 shadow-sm': template === option.key,
-                                'is-previewed border-indigo-300 shadow-md': previewedTemplate === option.key && template !== option.key,
-                                'border-gray-200': template !== option.key && previewedTemplate !== option.key,
+                                'is-selected': template === option.key,
+                                'is-previewed': previewedTemplate === option.key && template !== option.key,
                             }"
                             role="radio"
                             :aria-checked="template === option.key"
