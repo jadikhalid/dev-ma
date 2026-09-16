@@ -62,6 +62,14 @@ class Newsletter extends Model
 
     public const BLOCK_CTA = 'cta';
 
+    public const BLOCK_REGISTER = 'register';
+
+    public const BLOCK_LIBRARY = 'library';
+
+    public const LIBRARY_LATEST_LIMIT = 10;
+
+    public const BLOCK_CV_TEMPLATES = 'cv_templates';
+
     public const BLOCK_TYPES = [
         self::BLOCK_HEADER,
         self::BLOCK_HERO,
@@ -73,6 +81,9 @@ class Newsletter extends Model
         self::BLOCK_STATS,
         self::BLOCK_TEXT,
         self::BLOCK_CTA,
+        self::BLOCK_REGISTER,
+        self::BLOCK_LIBRARY,
+        self::BLOCK_CV_TEMPLATES,
     ];
 
     protected function casts(): array

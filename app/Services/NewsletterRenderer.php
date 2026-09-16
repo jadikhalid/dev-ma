@@ -5,11 +5,14 @@ namespace App\Services;
 use App\Models\BlogPost;
 use App\Models\CompanyProfile;
 use App\Models\JobPosting;
+use App\Models\LibraryBook;
 use App\Models\Newsletter;
 use App\Models\NewsletterSubscriber;
 use App\Models\SocialPost;
 use App\Models\User;
 use App\Support\BlogCoverStorage;
+use App\Support\TalentCv\TalentCvMarketingPreview;
+use App\Support\TalentCv\TalentCvTemplateCatalog;
 use Illuminate\Support\Str;
 
 class NewsletterRenderer
@@ -29,10 +32,6 @@ class NewsletterRenderer
             }
         }
 
-        $unsubscribeUrl = $subscriber
-            ? route('newsletter.unsubscribe', ['token' => $subscriber->ensureUnsubscribeToken()])
-            : '#';
-
         $body = implode("\n", $parts);
         if ($body === '') {
             $body = '<p style="margin:0;font-size:15px;line-height:1.6;color:#374151;">'
@@ -40,15 +39,18 @@ class NewsletterRenderer
                 .'</p>';
         }
 
-        $footer = '<p style="margin:28px 0 0;font-size:12px;line-height:1.6;color:#9ca3af;">'
-            .e(__('talenma.newsletter.email_unsubscribe_prompt'))
-            .' <a href="'.e($unsubscribeUrl).'" style="color:#4f46e5;text-decoration:underline;">'
-            .e(__('talenma.newsletter.email_unsubscribe'))
-            .'</a></p>';
-
         return view('emails.newsletter-campaign', [
-            'bodyHtml' => $body.$footer,
+            'bodyHtml' => $body,
         ])->render();
+    }
+
+    private function sectionHeading(string $heading): string
+    {
+        return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:24px 0 16px;">'
+            .'<tr><td style="padding:10px 14px;background:#eef2ff;font-size:15px;line-height:1.35;font-weight:700;color:#3730a3;">'
+            .e($heading)
+            .'</td></tr>'
+            .'</table>';
     }
 
     /**
@@ -69,6 +71,9 @@ class NewsletterRenderer
             Newsletter::BLOCK_STATS => $this->renderStats($block),
             Newsletter::BLOCK_TEXT => $this->renderText($block),
             Newsletter::BLOCK_CTA => $this->renderCta($block),
+            Newsletter::BLOCK_REGISTER => $this->renderRegister(),
+            Newsletter::BLOCK_LIBRARY => $this->renderLibrary($block, $locale),
+            Newsletter::BLOCK_CV_TEMPLATES => $this->renderCvTemplates($block, $locale),
             default => '',
         };
     }
@@ -132,7 +137,7 @@ class NewsletterRenderer
         }
 
         $heading = trim((string) ($block['heading'] ?? __('talenma.newsletter.block_jobs_heading')));
-        $html = '<h2 style="margin:24px 0 12px;font-size:16px;font-weight:700;color:#111827;">'.e($heading).'</h2>';
+        $html = $this->sectionHeading($heading !== '' ? $heading : __('talenma.newsletter.block_jobs_heading'));
 
         foreach ($jobs as $job) {
             $url = route('jobs.gate', $job);
@@ -171,7 +176,7 @@ class NewsletterRenderer
         }
 
         $heading = trim((string) ($block['heading'] ?? __('talenma.newsletter.block_blog_heading')));
-        $html = '<h2 style="margin:24px 0 12px;font-size:16px;font-weight:700;color:#111827;">'.e($heading).'</h2>';
+        $html = $this->sectionHeading($heading !== '' ? $heading : __('talenma.newsletter.block_blog_heading'));
 
         foreach ($posts as $post) {
             $url = route('blog.show', $post->slug);
@@ -238,7 +243,7 @@ class NewsletterRenderer
         }
 
         $talents = User::query()
-            ->with('profile.profession')
+            ->with(['profile.profession', 'profile.professionSector'])
             ->whereIn('id', $ids)
             ->where('role', 'dev')
             ->where('approval_status', User::APPROVAL_APPROVED)
@@ -250,19 +255,124 @@ class NewsletterRenderer
         }
 
         $heading = trim((string) ($block['heading'] ?? __('talenma.newsletter.block_talents_heading')));
-        $html = '<h2 style="margin:24px 0 12px;font-size:16px;font-weight:700;color:#111827;">'.e($heading).'</h2>';
+        $html = $this->sectionHeading($heading !== '' ? $heading : __('talenma.newsletter.block_talents_heading'));
+        $html .= '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 8px;"><tr>';
 
+        $index = 0;
         foreach ($talents as $talent) {
-            $meta = array_filter([
-                $talent->profile?->profession?->localizedName(),
-                $talent->profile?->city,
-            ]);
-            $html .= '<div style="margin:0 0 10px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;">'
-                .'<p style="margin:0;font-size:14px;font-weight:700;color:#111827;">'.e($talent->formalDisplayName()).'</p>';
-            if ($meta !== []) {
-                $html .= '<p style="margin:4px 0 0;font-size:13px;color:#6b7280;">'.e(implode(' · ', $meta)).'</p>';
+            if ($index > 0 && $index % 2 === 0) {
+                $html .= '</tr><tr>';
             }
-            $html .= '</div>';
+
+            $html .= '<td width="50%" valign="top" style="padding:0 6px 12px;">'.$this->talentCard($talent).'</td>';
+            $index++;
+        }
+
+        if ($index % 2 === 1) {
+            $html .= '<td width="50%" valign="top" style="padding:0 6px 12px;"></td>';
+        }
+
+        $html .= '</tr></table>';
+
+        return $html;
+    }
+
+    /**
+     * @param  array<string, mixed>  $block
+     */
+    private function renderLibrary(array $block, string $locale): string
+    {
+        $ids = $this->idList($block['book_ids'] ?? []);
+        if ($ids === []) {
+            return '';
+        }
+
+        $latestIds = LibraryBook::query()
+            ->published()
+            ->latest('id')
+            ->limit(Newsletter::LIBRARY_LATEST_LIMIT)
+            ->pluck('id')
+            ->all();
+
+        $ids = array_values(array_filter(
+            $ids,
+            fn (int $id) => in_array($id, $latestIds, true)
+        ));
+        $ids = array_slice($ids, 0, Newsletter::LIBRARY_LATEST_LIMIT);
+
+        if ($ids === []) {
+            return '';
+        }
+
+        $books = LibraryBook::query()
+            ->with('category')
+            ->published()
+            ->whereIn('id', $ids)
+            ->get()
+            ->sortBy(fn (LibraryBook $book) => array_search($book->id, $ids, true));
+
+        if ($books->isEmpty()) {
+            return '';
+        }
+
+        $heading = trim((string) ($block['heading'] ?? __('talenma.newsletter.block_library_heading')));
+        $html = $this->sectionHeading($heading !== '' ? $heading : __('talenma.newsletter.block_library_heading'));
+        $html .= '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 8px;"><tr>';
+
+        $index = 0;
+        foreach ($books as $book) {
+            if ($index > 0 && $index % 3 === 0) {
+                $html .= '</tr><tr>';
+            }
+
+            $html .= '<td width="33%" valign="top" style="padding:0 4px 10px;">'.$this->libraryCard($book, $locale).'</td>';
+            $index++;
+        }
+
+        $remainder = $index % 3;
+        if ($remainder !== 0) {
+            for ($pad = $remainder; $pad < 3; $pad++) {
+                $html .= '<td width="33%" valign="top" style="padding:0 4px 10px;"></td>';
+            }
+        }
+
+        $html .= '</tr></table>';
+
+        return $html;
+    }
+
+    /**
+     * @param  array<string, mixed>  $block
+     */
+    private function renderCvTemplates(array $block, string $locale): string
+    {
+        $keys = $block['template_keys'] ?? [];
+        if (! is_array($keys) || $keys === []) {
+            return '';
+        }
+
+        $validKeys = [];
+        foreach ($keys as $key) {
+            $key = is_string($key) ? $key : '';
+            if (TalentCvTemplateCatalog::isValidTemplate($key) && ! in_array($key, $validKeys, true)) {
+                $validKeys[] = $key;
+            }
+        }
+
+        if ($validKeys === []) {
+            return '';
+        }
+
+        $heading = trim((string) ($block['heading'] ?? __('talenma.newsletter.block_cv_templates_heading')));
+        $html = $this->sectionHeading($heading !== '' ? $heading : __('talenma.newsletter.block_cv_templates_heading'));
+
+        $descriptions = is_array($block['template_descriptions'] ?? null)
+            ? $block['template_descriptions']
+            : [];
+
+        foreach ($validKeys as $key) {
+            $description = trim((string) ($descriptions[$key] ?? ''));
+            $html .= $this->cvTemplateRow($key, $locale, $description);
         }
 
         return $html;
@@ -358,7 +468,9 @@ class NewsletterRenderer
         $safe = e($body);
         $safe = nl2br($safe);
 
-        return '<div style="margin:16px 0;font-size:15px;line-height:1.65;color:#374151;">'.$safe.'</div>';
+        return '<div style="margin:16px 0;padding:14px 16px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;">'
+            .'<p style="margin:0;font-size:15px;line-height:1.65;color:#374151;">'.$safe.'</p>'
+            .'</div>';
     }
 
     /**
@@ -376,6 +488,117 @@ class NewsletterRenderer
             .'<a href="'.e($url).'" style="display:inline-block;padding:12px 22px;background:#4f46e5;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;border-radius:10px;">'
             .e($label)
             .'</a></p>';
+    }
+
+    private function renderRegister(): string
+    {
+        $url = 'https://talentsdumaroc.com/register';
+        $title = __('talenma.newsletter.register_banner_title');
+        $body = __('talenma.newsletter.register_banner_body');
+        $cta = __('talenma.newsletter.register_banner_cta');
+
+        return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;">'
+            .'<tr><td style="padding:22px 20px;background:#4f46e5;text-align:center;">'
+            .'<p style="margin:0 0 10px;font-size:22px;line-height:1.25;font-weight:800;color:#ffffff;">'.e($title).'</p>'
+            .'<p style="margin:0 0 16px;font-size:14px;line-height:1.5;color:#e0e7ff;">'.e($body).'</p>'
+            .'<a href="'.e($url).'" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 22px;background:#fbbf24;color:#1f2937;font-size:14px;font-weight:800;text-decoration:none;">'
+            .e($cta)
+            .'</a>'
+            .'</td></tr></table>';
+    }
+
+    private function talentCard(User $talent): string
+    {
+        $name = $talent->formalDisplayName();
+        $sector = $talent->profile?->professionSector?->localizedName() ?? '';
+        $profession = $talent->profile?->profession?->localizedName() ?? '';
+        $photo = $this->absolutePublicUrl($talent->avatarUrl());
+        $initials = e($talent->initials());
+
+        $photoHtml = $photo
+            ? '<img src="'.e($photo).'" alt="" width="56" height="56" style="display:block;width:56px;height:56px;object-fit:cover;border-radius:50%;border:2px solid #e0e7ff;">'
+            : '<div style="width:56px;height:56px;border-radius:50%;background:#e0e7ff;color:#3730a3;font-size:16px;font-weight:800;line-height:56px;text-align:center;">'.$initials.'</div>';
+
+        $html = '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;background:#ffffff;">'
+            .'<tr><td style="padding:12px 12px 10px;text-align:center;">'
+            .'<div style="margin:0 auto 8px;width:56px;">'.$photoHtml.'</div>'
+            .'<p style="margin:0 0 4px;font-size:13px;line-height:1.3;font-weight:800;color:#111827;">'.e($name).'</p>';
+
+        if ($sector !== '') {
+            $html .= '<p style="margin:0 0 2px;font-size:11px;line-height:1.35;color:#4f46e5;font-weight:700;">'.e($sector).'</p>';
+        }
+        if ($profession !== '') {
+            $html .= '<p style="margin:0;font-size:12px;line-height:1.35;color:#6b7280;">'.e($profession).'</p>';
+        }
+
+        $html .= '</td></tr></table>';
+
+        return $html;
+    }
+
+    private function libraryCard(LibraryBook $book, string $locale): string
+    {
+        $title = $book->title;
+        $specialty = $book->category?->localizedName($locale) ?? '';
+        $cover = $this->absolutePublicUrl($book->coverUrl());
+        $url = route('library.gate');
+
+        $coverHtml = $cover
+            ? '<img src="'.e($cover).'" alt="" width="96" style="display:block;width:96px;max-width:100%;height:88px;object-fit:cover;margin:8px auto 0;border:0;">'
+            : '<div style="width:96px;height:88px;margin:8px auto 0;background:#fef3c7;"></div>';
+
+        $html = '<a href="'.e($url).'" style="text-decoration:none;color:inherit;">'
+            .'<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;background:#ffffff;">'
+            .'<tr><td style="padding:0 4px 8px;text-align:center;">'
+            .$coverHtml
+            .'<p style="margin:8px 2px 3px;font-size:11px;line-height:1.25;font-weight:800;color:#111827;">'.e($title).'</p>';
+
+        if ($specialty !== '') {
+            $html .= '<p style="margin:0 2px 2px;font-size:10px;line-height:1.3;color:#4f46e5;font-weight:700;">'.e($specialty).'</p>';
+        }
+
+        $html .= '</td></tr></table></a>';
+
+        return $html;
+    }
+
+    private function cvTemplateRow(string $key, string $locale, string $description): string
+    {
+        $label = __('talenma.cv_builder.templates.'.$key, [], $locale === 'en' ? 'en' : 'fr');
+        $preview = $this->absolutePublicUrl(TalentCvMarketingPreview::imagePath($key, $locale));
+        $url = route('cv-builder.gate');
+
+        $previewHtml = $preview
+            ? '<img src="'.e($preview).'" alt="" width="96" style="display:block;width:96px;max-width:100%;height:88px;object-fit:cover;object-position:top;border:0;">'
+            : '<div style="width:96px;height:88px;background:#eef2ff;"></div>';
+
+        $right = '<p style="margin:0 0 4px;font-size:13px;line-height:1.3;font-weight:800;color:#111827;">'.e($label).'</p>';
+        if ($description !== '') {
+            $right .= '<p style="margin:0;font-size:12px;line-height:1.5;color:#4b5563;">'.nl2br(e($description), false).'</p>';
+        }
+
+        return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 10px;border:1px solid #e5e7eb;background:#ffffff;">'
+            .'<tr>'
+            .'<td width="96" valign="top" style="padding:8px;width:96px;">'
+            .'<a href="'.e($url).'" style="text-decoration:none;">'.$previewHtml.'</a>'
+            .'</td>'
+            .'<td valign="middle" style="padding:8px 12px 8px 4px;">'
+            .'<a href="'.e($url).'" style="text-decoration:none;color:inherit;">'.$right.'</a>'
+            .'</td>'
+            .'</tr></table>';
+    }
+
+    private function absolutePublicUrl(?string $path): ?string
+    {
+        if ($path === null || $path === '') {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return url($path);
     }
 
     /**

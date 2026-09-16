@@ -4,6 +4,8 @@ namespace Tests\Feature\Newsletter;
 
 use App\Jobs\SendNewsletterJob;
 use App\Mail\NewsletterCampaignMail;
+use App\Models\LibraryBook;
+use App\Models\LibraryCategory;
 use App\Models\ModeratorPermissionCatalog;
 use App\Models\Newsletter;
 use App\Models\NewsletterSubscriber;
@@ -42,6 +44,244 @@ class NewsletterFeatureTest extends TestCase
         $this->assertSame(Newsletter::STATUS_DRAFT, $newsletter->status);
         $this->assertSame('Semaine du 8 sept', $newsletter->title);
         $this->assertCount(2, $newsletter->normalizedBlocks());
+    }
+
+    #[Test]
+    public function free_text_block_renders_as_distinct_card(): void
+    {
+        $html = app(\App\Services\NewsletterRenderer::class)->renderBlock([
+            'type' => Newsletter::BLOCK_TEXT,
+            'body' => "Message plateforme\nLigne 2",
+        ], 'fr');
+
+        $this->assertStringContainsString('border:1px solid #e5e7eb', $html);
+        $this->assertStringContainsString('border-radius:12px', $html);
+        $this->assertStringContainsString('background:#f9fafb', $html);
+        $this->assertStringContainsString('Message plateforme', $html);
+        $this->assertStringContainsString('Ligne 2', $html);
+    }
+
+    #[Test]
+    public function newsletter_email_uses_tdm_brand_label(): void
+    {
+        $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
+            'locale' => 'fr',
+            'body_blocks' => [
+                ['type' => 'text', 'body' => 'Contenu'],
+            ],
+        ]));
+
+        $this->assertStringContainsString('Newsletter TDM', $html);
+        $this->assertDoesNotMatchRegularExpression('/<p[^>]*>\s*Talents du Maroc\s*<\/p>/', $html);
+    }
+
+    #[Test]
+    public function newsletter_email_includes_fixed_site_footer(): void
+    {
+        $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
+            'locale' => 'fr',
+            'body_blocks' => [
+                ['type' => 'text', 'body' => 'Contenu'],
+            ],
+        ]));
+
+        $this->assertStringContainsString('background:#111827', $html);
+        $this->assertStringContainsString('text-align:center', $html);
+        $this->assertStringContainsString('www.talentsdumaroc.com', $html);
+        $this->assertStringContainsString('https://www.talentsdumaroc.com', $html);
+        $this->assertStringContainsString('images/logo2-white.png', $html);
+        $this->assertStringContainsString('Nous suivre', $html);
+        $this->assertStringContainsString((string) config('talenma.social.linkedin'), $html);
+        $this->assertStringContainsString((string) config('talenma.social.facebook'), $html);
+        $this->assertStringContainsString((string) config('talenma.social.instagram'), $html);
+        $this->assertStringNotContainsString(__('talenma.footer.tagline'), $html);
+        $this->assertStringNotContainsString('Visiter le site', $html);
+        $this->assertStringNotContainsString('Créer un compte', $html);
+        $this->assertStringNotContainsString(__('talenma.footer.privacy'), $html);
+        $this->assertStringNotContainsString((string) config('talenma.social.x'), $html);
+        $this->assertStringNotContainsString((string) config('talenma.social.youtube'), $html);
+        $this->assertStringNotContainsString('KHALID JADI', $html);
+        $this->assertStringNotContainsString('JADI DIGITAL', $html);
+    }
+
+    #[Test]
+    public function jobs_block_heading_renders_as_section_separator(): void
+    {
+        $html = app(\App\Services\NewsletterRenderer::class)->renderBlock([
+            'type' => Newsletter::BLOCK_JOBS,
+            'heading' => 'Annonces à la une',
+            'job_ids' => [999999],
+        ], 'fr');
+
+        $this->assertSame('', $html);
+
+        $jobHtmlHeading = (new \ReflectionClass(\App\Services\NewsletterRenderer::class))
+            ->getMethod('sectionHeading');
+        $jobHtmlHeading->setAccessible(true);
+        $headingHtml = $jobHtmlHeading->invoke(app(\App\Services\NewsletterRenderer::class), 'Annonces à la une');
+
+        $this->assertStringContainsString('Annonces à la une', $headingHtml);
+        $this->assertStringContainsString('background:#eef2ff', $headingHtml);
+        $this->assertStringContainsString('color:#3730a3', $headingHtml);
+    }
+
+    #[Test]
+    public function register_banner_block_renders_fixed_signup_ad(): void
+    {
+        $html = app(\App\Services\NewsletterRenderer::class)->renderBlock([
+            'type' => Newsletter::BLOCK_REGISTER,
+        ], 'fr');
+
+        $this->assertStringContainsString('https://talentsdumaroc.com/register', $html);
+        $this->assertStringContainsString('target="_blank"', $html);
+        $this->assertStringContainsString('Créer mon compte sur Talents du Maroc', $html);
+        $this->assertStringContainsString('Rejoignez la communauté', $html);
+        $this->assertStringNotContainsString('Espace talents', $html);
+        $this->assertStringNotContainsString('vitrine talent', $html);
+        $this->assertStringContainsString('background:#4f46e5', $html);
+        $this->assertStringContainsString('background:#fbbf24', $html);
+    }
+
+    #[Test]
+    public function talent_spotlight_cards_include_name_and_photo(): void
+    {
+        $talent = User::factory()->talent()->create([
+            'first_name' => 'Amina',
+            'last_name' => 'El Fassi',
+            'avatar_path' => 'avatars/amina.png',
+        ]);
+        $talent->profile()->create(['experience_years' => 0]);
+
+        $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
+            'locale' => 'fr',
+            'body_blocks' => [
+                ['type' => Newsletter::BLOCK_TALENTS, 'heading' => 'Talents à découvrir', 'user_ids' => [$talent->id]],
+            ],
+        ]));
+
+        $this->assertStringContainsString('Talents à découvrir', $html);
+        $this->assertStringContainsString('background:#eef2ff', $html);
+        $this->assertStringContainsString('Amina El Fassi', $html);
+        $this->assertStringContainsString('avatars/amina.png', $html);
+        $this->assertStringContainsString('border-radius:50%', $html);
+    }
+
+    #[Test]
+    public function create_form_exposes_library_and_cv_template_blocks(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.newsletter.create'))
+            ->assertOk()
+            ->assertSee('Derniers ouvrages', false)
+            ->assertSee('Nouveaux modèles de CV', false)
+            ->assertSee('cv_templates', false);
+    }
+
+    #[Test]
+    public function library_picker_lists_only_the_ten_latest_published_books(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $category = $this->libraryCategory();
+
+        $this->libraryBook($category, 'Atlas des sols');
+        $this->libraryBook($category, 'Manuel disparu');
+        for ($i = 1; $i <= 10; $i++) {
+            $this->libraryBook($category, 'Guide récent '.$i);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('admin.newsletter.create'))
+            ->assertOk()
+            ->assertSee('Cochez parmi les 10 derniers ouvrages mis en ligne', false)
+            ->assertSee('Guide récent 1', false)
+            ->assertSee('Guide récent 10', false)
+            ->assertDontSee('Atlas des sols', false)
+            ->assertDontSee('Manuel disparu', false);
+    }
+
+    #[Test]
+    public function library_block_renders_cover_title_and_specialty_three_per_row(): void
+    {
+        $category = $this->libraryCategory();
+
+        $bookA = $this->libraryBook($category, 'Code du travail', 'https://cdn.example.com/covers/travail.jpg');
+        $bookB = $this->libraryBook($category, 'Procédure civile', 'https://cdn.example.com/covers/civil.jpg');
+        $bookC = $this->libraryBook($category, 'Droit commercial', 'https://cdn.example.com/covers/commercial.jpg');
+        $hidden = $this->libraryBook($category, 'Brouillon secret', 'https://cdn.example.com/covers/secret.jpg', published: false);
+
+        $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
+            'locale' => 'fr',
+            'body_blocks' => [[
+                'type' => Newsletter::BLOCK_LIBRARY,
+                'heading' => 'Derniers ouvrages mis en ligne',
+                'book_ids' => [$bookA->id, $bookB->id, $bookC->id, $hidden->id],
+            ]],
+        ]));
+
+        $this->assertStringContainsString('Derniers ouvrages mis en ligne', $html);
+        $this->assertStringContainsString('background:#eef2ff', $html);
+        $this->assertStringContainsString('Code du travail', $html);
+        $this->assertStringContainsString('Procédure civile', $html);
+        $this->assertStringContainsString('Droit commercial', $html);
+        $this->assertStringContainsString('Droit', $html);
+        $this->assertStringContainsString('https://cdn.example.com/covers/travail.jpg', $html);
+        $this->assertStringContainsString('width="96"', $html);
+        $this->assertStringContainsString('width="33%"', $html);
+        $this->assertStringNotContainsString('width="50%"', $html);
+        $this->assertStringContainsString(route('library.gate'), $html);
+        $this->assertStringNotContainsString('Brouillon secret', $html);
+    }
+
+    #[Test]
+    public function library_block_ignores_books_outside_the_ten_latest(): void
+    {
+        $category = $this->libraryCategory();
+        $oldest = $this->libraryBook($category, 'Atlas des sols');
+        for ($i = 1; $i <= 10; $i++) {
+            $this->libraryBook($category, 'Guide récent '.$i);
+        }
+
+        $html = app(\App\Services\NewsletterRenderer::class)->renderBlock([
+            'type' => Newsletter::BLOCK_LIBRARY,
+            'heading' => 'Derniers ouvrages mis en ligne',
+            'book_ids' => [$oldest->id],
+        ], 'fr');
+
+        $this->assertSame('', $html);
+    }
+
+    #[Test]
+    public function cv_templates_block_renders_preview_and_editable_description_per_row(): void
+    {
+        $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
+            'locale' => 'fr',
+            'body_blocks' => [[
+                'type' => Newsletter::BLOCK_CV_TEMPLATES,
+                'heading' => 'Nouveaux modèles de CV',
+                'template_keys' => ['normal', 'starter', 'not-a-template'],
+                'template_descriptions' => [
+                    'normal' => "Mise en page claire\npour un premier job",
+                    'starter' => 'Idéal pour démarrer',
+                ],
+            ]],
+        ]));
+
+        $this->assertStringContainsString('Nouveaux modèles de CV', $html);
+        $this->assertStringContainsString('background:#eef2ff', $html);
+        $this->assertStringContainsString('Normal', $html);
+        $this->assertStringContainsString('Starter', $html);
+        $this->assertStringContainsString('Mise en page claire', $html);
+        $this->assertStringContainsString('pour un premier job', $html);
+        $this->assertStringContainsString('Idéal pour démarrer', $html);
+        $this->assertStringContainsString('marketing-preview-normal-fr.png', $html);
+        $this->assertStringContainsString('width="96"', $html);
+        $this->assertStringContainsString('height:88px', $html);
+        $this->assertStringContainsString('valign="middle"', $html);
+        $this->assertStringNotContainsString('width="33%"', $html);
+        $this->assertStringContainsString(route('cv-builder.gate'), $html);
+        $this->assertStringNotContainsString('not-a-template', $html);
     }
 
     #[Test]
@@ -232,5 +472,38 @@ class NewsletterFeatureTest extends TestCase
         Queue::assertPushed(SendNewsletterJob::class, function (SendNewsletterJob $job) use ($newsletter) {
             return $job->newsletterId === $newsletter->id;
         });
+    }
+
+    private function libraryCategory(): LibraryCategory
+    {
+        return LibraryCategory::query()->create([
+            'slug' => 'droit',
+            'name_fr' => 'Droit',
+            'name_en' => 'Law',
+            'depth' => 3,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+    }
+
+    private function libraryBook(
+        LibraryCategory $category,
+        string $title,
+        ?string $cover = null,
+        bool $published = true,
+    ): LibraryBook {
+        $slug = str_replace(' ', '-', strtolower($title));
+
+        return LibraryBook::query()->create([
+            'library_category_id' => $category->id,
+            'title' => $title,
+            'author' => 'Auteur',
+            'cover_path' => $cover,
+            'file_path' => 'library-books/'.$slug.'.pdf',
+            'original_filename' => $slug.'.pdf',
+            'mime' => 'application/pdf',
+            'size_bytes' => 12,
+            'is_published' => $published,
+        ]);
     }
 }

@@ -43,12 +43,18 @@
                     'stats' => __('talenma.newsletter.block_type_stats'),
                     'text' => __('talenma.newsletter.block_type_text'),
                     'cta' => __('talenma.newsletter.block_type_cta'),
+                    'register' => __('talenma.newsletter.block_type_register'),
+                    'library' => __('talenma.newsletter.block_type_library'),
+                    'cv_templates' => __('talenma.newsletter.block_type_cv_templates'),
                     'add_block' => __('talenma.newsletter.add_block'),
                     'remove' => __('talenma.newsletter.remove_block'),
                     'up' => __('talenma.newsletter.move_up'),
                     'down' => __('talenma.newsletter.move_down'),
                     'heading' => __('talenma.newsletter.field_heading'),
                     'pick_items' => __('talenma.newsletter.pick_items'),
+                    'pick_library' => __('talenma.newsletter.pick_library'),
+                    'pick_cv_templates' => __('talenma.newsletter.pick_cv_templates'),
+                    'cv_description' => __('talenma.newsletter.field_cv_template_description'),
                 ]),
             })"
         >
@@ -113,10 +119,10 @@
                             </div>
                         </template>
 
-                        <template x-if="['jobs','blog','social','talents','companies'].includes(block.type)">
+                        <template x-if="['jobs','blog','social','talents','companies','library'].includes(block.type)">
                             <div class="space-y-2">
                                 <input type="text" class="w-full rounded-lg border-gray-300 text-sm" :placeholder="labels.heading" x-model="block.heading">
-                                <p class="text-xs text-slate-500" x-text="labels.pick_items"></p>
+                                <p class="text-xs text-slate-500" x-text="block.type === 'library' ? labels.pick_library : labels.pick_items"></p>
                                 <div class="max-h-40 overflow-y-auto space-y-1 rounded-lg border bg-white p-2">
                                     <template x-for="item in pickerFor(block.type)" :key="item.id">
                                         <label class="flex items-start gap-2 text-sm text-slate-700">
@@ -125,6 +131,27 @@
                                         </label>
                                     </template>
                                 </div>
+                            </div>
+                        </template>
+
+                        <template x-if="block.type === 'cv_templates'">
+                            <div class="space-y-3" x-init="ensureCvDescriptions(block)">
+                                <input type="text" class="w-full rounded-lg border-gray-300 text-sm" :placeholder="labels.heading" x-model="block.heading">
+                                <p class="text-xs text-slate-500" x-text="labels.pick_cv_templates"></p>
+                                <div class="max-h-40 overflow-y-auto space-y-1 rounded-lg border bg-white p-2">
+                                    <template x-for="item in pickerFor(block.type)" :key="item.id">
+                                        <label class="flex items-start gap-2 text-sm text-slate-700">
+                                            <input type="checkbox" class="mt-0.5 rounded border-gray-300 text-indigo-600" :checked="isSelected(block, item.id)" @change="toggleId(block, item.id, $event.target.checked)">
+                                            <span x-text="item.label"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                                <template x-for="key in selectedIds(block)" :key="key">
+                                    <div class="rounded-lg border bg-white p-3 space-y-1.5">
+                                        <p class="text-xs font-semibold text-slate-700" x-text="cvTemplateLabel(key)"></p>
+                                        <textarea rows="3" class="w-full rounded-lg border-gray-300 text-sm" :placeholder="labels.cv_description" x-model="ensureCvDescriptions(block)[key]"></textarea>
+                                    </div>
+                                </template>
                             </div>
                         </template>
 
@@ -149,6 +176,10 @@
                                 <input type="text" class="rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.newsletter.field_cta_label') }}" x-model="block.label">
                                 <input type="url" class="rounded-lg border-gray-300 text-sm" placeholder="https://…" x-model="block.url">
                             </div>
+                        </template>
+
+                        <template x-if="block.type === 'register'">
+                            <p class="text-sm text-slate-600">{{ __('talenma.newsletter.register_banner_help') }}</p>
                         </template>
                     </div>
                 </template>

@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\BlogPost;
 use App\Models\CompanyProfile;
 use App\Models\JobPosting;
+use App\Models\LibraryBook;
 use App\Models\Newsletter;
 use App\Models\SocialPost;
 use App\Models\User;
 use App\Services\NewsletterDeliveryService;
 use App\Services\NewsletterRenderer;
+use App\Support\TalentCv\TalentCvTemplateCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -339,7 +341,7 @@ class NewsletterController extends Controller
     }
 
     /**
-     * @return array{jobs: list<array{id:int,label:string}>, blog: list<array{id:int,label:string}>, social: list<array{id:int,label:string}>, talents: list<array{id:int,label:string}>, companies: list<array{id:int,label:string}>}
+     * @return array{jobs: list<array{id:int,label:string}>, blog: list<array{id:int,label:string}>, social: list<array{id:int,label:string}>, talents: list<array{id:int,label:string}>, companies: list<array{id:int,label:string}>, library: list<array{id:int,label:string}>, cv_templates: list<array{id:string,label:string}>}
      */
     private function pickerPayload(): array
     {
@@ -392,6 +394,21 @@ class NewsletterController extends Controller
                 ->map(fn (CompanyProfile $profile) => [
                     'id' => $profile->id,
                     'label' => $profile->displayName(),
+                ])->values()->all(),
+            'library' => LibraryBook::query()
+                ->with('category')
+                ->published()
+                ->latest('id')
+                ->limit(Newsletter::LIBRARY_LATEST_LIMIT)
+                ->get()
+                ->map(fn (LibraryBook $book) => [
+                    'id' => $book->id,
+                    'label' => $book->title.($book->category ? ' — '.$book->category->localizedName() : ''),
+                ])->values()->all(),
+            'cv_templates' => collect(TalentCvTemplateCatalog::templateKeys())
+                ->map(fn (string $key) => [
+                    'id' => $key,
+                    'label' => TalentCvTemplateCatalog::templateLabels()[$key] ?? $key,
                 ])->values()->all(),
         ];
     }

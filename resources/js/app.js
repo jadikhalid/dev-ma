@@ -4979,7 +4979,7 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
     blocks: Array.isArray(config.blocks) ? config.blocks : [],
     picker: config.picker || {},
     labels: config.labels || {},
-    blockTypes: ['header', 'hero', 'jobs', 'blog', 'social', 'talents', 'companies', 'stats', 'text', 'cta'],
+    blockTypes: ['header', 'hero', 'jobs', 'blog', 'social', 'talents', 'companies', 'stats', 'text', 'cta', 'register', 'library', 'cv_templates'],
 
     idKeyFor(type) {
         return ({
@@ -4988,6 +4988,8 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
             social: 'social_ids',
             talents: 'user_ids',
             companies: 'company_profile_ids',
+            library: 'book_ids',
+            cv_templates: 'template_keys',
         })[type] || 'ids';
     },
 
@@ -5013,6 +5015,12 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
                 return { type, body: '' };
             case 'cta':
                 return { type, label: '', url: '' };
+            case 'register':
+                return { type };
+            case 'library':
+                return { type, heading: '', book_ids: [] };
+            case 'cv_templates':
+                return { type, heading: '', template_keys: [], template_descriptions: {} };
             default:
                 return { type };
         }
@@ -5055,11 +5063,34 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
     },
 
     isSelected(block, id) {
-        return this.selectedIds(block).map(Number).includes(Number(id));
+        const ids = this.selectedIds(block);
+        if (block.type === 'cv_templates') {
+            return ids.map(String).includes(String(id));
+        }
+
+        return ids.map(Number).includes(Number(id));
     },
 
     toggleId(block, id, checked) {
         const ids = this.selectedIds(block);
+        if (block.type === 'cv_templates') {
+            const key = String(id);
+            const index = ids.findIndex((value) => String(value) === key);
+            const descriptions = this.ensureCvDescriptions(block);
+
+            if (checked && index === -1) {
+                ids.push(key);
+                if (descriptions[key] == null) {
+                    descriptions[key] = '';
+                }
+            } else if (!checked && index !== -1) {
+                ids.splice(index, 1);
+                delete descriptions[key];
+            }
+
+            return;
+        }
+
         const numericId = Number(id);
         const index = ids.findIndex((value) => Number(value) === numericId);
 
@@ -5068,6 +5099,20 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
         } else if (!checked && index !== -1) {
             ids.splice(index, 1);
         }
+    },
+
+    ensureCvDescriptions(block) {
+        if (!block.template_descriptions || typeof block.template_descriptions !== 'object' || Array.isArray(block.template_descriptions)) {
+            block.template_descriptions = {};
+        }
+
+        return block.template_descriptions;
+    },
+
+    cvTemplateLabel(key) {
+        const item = this.pickerFor('cv_templates').find((entry) => String(entry.id) === String(key));
+
+        return item?.label || key;
     },
 }));
 
