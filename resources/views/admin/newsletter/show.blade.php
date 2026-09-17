@@ -118,7 +118,7 @@
                 <h3 class="text-sm font-bold text-slate-700">{{ __('talenma.newsletter.preview_title') }}</h3>
             </div>
             <div class="p-4 bg-slate-100">
-                <div class="mx-auto max-w-[560px] rounded-xl overflow-hidden border bg-white shadow-sm">
+                <div class="mx-auto max-w-[728px] rounded-xl overflow-hidden border bg-white shadow-sm">
                     {!! $previewHtml !!}
                 </div>
             </div>

@@ -112,7 +112,7 @@ class NewsletterRenderer
 
         $alt = trim((string) ($block['alt'] ?? ''));
 
-        return '<p style="margin:0 0 20px;"><img src="'.e($url).'" alt="'.e($alt).'" style="display:block;width:100%;max-width:496px;height:auto;border-radius:12px;"></p>';
+        return '<p style="margin:0 0 20px;"><img src="'.e($url).'" alt="'.e($alt).'" style="display:block;width:100%;max-width:664px;height:auto;border-radius:12px;"></p>';
     }
 
     /**
@@ -140,17 +140,39 @@ class NewsletterRenderer
         $html = $this->sectionHeading($heading !== '' ? $heading : __('talenma.newsletter.block_jobs_heading'));
 
         foreach ($jobs as $job) {
-            $url = route('jobs.gate', $job);
-            $html .= '<div style="margin:0 0 12px;padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;">'
-                .'<p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#6b7280;">'.e($job->advertiserName()).'</p>'
-                .'<p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#111827;"><a href="'.e($url).'" style="color:#111827;text-decoration:none;">'.e($job->title).'</a></p>';
-            if ($job->sectorLabel() !== '') {
-                $html .= '<p style="margin:0 0 8px;font-size:13px;color:#6b7280;">'.e($job->sectorLabel()).'</p>';
-            }
-            $html .= '<a href="'.e($url).'" style="font-size:13px;font-weight:600;color:#4f46e5;text-decoration:none;">'
-                .e(__('talenma.newsletter.view_job'))
-                .'</a></div>';
+            $html .= $this->jobCard($job);
         }
+
+        return $html;
+    }
+
+    private function jobCard(JobPosting $job): string
+    {
+        $url = route('jobs.gate', $job);
+        $logo = $this->absolutePublicUrl($job->advertiserLogoUrl());
+        $initials = e($job->advertiserInitials());
+
+        $thumb = $logo
+            ? '<img src="'.e($logo).'" alt="" width="56" height="56" style="display:block;float:right;width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb;">'
+            : '<div style="float:right;width:56px;height:56px;border-radius:10px;background:#4f46e5;color:#ffffff;font-size:14px;font-weight:800;line-height:56px;text-align:center;">'.$initials.'</div>';
+
+        $html = '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 12px;border:1px solid #e5e7eb;border-radius:12px;">'
+            .'<tr>'
+            .'<td valign="top" style="padding:12px 14px;">'
+            .$thumb
+            .'<p style="margin:0 64px 4px 0;font-size:12px;font-weight:600;color:#6b7280;">'.e($job->advertiserName()).'</p>'
+            .'<p style="margin:0 64px 6px 0;font-size:15px;font-weight:700;color:#111827;"><a href="'.e($url).'" style="color:#111827;text-decoration:none;">'.e($job->title).'</a></p>';
+
+        if ($job->sectorLabel() !== '') {
+            $html .= '<p style="margin:0 64px 8px 0;font-size:13px;color:#6b7280;">'.e($job->sectorLabel()).'</p>';
+        }
+
+        $html .= '<a href="'.e($url).'" style="font-size:13px;font-weight:600;color:#4f46e5;text-decoration:none;">'
+            .e(__('talenma.newsletter.view_job'))
+            .'</a>'
+            .'<div style="clear:both;line-height:0;height:0;"></div>'
+            .'</td>'
+            .'</tr></table>';
 
         return $html;
     }
@@ -183,7 +205,7 @@ class NewsletterRenderer
             $cover = BlogCoverStorage::url($post->cover_path);
             $html .= '<div style="margin:0 0 14px;">';
             if ($cover) {
-                $html .= '<a href="'.e($url).'"><img src="'.e($cover).'" alt="" style="display:block;width:100%;max-width:496px;height:auto;border-radius:10px;margin:0 0 8px;"></a>';
+                $html .= '<a href="'.e($url).'"><img src="'.e($cover).'" alt="" style="display:block;width:100%;max-width:664px;height:auto;border-radius:10px;margin:0 0 8px;"></a>';
             }
             $html .= '<p style="margin:0 0 4px;font-size:15px;font-weight:700;"><a href="'.e($url).'" style="color:#111827;text-decoration:none;">'.e($post->title).'</a></p>'
                 .'<p style="margin:0 0 6px;font-size:13px;line-height:1.5;color:#6b7280;">'.e(Str::limit($post->excerpt, 140)).'</p>'

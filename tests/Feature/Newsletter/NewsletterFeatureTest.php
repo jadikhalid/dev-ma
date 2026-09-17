@@ -4,6 +4,7 @@ namespace Tests\Feature\Newsletter;
 
 use App\Jobs\SendNewsletterJob;
 use App\Mail\NewsletterCampaignMail;
+use App\Models\JobPosting;
 use App\Models\LibraryBook;
 use App\Models\LibraryCategory;
 use App\Models\ModeratorPermissionCatalog;
@@ -72,6 +73,7 @@ class NewsletterFeatureTest extends TestCase
         ]));
 
         $this->assertStringContainsString('Newsletter TDM', $html);
+        $this->assertStringContainsString('max-width:728px', $html);
         $this->assertDoesNotMatchRegularExpression('/<p[^>]*>\s*Talents du Maroc\s*<\/p>/', $html);
     }
 
@@ -123,6 +125,36 @@ class NewsletterFeatureTest extends TestCase
         $this->assertStringContainsString('Annonces à la une', $headingHtml);
         $this->assertStringContainsString('background:#eef2ff', $headingHtml);
         $this->assertStringContainsString('color:#3730a3', $headingHtml);
+    }
+
+    #[Test]
+    public function jobs_block_floats_advertiser_thumbnail_top_right(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $job = JobPosting::query()->create([
+            'company_profile_id' => null,
+            'created_by' => $admin->id,
+            'title' => 'Ingénieur backend',
+            'description' => str_repeat('Poste ouvert pour un profil backend confirmé. ', 3),
+            'status' => JobPosting::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'application_mode' => JobPosting::APPLICATION_EXTERNAL,
+            'external_company_name' => 'Acme Partners',
+            'external_company_logo_path' => 'https://cdn.example.com/logos/acme.png',
+            'external_apply_url' => 'https://acme.example/jobs/apply',
+        ]);
+
+        $html = app(\App\Services\NewsletterRenderer::class)->renderBlock([
+            'type' => Newsletter::BLOCK_JOBS,
+            'heading' => 'Annonces à la une',
+            'job_ids' => [$job->id],
+        ], 'fr');
+
+        $this->assertStringContainsString('Ingénieur backend', $html);
+        $this->assertStringContainsString('Acme Partners', $html);
+        $this->assertStringContainsString('https://cdn.example.com/logos/acme.png', $html);
+        $this->assertStringContainsString('float:right', $html);
+        $this->assertStringContainsString('width="56"', $html);
     }
 
     #[Test]

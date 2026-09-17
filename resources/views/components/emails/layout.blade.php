@@ -2,6 +2,7 @@
     'showBrand' => true,
     'showFooter' => true,
     'brandLabel' => null,
+    'contentMaxWidth' => '560px',
 ])
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -14,7 +15,7 @@
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f3f4f6;padding:32px 16px;">
         <tr>
             <td align="center">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:{{ $contentMaxWidth }};background-color:#ffffff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;">
                     <tr>
                         <td style="padding:32px 32px 8px;">
                             @if ($showBrand)
