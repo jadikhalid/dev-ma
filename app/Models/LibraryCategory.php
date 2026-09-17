@@ -66,6 +66,18 @@ class LibraryCategory extends Model
         return (int) $this->depth === self::MAX_DEPTH;
     }
 
+    public function rootAncestor(): self
+    {
+        $this->loadMissing('parent.parent');
+
+        $current = $this;
+        while ($current->parent) {
+            $current = $current->parent;
+        }
+
+        return $current;
+    }
+
     public function localizedName(?string $locale = null): string
     {
         $locale = $locale ?: app()->getLocale();

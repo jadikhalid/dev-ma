@@ -396,14 +396,14 @@ class NewsletterController extends Controller
                     'label' => $profile->displayName(),
                 ])->values()->all(),
             'library' => LibraryBook::query()
-                ->with('category')
+                ->with(['category.parent.parent'])
                 ->published()
                 ->latest('id')
                 ->limit(Newsletter::LIBRARY_LATEST_LIMIT)
                 ->get()
                 ->map(fn (LibraryBook $book) => [
                     'id' => $book->id,
-                    'label' => $book->title.($book->category ? ' — '.$book->category->localizedName() : ''),
+                    'label' => $book->title.($book->category ? ' — '.$book->category->rootAncestor()->localizedName() : ''),
                 ])->values()->all(),
             'cv_templates' => collect(TalentCvTemplateCatalog::templateKeys())
                 ->map(fn (string $key) => [

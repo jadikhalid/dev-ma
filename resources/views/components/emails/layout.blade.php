@@ -19,7 +19,7 @@
                     <tr>
                         <td style="padding:32px 32px 8px;">
                             @if ($showBrand)
-                                <p style="margin:0 0 24px;font-size:18px;font-weight:700;color:#4f46e5;">{{ $brandLabel ?? __('talenma.meta.title') }}</p>
+                                <p style="margin:0 0 24px;font-size:18px;line-height:1.3;font-weight:700;color:#4f46e5;">{{ $brandLabel ?? __('talenma.meta.title') }}</p>
                             @endif
                             {{ $slot }}
                         </td>

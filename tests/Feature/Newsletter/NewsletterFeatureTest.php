@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\ModeratorAssignmentService;
 use App\Services\NewsletterSubscriberService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
@@ -63,8 +64,10 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
-    public function newsletter_email_uses_tdm_brand_label(): void
+    public function newsletter_email_uses_dated_title(): void
     {
+        Carbon::setTestNow(Carbon::parse('2026-09-17'));
+
         $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
             'locale' => 'fr',
             'body_blocks' => [
@@ -72,9 +75,12 @@ class NewsletterFeatureTest extends TestCase
             ],
         ]));
 
-        $this->assertStringContainsString('Newsletter TDM', $html);
+        $this->assertStringContainsString('Newsletter du Jeudi 17 Septembre 2026', $html);
         $this->assertStringContainsString('max-width:728px', $html);
+        $this->assertStringNotContainsString('Newsletter TDM', $html);
         $this->assertDoesNotMatchRegularExpression('/<p[^>]*>\s*Talents du Maroc\s*<\/p>/', $html);
+
+        Carbon::setTestNow();
     }
 
     #[Test]
@@ -166,7 +172,8 @@ class NewsletterFeatureTest extends TestCase
 
         $this->assertStringContainsString('https://talentsdumaroc.com/register', $html);
         $this->assertStringContainsString('target="_blank"', $html);
-        $this->assertStringContainsString('Créer mon compte sur Talents du Maroc', $html);
+        $this->assertStringContainsString('Créer mon compte', $html);
+        $this->assertStringNotContainsString('Créer mon compte sur Talents du Maroc', $html);
         $this->assertStringContainsString('Rejoignez la communauté', $html);
         $this->assertStringNotContainsString('Espace talents', $html);
         $this->assertStringNotContainsString('vitrine talent', $html);
@@ -182,7 +189,10 @@ class NewsletterFeatureTest extends TestCase
             'last_name' => 'El Fassi',
             'avatar_path' => 'avatars/amina.png',
         ]);
-        $talent->profile()->create(['experience_years' => 0]);
+        $talent->profile()->create([
+            'experience_years' => 0,
+            'city' => 'Casablanca',
+        ]);
 
         $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
             'locale' => 'fr',
@@ -194,6 +204,7 @@ class NewsletterFeatureTest extends TestCase
         $this->assertStringContainsString('Talents à découvrir', $html);
         $this->assertStringContainsString('background:#eef2ff', $html);
         $this->assertStringContainsString('Amina El Fassi', $html);
+        $this->assertStringContainsString('Casablanca', $html);
         $this->assertStringContainsString('avatars/amina.png', $html);
         $this->assertStringContainsString('border-radius:50%', $html);
     }
@@ -234,14 +245,39 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
-    public function library_block_renders_cover_title_and_specialty_three_per_row(): void
+    public function library_block_renders_cover_title_and_root_discipline_three_per_row(): void
     {
-        $category = $this->libraryCategory();
+        $root = LibraryCategory::query()->create([
+            'slug' => 'informatique',
+            'name_fr' => 'Informatique',
+            'name_en' => 'IT',
+            'depth' => 1,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $sub = LibraryCategory::query()->create([
+            'parent_id' => $root->id,
+            'slug' => 'developpement',
+            'name_fr' => 'Développement',
+            'name_en' => 'Development',
+            'depth' => 2,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $leaf = LibraryCategory::query()->create([
+            'parent_id' => $sub->id,
+            'slug' => 'programmation-systeme',
+            'name_fr' => 'Programmation système',
+            'name_en' => 'Systems programming',
+            'depth' => 3,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
 
-        $bookA = $this->libraryBook($category, 'Code du travail', 'https://cdn.example.com/covers/travail.jpg');
-        $bookB = $this->libraryBook($category, 'Procédure civile', 'https://cdn.example.com/covers/civil.jpg');
-        $bookC = $this->libraryBook($category, 'Droit commercial', 'https://cdn.example.com/covers/commercial.jpg');
-        $hidden = $this->libraryBook($category, 'Brouillon secret', 'https://cdn.example.com/covers/secret.jpg', published: false);
+        $bookA = $this->libraryBook($leaf, 'Introduction complète au droit international privé et à la procédure civile comparée', 'https://cdn.example.com/covers/laravel.jpg');
+        $bookB = $this->libraryBook($leaf, 'Guide Redis', 'https://cdn.example.com/covers/redis.jpg');
+        $bookC = $this->libraryBook($leaf, 'Guide Linux', 'https://cdn.example.com/covers/linux.jpg');
+        $hidden = $this->libraryBook($leaf, 'Brouillon secret', 'https://cdn.example.com/covers/secret.jpg', published: false);
 
         $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
             'locale' => 'fr',
@@ -254,12 +290,18 @@ class NewsletterFeatureTest extends TestCase
 
         $this->assertStringContainsString('Derniers ouvrages mis en ligne', $html);
         $this->assertStringContainsString('background:#eef2ff', $html);
-        $this->assertStringContainsString('Code du travail', $html);
-        $this->assertStringContainsString('Procédure civile', $html);
-        $this->assertStringContainsString('Droit commercial', $html);
-        $this->assertStringContainsString('Droit', $html);
-        $this->assertStringContainsString('https://cdn.example.com/covers/travail.jpg', $html);
+        $this->assertStringContainsString('Introduction complète au droit international', $html);
+        $this->assertStringNotContainsString('procédure civile comparée', $html);
+        $this->assertStringContainsString('Guide Redis', $html);
+        $this->assertStringContainsString('Guide Linux', $html);
+        $this->assertStringContainsString('Informatique', $html);
+        $this->assertStringNotContainsString('Programmation système', $html);
+        $this->assertStringNotContainsString('Développement', $html);
+        $this->assertStringContainsString('https://cdn.example.com/covers/laravel.jpg', $html);
         $this->assertStringContainsString('width="96"', $html);
+        $this->assertStringContainsString('height="88"', $html);
+        $this->assertStringContainsString('height:176px', $html);
+        $this->assertStringContainsString('max-height:28px', $html);
         $this->assertStringContainsString('width="33%"', $html);
         $this->assertStringNotContainsString('width="50%"', $html);
         $this->assertStringContainsString(route('library.gate'), $html);

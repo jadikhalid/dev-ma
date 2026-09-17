@@ -41,7 +41,28 @@ class NewsletterRenderer
 
         return view('emails.newsletter-campaign', [
             'bodyHtml' => $body,
+            'datedTitle' => $this->datedTitle($newsletter),
         ])->render();
+    }
+
+    private function datedTitle(Newsletter $newsletter): string
+    {
+        $locale = $newsletter->locale === Newsletter::LOCALE_EN ? 'en' : 'fr';
+        $date = $newsletter->sent_at
+            ?? $newsletter->scheduled_at
+            ?? now();
+
+        $formatted = $date->copy()->locale($locale)->translatedFormat('l j F Y');
+        $parts = preg_split('/\s+/u', $formatted) ?: [];
+        $titled = implode(' ', array_map(function (string $part): string {
+            if (preg_match('/^\d+$/u', $part)) {
+                return $part;
+            }
+
+            return mb_strtoupper(mb_substr($part, 0, 1)).mb_substr($part, 1);
+        }, $parts));
+
+        return __('talenma.newsletter.email_dated_title', ['date' => $titled], $locale);
     }
 
     private function sectionHeading(string $heading): string
@@ -327,7 +348,7 @@ class NewsletterRenderer
         }
 
         $books = LibraryBook::query()
-            ->with('category')
+            ->with('category.parent.parent')
             ->published()
             ->whereIn('id', $ids)
             ->get()
@@ -347,14 +368,14 @@ class NewsletterRenderer
                 $html .= '</tr><tr>';
             }
 
-            $html .= '<td width="33%" valign="top" style="padding:0 4px 10px;">'.$this->libraryCard($book, $locale).'</td>';
+            $html .= '<td width="33%" valign="top" style="padding:0 4px 10px;width:33%;height:176px;">'.$this->libraryCard($book, $locale).'</td>';
             $index++;
         }
 
         $remainder = $index % 3;
         if ($remainder !== 0) {
             for ($pad = $remainder; $pad < 3; $pad++) {
-                $html .= '<td width="33%" valign="top" style="padding:0 4px 10px;"></td>';
+                $html .= '<td width="33%" valign="top" style="padding:0 4px 10px;width:33%;height:176px;"></td>';
             }
         }
 
@@ -534,6 +555,7 @@ class NewsletterRenderer
         $name = $talent->formalDisplayName();
         $sector = $talent->profile?->professionSector?->localizedName() ?? '';
         $profession = $talent->profile?->profession?->localizedName() ?? '';
+        $city = trim((string) ($talent->profile?->city ?? ''));
         $photo = $this->absolutePublicUrl($talent->avatarUrl());
         $initials = e($talent->initials());
 
@@ -550,7 +572,10 @@ class NewsletterRenderer
             $html .= '<p style="margin:0 0 2px;font-size:11px;line-height:1.35;color:#4f46e5;font-weight:700;">'.e($sector).'</p>';
         }
         if ($profession !== '') {
-            $html .= '<p style="margin:0;font-size:12px;line-height:1.35;color:#6b7280;">'.e($profession).'</p>';
+            $html .= '<p style="margin:0 0 2px;font-size:12px;line-height:1.35;color:#6b7280;">'.e($profession).'</p>';
+        }
+        if ($city !== '') {
+            $html .= '<p style="margin:0;font-size:11px;line-height:1.35;color:#6b7280;">'.e($city).'</p>';
         }
 
         $html .= '</td></tr></table>';
@@ -560,23 +585,26 @@ class NewsletterRenderer
 
     private function libraryCard(LibraryBook $book, string $locale): string
     {
-        $title = $book->title;
-        $specialty = $book->category?->localizedName($locale) ?? '';
+        $title = trim($book->title);
+        if (mb_strlen($title) > 56) {
+            $title = rtrim(mb_substr($title, 0, 55)).'…';
+        }
+        $discipline = $book->category?->rootAncestor()->localizedName($locale) ?? '';
         $cover = $this->absolutePublicUrl($book->coverUrl());
         $url = route('library.gate');
 
         $coverHtml = $cover
-            ? '<img src="'.e($cover).'" alt="" width="96" style="display:block;width:96px;max-width:100%;height:88px;object-fit:cover;margin:8px auto 0;border:0;">'
+            ? '<img src="'.e($cover).'" alt="" width="96" height="88" style="display:block;width:96px;height:88px;max-width:96px;object-fit:cover;margin:8px auto 0;border:0;">'
             : '<div style="width:96px;height:88px;margin:8px auto 0;background:#fef3c7;"></div>';
 
         $html = '<a href="'.e($url).'" style="text-decoration:none;color:inherit;">'
-            .'<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;background:#ffffff;">'
-            .'<tr><td style="padding:0 4px 8px;text-align:center;">'
+            .'<table role="presentation" width="100%" height="176" cellspacing="0" cellpadding="0" style="height:176px;width:100%;border:1px solid #e5e7eb;background:#ffffff;">'
+            .'<tr><td valign="top" height="176" style="padding:0 4px 8px;height:176px;text-align:center;">'
             .$coverHtml
-            .'<p style="margin:8px 2px 3px;font-size:11px;line-height:1.25;font-weight:800;color:#111827;">'.e($title).'</p>';
+            .'<p style="margin:8px 2px 3px;height:28px;max-height:28px;line-height:14px;font-size:11px;font-weight:800;color:#111827;overflow:hidden;">'.e($title).'</p>';
 
-        if ($specialty !== '') {
-            $html .= '<p style="margin:0 2px 2px;font-size:10px;line-height:1.3;color:#4f46e5;font-weight:700;">'.e($specialty).'</p>';
+        if ($discipline !== '') {
+            $html .= '<p style="margin:0 2px 2px;height:14px;max-height:14px;line-height:14px;font-size:10px;color:#4f46e5;font-weight:700;overflow:hidden;white-space:nowrap;">'.e($discipline).'</p>';
         }
 
         $html .= '</td></tr></table></a>';
