@@ -270,6 +270,13 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === 'admin';
     }
 
+    public function dashboardNavLabel(): string
+    {
+        return $this->isAdmin()
+            ? __('talenma.nav.dashboard_admin')
+            : __('talenma.nav.dashboard');
+    }
+
     /**
      * Talent with an active moderator assignment (regardless of UI mode).
      */
