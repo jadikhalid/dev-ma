@@ -83,7 +83,7 @@
     $pendingRegistrationEmail = session('pending_registration_email');
 @endphp
 
-<x-guest-layout :viewport-fit="! $pendingRegistrationEmail">
+<x-guest-layout :viewport-fit="! $pendingRegistrationEmail" register-phone-logo>
     <x-slot name="title">
         {{ $pendingRegistrationEmail ? __('talenma.auth.verify_email_title') : __('talenma.auth.register_title') }}
     </x-slot>

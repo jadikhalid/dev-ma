@@ -4,6 +4,7 @@
     'white' => false,
     'classic' => false,
     'phone' => false,
+    'phoneVariant' => 'default',
     'linked' => true,
     'badgeBorder' => false,
 ])
@@ -20,6 +21,9 @@
             'lg' => 'h-11',
         ];
         $phoneHeight = $phoneHeights[$size] ?? $phoneHeights['md'];
+        $phoneSrc = $phoneVariant === 'register'
+            ? asset('images/brand/logo-phone-register.png')
+            : asset('images/brand/logo-phone.png');
     @endphp
 
     @if ($linked)
@@ -28,7 +32,7 @@
         <div {{ $classes->merge(['aria-disabled' => 'true']) }}>
     @endif
         <img
-            src="{{ asset('images/brand/logo-phone.png') }}"
+            src="{{ $phoneSrc }}"
             alt="{{ __('talenma.meta.title') }}"
             width="180"
             height="120"
