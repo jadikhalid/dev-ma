@@ -179,19 +179,21 @@ class NewsletterRenderer
 
         $html = '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 12px;border:1px solid #e5e7eb;border-radius:12px;">'
             .'<tr>'
-            .'<td valign="top" style="padding:12px 14px;">'
+            .'<td valign="top" style="padding:0;">'
+            .'<a href="'.e($url).'" style="display:block;padding:12px 14px;text-decoration:none;color:inherit;">'
             .$thumb
             .'<p style="margin:0 64px 4px 0;font-size:12px;font-weight:600;color:#6b7280;">'.e($job->advertiserName()).'</p>'
-            .'<p style="margin:0 64px 6px 0;font-size:15px;font-weight:700;color:#111827;"><a href="'.e($url).'" style="color:#111827;text-decoration:none;">'.e($job->title).'</a></p>';
+            .'<p style="margin:0 64px 6px 0;font-size:15px;font-weight:700;color:#111827;">'.e($job->title).'</p>';
 
         if ($job->sectorLabel() !== '') {
             $html .= '<p style="margin:0 64px 8px 0;font-size:13px;color:#6b7280;">'.e($job->sectorLabel()).'</p>';
         }
 
-        $html .= '<a href="'.e($url).'" style="font-size:13px;font-weight:600;color:#4f46e5;text-decoration:none;">'
+        $html .= '<span style="font-size:13px;font-weight:600;color:#4f46e5;">'
             .e(__('talenma.newsletter.view_job'))
-            .'</a>'
+            .'</span>'
             .'<div style="clear:both;line-height:0;height:0;"></div>'
+            .'</a>'
             .'</td>'
             .'</tr></table>';
 

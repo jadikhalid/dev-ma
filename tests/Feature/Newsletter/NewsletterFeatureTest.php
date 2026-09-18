@@ -196,6 +196,8 @@ class NewsletterFeatureTest extends TestCase
         $this->assertStringContainsString('https://cdn.example.com/logos/acme.png', $html);
         $this->assertStringContainsString('float:right', $html);
         $this->assertStringContainsString('width="56"', $html);
+        $this->assertStringContainsString('display:block;padding:12px 14px;text-decoration:none;color:inherit;', $html);
+        $this->assertSame(1, substr_count($html, 'href="'.route('jobs.gate', $job).'"'));
     }
 
     #[Test]
