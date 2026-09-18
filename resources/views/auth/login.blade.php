@@ -1,4 +1,4 @@
-<x-guest-layout :viewport-fit="! session('pending_registration_email')">
+<x-guest-layout :viewport-fit="! session('pending_registration_email')" auth-phone-logo>
     <x-slot name="title">
         {{ session('pending_registration_email') ? __('talenma.auth.verify_email_title') : __('talenma.auth.login_title') }}
     </x-slot>

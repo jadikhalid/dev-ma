@@ -57,7 +57,7 @@
                 'mb-8' => ! $viewportFit,
                 'shrink-0 mb-4 sm:mb-3' => $viewportFit,
             ])>
-                @if ($registerPhoneLogo)
+                @if ($authPhoneLogo)
                     <div class="brand-logo-phone">
                         <x-brand-logo href="{{ route('home') }}" size="md" phone phone-variant="register" />
                     </div>

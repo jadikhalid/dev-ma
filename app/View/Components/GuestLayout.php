@@ -9,7 +9,7 @@ class GuestLayout extends Component
 {
     public function __construct(
         public bool $viewportFit = false,
-        public bool $registerPhoneLogo = false,
+        public bool $authPhoneLogo = false,
     ) {}
 
     /**
