@@ -3,6 +3,7 @@
     'light' => false,
     'white' => false,
     'classic' => false,
+    'phone' => false,
     'linked' => true,
     'badgeBorder' => false,
 ])
@@ -11,7 +12,35 @@
     $classes = $attributes->merge(['class' => 'inline-flex items-center shrink-0']);
 @endphp
 
-@if ($classic)
+@if ($phone)
+    @php
+        $phoneHeights = [
+            'sm' => 'h-9',
+            'md' => 'h-10',
+            'lg' => 'h-11',
+        ];
+        $phoneHeight = $phoneHeights[$size] ?? $phoneHeights['md'];
+    @endphp
+
+    @if ($linked)
+        <a {{ $classes->merge(['href' => $attributes->get('href', '/')]) }} aria-label="{{ __('talenma.meta.title') }}">
+    @else
+        <div {{ $classes->merge(['aria-disabled' => 'true']) }}>
+    @endif
+        <img
+            src="{{ asset('images/brand/logo-phone.png') }}"
+            alt="{{ __('talenma.meta.title') }}"
+            width="180"
+            height="120"
+            decoding="async"
+            class="{{ $phoneHeight }} w-auto max-w-[7.5rem] object-contain object-left select-none rounded-md"
+        >
+    @if ($linked)
+        </a>
+    @else
+        </div>
+    @endif
+@elseif ($classic)
     @php
         $sizes = [
             'sm' => ['box' => 'w-8 h-8 text-xs', 'text' => 'text-base'],

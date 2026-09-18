@@ -7,7 +7,7 @@
  * (see tailwind.config.js). Restore the few needed cases here.
  */
 /*
- * Brand logo: classic (MA) on all phone sizes; image logo on larger viewports.
+ * Brand logo: phone mark on narrow/short viewports; full image logo on larger screens.
  * Phone = narrow OR short landscape (covers existing mobiles including landscape).
  */
 .brand-logo-phone {

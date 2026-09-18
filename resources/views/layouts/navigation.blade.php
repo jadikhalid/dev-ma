@@ -40,7 +40,7 @@
         <div class="flex justify-between h-16">
             <div class="flex items-center gap-2 sm:gap-4 min-w-0">
                 <div class="brand-logo-phone">
-                    <x-brand-logo :href="route('home')" size="sm" classic :linked="! $pendingAccount" :light="true" />
+                    <x-brand-logo :href="route('home')" size="sm" phone :linked="! $pendingAccount" />
                 </div>
                 <div class="brand-logo-desktop">
                     <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" />

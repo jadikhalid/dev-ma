@@ -37,7 +37,7 @@
             '2xl:border-b 2xl:border-gray-100' => $fullWidth,
         ])>
             <div class="brand-logo-phone">
-                <x-brand-logo href="{{ route('home') }}" size="md" classic :light="true" />
+                <x-brand-logo href="{{ route('home') }}" size="md" phone />
             </div>
             <div class="brand-logo-desktop">
                 <x-brand-logo href="{{ route('home') }}" size="sm" />

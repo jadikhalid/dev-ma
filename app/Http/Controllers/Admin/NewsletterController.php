@@ -327,9 +327,16 @@ class NewsletterController extends Controller
             $blocks = [];
         }
 
-        $data['body_blocks'] = array_values(array_filter(
-            $blocks,
-            fn ($block) => is_array($block) && in_array($block['type'] ?? null, Newsletter::BLOCK_TYPES, true)
+        $data['body_blocks'] = array_values(array_map(
+            function ($block) {
+                unset($block['_uid']);
+
+                return $block;
+            },
+            array_filter(
+                $blocks,
+                fn ($block) => is_array($block) && in_array($block['type'] ?? null, Newsletter::BLOCK_TYPES, true)
+            )
         ));
 
         if (! $forPreview) {

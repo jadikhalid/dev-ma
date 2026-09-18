@@ -5112,10 +5112,32 @@ Alpine.data('publicationsAdmin', () => ({
 }));
 
 Alpine.data('newsletterBuilder', (config = {}) => ({
-    blocks: Array.isArray(config.blocks) ? config.blocks : [],
+    blocks: [],
     picker: config.picker || {},
     labels: config.labels || {},
     blockTypes: ['header', 'hero', 'jobs', 'blog', 'social', 'talents', 'companies', 'stats', 'text', 'cta', 'register', 'library', 'cv_templates'],
+    _uidSeq: 0,
+
+    init() {
+        const incoming = Array.isArray(config.blocks) ? config.blocks : [];
+        this.blocks = incoming.map((block) => this.withUid(block));
+    },
+
+    nextUid() {
+        this._uidSeq += 1;
+
+        return `nb-${Date.now().toString(36)}-${this._uidSeq}`;
+    },
+
+    withUid(block) {
+        const copy = { ...(block && typeof block === 'object' ? block : {}) };
+
+        if (! copy._uid) {
+            copy._uid = this.nextUid();
+        }
+
+        return copy;
+    },
 
     idKeyFor(type) {
         return ({
@@ -5163,27 +5185,41 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
     },
 
     addBlock(type) {
-        this.blocks.push(this.emptyBlock(type));
+        this.blocks.push(this.withUid(this.emptyBlock(type)));
     },
 
     removeBlock(index) {
         this.blocks.splice(index, 1);
     },
 
+    canMoveUp(index) {
+        return index > 0;
+    },
+
+    canMoveDown(index) {
+        return index < this.blocks.length - 1;
+    },
+
     moveUp(index) {
-        if (index <= 0) {
+        if (! this.canMoveUp(index)) {
             return;
         }
-        const item = this.blocks.splice(index, 1)[0];
-        this.blocks.splice(index - 1, 0, item);
+
+        const next = [...this.blocks];
+        const [item] = next.splice(index, 1);
+        next.splice(index - 1, 0, item);
+        this.blocks = next;
     },
 
     moveDown(index) {
-        if (index >= this.blocks.length - 1) {
+        if (! this.canMoveDown(index)) {
             return;
         }
-        const item = this.blocks.splice(index, 1)[0];
-        this.blocks.splice(index + 1, 0, item);
+
+        const next = [...this.blocks];
+        const [item] = next.splice(index, 1);
+        next.splice(index + 1, 0, item);
+        this.blocks = next;
     },
 
     pickerFor(type) {

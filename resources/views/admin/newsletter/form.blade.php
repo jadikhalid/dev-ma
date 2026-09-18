@@ -94,13 +94,27 @@
                     </div>
                 </div>
 
-                <template x-for="(block, index) in blocks" :key="index">
+                <template x-for="(block, index) in blocks" :key="block._uid">
                     <div class="rounded-xl border border-slate-200 p-4 space-y-3 bg-slate-50/50">
                         <div class="flex items-center justify-between gap-2">
                             <p class="text-sm font-semibold text-slate-800" x-text="labels[block.type] || block.type"></p>
                             <div class="flex gap-1">
-                                <button type="button" class="text-xs px-2 py-1 rounded border bg-white" @click="moveUp(index)" x-text="labels.up"></button>
-                                <button type="button" class="text-xs px-2 py-1 rounded border bg-white" @click="moveDown(index)" x-text="labels.down"></button>
+                                <button
+                                    type="button"
+                                    class="text-xs px-2 py-1 rounded border bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                                    :disabled="! canMoveUp(index)"
+                                    :aria-label="labels.up"
+                                    @click="moveUp(index)"
+                                    x-text="labels.up"
+                                ></button>
+                                <button
+                                    type="button"
+                                    class="text-xs px-2 py-1 rounded border bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                                    :disabled="! canMoveDown(index)"
+                                    :aria-label="labels.down"
+                                    @click="moveDown(index)"
+                                    x-text="labels.down"
+                                ></button>
                                 <button type="button" class="text-xs px-2 py-1 rounded border border-rose-200 text-rose-700 bg-white" @click="removeBlock(index)" x-text="labels.remove"></button>
                             </div>
                         </div>

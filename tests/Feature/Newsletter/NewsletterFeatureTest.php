@@ -49,6 +49,41 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
+    public function admin_can_reorder_newsletter_blocks_on_update(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $newsletter = Newsletter::query()->create([
+            'title' => 'Brouillon',
+            'subject' => 'Sujet',
+            'locale' => 'fr',
+            'status' => Newsletter::STATUS_DRAFT,
+            'body_blocks' => [
+                ['type' => 'header', 'title' => 'A', 'subtitle' => ''],
+                ['type' => 'text', 'body' => 'B'],
+                ['type' => 'cta', 'label' => 'C', 'url' => 'https://example.com'],
+            ],
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.newsletter.update', $newsletter), [
+                'title' => 'Brouillon',
+                'subject' => 'Sujet',
+                'locale' => 'fr',
+                'body_blocks' => json_encode([
+                    ['_uid' => 'client-1', 'type' => 'text', 'body' => 'B'],
+                    ['_uid' => 'client-2', 'type' => 'cta', 'label' => 'C', 'url' => 'https://example.com'],
+                    ['_uid' => 'client-3', 'type' => 'header', 'title' => 'A', 'subtitle' => ''],
+                ]),
+            ])
+            ->assertRedirect();
+
+        $blocks = $newsletter->fresh()->normalizedBlocks();
+        $this->assertSame(['text', 'cta', 'header'], array_column($blocks, 'type'));
+        $this->assertArrayNotHasKey('_uid', $blocks[0]);
+    }
+
+    #[Test]
     public function free_text_block_renders_as_distinct_card(): void
     {
         $html = app(\App\Services\NewsletterRenderer::class)->renderBlock([
