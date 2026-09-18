@@ -8764,28 +8764,6 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
         }
     },
 
-    onTemplateCardTap(key, event) {
-        if (this.hasFineHover()) {
-            return;
-        }
-
-        if (event?.target?.closest?.('.cv-template-choose')) {
-            return;
-        }
-
-        this.previewedTemplate = this.previewedTemplate === key ? null : key;
-    },
-
-    onTemplateSliderBackgroundClick(event) {
-        if (this.hasFineHover()) {
-            return;
-        }
-
-        if (! event?.target?.closest?.('.cv-template-card')) {
-            this.previewedTemplate = null;
-        }
-    },
-
     selectTemplate(key) {
         if (! key || this.template === key) {
             this.previewedTemplate = null;

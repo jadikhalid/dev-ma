@@ -38,7 +38,6 @@
                 'export_popup_blocked' => __('talenma.cv_builder.export_popup_blocked'),
                 'export_error' => __('talenma.cv_builder.export_error'),
                 'photo_too_large' => __('talenma.cv_builder.form.photo_too_large'),
-                'choose_template' => __('talenma.cv_builder.choose_template'),
                 'selected_template' => __('talenma.cv_builder.selected_template'),
                 'templates_prev' => __('talenma.cv_builder.templates_prev'),
                 'templates_next' => __('talenma.cv_builder.templates_next'),
@@ -85,11 +84,10 @@
                     role="radiogroup"
                     aria-label="{{ __('talenma.cv_builder.template_label') }}"
                     @scroll.passive="updateTemplateSliderNav()"
-                    @click.capture="onTemplateSliderBackgroundClick($event)"
                 >
                     <template x-for="option in templateOptions" :key="option.key">
                         <div
-                            class="cv-template-card group relative shrink-0 w-[10.5rem] sm:w-[11.5rem] md:w-[12rem] snap-start rounded-xl bg-white p-2 transition-[transform,box-shadow,border-color] duration-200 ease-out will-change-transform"
+                            class="cv-template-card group relative shrink-0 w-[10.5rem] sm:w-[11.5rem] md:w-[12rem] snap-start rounded-xl bg-white p-2 cursor-pointer transition-[transform,box-shadow,border-color] duration-200 ease-out will-change-transform"
                             :data-template-key="option.key"
                             :class="{
                                 'is-selected': template === option.key,
@@ -100,7 +98,7 @@
                             :aria-label="option.label"
                             @mouseenter="onTemplateCardEnter(option.key)"
                             @mouseleave="onTemplateCardLeave(option.key)"
-                            @click="onTemplateCardTap(option.key, $event)"
+                            @click="selectTemplate(option.key)"
                         >
                             <div class="relative aspect-[3/4] overflow-hidden rounded-lg bg-gray-100 ring-1 ring-black/5">
                                 <img
@@ -114,21 +112,12 @@
 
                                 <div
                                     class="cv-template-card-overlay absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-black/70 via-black/35 to-transparent px-1.5 pb-2 pt-8 pointer-events-none"
+                                    x-show="template === option.key"
+                                    x-cloak
                                 >
-                                    <template x-if="template === option.key">
-                                        <span class="cv-template-banner inline-flex max-w-full items-center rounded-full bg-indigo-600 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-white shadow-sm">
-                                            <span class="truncate" x-text="messages.selected_template"></span>
-                                        </span>
-                                    </template>
-                                    <template x-if="template !== option.key">
-                                        <button
-                                            type="button"
-                                            class="cv-template-choose pointer-events-auto inline-flex max-w-full items-center rounded-full bg-white px-2.5 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-indigo-700 shadow-md ring-1 ring-indigo-100 transition hover:bg-indigo-50"
-                                            @click.stop="selectTemplate(option.key)"
-                                        >
-                                            <span class="truncate" x-text="messages.choose_template"></span>
-                                        </button>
-                                    </template>
+                                    <span class="cv-template-banner inline-flex max-w-full items-center rounded-full bg-indigo-600 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-white shadow-sm">
+                                        <span class="truncate" x-text="messages.selected_template"></span>
+                                    </span>
                                 </div>
                             </div>
 

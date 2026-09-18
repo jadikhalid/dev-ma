@@ -236,8 +236,8 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('marketing-preview-simple_plus', false)
             ->assertSee('marketing-preview-starter', false)
             ->assertSee('marketing-preview-normal', false)
-            ->assertSee(__('talenma.cv_builder.choose_template'))
-            ->assertSee('selectTemplate', false)
+            ->assertDontSee('cv-template-choose', false)
+            ->assertSee('selectTemplate(option.key)', false)
             ->assertSee('templatePreviewSrc', false);
     }
 

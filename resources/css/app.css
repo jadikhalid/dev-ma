@@ -584,8 +584,7 @@
     transition: opacity 0.18s ease-out;
 }
 
-.cv-template-card.is-selected .cv-template-card-overlay,
-.cv-template-card.is-previewed .cv-template-card-overlay {
+.cv-template-card.is-selected .cv-template-card-overlay {
     opacity: 1;
 }
 
@@ -621,7 +620,6 @@
             inset 0 0 0 3px #fff;
     }
 
-    .cv-template-card:hover .cv-template-card-overlay,
     .cv-template-card.is-selected:hover .cv-template-card-overlay {
         opacity: 1;
     }
@@ -634,11 +632,5 @@
             0 0 0 3px rgb(224 231 255),
             0 16px 32px rgba(79, 70, 229, 0.2),
             inset 0 0 0 3px #fff;
-    }
-}
-
-@media (hover: none), (pointer: coarse) {
-    .cv-template-card.is-selected:not(.is-previewed) .cv-template-card-overlay {
-        opacity: 1;
     }
 }
