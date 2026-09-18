@@ -248,7 +248,7 @@ class PendingRegistrationService
             $payload['last_name'] = $lastName;
             $payload['name'] = trim($firstName.' '.$lastName);
             $payload['sector'] = $validated['sector'];
-            $payload['description'] = $validated['description'];
+            $payload['description'] = $validated['description'] ?? null;
             $payload['data_processing_consent_at'] = now()->toIso8601String();
             $payload['data_processing_consent_version'] = (string) config('talenma.data_processing_consent_version');
         }

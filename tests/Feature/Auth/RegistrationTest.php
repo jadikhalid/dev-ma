@@ -352,6 +352,24 @@ class RegistrationTest extends TestCase
         $response->assertSessionHasErrors(['sector', 'description', 'cv', 'cv_language', 'data_processing_consent']);
     }
 
+    public function test_talent_registration_allows_empty_description_on_compact_register(): void
+    {
+        Mail::fake();
+
+        $response = $this->post('/register', $this->validTalentPayload([
+            'description' => null,
+            'compact_register' => '1',
+        ]));
+
+        $this->assertGuest();
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('pending_registration_email', 'test@example.com');
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'test@example.com']);
+
+        $pending = PendingRegistration::query()->where('email', 'test@example.com')->firstOrFail();
+        $this->assertNull($pending->payload['description'] ?? null);
+    }
+
     public function test_talent_registration_requires_cv_and_language(): void
     {
         $response = $this->from('/register')->post('/register', $this->validTalentPayload([

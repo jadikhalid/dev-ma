@@ -44,7 +44,8 @@
     <div
         x-data="toastStack(@js($initialToasts))"
         @toast-push.window="push($event.detail.type ?? 'error', $event.detail.message)"
-        class="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:items-start sm:justify-end pointer-events-none"
+        class="pointer-events-none fixed inset-x-0 top-0 z-[9999] flex items-start justify-center p-4 sm:inset-0 sm:justify-end"
+        x-bind:style="pinStyle"
         aria-live="polite"
         aria-atomic="true"
     >

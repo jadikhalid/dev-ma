@@ -35,12 +35,15 @@ class RegisterRequest extends FormRequest
             $representativeName = trim($firstName.' '.$lastName);
         }
 
+        $description = is_string($this->description) ? trim($this->description) : $this->description;
+
         $this->merge([
             'name' => is_string($this->name) ? trim(preg_replace('/\s+/u', ' ', $this->name) ?? '') : $this->name,
             'first_name' => $firstName,
             'last_name' => $lastName,
             'representative_name' => $representativeName,
             'email' => is_string($this->email) ? Str::lower(trim($this->email)) : $this->email,
+            'description' => $description === '' ? null : $description,
             'company_description' => is_string($this->company_description) ? trim($this->company_description) : $this->company_description,
             'company_website' => is_string($this->company_website) ? trim($this->company_website) : $this->company_website,
             'company_country' => is_string($this->company_country)
@@ -99,7 +102,7 @@ class RegisterRequest extends FormRequest
                 Rule::exists('profession_sectors', 'slug')->where(fn ($query) => $query->where('is_active', true)),
             ],
             'description' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'dev'),
+                Rule::requiredIf(fn () => $this->input('role') === 'dev' && ! $this->boolean('compact_register')),
                 'nullable',
                 'string',
                 'min:255',

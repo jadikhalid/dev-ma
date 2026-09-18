@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" @class(['h-full' => $viewportFit])>
+<html lang="{{ app()->getLocale() }}" @class(['sm:h-full' => $viewportFit])>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,12 +12,13 @@
 </head>
 <body @class([
     'font-sans text-gray-900 antialiased',
-    'h-full overflow-hidden' => $viewportFit,
+    {{-- Mobile: page scrollable. sm+: carte verrouillée dans le viewport. --}}
+    'min-h-dvh sm:h-full sm:overflow-hidden' => $viewportFit,
 ])>
     <div @class([
         'flex',
         'min-h-screen' => ! $viewportFit,
-        'h-dvh max-h-dvh overflow-hidden' => $viewportFit,
+        'min-h-dvh sm:h-dvh sm:max-h-dvh sm:overflow-hidden' => $viewportFit,
     ])>
         <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#0f172a] text-indigo-100">
             {{-- Fond léger, peu chargé --}}
@@ -49,7 +50,7 @@
         <div @class([
             'flex-1 flex flex-col items-center bg-gray-50',
             'justify-center px-6 py-12' => ! $viewportFit,
-            'h-full min-h-0 overflow-hidden px-5 py-4 sm:px-6 sm:py-4' => $viewportFit,
+            'px-5 py-4 sm:h-full sm:min-h-0 sm:overflow-hidden sm:px-6 sm:py-4' => $viewportFit,
         ])>
             <div @class([
                 'lg:hidden w-full max-w-md flex justify-between items-center',
@@ -61,7 +62,7 @@
             </div>
             <div @class([
                 'w-full max-w-md',
-                'flex flex-col min-h-0 flex-1' => $viewportFit,
+                'flex flex-col sm:min-h-0 sm:flex-1' => $viewportFit,
             ])>
                 @isset($title)
                     <div @class(['mb-8' => ! $viewportFit, 'shrink-0 mb-3 sm:mb-3' => $viewportFit])>
@@ -71,7 +72,7 @@
                 @endisset
                 <div @class([
                     'bg-white rounded-2xl shadow-sm border px-8 py-8',
-                    'flex flex-col min-h-0 flex-1 overflow-hidden px-5 py-5 sm:px-6 sm:py-5' => $viewportFit,
+                    'px-5 py-5 sm:flex sm:flex-col sm:min-h-0 sm:flex-1 sm:overflow-hidden sm:px-6 sm:py-5' => $viewportFit,
                 ])>{{ $slot }}</div>
                 <p @class([
                     'mt-6 text-center text-sm text-gray-500',

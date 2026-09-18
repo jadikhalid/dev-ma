@@ -1495,13 +1495,132 @@ Alpine.data('toastStack', (initialToasts = []) => ({
     queue: [],
     activeId: null,
     dismissTimer: null,
+    pinStyle: {},
+    _unpinViewport: null,
+    _homeParent: null,
+    _homeNextSibling: null,
 
     init() {
+        this.mountForMobileViewport();
+        this.pinToMobileViewport();
+
         (initialToasts || []).forEach((toast) => {
             this.enqueue(toast.type ?? 'success', toast.message ?? '');
         });
 
         this.drain();
+    },
+
+    destroy() {
+        if (typeof this._unpinViewport === 'function') {
+            this._unpinViewport();
+            this._unpinViewport = null;
+        }
+
+        this.restoreMount();
+    },
+
+    isMobileToastViewport() {
+        return window.matchMedia('(max-width: 639px)').matches;
+    },
+
+    mountForMobileViewport() {
+        if (! this.isMobileToastViewport() || ! this.$el || this.$el.parentElement === document.body) {
+            return;
+        }
+
+        this._homeParent = this.$el.parentElement;
+        this._homeNextSibling = this.$el.nextSibling;
+
+        if (! document.documentElement.dataset.toastPinRoot) {
+            document.documentElement.dataset.toastPinRoot = '1';
+            document.documentElement.style.position = 'relative';
+        }
+
+        document.body.appendChild(this.$el);
+    },
+
+    restoreMount() {
+        if (! this._homeParent || ! this.$el) {
+            return;
+        }
+
+        if (this._homeNextSibling && this._homeNextSibling.parentNode === this._homeParent) {
+            this._homeParent.insertBefore(this.$el, this._homeNextSibling);
+        } else {
+            this._homeParent.appendChild(this.$el);
+        }
+
+        this._homeParent = null;
+        this._homeNextSibling = null;
+
+        if (document.documentElement.dataset.toastPinRoot === '1') {
+            document.documentElement.style.position = '';
+            delete document.documentElement.dataset.toastPinRoot;
+        }
+    },
+
+    pinToMobileViewport() {
+        const sync = () => {
+            if (! this.isMobileToastViewport()) {
+                this.pinStyle = {};
+
+                return;
+            }
+
+            if (this.$el && this.$el.parentElement !== document.body) {
+                this.mountForMobileViewport();
+            }
+
+            const vv = window.visualViewport;
+            const offsetTop = vv ? vv.offsetTop : 0;
+            const scrollY = window.scrollY || window.pageYOffset || 0;
+
+            // Absolute + ancré au visual viewport (scrollY + offsetTop) : reste
+            // visible quand le clavier pousse la zone visible sur mobile.
+            this.pinStyle = {
+                position: 'absolute',
+                top: `${scrollY + offsetTop}px`,
+                left: '0px',
+                right: '0px',
+                bottom: 'auto',
+                zIndex: '9999',
+            };
+        };
+
+        sync();
+
+        const onScrollOrResize = () => sync();
+        const media = window.matchMedia('(max-width: 639px)');
+        const onMediaChange = () => {
+            if (this.isMobileToastViewport()) {
+                this.mountForMobileViewport();
+            } else {
+                this.restoreMount();
+            }
+
+            sync();
+        };
+
+        window.addEventListener('scroll', onScrollOrResize, { passive: true });
+        window.addEventListener('resize', onScrollOrResize);
+        media.addEventListener?.('change', onMediaChange);
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', onScrollOrResize);
+            window.visualViewport.addEventListener('scroll', onScrollOrResize);
+        }
+
+        this._unpinViewport = () => {
+            window.removeEventListener('scroll', onScrollOrResize);
+            window.removeEventListener('resize', onScrollOrResize);
+            media.removeEventListener?.('change', onMediaChange);
+
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', onScrollOrResize);
+                window.visualViewport.removeEventListener('scroll', onScrollOrResize);
+            }
+        };
     },
 
     push(type, message) {
@@ -1623,6 +1742,10 @@ Alpine.data('registerWizard', (config) => ({
         });
     },
 
+    get isCompactRegister() {
+        return window.matchMedia('(max-width: 639px)').matches;
+    },
+
     get isTalent() {
         return this.role === 'dev';
     },
@@ -1663,8 +1786,11 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get talentStep2Valid() {
+        const descriptionOk = this.isCompactRegister
+            || this.description.trim().length >= 255;
+
         return this.sector !== ''
-            && this.description.trim().length >= 255
+            && descriptionOk
             && this.cvLanguage !== ''
             && this.hasCv
             && this.dataProcessingConsent;
@@ -1849,7 +1975,13 @@ Alpine.data('registerWizard', (config) => ({
         }
 
         if (this.isTalent && this.step === 2) {
-            return ['sector', 'description', 'cv', 'cv_language', 'data_processing_consent'].includes(field);
+            const fields = ['sector', 'cv', 'cv_language', 'data_processing_consent'];
+
+            if (! this.isCompactRegister) {
+                fields.splice(1, 0, 'description');
+            }
+
+            return fields.includes(field);
         }
 
         return false;
@@ -2001,6 +2133,10 @@ Alpine.data('registerWizard', (config) => ({
                 return null;
             }
             case 'description': {
+                if (this.isCompactRegister) {
+                    return null;
+                }
+
                 const value = this.description.trim();
 
                 if (! value) {

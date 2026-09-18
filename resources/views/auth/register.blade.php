@@ -103,7 +103,7 @@
         action="{{ route('register') }}"
         enctype="multipart/form-data"
         novalidate
-        class="flex flex-col h-full min-h-0"
+        class="flex flex-col sm:h-full sm:min-h-0"
         @submit="onSubmit($event)"
         @keydown.enter="onEnterKey($event)"
         :aria-busy="submitting"
@@ -199,8 +199,8 @@
             </button>
         </div>
 
-        {{-- Zone scrollable : champs du formulaire --}}
-        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-1 px-1">
+        {{-- Champs : scroll page sur mobile, scroll interne à partir de sm --}}
+        <div class="-mx-1 px-1 sm:flex-1 sm:min-h-0 sm:overflow-y-auto sm:overscroll-contain">
             {{-- Étape 1 : identité + rôle --}}
             <div
                 x-show="step === 1"
@@ -456,14 +456,14 @@
                     </select>
                     <x-input-error :messages="$errors->get('sector')" class="mt-1" />
                 </div>
-                <div>
+                <div class="hidden sm:block">
                     <x-input-label for="description" :value="__('talenma.auth.registration_description')" class="!text-base sm:!text-sm" />
                     <textarea
                         id="description"
                         name="description"
                         rows="5"
-                        minlength="255"
                         maxlength="2550"
+                        x-bind:minlength="isCompactRegister ? null : 255"
                         x-model="description"
                         @blur="onFieldBlur('description')"
                         @input="onFieldInput('description')"
@@ -474,6 +474,7 @@
                     <p class="mt-0.5 text-sm sm:text-xs text-gray-500 text-right"><span x-text="description.length"></span>/2550</p>
                     <x-input-error :messages="$errors->get('description')" class="mt-1" />
                 </div>
+                <input type="hidden" name="compact_register" :value="isCompactRegister ? '1' : '0'">
                 <div
                     class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 sm:p-4 space-y-3"
                     :class="{ 'border-red-300 bg-red-50/40': fieldErrors.cv || fieldErrors.cv_language }"
