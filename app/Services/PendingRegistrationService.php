@@ -99,13 +99,40 @@ class PendingRegistrationService
         return $pending;
     }
 
+    /**
+     * Annule une inscription en attente via le lien du mail (destinataire involontaire).
+     *
+     * @throws ValidationException
+     */
+    public function cancelByToken(string $token): void
+    {
+        $pending = PendingRegistration::query()->where('token', $token)->first();
+
+        if (! $pending) {
+            throw ValidationException::withMessages([
+                'token' => __('talenma.auth.registration_cancel_invalid'),
+            ]);
+        }
+
+        if ($pending->isExpired()) {
+            $this->purge($pending);
+
+            throw ValidationException::withMessages([
+                'token' => __('talenma.auth.registration_cancel_expired'),
+            ]);
+        }
+
+        $this->purge($pending);
+    }
+
     private function sendVerificationMail(PendingRegistration $pending): void
     {
         $verificationUrl = URL::route('register.verify', ['token' => $pending->token], absolute: true);
+        $cancellationUrl = URL::route('register.cancel', ['token' => $pending->token], absolute: true);
 
         Mail::to($pending->email)
             ->locale($pending->locale)
-            ->sendNow(new VerifyRegistrationMail($pending, $verificationUrl));
+            ->sendNow(new VerifyRegistrationMail($pending, $verificationUrl, $cancellationUrl));
     }
 
     public function complete(string $token): User

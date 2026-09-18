@@ -45,4 +45,19 @@ class PendingRegistration extends Model
 
         return (string) ($payload['name'] ?? '');
     }
+
+    public function expectsStaffReview(): bool
+    {
+        $role = $this->payload['role'] ?? null;
+
+        if ($role === 'company') {
+            return true;
+        }
+
+        if ($role === 'dev') {
+            return PlatformSetting::requiresTalentAdminValidation();
+        }
+
+        return false;
+    }
 }

@@ -13,6 +13,7 @@ class VerifyRegistrationMail extends Mailable
     public function __construct(
         public PendingRegistration $pending,
         public string $verificationUrl,
+        public string $cancellationUrl,
     ) {}
 
     public function envelope(): Envelope

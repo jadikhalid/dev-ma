@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\CancelPendingRegistrationController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\ResendPendingRegistrationController;
+use App\Http\Controllers\Auth\RestartPendingRegistrationController;
 use App\Http\Controllers\Auth\VerifyPendingRegistrationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
@@ -16,6 +18,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('register/verify/{token}', VerifyPendingRegistrationController::class)
     ->middleware('throttle:10,1')
     ->name('register.verify');
+
+Route::get('register/cancel/{token}', CancelPendingRegistrationController::class)
+    ->middleware('throttle:10,1')
+    ->name('register.cancel');
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -27,6 +33,10 @@ Route::middleware('guest')->group(function () {
     Route::post('register/resend-verification', ResendPendingRegistrationController::class)
         ->middleware('throttle:3,1')
         ->name('register.resend-verification');
+
+    Route::post('register/restart', RestartPendingRegistrationController::class)
+        ->middleware('throttle:10,1')
+        ->name('register.restart');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');

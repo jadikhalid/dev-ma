@@ -92,6 +92,85 @@ class TalentAdminValidationSettingTest extends TestCase
         $this->assertNull($user->approved_at);
     }
 
+    public function test_talent_verification_email_omits_review_when_validation_disabled(): void
+    {
+        Mail::fake();
+        PlatformSetting::setRequiresTalentAdminValidation(false);
+
+        $this->post('/register', [
+            'first_name' => 'Auto',
+            'last_name' => 'Talent',
+            'email' => 'auto-talent-mail@example.com',
+            'password' => 'Password1',
+            'password_confirmation' => 'Password1',
+            'role' => 'dev',
+            'sector' => 'it-digital',
+            'description' => str_repeat('a', 255),
+            'cv' => UploadedFile::fake()->create('cv-fr.pdf', 100, 'application/pdf'),
+            'cv_language' => 'fr',
+            'data_processing_consent' => '1',
+        ])->assertRedirect();
+
+        Mail::assertSent(\App\Mail\VerifyRegistrationMail::class, function ($mail) {
+            $html = $mail->render();
+
+            return str_contains($html, __('talenma.mail.verify_registration.body'))
+                && ! str_contains($html, __('talenma.mail.verify_registration.body_review'));
+        });
+    }
+
+    public function test_talent_verification_email_includes_review_when_validation_enabled(): void
+    {
+        Mail::fake();
+        PlatformSetting::setRequiresTalentAdminValidation(true);
+
+        $this->post('/register', [
+            'first_name' => 'Pending',
+            'last_name' => 'Talent',
+            'email' => 'pending-talent-mail@example.com',
+            'password' => 'Password1',
+            'password_confirmation' => 'Password1',
+            'role' => 'dev',
+            'sector' => 'it-digital',
+            'description' => str_repeat('a', 255),
+            'cv' => UploadedFile::fake()->create('cv-fr.pdf', 100, 'application/pdf'),
+            'cv_language' => 'fr',
+            'data_processing_consent' => '1',
+        ])->assertRedirect();
+
+        Mail::assertSent(\App\Mail\VerifyRegistrationMail::class, function ($mail) {
+            $html = $mail->render();
+
+            return str_contains($html, __('talenma.mail.verify_registration.body_review'));
+        });
+    }
+
+    public function test_company_verification_email_always_includes_review(): void
+    {
+        Mail::fake();
+        PlatformSetting::setRequiresTalentAdminValidation(false);
+
+        $this->post('/register', [
+            'name' => 'Acme SAS',
+            'email' => 'company-review-mail@example.com',
+            'password' => 'Password1',
+            'password_confirmation' => 'Password1',
+            'role' => 'company',
+            'first_name' => 'Jean',
+            'last_name' => 'Dupont',
+            'sector' => 'it-digital',
+            'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile, à la recherche de talents pour accompagner notre croissance.',
+            'company_country' => 'fr',
+            'data_processing_consent' => '1',
+        ])->assertRedirect(route('login'));
+
+        Mail::assertSent(\App\Mail\VerifyRegistrationMail::class, function ($mail) {
+            $html = $mail->render();
+
+            return str_contains($html, __('talenma.mail.verify_registration.body_review'));
+        });
+    }
+
     public function test_admin_can_toggle_talent_validation_setting(): void
     {
         $admin = $this->admin();

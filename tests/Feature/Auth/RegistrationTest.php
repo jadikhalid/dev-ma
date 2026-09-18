@@ -85,7 +85,8 @@ class RegistrationTest extends TestCase
 
         Mail::assertSent(VerifyRegistrationMail::class, function (VerifyRegistrationMail $mail) {
             return $mail->hasTo('test@example.com')
-                && str_contains($mail->verificationUrl, '/register/verify/');
+                && str_contains($mail->verificationUrl, '/register/verify/')
+                && str_contains($mail->cancellationUrl, '/register/cancel/');
         });
 
         $this->withSession([
@@ -103,6 +104,8 @@ class RegistrationTest extends TestCase
             ->assertOk()
             ->assertSee(__('talenma.auth.verify_email_pending_title'))
             ->assertSee(__('talenma.auth.resend_registration_verification'))
+            ->assertSee(__('talenma.auth.register_restart_with_other_email'))
+            ->assertSee('test@example.com')
             ->assertDontSee('name="role"', false);
     }
 
@@ -523,5 +526,68 @@ class RegistrationTest extends TestCase
         $this->assertNotNull($user);
         $this->assertFalse($user->is_subscribed);
         $this->assertNull($user->subscription_expires_at);
+    }
+
+    public function test_user_can_restart_pending_registration_with_another_email(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', $this->validTalentPayload());
+
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'test@example.com']);
+
+        $response = $this->withSession([
+            'pending_registration_email' => 'test@example.com',
+        ])->post(route('register.restart'), [
+            'email' => 'test@example.com',
+        ]);
+
+        $response->assertRedirect(route('register'));
+        $response->assertSessionHas('toast_success');
+        $response->assertSessionMissing('pending_registration_email');
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'test@example.com']);
+    }
+
+    public function test_restart_pending_registration_requires_matching_session_email(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', $this->validTalentPayload());
+
+        $response = $this->withSession([
+            'pending_registration_email' => 'test@example.com',
+        ])->post(route('register.restart'), [
+            'email' => 'other@example.com',
+        ]);
+
+        $response->assertRedirect(route('register'));
+        $response->assertSessionHas('toast_error');
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'test@example.com']);
+    }
+
+    public function test_unintended_recipient_can_cancel_pending_registration_via_email_link(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', $this->validTalentPayload([
+            'email' => 'wrong-owner@example.com',
+        ]));
+
+        $pending = PendingRegistration::query()->where('email', 'wrong-owner@example.com')->firstOrFail();
+
+        $response = $this->get(route('register.cancel', ['token' => $pending->token]));
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('toast_success');
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'wrong-owner@example.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'wrong-owner@example.com']);
+    }
+
+    public function test_cancel_pending_registration_link_rejects_invalid_token(): void
+    {
+        $response = $this->get(route('register.cancel', ['token' => 'missing-token']));
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('toast_error');
     }
 }
