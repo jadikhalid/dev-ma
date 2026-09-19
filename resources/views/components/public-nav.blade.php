@@ -6,6 +6,7 @@
     use App\Models\JobPosting;
 
     $showAnnoncesNav = ! request()->routeIs('blog.*');
+    $onBlogIndex = request()->routeIs('blog.index');
 
     $freshJobTimestamps = $showAnnoncesNav
         ? JobPosting::query()
@@ -72,18 +73,34 @@
                         </span>
                     </a>
                 @endif
-                <a
-                    href="{{ route('blog.index') }}"
-                    @class([
-                        'mr-1 sm:mr-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50',
-                        'hidden sm:inline-flex' => $showAnnoncesNav,
-                    ])
-                >
-                    <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5"/>
-                    </svg>
-                    <span>{{ __('talenma.nav.blog') }}</span>
-                </a>
+                @if ($onBlogIndex)
+                    <span
+                        aria-current="page"
+                        aria-disabled="true"
+                        @class([
+                            'mr-1 sm:mr-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-white/45 sm:text-gray-400 cursor-default select-none pointer-events-none',
+                            'hidden sm:inline-flex' => $showAnnoncesNav,
+                        ])
+                    >
+                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5"/>
+                        </svg>
+                        <span>{{ __('talenma.nav.blog') }}</span>
+                    </span>
+                @else
+                    <a
+                        href="{{ route('blog.index') }}"
+                        @class([
+                            'mr-1 sm:mr-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50',
+                            'hidden sm:inline-flex' => $showAnnoncesNav,
+                        ])
+                    >
+                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5"/>
+                        </svg>
+                        <span>{{ __('talenma.nav.blog') }}</span>
+                    </a>
+                @endif
 
                 {{-- Mobile : menu Annonces + Blog (badge visible sur le bouton) — masqué sur le blog --}}
                 @if ($showAnnoncesNav)
