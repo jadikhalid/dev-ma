@@ -56,8 +56,8 @@
         }
         .contact-line a { color: #64748b; text-decoration: none; }
         .social-links { margin-top: 5px; line-height: 1.35; }
-        .social-link { display: inline-block; margin: 0 0 0 10px; color: #000000; text-decoration: none; white-space: nowrap; }
-        .social-link:first-child { margin-left: 0; }
+        .social-links--stack .social-link { display: block; margin: 5px 0 0; color: #000000; text-decoration: none; white-space: nowrap; }
+        .social-links--stack .social-link:first-child { margin-top: 0; }
 
         .header-rule {
             border: none;
@@ -277,11 +277,11 @@
                 @if ($has($d['phone'] ?? ''))<p class="contact-line">{{ $d['phone'] }}</p>@endif
                 @if ($has($d['city'] ?? ''))<p class="contact-line">{{ $d['city'] }}</p>@endif
                 @if ($socialLinks->isNotEmpty())
-                    <p class="contact-line social-links">
+                    <div class="contact-line social-links social-links--stack">
                         @foreach ($socialLinks as $type => $url)
                             @include('talent.cv-builder.templates.partials.cv-social-link', ['type' => $type, 'url' => $url])
                         @endforeach
-                    </p>
+                    </div>
                 @endif
             </td>
         </tr>

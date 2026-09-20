@@ -111,10 +111,14 @@ export async function downloadCvPdf(html, filename) {
                         margin-top: 5px !important;
                         padding-top: 0 !important;
                     }
+                    body.cv-pdf-capture .social-links .social-link,
                     body.cv-pdf-capture .social-links--stack .social-link {
                         display: block !important;
-                        margin-top: 5px !important;
+                        margin: 5px 0 0 !important;
+                        margin-left: 0 !important;
+                        margin-right: 0 !important;
                     }
+                    body.cv-pdf-capture .social-links .social-link:first-child,
                     body.cv-pdf-capture .social-links--stack .social-link:first-child {
                         margin-top: 0 !important;
                     }

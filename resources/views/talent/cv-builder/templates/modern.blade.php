@@ -32,8 +32,8 @@
         .sidebar-text { font-size: 8pt; margin: 0 0 3px; color: #334155; word-wrap: break-word; }
         .sidebar-text a { color: #334155; text-decoration: none; }
         .social-links { margin-top: 5px; line-height: 1.35; }
-        .social-link { display: inline-block; margin: 0 14px 0 0; color: #000000; text-decoration: none; white-space: nowrap; }
-        .social-link:last-child { margin-right: 0; }
+        .social-links--stack .social-link { display: block; margin: 5px 0 0; color: #000000; text-decoration: none; white-space: nowrap; }
+        .social-links--stack .social-link:first-child { margin-top: 0; }
         .skill-label { font-weight: bold; color: #0f766e; font-size: 8pt; }
         .skill-items { font-size: 7.5pt; color: #475569; }
 
@@ -155,11 +155,11 @@
             @if ($has($d['phone'] ?? ''))<p class="sidebar-text">{{ $d['phone'] }}</p>@endif
             @if ($has($d['city'] ?? ''))<p class="sidebar-text">{{ $d['city'] }}</p>@endif
             @if ($socialLinks->isNotEmpty())
-                <p class="sidebar-text social-links">
+                <div class="sidebar-text social-links social-links--stack">
                     @foreach ($socialLinks as $type => $url)
                         @include('talent.cv-builder.templates.partials.cv-social-link', ['type' => $type, 'url' => $url])
                     @endforeach
-                </p>
+                </div>
             @endif
         </div>
 
