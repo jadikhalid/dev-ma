@@ -25,13 +25,30 @@
     <x-process-help topic="users" />
 
     <div class="py-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        @foreach (['user_created' => 'green', 'user_approved' => 'green', 'user_rejected' => 'amber', 'user_deleted' => 'amber', 'moderator_granted' => 'green', 'moderator_revoked' => 'amber'] as $flash => $color)
+        @foreach ([
+            'user_created' => 'green',
+            'user_approved' => 'green',
+            'user_rejected' => 'amber',
+            'user_deleted' => 'amber',
+            'moderator_granted' => 'green',
+            'moderator_revoked' => 'amber',
+            'pending_registration_completed' => 'green',
+            'pending_registration_completed_approved' => 'green',
+            'pending_registration_deleted' => 'amber',
+            'pending_registration_resent' => 'green',
+        ] as $flash => $color)
             @if (session($flash))
                 <div class="p-4 rounded-xl border text-sm {{ $color === 'green' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-900' }}">
                     {{ __('talenma.admin.users.flash.'.$flash) }}
                 </div>
             @endif
         @endforeach
+
+        @if (session('pending_registration_error'))
+            <div class="p-4 rounded-xl border text-sm bg-red-50 border-red-200 text-red-800">
+                {{ session('pending_registration_error') }}
+            </div>
+        @endif
 
         <div id="admin-users-dynamic" class="space-y-8">
             <section
@@ -65,7 +82,7 @@
                             type="search"
                             name="q"
                             value="{{ $search }}"
-                            placeholder="{{ __('talenma.admin.users.search_placeholder') }}"
+                            placeholder="{{ $filter === 'email_pending' ? __('talenma.admin.users.search_placeholder_email_pending') : __('talenma.admin.users.search_placeholder') }}"
                             class="block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
                             autocomplete="off"
                         >
@@ -81,137 +98,224 @@
                 </form>
 
                 <div class="flex flex-wrap gap-2">
-                    @foreach (['pending' => __('talenma.admin.users.filter_pending'), 'talents' => __('talenma.admin.users.filter_talents'), 'companies' => __('talenma.admin.users.filter_companies'), 'moderators' => __('talenma.admin.users.filter_moderators'), 'all' => __('talenma.admin.users.filter_all')] as $key => $label)
+                    @foreach ([
+                        'pending' => __('talenma.admin.users.filter_pending'),
+                        'email_pending' => __('talenma.admin.users.filter_email_pending'),
+                        'talents' => __('talenma.admin.users.filter_talents'),
+                        'companies' => __('talenma.admin.users.filter_companies'),
+                        'moderators' => __('talenma.admin.users.filter_moderators'),
+                        'all' => __('talenma.admin.users.filter_all'),
+                    ] as $key => $label)
                         <a href="{{ route('admin.users.index', array_filter(['filter' => $key, 'q' => $search !== '' ? $search : null])) }}"
                            class="px-3 py-1.5 rounded-lg text-sm font-medium {{ $filter === $key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             {{ $label }}
                             @if ($key === 'pending' && $pendingCount > 0)
                                 <span class="ml-1">({{ $pendingCount }})</span>
                             @endif
+                            @if ($key === 'email_pending' && ($pendingEmailCount ?? 0) > 0)
+                                <span class="ml-1">({{ $pendingEmailCount }})</span>
+                            @endif
                         </a>
                     @endforeach
                 </div>
             </div>
 
-            <div class="divide-y">
-                @forelse ($users as $user)
-                    @php
-                        $isClickable = in_array($filter, ['pending', 'talents', 'companies', 'moderators', 'all'], true)
-                            && ($user->isTalent() || $user->isCompany())
-                            && $user->hasVerifiedEmail();
-                    @endphp
-                    <div
-                        id="admin-user-row-{{ $user->id }}"
-                        @class([
-                            'px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4',
-                            'cursor-pointer hover:bg-indigo-50/50 transition-colors' => $isClickable,
-                        ])
-                        @if ($isClickable)
-                            role="button"
-                            tabindex="0"
-                            aria-label="{{ __('talenma.admin.users.view_registration') }} — {{ $user->name }}"
-                            @click="openFor({{ $user->id }})"
-                            @keydown.enter.prevent="openFor({{ $user->id }})"
-                        @endif
-                    >
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-start gap-3">
-                                <div class="min-w-0 flex-1">
-                                    <p class="font-medium text-gray-900">{{ $user->name }}</p>
-                                    <p class="text-sm text-gray-500">{{ $user->email }}</p>
-                                    <p class="text-xs mt-1 text-gray-400">
-                                        {{ __('talenma.admin.users.role_label') }} :
-                                        @if ($user->isModerator())
-                                            <span class="inline-flex items-center rounded-md bg-purple-50 px-1.5 py-0.5 text-[11px] font-semibold text-purple-800 ring-1 ring-purple-200">{{ __('talenma.roles.moderator') }}</span>
-                                        @elseif ($user->isCompany())
-                                            {{ __('talenma.roles.company') }}
-                                        @else
-                                            {{ __('talenma.roles.talent') }}
-                                        @endif
-                                        @if ($user->isTalent() || $user->isCompany())
-                                            — {{ __('talenma.admin.users.status_'.$user->approval_status) }}
-                                        @endif
-                                    </p>
-                                </div>
+            @if ($filter === 'email_pending')
+                <div class="divide-y">
+                    @forelse ($pendingRegistrations as $pending)
+                        @php
+                            $role = $pending->payload['role'] ?? null;
+                            $displayName = $pending->greetingName() ?: $pending->email;
+                            $isExpired = $pending->isExpired();
+                        @endphp
+                        <div
+                            id="admin-pending-registration-row-{{ $pending->id }}"
+                            class="px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+                        >
+                            <div class="min-w-0 flex-1">
+                                <p class="font-medium text-gray-900">{{ $displayName }}</p>
+                                <p class="text-sm text-gray-500">{{ $pending->email }}</p>
+                                <p class="text-xs mt-1 text-gray-400">
+                                    {{ __('talenma.admin.users.role_label') }} :
+                                    @if ($role === 'company')
+                                        {{ __('talenma.roles.company') }}
+                                    @else
+                                        {{ __('talenma.roles.talent') }}
+                                    @endif
+                                    —
+                                    @if ($isExpired)
+                                        <span class="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-800 ring-1 ring-red-200">
+                                            {{ __('talenma.admin.users.email_pending_expired') }}
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-200">
+                                            {{ __('talenma.admin.users.email_pending_awaiting') }}
+                                        </span>
+                                    @endif
+                                </p>
+                                <p class="text-xs mt-1 text-gray-400">
+                                    {{ __('talenma.admin.users.email_pending_created_at', ['date' => $pending->created_at?->translatedFormat('d M Y, H:i')]) }}
+                                    ·
+                                    {{ __('talenma.admin.users.email_pending_expires_at', ['date' => $pending->expires_at?->translatedFormat('d M Y, H:i')]) }}
+                                </p>
                             </div>
-                        </div>
-                        <div class="flex flex-wrap gap-2" @if ($isClickable) @click.stop @keydown.stop @endif>
-                            @if (($user->isTalent() || $user->isCompany()) && $user->isPendingApproval())
+                            <div class="flex flex-wrap gap-2">
+                                <form method="POST" action="{{ route('admin.users.pending-registrations.resend', $pending) }}">
+                                    @csrf
+                                    <button type="submit" class="px-3 py-2 text-sm border rounded-lg text-indigo-700 border-indigo-200 hover:bg-indigo-50">
+                                        {{ __('talenma.admin.users.email_pending_resend_btn') }}
+                                    </button>
+                                </form>
                                 @if ($canApproveAccounts ?? false)
-                                    <form method="POST" action="{{ route('admin.users.approve', $user) }}">
+                                    <form method="POST" action="{{ route('admin.users.pending-registrations.complete', $pending) }}">
                                         @csrf
-                                        <x-primary-button>{{ __('talenma.admin.users.approve_btn') }}</x-primary-button>
+                                        <x-primary-button>{{ __('talenma.admin.users.email_pending_validate_btn') }}</x-primary-button>
                                     </form>
                                 @endif
-                                @if ($canRejectAccounts ?? false)
-                                    <form method="POST" action="{{ route('admin.users.reject', $user) }}" class="flex items-center gap-2">
+                                @if ($canDeleteAccounts ?? false)
+                                    <form
+                                        method="POST"
+                                        action="{{ route('admin.users.pending-registrations.destroy', $pending) }}"
+                                        onsubmit="return confirm(@js(__('talenma.admin.users.email_pending_delete_confirm')))"
+                                    >
                                         @csrf
-                                        <input type="text" name="reason" placeholder="{{ __('talenma.admin.users.reject_reason') }}" class="text-sm rounded-lg border-gray-300">
+                                        @method('DELETE')
                                         <button type="submit" class="px-3 py-2 text-sm border rounded-lg text-red-700 border-red-200 hover:bg-red-50">
-                                            {{ __('talenma.admin.users.reject_btn') }}
+                                            {{ __('talenma.admin.users.delete_btn') }}
                                         </button>
                                     </form>
                                 @endif
-                            @endif
-
-                            @if (
-                                ($canEditProfiles ?? false)
-                                && ($user->isTalent() || $user->isCompany())
-                                && ! $user->isAdmin()
-                            )
-                                <a
-                                    href="{{ route('admin.users.profile.edit', $user) }}"
-                                    class="px-3 py-2 text-sm border rounded-lg text-indigo-700 border-indigo-200 hover:bg-indigo-50"
-                                >
-                                    {{ __('talenma.admin.users.edit_profile_btn') }}
-                                </a>
-                            @endif
-
-                            @if (
-                                ($canDeleteAccounts ?? false)
-                                && ! $user->isAdmin()
-                                && (! $user->isModerator() || Auth::user()->isAdmin())
-                            )
-                                <form
-                                    id="admin-user-delete-form-{{ $user->id }}"
-                                    method="POST"
-                                    action="{{ route('admin.users.destroy', $user) }}"
-                                    data-ajax
-                                    data-refresh="admin-users"
-                                    data-loading-target="admin-user-row-{{ $user->id }}"
-                                    data-error-message="{{ __('talenma.common.save_error') }}"
-                                    data-network-error-message="{{ __('talenma.common.network_error') }}"
-                                    data-timeout-error-message="{{ __('talenma.common.timeout_error') }}"
-                                >
-                                    @csrf
-                                    @method('DELETE')
-                                    <button
-                                        type="button"
-                                        @click="$dispatch('open-delete-user', {
-                                            formId: 'admin-user-delete-form-{{ $user->id }}',
-                                            userName: @js($user->name),
-                                            deletesMembers: @js($user->isCompanyOwner()),
-                                            isModerator: @js($user->isModerator()),
-                                        })"
-                                        class="px-3 py-2 text-sm border rounded-lg text-red-700 border-red-200 hover:bg-red-50"
-                                    >
-                                        {{ __('talenma.admin.users.delete_btn') }}
-                                    </button>
-                                </form>
-                            @endif
+                            </div>
                         </div>
-                    </div>
-                @empty
-                    <p class="px-6 py-8 text-sm text-gray-500">{{ __('talenma.admin.users.empty') }}</p>
-                @endforelse
-            </div>
+                    @empty
+                        <p class="px-6 py-8 text-sm text-gray-500">{{ __('talenma.admin.users.email_pending_empty') }}</p>
+                    @endforelse
+                </div>
 
-            @if ($users->hasPages())
-                <div class="px-6 py-4 border-t">{{ $users->links() }}</div>
-            @endif
+                @if ($pendingRegistrations->hasPages())
+                    <div class="px-6 py-4 border-t">{{ $pendingRegistrations->links() }}</div>
+                @endif
+            @else
+                <div class="divide-y">
+                    @forelse ($users as $user)
+                        @php
+                            $isClickable = in_array($filter, ['pending', 'talents', 'companies', 'moderators', 'all'], true)
+                                && ($user->isTalent() || $user->isCompany())
+                                && $user->hasVerifiedEmail();
+                        @endphp
+                        <div
+                            id="admin-user-row-{{ $user->id }}"
+                            @class([
+                                'px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4',
+                                'cursor-pointer hover:bg-indigo-50/50 transition-colors' => $isClickable,
+                            ])
+                            @if ($isClickable)
+                                role="button"
+                                tabindex="0"
+                                aria-label="{{ __('talenma.admin.users.view_registration') }} — {{ $user->name }}"
+                                @click="openFor({{ $user->id }})"
+                                @keydown.enter.prevent="openFor({{ $user->id }})"
+                            @endif
+                        >
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-start gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="font-medium text-gray-900">{{ $user->name }}</p>
+                                        <p class="text-sm text-gray-500">{{ $user->email }}</p>
+                                        <p class="text-xs mt-1 text-gray-400">
+                                            {{ __('talenma.admin.users.role_label') }} :
+                                            @if ($user->isModerator())
+                                                <span class="inline-flex items-center rounded-md bg-purple-50 px-1.5 py-0.5 text-[11px] font-semibold text-purple-800 ring-1 ring-purple-200">{{ __('talenma.roles.moderator') }}</span>
+                                            @elseif ($user->isCompany())
+                                                {{ __('talenma.roles.company') }}
+                                            @else
+                                                {{ __('talenma.roles.talent') }}
+                                            @endif
+                                            @if ($user->isTalent() || $user->isCompany())
+                                                — {{ __('talenma.admin.users.status_'.$user->approval_status) }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2" @if ($isClickable) @click.stop @keydown.stop @endif>
+                                @if (($user->isTalent() || $user->isCompany()) && $user->isPendingApproval())
+                                    @if ($canApproveAccounts ?? false)
+                                        <form method="POST" action="{{ route('admin.users.approve', $user) }}">
+                                            @csrf
+                                            <x-primary-button>{{ __('talenma.admin.users.approve_btn') }}</x-primary-button>
+                                        </form>
+                                    @endif
+                                    @if ($canRejectAccounts ?? false)
+                                        <form method="POST" action="{{ route('admin.users.reject', $user) }}" class="flex items-center gap-2">
+                                            @csrf
+                                            <input type="text" name="reason" placeholder="{{ __('talenma.admin.users.reject_reason') }}" class="text-sm rounded-lg border-gray-300">
+                                            <button type="submit" class="px-3 py-2 text-sm border rounded-lg text-red-700 border-red-200 hover:bg-red-50">
+                                                {{ __('talenma.admin.users.reject_btn') }}
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endif
 
-            @if (in_array($filter, ['pending', 'talents', 'companies', 'moderators', 'all'], true))
-                <x-admin.pending-registration-drawer />
+                                @if (
+                                    ($canEditProfiles ?? false)
+                                    && ($user->isTalent() || $user->isCompany())
+                                    && ! $user->isAdmin()
+                                )
+                                    <a
+                                        href="{{ route('admin.users.profile.edit', $user) }}"
+                                        class="px-3 py-2 text-sm border rounded-lg text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+                                    >
+                                        {{ __('talenma.admin.users.edit_profile_btn') }}
+                                    </a>
+                                @endif
+
+                                @if (
+                                    ($canDeleteAccounts ?? false)
+                                    && ! $user->isAdmin()
+                                    && (! $user->isModerator() || Auth::user()->isAdmin())
+                                )
+                                    <form
+                                        id="admin-user-delete-form-{{ $user->id }}"
+                                        method="POST"
+                                        action="{{ route('admin.users.destroy', $user) }}"
+                                        data-ajax
+                                        data-refresh="admin-users"
+                                        data-loading-target="admin-user-row-{{ $user->id }}"
+                                        data-error-message="{{ __('talenma.common.save_error') }}"
+                                        data-network-error-message="{{ __('talenma.common.network_error') }}"
+                                        data-timeout-error-message="{{ __('talenma.common.timeout_error') }}"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+                                        <button
+                                            type="button"
+                                            @click="$dispatch('open-delete-user', {
+                                                formId: 'admin-user-delete-form-{{ $user->id }}',
+                                                userName: @js($user->name),
+                                                deletesMembers: @js($user->isCompanyOwner()),
+                                                isModerator: @js($user->isModerator()),
+                                            })"
+                                            class="px-3 py-2 text-sm border rounded-lg text-red-700 border-red-200 hover:bg-red-50"
+                                        >
+                                            {{ __('talenma.admin.users.delete_btn') }}
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <p class="px-6 py-8 text-sm text-gray-500">{{ __('talenma.admin.users.empty') }}</p>
+                    @endforelse
+                </div>
+
+                @if ($users->hasPages())
+                    <div class="px-6 py-4 border-t">{{ $users->links() }}</div>
+                @endif
+
+                @if (in_array($filter, ['pending', 'talents', 'companies', 'moderators', 'all'], true))
+                    <x-admin.pending-registration-drawer />
+                @endif
             @endif
             </section>
         </div>

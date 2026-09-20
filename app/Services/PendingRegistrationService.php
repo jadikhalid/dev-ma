@@ -153,6 +153,44 @@ class PendingRegistrationService
             ]);
         }
 
+        return $this->finalize($pending);
+    }
+
+    /**
+     * Valide une inscription en attente côté admin (sans connexion auto).
+     * Accepte aussi les liens expirés encore présents en base.
+     *
+     * @throws ValidationException
+     */
+    public function completeForAdmin(PendingRegistration $pending): User
+    {
+        return $this->finalize($pending);
+    }
+
+    /**
+     * Renvoie l'e-mail de vérification ; prolonge la validité si le lien a expiré.
+     */
+    public function resendForAdmin(PendingRegistration $pending): PendingRegistration
+    {
+        if ($pending->isExpired()) {
+            $pending->update([
+                'expires_at' => now()->addMinutes(self::EXPIRY_MINUTES),
+            ]);
+
+            PurgePendingRegistrationJob::dispatch($pending->id)
+                ->delay(now()->addMinutes(self::EXPIRY_MINUTES));
+        }
+
+        $this->sendVerificationMail($pending->fresh() ?? $pending);
+
+        return $pending->fresh() ?? $pending;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function finalize(PendingRegistration $pending): User
+    {
         if (User::query()->where('email', $pending->email)->exists()) {
             $this->purge($pending);
 

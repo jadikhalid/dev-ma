@@ -310,4 +310,143 @@ class UserManagementTest extends TestCase
             ->assertSee('Acme Europe')
             ->assertDontSee('Khalid Benali');
     }
+
+    public function test_admin_can_list_pending_email_registrations(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'awaiting@example.com',
+            'locale' => 'fr',
+            'payload' => [
+                'first_name' => 'Amina',
+                'last_name' => 'Saidi',
+                'name' => 'Amina Saidi',
+                'password' => bcrypt('Password1'),
+                'role' => 'dev',
+                'sector' => 'it-digital',
+                'description' => 'Description suffisamment longue pour validation.',
+            ],
+            'expires_at' => now()->addHours(12),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index', ['filter' => 'email_pending']))
+            ->assertOk()
+            ->assertSee('Amina Saidi')
+            ->assertSee('awaiting@example.com')
+            ->assertSee(__('talenma.admin.users.filter_email_pending'));
+    }
+
+    public function test_admin_can_delete_pending_email_registration(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        $pending = PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'purge-me@example.com',
+            'locale' => 'fr',
+            'payload' => [
+                'name' => 'Purge Me',
+                'password' => bcrypt('Password1'),
+                'role' => 'dev',
+            ],
+            'expires_at' => now()->addHour(),
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.users.pending-registrations.destroy', $pending))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'purge-me@example.com']);
+    }
+
+    public function test_admin_can_complete_pending_email_registration_without_logging_in_as_user(): void
+    {
+        $this->seed(ProfessionSeeder::class);
+        Mail::fake();
+
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        $pending = PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'force-verify@example.com',
+            'locale' => 'fr',
+            'payload' => [
+                'first_name' => 'Force',
+                'last_name' => 'Verify',
+                'name' => 'Force Verify',
+                'password' => bcrypt('Password1'),
+                'role' => 'dev',
+                'sector' => ProfessionSector::query()->firstOrFail()->slug,
+                'description' => 'Description suffisamment longue pour validation.',
+            ],
+            'expires_at' => now()->addHour(),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->post(route('admin.users.pending-registrations.complete', $pending));
+
+        $user = User::query()->where('email', 'force-verify@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'force-verify@example.com']);
+        $this->assertAuthenticatedAs($admin);
+
+        $response->assertRedirect(route('admin.users.index', [
+            'filter' => $user->isPendingApproval() ? 'pending' : 'talents',
+        ]));
+    }
+
+    public function test_admin_can_resend_pending_email_and_extend_expired_link(): void
+    {
+        Mail::fake();
+
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        $pending = PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'resend@example.com',
+            'locale' => 'fr',
+            'payload' => [
+                'name' => 'Resend User',
+                'password' => bcrypt('Password1'),
+                'role' => 'dev',
+            ],
+            'expires_at' => now()->subMinute(),
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.pending-registrations.resend', $pending))
+            ->assertRedirect();
+
+        $pending->refresh();
+        $this->assertTrue($pending->expires_at->isFuture());
+        Mail::assertSent(\App\Mail\VerifyRegistrationMail::class, fn ($mail) => $mail->hasTo('resend@example.com'));
+    }
+
+    public function test_moderator_without_approve_cannot_complete_pending_registration(): void
+    {
+        $moderator = User::factory()->moderator([
+            \App\Models\ModeratorPermissionCatalog::ACCOUNTS_VIEW,
+        ])->create();
+
+        $pending = PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'no-approve@example.com',
+            'locale' => 'fr',
+            'payload' => [
+                'name' => 'No Approve',
+                'password' => bcrypt('Password1'),
+                'role' => 'dev',
+            ],
+            'expires_at' => now()->addHour(),
+        ]);
+
+        $this->withSession([\App\Services\ModeratorAssignmentService::SESSION_MODE_KEY => true])
+            ->actingAs($moderator)
+            ->post(route('admin.users.pending-registrations.complete', $pending))
+            ->assertForbidden();
+    }
 }

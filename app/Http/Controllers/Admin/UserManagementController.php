@@ -9,6 +9,7 @@ use App\Models\ModeratorPermissionCatalog;
 use App\Models\PendingRegistration;
 use App\Models\User;
 use App\Services\ModeratorAssignmentService;
+use App\Services\PendingRegistrationService;
 use App\Services\TalentDossierPresenter;
 use App\Services\UserModerationService;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class UserManagementController extends Controller
@@ -23,6 +25,7 @@ class UserManagementController extends Controller
     public function __construct(
         private UserModerationService $moderation,
         private ModeratorAssignmentService $moderatorAssignments,
+        private PendingRegistrationService $pendingRegistrations,
     ) {
     }
 
@@ -30,6 +33,45 @@ class UserManagementController extends Controller
     {
         $filter = $request->string('filter')->toString() ?: 'pending';
         $search = trim($request->string('q')->toString());
+
+        $pendingEmailCount = PendingRegistration::query()->count();
+
+        $shared = [
+            'filter' => $filter,
+            'search' => $search,
+            'pendingCount' => User::query()
+                ->whereIn('role', ['dev', 'company'])
+                ->where('approval_status', User::APPROVAL_PENDING)
+                ->whereNotNull('email_verified_at')
+                ->count(),
+            'pendingEmailCount' => $pendingEmailCount,
+            'canCreateAccounts' => $request->user()->isAdmin(),
+            'canApproveAccounts' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_APPROVE),
+            'canRejectAccounts' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_REJECT),
+            'canDeleteAccounts' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_DELETE),
+            'canEditProfiles' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::PROFILES_EDIT),
+        ];
+
+        if ($filter === 'email_pending') {
+            $pendingQuery = PendingRegistration::query()->latest();
+
+            if ($search !== '') {
+                $like = '%'.$search.'%';
+
+                $pendingQuery->where(function ($query) use ($like) {
+                    $query->where('email', 'like', $like)
+                        ->orWhere('payload->name', 'like', $like)
+                        ->orWhere('payload->first_name', 'like', $like)
+                        ->orWhere('payload->last_name', 'like', $like)
+                        ->orWhere('payload->representative_name', 'like', $like);
+                });
+            }
+
+            return view('admin.users.index', array_merge($shared, [
+                'users' => null,
+                'pendingRegistrations' => $pendingQuery->paginate(20)->withQueryString(),
+            ]));
+        }
 
         $usersQuery = User::query()
             ->with(['approvedBy', 'moderatorAssignments.permissions'])
@@ -75,21 +117,46 @@ class UserManagementController extends Controller
             });
         }
 
-        return view('admin.users.index', [
+        return view('admin.users.index', array_merge($shared, [
             'users' => $usersQuery->paginate(20)->withQueryString(),
-            'filter' => $filter,
-            'search' => $search,
-            'pendingCount' => User::query()
-                ->whereIn('role', ['dev', 'company'])
-                ->where('approval_status', User::APPROVAL_PENDING)
-                ->whereNotNull('email_verified_at')
-                ->count(),
-            'canCreateAccounts' => $request->user()->isAdmin(),
-            'canApproveAccounts' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_APPROVE),
-            'canRejectAccounts' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_REJECT),
-            'canDeleteAccounts' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_DELETE),
-            'canEditProfiles' => $request->user()->hasModeratorPermission(ModeratorPermissionCatalog::PROFILES_EDIT),
-        ]);
+            'pendingRegistrations' => null,
+        ]));
+    }
+
+    public function completePendingRegistration(PendingRegistration $pendingRegistration): RedirectResponse
+    {
+        try {
+            $user = $this->pendingRegistrations->completeForAdmin($pendingRegistration);
+        } catch (ValidationException $exception) {
+            $message = collect($exception->errors())->flatten()->first()
+                ?? __('talenma.admin.users.flash.pending_registration_complete_failed');
+
+            return back()->with('pending_registration_error', $message);
+        }
+
+        $flash = $user->isApproved()
+            ? 'pending_registration_completed_approved'
+            : 'pending_registration_completed';
+
+        return redirect()
+            ->route('admin.users.index', [
+                'filter' => $user->isPendingApproval() ? 'pending' : ($user->isCompany() ? 'companies' : 'talents'),
+            ])
+            ->with($flash, true);
+    }
+
+    public function resendPendingRegistration(PendingRegistration $pendingRegistration): RedirectResponse
+    {
+        $this->pendingRegistrations->resendForAdmin($pendingRegistration);
+
+        return back()->with('pending_registration_resent', true);
+    }
+
+    public function destroyPendingRegistration(PendingRegistration $pendingRegistration): RedirectResponse
+    {
+        $this->pendingRegistrations->purge($pendingRegistration);
+
+        return back()->with('pending_registration_deleted', true);
     }
 
     public function registration(User $user, TalentDossierPresenter $presenter): JsonResponse

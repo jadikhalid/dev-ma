@@ -130,6 +130,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/users/{user}/registration', [UserManagementController::class, 'registration'])->name('users.registration');
             Route::get('/profile-documents/{profileDocument}', [ProfileDocumentController::class, 'show'])->name('profile-documents.show');
             Route::get('/company-profile-documents/{companyProfileDocument}', [CompanyProfileDocumentController::class, 'show'])->name('company-profile-documents.show');
+            Route::post('/users/pending-registrations/{pendingRegistration}/resend', [UserManagementController::class, 'resendPendingRegistration'])
+                ->name('users.pending-registrations.resend');
         });
 
         Route::middleware('admin')->group(function () {
@@ -150,9 +152,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/users/{user}/reject', [UserManagementController::class, 'reject'])
             ->middleware('moderator.permission:accounts.reject')
             ->name('users.reject');
+        Route::post('/users/pending-registrations/{pendingRegistration}/complete', [UserManagementController::class, 'completePendingRegistration'])
+            ->middleware('moderator.permission:accounts.approve')
+            ->name('users.pending-registrations.complete');
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])
             ->middleware('moderator.permission:accounts.delete')
             ->name('users.destroy');
+        Route::delete('/users/pending-registrations/{pendingRegistration}', [UserManagementController::class, 'destroyPendingRegistration'])
+            ->middleware('moderator.permission:accounts.delete')
+            ->name('users.pending-registrations.destroy');
 
         Route::middleware('moderator.permission:profiles.edit')->group(function () {
             Route::get('/users/{user}/profile', [ManagedProfileController::class, 'edit'])->name('users.profile.edit');
