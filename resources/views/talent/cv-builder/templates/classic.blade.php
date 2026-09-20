@@ -23,13 +23,9 @@
         .sidebar-title { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.08em; color: #93c5fd; border-bottom: 1px solid #334155; margin: 0 0 8px; padding-bottom: 5px; font-weight: bold; }
         .sidebar-text { font-size: 8pt; margin: 0 0 3px; color: #e2e8f0; word-wrap: break-word; }
         .sidebar-text a { color: #e2e8f0; text-decoration: none; }
-        .social-links { margin: 6px 0 2px; line-height: 1; }
-        @media print {
-            .social-links { margin-top: 14px; margin-bottom: 12px; }
-        }
-        .social-link { display: inline-block; margin-right: 16px; vertical-align: middle; }
+        .social-links { margin-top: 5px; line-height: 1.35; }
+        .social-link { display: inline-block; margin: 0 14px 0 0; color: #ffffff; text-decoration: none; white-space: nowrap; }
         .social-link:last-child { margin-right: 0; }
-        .social-link img { width: 14px; height: 14px; display: block; border: 0; }
         .skill-label { font-weight: bold; color: #fff; font-size: 8pt; }
         .skill-items { font-size: 7.5pt; color: #cbd5e1; }
         .main-headline { font-size: 11pt; color: #1e3a5f; font-weight: bold; margin: 0 0 12px; }
@@ -95,13 +91,7 @@
             @if ($socialLinks->isNotEmpty())
                 <p class="sidebar-text social-links">
                     @foreach ($socialLinks as $type => $url)
-                        <a
-                            href="{{ \App\Support\TalentCv\TalentCvLinkHelper::href($url) }}"
-                            class="social-link"
-                            title="{{ $url }}"
-                        >
-                            <img src="{{ \App\Support\TalentCv\TalentCvLinkHelper::iconSrc($type) }}" alt="{{ $type }}">
-                        </a>
+                        @include('talent.cv-builder.templates.partials.cv-social-link', ['type' => $type, 'url' => $url])
                     @endforeach
                 </p>
             @endif

@@ -148,6 +148,9 @@
                     el.classList.contains('hero-name')
                     || el.classList.contains('hero-headline')
                     || el.classList.contains('main-headline')
+                    || el.classList.contains('main-hero')
+                    || el.classList.contains('main-top-accent')
+                    || el.classList.contains('contact-bar')
                     || el.classList.contains('section')
                     || el.classList.contains('profile-box')
                 )) {
@@ -180,6 +183,8 @@
     function blocks() {
         var nodes = [];
         var header = document.querySelector('.header') || document.querySelector('.header-table');
+        var mainAccent = document.querySelector('.main-top-accent');
+        var mainHero = document.querySelector('.main-hero');
         var contact = document.querySelector('.contact-bar');
         var side = document.querySelector('.sidebar-inner')
             || document.querySelector('td.sidebar')
@@ -190,6 +195,8 @@
         var bodyCol = document.querySelector('.body') || document.querySelector('.cv-body');
 
         if (header) nodes.push(header);
+        if (mainAccent) nodes.push(mainAccent);
+        if (mainHero) nodes.push(mainHero);
         if (contact) nodes.push(contact);
 
         if (side && main) {

@@ -86,6 +86,11 @@ export async function downloadCvPdf(html, filename) {
                 const pages = Math.max(1, Math.ceil(naturalHeight / A4_HEIGHT_PX));
                 const targetHeight = pages * A4_HEIGHT_PX;
 
+                // Mark capture mode so templates can apply PDF-only spacing
+                // without changing the visible preview iframe (html2canvas uses
+                // screen styles — @media print is never applied here).
+                doc.body.classList.add('cv-pdf-capture');
+
                 const cssOverride = doc.createElement('style');
                 cssOverride.textContent = `
                     html, body {
@@ -101,6 +106,26 @@ export async function downloadCvPdf(html, filename) {
                     table.layout {
                         height: ${targetHeight}px !important;
                         min-height: ${targetHeight}px !important;
+                    }
+                    body.cv-pdf-capture .social-links {
+                        margin-top: 5px !important;
+                        padding-top: 0 !important;
+                    }
+                    body.cv-pdf-capture .social-links--stack .social-link {
+                        display: block !important;
+                        margin-top: 5px !important;
+                    }
+                    body.cv-pdf-capture .social-links--stack .social-link:first-child {
+                        margin-top: 0 !important;
+                    }
+                    body.cv-pdf-capture .social-row {
+                        margin-top: 5px !important;
+                    }
+                    body.cv-pdf-capture .social-row:first-child {
+                        margin-top: 0 !important;
+                    }
+                    body.cv-pdf-capture .contact-social-row td {
+                        padding-top: 5px !important;
                     }
                 `;
                 doc.head.appendChild(cssOverride);

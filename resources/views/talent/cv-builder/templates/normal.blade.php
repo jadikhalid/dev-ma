@@ -142,8 +142,9 @@
         .edu-row { margin: 0 0 8px; page-break-inside: avoid; }
         .lang-row { margin: 0 0 3px; font-size: 9pt; color: #222222; }
         .cert-row { margin: 0 0 3px; font-size: 9pt; color: #222222; }
-        .social-row { margin: 0 0 3px; font-size: 9pt; color: #222222; }
-        .social-row a { color: #222222; text-decoration: none; }
+        .social-row { margin: 5px 0 0; font-size: 9pt; color: #000000; line-height: 1.35; }
+        .social-row:first-child { margin-top: 0; }
+        .social-row .social-link { color: #000000; text-decoration: none; }
 
         table.skills-grid {
             width: 100%;
@@ -196,9 +197,9 @@
     $languages = collect($d['languages'] ?? [])->filter(fn ($l) => $has($l['name'] ?? ''));
     $certs = collect($d['certifications'] ?? [])->filter(fn ($c) => $has($c));
     $socialLinks = collect([
-        'LinkedIn' => (string) ($d['linkedin_url'] ?? ''),
-        'GitHub' => (string) ($d['github_url'] ?? ''),
-        'Portfolio' => (string) ($d['portfolio_url'] ?? ''),
+        'linkedin' => (string) ($d['linkedin_url'] ?? ''),
+        'github' => (string) ($d['github_url'] ?? ''),
+        'portfolio' => (string) ($d['portfolio_url'] ?? ''),
     ])->filter(fn (string $url) => $has($url));
 
     $skills = collect();
@@ -392,10 +393,9 @@
         @if ($socialLinks->isNotEmpty())
             <div class="section">
                 <p class="section-title">{{ $t('social_links') }}</p>
-                @foreach ($socialLinks as $label => $url)
+                @foreach ($socialLinks as $type => $url)
                     <p class="social-row">
-                        {{ $label }} :
-                        <a href="{{ \App\Support\TalentCv\TalentCvLinkHelper::href($url) }}">{{ $url }}</a>
+                        @include('talent.cv-builder.templates.partials.cv-social-link', ['type' => $type, 'url' => $url])
                     </p>
                 @endforeach
             </div>

@@ -55,13 +55,9 @@
             line-height: 1.35;
         }
         .contact-line a { color: #64748b; text-decoration: none; }
-        .social-links { margin-top: 6px; line-height: 1; }
-        @media print {
-            .social-links { margin-top: 12px; margin-bottom: 8px; }
-        }
-        .social-link { display: inline-block; margin-left: 10px; vertical-align: middle; }
+        .social-links { margin-top: 5px; line-height: 1.35; }
+        .social-link { display: inline-block; margin: 0 0 0 10px; color: #000000; text-decoration: none; white-space: nowrap; }
         .social-link:first-child { margin-left: 0; }
-        .social-link img { width: 12px; height: 12px; display: block; border: 0; }
 
         .header-rule {
             border: none;
@@ -283,9 +279,7 @@
                 @if ($socialLinks->isNotEmpty())
                     <p class="contact-line social-links">
                         @foreach ($socialLinks as $type => $url)
-                            <a href="{{ \App\Support\TalentCv\TalentCvLinkHelper::href($url) }}" class="social-link" title="{{ $url }}">
-                                <img src="{{ \App\Support\TalentCv\TalentCvLinkHelper::iconSrc($type, '#64748b') }}" alt="{{ $type }}">
-                            </a>
+                            @include('talent.cv-builder.templates.partials.cv-social-link', ['type' => $type, 'url' => $url])
                         @endforeach
                     </p>
                 @endif

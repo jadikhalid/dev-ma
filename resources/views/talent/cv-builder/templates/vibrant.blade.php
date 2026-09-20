@@ -131,10 +131,9 @@
         .skill-label { font-weight: bold; color: #1e40af; }
         .lang-row { margin: 0 0 3px; font-size: 9pt; color: #374151; }
 
-        .social-links { line-height: 1; }
-        .social-link { display: inline-block; margin-left: 12px; vertical-align: middle; }
+        .social-links { margin-top: 5px; line-height: 1.35; }
+        .social-link { display: inline-block; margin-left: 12px; color: #000000; text-decoration: none; white-space: nowrap; }
         .social-link:first-child { margin-left: 0; }
-        .social-link img { width: 12px; height: 12px; display: block; border: 0; }
     </style>
 </head>
 <body>
@@ -196,9 +195,7 @@
             <div class="contact-bar-social">
                 <span class="social-links">
                     @foreach ($socialLinks as $type => $url)
-                        <a href="{{ \App\Support\TalentCv\TalentCvLinkHelper::href($url) }}" class="social-link" title="{{ $url }}">
-                            <img src="{{ \App\Support\TalentCv\TalentCvLinkHelper::iconSrc($type, '#1e40af') }}" alt="{{ $type }}">
-                        </a>
+                        @include('talent.cv-builder.templates.partials.cv-social-link', ['type' => $type, 'url' => $url])
                     @endforeach
                 </span>
             </div>

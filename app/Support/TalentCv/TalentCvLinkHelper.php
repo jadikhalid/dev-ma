@@ -19,6 +19,60 @@ class TalentCvLinkHelper
         return 'https://'.$url;
     }
 
+    /** Short network name (LinkedIn, GitHub, …). */
+    public static function label(string $type): string
+    {
+        return match (strtolower(trim($type))) {
+            'linkedin' => 'LinkedIn',
+            'github' => 'GitHub',
+            'portfolio' => 'Portfolio',
+            default => $type !== '' ? $type : 'Link',
+        };
+    }
+
+    /**
+     * Compact slug for CV display, e.g. khalid-j-a73662254 (no @).
+     */
+    public static function handle(string $type, string $url): string
+    {
+        $href = self::href($url);
+        $host = strtolower((string) (parse_url($href, PHP_URL_HOST) ?: ''));
+        $path = trim((string) (parse_url($href, PHP_URL_PATH) ?: ''), '/');
+        $segments = $path === '' ? [] : explode('/', $path);
+
+        $slug = '';
+
+        if (str_contains($host, 'linkedin.com')) {
+            $inIndex = array_search('in', $segments, true);
+            if ($inIndex !== false && isset($segments[$inIndex + 1])) {
+                $slug = $segments[$inIndex + 1];
+            }
+        } elseif (str_contains($host, 'github.com')) {
+            $slug = $segments[0] ?? '';
+        } elseif ($segments !== []) {
+            $slug = end($segments) ?: '';
+        }
+
+        if ($slug === '' && $host !== '') {
+            $slug = preg_replace('#^www\.#i', '', $host) ?: '';
+        }
+
+        return trim((string) $slug, "/ \t");
+    }
+
+    /** e.g. "LinkedIn : khalid-j-a73662254" */
+    public static function display(string $type, string $url): string
+    {
+        $label = self::label($type);
+        $slug = self::handle($type, $url);
+
+        if ($slug === '') {
+            return $label;
+        }
+
+        return $label.' : '.$slug;
+    }
+
     public static function iconSrc(string $type, string $color = '#e2e8f0'): string
     {
         $svg = match ($type) {

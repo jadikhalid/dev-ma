@@ -72,13 +72,9 @@
         .sidebar-text { font-size: 7.8pt; margin: 0 0 4px; color: #f3f4f6; word-wrap: break-word; text-align: justify; }
         .sidebar-text a { color: #f3f4f6; text-decoration: none; }
         .contact-line { margin: 0 0 5px; font-size: 7.8pt; color: #f3f4f6; word-wrap: break-word; }
-        .social-links { margin: 8px 0 2px; line-height: 1; }
-        @media print {
-            .social-links { margin-top: 14px; margin-bottom: 12px; }
-        }
-        .social-link { display: inline-block; margin-right: 14px; vertical-align: middle; }
+        .social-links { margin-top: 5px; line-height: 1.35; }
+        .social-link { display: inline-block; margin: 0 12px 0 0; color: #ffffff; text-decoration: none; white-space: nowrap; }
         .social-link:last-child { margin-right: 0; }
-        .social-link img { width: 13px; height: 13px; display: block; border: 0; }
 
         .section { margin-bottom: 12px; page-break-inside: avoid; }
         .section-title {
@@ -183,13 +179,7 @@
                 @if ($socialLinks->isNotEmpty())
                     <p class="contact-line social-links">
                         @foreach ($socialLinks as $type => $url)
-                            <a
-                                href="{{ \App\Support\TalentCv\TalentCvLinkHelper::href($url) }}"
-                                class="social-link"
-                                title="{{ $url }}"
-                            >
-                                <img src="{{ \App\Support\TalentCv\TalentCvLinkHelper::iconSrc($type, '#f4a9bb') }}" alt="{{ $type }}">
-                            </a>
+                            @include('talent.cv-builder.templates.partials.cv-social-link', ['type' => $type, 'url' => $url])
                         @endforeach
                     </p>
                 @endif

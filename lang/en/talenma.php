@@ -2989,6 +2989,7 @@ Best regards,',
             'simple_plus' => 'Simple',
             'starter' => 'Starter',
             'normal' => 'Normal',
+            'artist' => 'The Artist',
         ],
         'defaults' => [
             'remote_cet' => 'Remote · CET timezone',

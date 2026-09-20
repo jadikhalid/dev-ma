@@ -122,6 +122,27 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('class="body"', false);
     }
 
+    public function test_artist_template_preview_uses_two_column_yellow_accent_layout(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_ARTIST,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('cv-template" content="artist"', false)
+            ->assertSee('main-top-accent', false)
+            ->assertSee('contact-bar', false)
+            ->assertSee('skill-track', false)
+            ->assertSee('f5c518', false)
+            ->assertSee('photo-wrap', false)
+            ->assertSee('cv-preview-page-pads', false)
+            ->assertSee('TechScale SAS', false);
+    }
+
     public function test_normal_template_preview_uses_minimal_timeline_layout(): void
     {
         $talent = User::factory()->talent()->create();
@@ -236,6 +257,7 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('marketing-preview-simple_plus', false)
             ->assertSee('marketing-preview-starter', false)
             ->assertSee('marketing-preview-normal', false)
+            ->assertSee('marketing-preview-artist', false)
             ->assertDontSee('cv-template-choose', false)
             ->assertSee('selectTemplate(option.key)', false)
             ->assertSee('templatePreviewSrc', false);

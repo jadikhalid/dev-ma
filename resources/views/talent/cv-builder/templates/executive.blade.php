@@ -34,13 +34,9 @@
         .hero-headline { font-size: 9pt; margin: 4px 0 0; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.02em; }
         .contact-wrap { text-align: right; font-size: 7.6pt; color: #374151; line-height: 1.45; }
         .contact-line { margin: 0 0 2px; }
-        .social-links { margin-top: 4px; line-height: 1; }
-        @media print {
-            .social-links { margin-top: 12px; margin-bottom: 10px; }
-        }
-        .social-link { display: inline-block; margin-left: 14px; vertical-align: middle; }
+        .social-links { margin-top: 5px; line-height: 1.35; }
+        .social-link { display: inline-block; margin: 0 0 0 12px; color: #000000; text-decoration: none; white-space: nowrap; }
         .social-link:first-child { margin-left: 0; }
-        .social-link img { width: 12px; height: 12px; display: block; border: 0; }
 
         .section { margin-top: 12px; page-break-inside: avoid; }
         .section-title { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.05em; color: #374151; border-bottom: 1px solid #d1d5db; margin: 0 0 8px; padding-bottom: 5px; font-weight: bold; }
@@ -152,9 +148,7 @@
                     @if ($socialLinks->isNotEmpty())
                         <p class="contact-line social-links">
                             @foreach ($socialLinks as $type => $url)
-                                <a href="{{ \App\Support\TalentCv\TalentCvLinkHelper::href($url) }}" class="social-link" title="{{ $url }}">
-                                    <img src="{{ \App\Support\TalentCv\TalentCvLinkHelper::iconSrc($type, '#374151') }}" alt="{{ $type }}">
-                                </a>
+                                @include('talent.cv-builder.templates.partials.cv-social-link', ['type' => $type, 'url' => $url])
                             @endforeach
                         </p>
                     @endif

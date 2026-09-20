@@ -44,6 +44,7 @@
         .contact-table { width: 100%; max-width: 420px; border-collapse: collapse; }
         .contact-table td { vertical-align: top; padding: 0 10px 4px 0; font-size: 7.8pt; color: #4b5563; }
         .contact-table a { color: #2c84b5; text-decoration: none; }
+        .contact-table .social-link { color: #000000; }
         .contact-icon {
             display: inline-block;
             width: 10px;
@@ -249,8 +250,8 @@
                             @endif
                             @if ($socialLinks->isNotEmpty())
                                 @foreach ($socialLinks as $type => $url)
-                                    <div style="margin-top:3px;">
-                                        <a href="{{ \App\Support\TalentCv\TalentCvLinkHelper::href($url) }}">{{ $url }}</a>
+                                    <div style="margin-top:5px;">
+                                        @include('talent.cv-builder.templates.partials.cv-social-link', ['type' => $type, 'url' => $url])
                                     </div>
                                 @endforeach
                             @endif
