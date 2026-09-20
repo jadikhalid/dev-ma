@@ -80,6 +80,48 @@ class PendingRegistrationService
     }
 
     /**
+     * Inscription talent immédiate (sans e-mail de confirmation) — phase de lancement.
+     *
+     * @throws ValidationException
+     */
+    public function registerTalentImmediately(RegisterRequest $request): User
+    {
+        $validated = $request->validated();
+
+        if (($validated['role'] ?? null) !== 'dev') {
+            throw ValidationException::withMessages([
+                'role' => __('talenma.auth.validation.role_invalid'),
+            ]);
+        }
+
+        $this->purgeExistingForEmail($validated['email']);
+
+        $pending = PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => $validated['email'],
+            'locale' => app()->getLocale(),
+            'payload' => $this->buildPayload($validated),
+            'expires_at' => now()->addMinutes(self::EXPIRY_MINUTES),
+        ]);
+
+        $cv = $request->file('cv');
+
+        $pending->update([
+            'document_paths' => $cv instanceof UploadedFile
+                ? [$this->storePendingDocument(
+                    $pending,
+                    $cv,
+                    1,
+                    ProfileDocument::TYPE_CV,
+                    $validated['cv_language'],
+                )]
+                : [],
+        ]);
+
+        return $this->finalize($pending->fresh() ?? $pending);
+    }
+
+    /**
      * @throws ValidationException
      */
     public function resendVerificationEmail(string $email): PendingRegistration

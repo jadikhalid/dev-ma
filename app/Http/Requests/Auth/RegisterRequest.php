@@ -101,11 +101,10 @@ class RegisterRequest extends FormRequest
                 'max:64',
                 Rule::exists('profession_sectors', 'slug')->where(fn ($query) => $query->where('is_active', true)),
             ],
+            // Launch phase: talent profile description is optional / hidden on the form.
             'description' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'dev' && ! $this->boolean('compact_register')),
                 'nullable',
                 'string',
-                'min:255',
                 'max:2550',
             ],
             'cv' => [

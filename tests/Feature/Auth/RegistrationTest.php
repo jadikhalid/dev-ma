@@ -347,21 +347,21 @@ class RegistrationTest extends TestCase
         $this->assertCount(1, $profile->documents);
     }
 
-    public function test_talent_registration_requires_sector_description_and_cv(): void
+    public function test_talent_registration_requires_sector_and_cv(): void
     {
         $response = $this->from('/register')->post('/register', $this->validPayload());
 
         $response->assertRedirect('/register');
-        $response->assertSessionHasErrors(['sector', 'description', 'cv', 'cv_language', 'data_processing_consent']);
+        $response->assertSessionHasErrors(['sector', 'cv', 'cv_language', 'data_processing_consent']);
+        $response->assertSessionDoesntHaveErrors('description');
     }
 
-    public function test_talent_registration_allows_empty_description_on_compact_register(): void
+    public function test_talent_registration_allows_empty_description(): void
     {
         Mail::fake();
 
         $response = $this->post('/register', $this->validTalentPayload([
             'description' => null,
-            'compact_register' => '1',
         ]));
 
         $this->assertGuest();
@@ -371,6 +371,59 @@ class RegistrationTest extends TestCase
 
         $pending = PendingRegistration::query()->where('email', 'test@example.com')->firstOrFail();
         $this->assertNull($pending->payload['description'] ?? null);
+    }
+
+    public function test_registration_screen_hides_talent_description_field(): void
+    {
+        $this->get('/register')
+            ->assertOk()
+            ->assertDontSee('name="description"', false)
+            ->assertDontSee('id="description"', false);
+    }
+
+    public function test_register_check_email_reports_available_address(): void
+    {
+        $this->getJson(route('register.check-email', ['email' => 'fresh@example.com']))
+            ->assertOk()
+            ->assertJson([
+                'available' => true,
+                'message' => __('talenma.auth.validation.email_available'),
+            ]);
+    }
+
+    public function test_register_check_email_rejects_existing_user(): void
+    {
+        User::factory()->create([
+            'email' => 'taken@example.com',
+            'role' => 'dev',
+            'approval_status' => User::APPROVAL_APPROVED,
+        ]);
+
+        $this->getJson(route('register.check-email', ['email' => 'taken@example.com']))
+            ->assertStatus(422)
+            ->assertJson([
+                'available' => false,
+                'message' => __('talenma.auth.validation.email_taken'),
+            ]);
+    }
+
+    public function test_register_check_email_rejects_pending_registration(): void
+    {
+        PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'pending-check@example.com',
+            'locale' => 'fr',
+            'payload' => [
+                'name' => 'Pending Check',
+                'password' => bcrypt('Password1'),
+                'role' => 'dev',
+            ],
+            'expires_at' => now()->addHour(),
+        ]);
+
+        $this->getJson(route('register.check-email', ['email' => 'pending-check@example.com']))
+            ->assertStatus(422)
+            ->assertJsonPath('available', false);
     }
 
     public function test_talent_registration_requires_cv_and_language(): void

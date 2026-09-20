@@ -207,4 +207,98 @@ class TalentAdminValidationSettingTest extends TestCase
 
         $this->assertTrue(PlatformSetting::requiresTalentAdminValidation());
     }
+
+    public function test_talent_registers_immediately_when_email_verification_is_disabled(): void
+    {
+        Mail::fake();
+        PlatformSetting::setRequiresTalentEmailVerification(false);
+        PlatformSetting::setRequiresTalentAdminValidation(false);
+
+        $response = $this->post('/register', [
+            'first_name' => 'Direct',
+            'last_name' => 'Talent',
+            'email' => 'direct-talent@example.com',
+            'password' => 'Password1',
+            'password_confirmation' => 'Password1',
+            'role' => 'dev',
+            'sector' => 'it-digital',
+            'cv' => UploadedFile::fake()->create('cv-fr.pdf', 100, 'application/pdf'),
+            'cv_language' => 'fr',
+            'data_processing_consent' => '1',
+        ]);
+
+        $user = User::query()->where('email', 'direct-talent@example.com')->firstOrFail();
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertSame(User::APPROVAL_APPROVED, $user->approval_status);
+        $this->assertNull($user->profile?->bio);
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'direct-talent@example.com']);
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('dashboard'));
+        Mail::assertNothingSent();
+    }
+
+    public function test_company_still_requires_email_when_talent_email_verification_is_disabled(): void
+    {
+        Mail::fake();
+        PlatformSetting::setRequiresTalentEmailVerification(false);
+
+        $this->post('/register', [
+            'name' => 'Acme SAS',
+            'email' => 'company-email-required@example.com',
+            'password' => 'Password1',
+            'password_confirmation' => 'Password1',
+            'role' => 'company',
+            'first_name' => 'Jean',
+            'last_name' => 'Dupont',
+            'sector' => 'it-digital',
+            'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile, à la recherche de talents pour accompagner notre croissance.',
+            'company_country' => 'fr',
+            'data_processing_consent' => '1',
+            'documents' => [
+                UploadedFile::fake()->create('kbis.pdf', 100, 'application/pdf'),
+            ],
+        ])->assertRedirect(route('login'));
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['email' => 'company-email-required@example.com']);
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'company-email-required@example.com']);
+        Mail::assertSent(\App\Mail\VerifyRegistrationMail::class);
+    }
+
+    public function test_admin_can_toggle_talent_email_verification_setting(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->put(route('admin.settings.talent-email-verification'), [
+                'require_talent_email_verification' => '0',
+            ])
+            ->assertRedirect();
+
+        $this->assertFalse(PlatformSetting::requiresTalentEmailVerification());
+
+        $this->actingAs($admin)
+            ->put(route('admin.settings.talent-email-verification'), [
+                'require_talent_email_verification' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue(PlatformSetting::requiresTalentEmailVerification());
+    }
+
+    public function test_non_admin_cannot_toggle_talent_email_verification_setting(): void
+    {
+        $talent = User::factory()->create([
+            'role' => 'dev',
+            'approval_status' => User::APPROVAL_APPROVED,
+        ]);
+
+        $this->actingAs($talent)
+            ->put(route('admin.settings.talent-email-verification'), [
+                'require_talent_email_verification' => '0',
+            ])
+            ->assertForbidden();
+
+        $this->assertTrue(PlatformSetting::requiresTalentEmailVerification());
+    }
 }

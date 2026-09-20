@@ -46,6 +46,10 @@
         'email_required' => __('talenma.auth.validation.email_required'),
         'email_invalid' => __('talenma.auth.validation.email_invalid'),
         'email_max' => __('talenma.auth.validation.email_max'),
+        'email_taken' => __('talenma.auth.validation.email_taken'),
+        'email_available' => __('talenma.auth.validation.email_available'),
+        'email_checking' => __('talenma.auth.validation.email_checking'),
+        'network_error' => __('talenma.common.network_error'),
         'password_required' => __('talenma.auth.validation.password_required'),
         'password_confirmed' => __('talenma.auth.validation.password_confirmed'),
         'password_min' => __('talenma.auth.validation.password_min'),
@@ -125,6 +129,7 @@
             defaultCompanyCountry: @js(\App\Models\CompanyProfile::DEFAULT_COUNTRY),
             initialDataProcessingConsent: @js((bool) old('data_processing_consent')),
             validationMessages: @js($registerValidationMessages),
+            checkEmailUrl: @js(route('register.check-email')),
         })"
     >@csrf
         <div class="hidden" aria-hidden="true">
@@ -275,7 +280,31 @@
                     </div>
                     <div>
                         <x-input-label for="email" :value="__('talenma.auth.email')" class="!text-base sm:!text-sm" />
-                        <x-text-input id="email" name="email" type="email" x-model="email" @blur="onFieldBlur('email')" @input="onFieldInput('email')" x-bind:class="fieldInvalidClass('email')" class="mt-1.5 block w-full !text-base !py-3 sm:mt-1 sm:!text-sm sm:!py-2" required maxlength="255" autocomplete="email" inputmode="email" />
+                        <x-text-input
+                            id="email"
+                            name="email"
+                            type="email"
+                            x-model="email"
+                            @blur="onEmailBlur()"
+                            @input="onEmailInput()"
+                            x-bind:class="fieldInvalidClass('email')"
+                            class="mt-1.5 block w-full !text-base !py-3 sm:mt-1 sm:!text-sm sm:!py-2"
+                            required
+                            maxlength="255"
+                            autocomplete="email"
+                            inputmode="email"
+                        />
+                        <p
+                            x-show="emailStatus"
+                            x-cloak
+                            class="mt-1 text-sm sm:text-xs"
+                            :class="{
+                                'text-gray-500': emailStatus === 'checking',
+                                'text-emerald-700': emailStatus === 'available',
+                                'text-red-600': emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error',
+                            }"
+                            x-text="emailMessage"
+                        ></p>
                         <x-input-error :messages="$errors->get('email')" class="mt-1" />
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -456,25 +485,8 @@
                     </select>
                     <x-input-error :messages="$errors->get('sector')" class="mt-1" />
                 </div>
-                <div class="hidden sm:block">
-                    <x-input-label for="description" :value="__('talenma.auth.registration_description')" class="!text-base sm:!text-sm" />
-                    <textarea
-                        id="description"
-                        name="description"
-                        rows="5"
-                        maxlength="2550"
-                        x-bind:minlength="isCompactRegister ? null : 255"
-                        x-model="description"
-                        @blur="onFieldBlur('description')"
-                        @input="onFieldInput('description')"
-                        x-bind:class="fieldInvalidClass('description')"
-                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm !text-base sm:!text-sm resize-none"
-                        placeholder="{{ __('talenma.auth.registration_description_placeholder') }}"
-                    >{{ old('description') }}</textarea>
-                    <p class="mt-0.5 text-sm sm:text-xs text-gray-500 text-right"><span x-text="description.length"></span>/2550</p>
-                    <x-input-error :messages="$errors->get('description')" class="mt-1" />
-                </div>
-                <input type="hidden" name="compact_register" :value="isCompactRegister ? '1' : '0'">
+                {{-- Launch phase: description field hidden; re-enable when signup can be stricter again. --}}
+                <input type="hidden" name="compact_register" value="1">
                 <div
                     class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 sm:p-4 space-y-3"
                     :class="{ 'border-red-300 bg-red-50/40': fieldErrors.cv || fieldErrors.cv_language }"

@@ -1719,6 +1719,10 @@ Alpine.data('registerWizard', (config) => ({
     defaultCompanyCountry: config.defaultCompanyCountry ?? '',
     dataProcessingConsent: Boolean(config.initialDataProcessingConsent),
     validationMessages: config.validationMessages ?? {},
+    checkEmailUrl: config.checkEmailUrl ?? '',
+    emailStatus: null,
+    emailMessage: '',
+    emailCheckToken: 0,
     fieldErrors: {},
     submitting: false,
     namePattern: /^[\p{L}\p{M}][\p{L}\p{M}\s'\-\.]*$/u,
@@ -1735,6 +1739,7 @@ Alpine.data('registerWizard', (config) => ({
             this.dataProcessingConsent = false;
             this.submitting = false;
             this.clearFieldErrors();
+            this.clearEmailStatus();
         });
 
         this.$watch('step', () => {
@@ -1770,7 +1775,11 @@ Alpine.data('registerWizard', (config) => ({
         const nameOk = this.isCompany
             ? this.name.trim().length >= 2
             : this.firstName.trim().length >= 2 && this.lastName.trim().length >= 2;
-        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim());
+        const emailFormatOk = this.emailIsValid(this.email);
+        const emailOk = emailFormatOk
+            && this.emailStatus !== 'taken'
+            && this.emailStatus !== 'checking'
+            && this.emailStatus !== 'invalid';
         const passwordOk = this.password.length >= 8;
         const confirmOk = this.password === this.passwordConfirmation && this.passwordConfirmation.length > 0;
 
@@ -1786,11 +1795,7 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get talentStep2Valid() {
-        const descriptionOk = this.isCompactRegister
-            || this.description.trim().length >= 255;
-
         return this.sector !== ''
-            && descriptionOk
             && this.cvLanguage !== ''
             && this.hasCv
             && this.dataProcessingConsent;
@@ -1975,13 +1980,7 @@ Alpine.data('registerWizard', (config) => ({
         }
 
         if (this.isTalent && this.step === 2) {
-            const fields = ['sector', 'cv', 'cv_language', 'data_processing_consent'];
-
-            if (! this.isCompactRegister) {
-                fields.splice(1, 0, 'description');
-            }
-
-            return fields.includes(field);
+            return ['sector', 'cv', 'cv_language', 'data_processing_consent'].includes(field);
         }
 
         return false;
@@ -2091,6 +2090,10 @@ Alpine.data('registerWizard', (config) => ({
 
                 if (value.length > 255) {
                     return messages.email_max ?? null;
+                }
+
+                if (this.emailStatus === 'taken') {
+                    return this.emailMessage || messages.email_taken || null;
                 }
 
                 return null;
@@ -2461,6 +2464,7 @@ Alpine.data('registerWizard', (config) => ({
         this.dataProcessingConsent = false;
         this.submitting = false;
         this.clearFieldErrors();
+        this.clearEmailStatus();
 
         // Les inputs fichiers ne sont pas liables en x-model : on vide le DOM.
         this.$root
@@ -2471,8 +2475,119 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     next() {
-        if (this.canGoNext) {
-            this.step += 1;
+        return this.advanceFromStep1().then((advanced) => {
+            if (advanced) {
+                return;
+            }
+
+            if (this.canGoNext) {
+                this.step += 1;
+            }
+        });
+    },
+
+    async advanceFromStep1() {
+        if (this.step !== 1 || ! this.step1Valid) {
+            return false;
+        }
+
+        if (this.emailStatus !== 'available' && this.emailStatus !== 'error') {
+            await this.checkEmailAvailability();
+        }
+
+        if (this.emailStatus === 'taken' || this.emailStatus === 'invalid' || this.emailStatus === 'checking') {
+            return true;
+        }
+
+        this.step += 1;
+
+        return true;
+    },
+
+    clearEmailStatus() {
+        this.emailStatus = null;
+        this.emailMessage = '';
+    },
+
+    onEmailInput() {
+        this.clearEmailStatus();
+        this.onFieldInput('email');
+    },
+
+    onEmailBlur() {
+        this.onFieldBlur('email');
+
+        if (this.isFieldBlank('email') || ! this.emailIsValid(this.email)) {
+            return;
+        }
+
+        this.checkEmailAvailability();
+    },
+
+    async checkEmailAvailability() {
+        const email = this.email.trim().toLowerCase();
+        const messages = this.validationMessages;
+
+        if (email === '') {
+            this.clearEmailStatus();
+            delete this.fieldErrors.email;
+
+            return;
+        }
+
+        if (! this.emailIsValid(email)) {
+            this.emailStatus = 'invalid';
+            this.emailMessage = messages.email_invalid ?? '';
+            this.fieldErrors.email = true;
+
+            return;
+        }
+
+        if (! this.checkEmailUrl) {
+            this.emailStatus = 'available';
+            this.emailMessage = '';
+
+            return;
+        }
+
+        const token = ++this.emailCheckToken;
+        this.emailStatus = 'checking';
+        this.emailMessage = messages.email_checking ?? '';
+
+        try {
+            const params = new URLSearchParams({ email });
+            const response = await fetch(`${this.checkEmailUrl}?${params.toString()}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (token !== this.emailCheckToken) {
+                return;
+            }
+
+            const payload = await response.json().catch(() => null);
+
+            if (response.ok && payload?.available) {
+                this.emailStatus = 'available';
+                this.emailMessage = payload.message || messages.email_available || '';
+                delete this.fieldErrors.email;
+
+                return;
+            }
+
+            this.emailStatus = 'taken';
+            this.emailMessage = payload?.message || messages.email_taken || '';
+            this.fieldErrors.email = true;
+        } catch {
+            if (token !== this.emailCheckToken) {
+                return;
+            }
+
+            this.emailStatus = 'error';
+            this.emailMessage = messages.network_error || '';
         }
     },
 

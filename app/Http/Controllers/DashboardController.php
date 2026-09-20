@@ -75,6 +75,7 @@ class DashboardController extends Controller
                 'canViewDirectHire' => $user->hasModeratorPermission(\App\Models\ModeratorPermissionCatalog::DIRECT_HIRE_MANAGE),
                 'canManagePlatformSettings' => $user->isAdmin(),
                 'requireTalentAdminValidation' => PlatformSetting::requiresTalentAdminValidation(),
+                'requireTalentEmailVerification' => PlatformSetting::requiresTalentEmailVerification(),
             ]);
         }
 

@@ -4,9 +4,17 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Models\PendingRegistration;
+use App\Models\PlatformSetting;
+use App\Models\User;
 use App\Services\PendingRegistrationService;
 use App\Services\ProfessionCatalogService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
@@ -30,27 +38,93 @@ class RegisteredUserController extends Controller
         ]);
     }
 
+    public function checkEmail(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique(User::class, 'email'),
+                Rule::unique(User::class, 'pending_email'),
+                Rule::unique(PendingRegistration::class, 'email'),
+            ],
+        ], [
+            'email.required' => __('talenma.auth.validation.email_required'),
+            'email.email' => __('talenma.auth.validation.email_invalid'),
+            'email.unique' => __('talenma.auth.validation.email_taken'),
+        ], [
+            'email' => __('talenma.auth.email'),
+        ]);
+
+        if ($validator->fails()) {
+            $messages = $validator->errors()->get('email');
+
+            return response()->json([
+                'available' => false,
+                'message' => $messages[0] ?? __('talenma.auth.validation.email_taken'),
+            ], 422);
+        }
+
+        return response()->json([
+            'available' => true,
+            'message' => __('talenma.auth.validation.email_available'),
+        ]);
+    }
+
     public function store(RegisterRequest $request): RedirectResponse
     {
         $email = (string) $request->validated('email');
+        $role = (string) $request->validated('role');
+        $skipTalentEmailVerification = $role === 'dev'
+            && ! PlatformSetting::requiresTalentEmailVerification();
 
         try {
-            $this->pendingRegistration->createFromRequest($request);
+            if ($skipTalentEmailVerification) {
+                $user = $this->pendingRegistration->registerTalentImmediately($request);
+            } else {
+                $this->pendingRegistration->createFromRequest($request);
+            }
         } catch (Throwable $exception) {
             report($exception);
 
             return redirect()
                 ->route('register')
-                ->withInput($request->except('password', 'password_confirmation', 'documents'))
-                ->with('toast_error', __('talenma.auth.verification_email_failed'));
+                ->withInput($request->except('password', 'password_confirmation', 'documents', 'cv'))
+                ->with(
+                    'toast_error',
+                    $skipTalentEmailVerification
+                        ? __('talenma.auth.register_failed')
+                        : __('talenma.auth.verification_email_failed')
+                );
         }
 
         $request->clearRateLimiter();
+
+        if ($skipTalentEmailVerification) {
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            return $this->redirectAfterImmediateTalentRegistration($user);
+        }
 
         $request->session()->put('pending_registration_email', $email);
 
         return redirect()
             ->route('login')
             ->with('toast_success', __('talenma.auth.register_success_verify'));
+    }
+
+    private function redirectAfterImmediateTalentRegistration(User $user): RedirectResponse
+    {
+        $toastKey = $user->isApproved()
+            ? 'talenma.auth.registration_verified_approved'
+            : 'talenma.auth.registration_verified_success';
+
+        return redirect()
+            ->route($user->homeRouteName())
+            ->with('toast_success', __($toastKey));
     }
 }

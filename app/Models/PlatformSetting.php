@@ -9,6 +9,8 @@ class PlatformSetting extends Model
 {
     public const REQUIRE_TALENT_ADMIN_VALIDATION = 'require_talent_admin_validation';
 
+    public const REQUIRE_TALENT_EMAIL_VERIFICATION = 'require_talent_email_verification';
+
     protected $fillable = [
         'key',
         'value',
@@ -22,6 +24,16 @@ class PlatformSetting extends Model
     public static function setRequiresTalentAdminValidation(bool $enabled): void
     {
         static::setBool(self::REQUIRE_TALENT_ADMIN_VALIDATION, $enabled);
+    }
+
+    public static function requiresTalentEmailVerification(): bool
+    {
+        return static::bool(self::REQUIRE_TALENT_EMAIL_VERIFICATION, true);
+    }
+
+    public static function setRequiresTalentEmailVerification(bool $enabled): void
+    {
+        static::setBool(self::REQUIRE_TALENT_EMAIL_VERIFICATION, $enabled);
     }
 
     public static function bool(string $key, bool $default = false): bool

@@ -11,7 +11,7 @@ class PlatformSettingController extends Controller
 {
     public function updateTalentValidation(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $request->validate([
             'require_talent_admin_validation' => ['required', 'boolean'],
         ]);
 
@@ -24,6 +24,24 @@ class PlatformSettingController extends Controller
             $enabled
                 ? __('talenma.dashboard.admin.talent_validation_enabled')
                 : __('talenma.dashboard.admin.talent_validation_disabled')
+        );
+    }
+
+    public function updateTalentEmailVerification(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'require_talent_email_verification' => ['required', 'boolean'],
+        ]);
+
+        $enabled = $request->boolean('require_talent_email_verification');
+
+        PlatformSetting::setRequiresTalentEmailVerification($enabled);
+
+        return back()->with(
+            'status',
+            $enabled
+                ? __('talenma.dashboard.admin.talent_email_verification_enabled')
+                : __('talenma.dashboard.admin.talent_email_verification_disabled')
         );
     }
 }

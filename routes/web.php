@@ -144,6 +144,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/users/{user}/moderator', [UserManagementController::class, 'revokeModerator'])->name('users.moderator.revoke');
             Route::put('/settings/talent-validation', [PlatformSettingController::class, 'updateTalentValidation'])
                 ->name('settings.talent-validation');
+            Route::put('/settings/talent-email-verification', [PlatformSettingController::class, 'updateTalentEmailVerification'])
+                ->name('settings.talent-email-verification');
         });
 
         Route::post('/users/{user}/approve', [UserManagementController::class, 'approve'])
