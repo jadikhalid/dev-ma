@@ -132,13 +132,17 @@
         <button type="button" @click="addEducation()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">+ {{ __('talenma.cv_builder.form.add_education') }}</button>
     </div>
     <template x-for="(edu, di) in data.education" :key="'edu-'+di">
-        <div class="grid sm:grid-cols-6 gap-2 items-center">
-            <input type="text" x-model="edu.degree" @input="onDataChange()" class="sm:col-span-2 rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.cv_builder.form.degree') }}">
-            <input type="text" x-model="edu.school" @input="onDataChange()" class="sm:col-span-3 rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.cv_builder.form.school') }}">
-            <div class="flex gap-1">
-                <input type="text" x-model="edu.year" @input="onDataChange()" class="flex-1 rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.cv_builder.form.year') }}">
-                <button type="button" @click="removeEducation(di)" class="text-gray-400 hover:text-red-600" x-show="data.education.length > 1">×</button>
-            </div>
+        <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.4fr)_5.5rem_1.5rem] gap-2 items-center">
+            <input type="text" x-model="edu.degree" @input="onDataChange()" class="min-w-0 w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.cv_builder.form.degree') }}">
+            <input type="text" x-model="edu.school" @input="onDataChange()" class="min-w-0 w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.cv_builder.form.school') }}">
+            <input type="text" x-model="edu.year" @input="onDataChange()" class="min-w-0 w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.cv_builder.form.year') }}">
+            <button
+                type="button"
+                @click="removeEducation(di)"
+                class="inline-flex h-8 w-6 shrink-0 items-center justify-center text-lg leading-none text-gray-400 hover:text-red-600"
+                x-show="data.education.length > 1"
+                :aria-label="{{ json_encode(__('talenma.cv_builder.form.remove_education')) }}"
+            >×</button>
         </div>
     </template>
 </section>
