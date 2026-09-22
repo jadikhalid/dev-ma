@@ -33,6 +33,127 @@
             <x-input-error :messages="$errors->get('is_public')" class="mt-2" />
         </form>
 
+        <div id="talent-documents-card" class="relative bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">{{ __('talenma.talent.section_documents') }}</h3>
+            </div>
+
+            @php
+                $cvByLanguage = $cvDocuments->keyBy('language');
+            @endphp
+
+            <div class="space-y-2">
+                @forelse ($cvDocuments as $document)
+                    <div class="flex items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ $document->original_name }}</p>
+                            <p class="text-xs text-gray-500">
+                                {{ $document->languageLabel() }}
+                                · {{ $document->formattedSize() }}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <a href="{{ $isAdminProfileEdit ? route('admin.profile-documents.show', $document) : route('profile.documents.show', $document) }}" target="_blank" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.talent.document_view') }}</a>
+                            <form method="POST" action="{{ $isAdminProfileEdit ? route('admin.profile-documents.destroy', $document) : route('profile.documents.destroy', $document) }}" data-ajax data-refresh="documents" data-loading-target="talent-documents-card" data-confirm="{{ __('talenma.talent.document_delete_confirm') }}" data-error-message="{{ __('talenma.talent.save_error') }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-sm font-semibold text-red-600 hover:text-red-700">{{ __('talenma.talent.document_remove') }}</button>
+                            </form>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-500">{{ __('talenma.talent.cv_empty') }}</p>
+                @endforelse
+            </div>
+
+            <form
+                method="POST"
+                action="{{ $profileUpdateUrl }}"
+                enctype="multipart/form-data"
+                data-ajax
+                data-refresh="documents"
+                data-loading-target="talent-documents-card"
+                novalidate
+                data-error-message="{{ __('talenma.talent.save_error') }}"
+                class="space-y-4 border-t border-gray-100 pt-5"
+                x-data="talentDocumentsPicker({
+                    maxBytes: {{ 1024 * 1024 }},
+                    allowedMimes: @js(\App\Services\ProfileDocumentService::ALLOWED_MIMES),
+                    existingCvs: @js($cvDocuments->map(fn ($document) => [
+                        'language' => $document->language,
+                        'name' => $document->original_name,
+                    ])->values()),
+                    messages: {
+                        invalidType: @js(__('talenma.auth.validation.documents_type')),
+                        tooLarge: @js(__('talenma.auth.validation.documents_size')),
+                        duplicateName: @js(__('talenma.talent.cv_docs_duplicate')),
+                    },
+                })"
+            >
+                @csrf
+                <input type="hidden" name="section" value="documents">
+
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <x-input-label for="cv_language" :value="__('talenma.talent.cv_language')" />
+                        <select
+                            id="cv_language"
+                            name="cv_language"
+                            x-ref="cvLanguage"
+                            @change="onCvLanguageChange()"
+                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm"
+                            required
+                            data-required
+                            data-required-message="{{ __('talenma.talent.cv_language_required') }}"
+                        >
+                            <option value="">{{ __('talenma.talent.cv_language_placeholder') }}</option>
+                            @foreach ($cvLanguageOptions as $code => $label)
+                                <option value="{{ $code }}">
+                                    {{ $label }}@if ($cvByLanguage->has($code)) — {{ __('talenma.talent.cv_replace_hint') }}@endif
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('cv_language')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="cv" :value="__('talenma.talent.cv_upload')" />
+                        <input
+                            id="cv"
+                            name="cv"
+                            type="file"
+                            x-ref="cvInput"
+                            accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+                            @change="onCvChange($event)"
+                            required
+                            data-required
+                            data-required-message="{{ __('talenma.talent.cv_required') }}"
+                            class="mt-2 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                        >
+                        <template x-if="pendingCv">
+                            <div class="mt-2 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate" x-text="pendingCv.name"></p>
+                                    <p class="text-xs text-gray-500" x-text="formatSize(pendingCv.size)"></p>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="shrink-0 text-sm font-semibold text-red-600 hover:text-red-700"
+                                    @click="clearCv()"
+                                >{{ __('talenma.talent.document_cancel_selection') }}</button>
+                            </div>
+                        </template>
+                        <p class="mt-1 text-xs text-gray-500">{{ __('talenma.talent.cv_hint') }}</p>
+                        <x-input-error :messages="$errors->get('cv')" class="mt-2" />
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
+                    <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</button>
+                    <x-primary-button class="justify-center">{{ __('talenma.talent.save_section') }}</x-primary-button>
+                </div>
+            </form>
+        </div>
+
         <form
             id="talent-profession-card"
             method="POST"
@@ -283,127 +404,6 @@
             :video-url="$profile->presentation_video_url ?? null"
             :person-name="trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: $user->name"
         />
-
-        <div id="talent-documents-card" class="relative bg-white rounded-2xl border p-6 sm:p-8 space-y-6">
-            <div>
-                <h3 class="text-lg font-bold text-gray-900">{{ __('talenma.talent.section_documents') }}</h3>
-            </div>
-
-            @php
-                $cvByLanguage = $cvDocuments->keyBy('language');
-            @endphp
-
-            <div class="space-y-2">
-                @forelse ($cvDocuments as $document)
-                    <div class="flex items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3">
-                        <div class="min-w-0">
-                            <p class="text-sm font-medium text-gray-900 truncate">{{ $document->original_name }}</p>
-                            <p class="text-xs text-gray-500">
-                                {{ $document->languageLabel() }}
-                                Â· {{ $document->formattedSize() }}
-                            </p>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <a href="{{ $isAdminProfileEdit ? route('admin.profile-documents.show', $document) : route('profile.documents.show', $document) }}" target="_blank" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">{{ __('talenma.talent.document_view') }}</a>
-                            <form method="POST" action="{{ $isAdminProfileEdit ? route('admin.profile-documents.destroy', $document) : route('profile.documents.destroy', $document) }}" data-ajax data-refresh="documents" data-loading-target="talent-documents-card" data-confirm="{{ __('talenma.talent.document_delete_confirm') }}" data-error-message="{{ __('talenma.talent.save_error') }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-sm font-semibold text-red-600 hover:text-red-700">{{ __('talenma.talent.document_remove') }}</button>
-                            </form>
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-sm text-gray-500">{{ __('talenma.talent.cv_empty') }}</p>
-                @endforelse
-            </div>
-
-            <form
-                method="POST"
-                action="{{ $profileUpdateUrl }}"
-                enctype="multipart/form-data"
-                data-ajax
-                data-refresh="documents"
-                data-loading-target="talent-documents-card"
-                novalidate
-                data-error-message="{{ __('talenma.talent.save_error') }}"
-                class="space-y-4 border-t border-gray-100 pt-5"
-                x-data="talentDocumentsPicker({
-                    maxBytes: {{ 1024 * 1024 }},
-                    allowedMimes: @js(\App\Services\ProfileDocumentService::ALLOWED_MIMES),
-                    existingCvs: @js($cvDocuments->map(fn ($document) => [
-                        'language' => $document->language,
-                        'name' => $document->original_name,
-                    ])->values()),
-                    messages: {
-                        invalidType: @js(__('talenma.auth.validation.documents_type')),
-                        tooLarge: @js(__('talenma.auth.validation.documents_size')),
-                        duplicateName: @js(__('talenma.talent.cv_docs_duplicate')),
-                    },
-                })"
-            >
-                @csrf
-                <input type="hidden" name="section" value="documents">
-
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <div>
-                        <x-input-label for="cv_language" :value="__('talenma.talent.cv_language')" />
-                        <select
-                            id="cv_language"
-                            name="cv_language"
-                            x-ref="cvLanguage"
-                            @change="onCvLanguageChange()"
-                            class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm"
-                            required
-                            data-required
-                            data-required-message="{{ __('talenma.talent.cv_language_required') }}"
-                        >
-                            <option value="">{{ __('talenma.talent.cv_language_placeholder') }}</option>
-                            @foreach ($cvLanguageOptions as $code => $label)
-                                <option value="{{ $code }}">
-                                    {{ $label }}@if ($cvByLanguage->has($code)) â€” {{ __('talenma.talent.cv_replace_hint') }}@endif
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('cv_language')" class="mt-2" />
-                    </div>
-                    <div>
-                        <x-input-label for="cv" :value="__('talenma.talent.cv_upload')" />
-                        <input
-                            id="cv"
-                            name="cv"
-                            type="file"
-                            x-ref="cvInput"
-                            accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
-                            @change="onCvChange($event)"
-                            required
-                            data-required
-                            data-required-message="{{ __('talenma.talent.cv_required') }}"
-                            class="mt-2 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                        >
-                        <template x-if="pendingCv">
-                            <div class="mt-2 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 truncate" x-text="pendingCv.name"></p>
-                                    <p class="text-xs text-gray-500" x-text="formatSize(pendingCv.size)"></p>
-                                </div>
-                                <button
-                                    type="button"
-                                    class="shrink-0 text-sm font-semibold text-red-600 hover:text-red-700"
-                                    @click="clearCv()"
-                                >{{ __('talenma.talent.document_cancel_selection') }}</button>
-                            </div>
-                        </template>
-                        <p class="mt-1 text-xs text-gray-500">{{ __('talenma.talent.cv_hint') }}</p>
-                        <x-input-error :messages="$errors->get('cv')" class="mt-2" />
-                    </div>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
-                    <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.talent.cancel') }}</button>
-                    <x-primary-button class="justify-center">{{ __('talenma.talent.save_section') }}</x-primary-button>
-                </div>
-            </form>
-        </div>
 
         <form
             id="talent-availability-card"

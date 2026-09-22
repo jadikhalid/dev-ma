@@ -117,7 +117,7 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('profile.edit', ['panel' => 'talent']));
-        $response->assertSessionHas('toast_success', __('talenma.auth.registration_welcome_complete_profile'));
+        $response->assertSessionHas('toast_sticky_success', __('talenma.auth.registration_welcome_complete_profile'));
 
         $user = User::query()->where('email', 'test@example.com')->first();
         $this->assertNotNull($user);

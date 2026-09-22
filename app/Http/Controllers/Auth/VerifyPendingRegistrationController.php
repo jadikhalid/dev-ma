@@ -28,17 +28,20 @@ class VerifyPendingRegistrationController extends Controller
         request()->session()->regenerate();
         request()->session()->forget('pending_registration_email');
 
+        if ($user->isTalent()) {
+            request()->session()->flash(
+                'toast_sticky_success',
+                __('talenma.auth.registration_welcome_complete_profile')
+            );
+
+            return redirect()->route('profile.edit', ['panel' => 'talent']);
+        }
+
         return $this->redirectAfterRegistration($user);
     }
 
     private function redirectAfterRegistration(User $user): RedirectResponse
     {
-        if ($user->isTalent()) {
-            return redirect()
-                ->route('profile.edit', ['panel' => 'talent'])
-                ->with('toast_success', __('talenma.auth.registration_welcome_complete_profile'));
-        }
-
         $toastKey = $user->isApproved()
             ? 'talenma.auth.registration_verified_approved'
             : 'talenma.auth.registration_verified_success';

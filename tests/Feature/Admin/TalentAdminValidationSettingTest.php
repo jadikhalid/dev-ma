@@ -49,7 +49,7 @@ class TalentAdminValidationSettingTest extends TestCase
         $response = $this->get(route('register.verify', ['token' => $pending->token]));
 
         $response->assertRedirect(route('profile.edit', ['panel' => 'talent']));
-        $response->assertSessionHas('toast_success', __('talenma.auth.registration_welcome_complete_profile'));
+        $response->assertSessionHas('toast_sticky_success', __('talenma.auth.registration_welcome_complete_profile'));
         $this->assertAuthenticated();
 
         $user = User::query()->where('email', 'auto-talent@example.com')->firstOrFail();
@@ -220,7 +220,12 @@ class TalentAdminValidationSettingTest extends TestCase
         $this->assertDatabaseMissing('pending_registrations', ['email' => 'direct-talent@example.com']);
         $this->assertAuthenticatedAs($user);
         $response->assertRedirect(route('profile.edit', ['panel' => 'talent']));
-        $response->assertSessionHas('toast_success', __('talenma.auth.registration_welcome_complete_profile'));
+        $response->assertSessionHas('toast_sticky_success', __('talenma.auth.registration_welcome_complete_profile'));
+
+        $this->followRedirects($response)
+            ->assertOk()
+            ->assertSee(__('talenma.auth.registration_welcome_complete_profile'), false);
+
         Mail::assertNothingSent();
     }
 

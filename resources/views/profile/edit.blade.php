@@ -45,7 +45,6 @@
         data-ajax-network-error="{{ __('talenma.common.network_error') }}"
         data-ajax-timeout-error="{{ __('talenma.common.timeout_error') }}"
     >
-        <x-toast-stack />
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             @if ($showSettingsShell)
                 <div class="flex flex-col lg:flex-row gap-8">

@@ -105,8 +105,12 @@ class RegisteredUserController extends Controller
         if ($skipTalentEmailVerification) {
             Auth::login($user);
             $request->session()->regenerate();
+            $request->session()->flash(
+                'toast_sticky_success',
+                __('talenma.auth.registration_welcome_complete_profile')
+            );
 
-            return $this->redirectAfterImmediateTalentRegistration();
+            return redirect()->route('profile.edit', ['panel' => 'talent']);
         }
 
         $request->session()->put('pending_registration_email', $email);
@@ -114,12 +118,5 @@ class RegisteredUserController extends Controller
         return redirect()
             ->route('login')
             ->with('toast_success', __('talenma.auth.register_success_verify'));
-    }
-
-    private function redirectAfterImmediateTalentRegistration(): RedirectResponse
-    {
-        return redirect()
-            ->route('profile.edit', ['panel' => 'talent'])
-            ->with('toast_success', __('talenma.auth.registration_welcome_complete_profile'));
     }
 }

@@ -12,6 +12,14 @@
         }
     }
 
+    if (session('toast_sticky_success')) {
+        $initialToasts[] = [
+            'type' => 'success',
+            'message' => session('toast_sticky_success'),
+            'sticky' => true,
+        ];
+    }
+
     if (session('toast_success')) {
         $initialToasts[] = [
             'type' => 'success',
@@ -53,13 +61,12 @@
             <template x-for="toast in toasts" :key="toast.id">
                 <div
                     x-show="toast.visible"
-                    x-cloak
                     x-transition:enter="transform transition ease-out duration-300"
-                    x-transition:enter-start="opacity-0 translate-x-full"
+                    x-transition:enter-start="opacity-0 translate-x-4 sm:translate-x-full"
                     x-transition:enter-end="opacity-100 translate-x-0"
                     x-transition:leave="transform transition ease-in duration-250"
                     x-transition:leave-start="opacity-100 translate-x-0"
-                    x-transition:leave-end="opacity-0 translate-x-full"
+                    x-transition:leave-end="opacity-0 translate-x-4 sm:translate-x-full"
                     class="pointer-events-auto will-change-transform rounded-xl border shadow-lg px-4 py-3 flex items-start gap-3"
                     x-bind:class="{
                         'bg-green-50 border-green-200 text-green-900': toast.type === 'success',

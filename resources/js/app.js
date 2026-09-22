@@ -1505,7 +1505,7 @@ Alpine.data('toastStack', (initialToasts = []) => ({
         this.pinToMobileViewport();
 
         (initialToasts || []).forEach((toast) => {
-            this.enqueue(toast.type ?? 'success', toast.message ?? '');
+            this.enqueue(toast.type ?? 'success', toast.message ?? '', { sticky: Boolean(toast.sticky) });
         });
 
         this.drain();
@@ -1623,17 +1623,21 @@ Alpine.data('toastStack', (initialToasts = []) => ({
         };
     },
 
-    push(type, message) {
-        this.enqueue(type, message);
+    push(type, message, options = {}) {
+        this.enqueue(type, message, options);
         this.drain();
     },
 
-    enqueue(type, message) {
+    enqueue(type, message, options = {}) {
         if (! message) {
             return;
         }
 
-        this.queue.push({ type, message });
+        this.queue.push({
+            type,
+            message,
+            sticky: Boolean(options?.sticky),
+        });
     },
 
     drain() {
@@ -1643,31 +1647,22 @@ Alpine.data('toastStack', (initialToasts = []) => ({
 
         const next = this.queue.shift();
         const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-        const duration = next.type === 'error' ? 4500 : (next.type === 'info' ? 4000 : 3500);
+        const duration = next.type === 'error'
+            ? 4500
+            : (next.type === 'info' ? 4000 : 5000);
 
         this.activeId = id;
         this.toasts = [{
             id,
             type: next.type,
             message: next.message,
-            visible: false,
+            sticky: Boolean(next.sticky),
+            visible: true,
         }];
 
-        this.$nextTick(() => {
-            requestAnimationFrame(() => {
-                const toast = this.toasts.find((item) => item.id === id);
-
-                if (! toast) {
-                    this.activeId = null;
-                    this.drain();
-
-                    return;
-                }
-
-                toast.visible = true;
-                this.dismissTimer = window.setTimeout(() => this.dismiss(id), duration);
-            });
-        });
+        if (! next.sticky) {
+            this.dismissTimer = window.setTimeout(() => this.dismiss(id), duration);
+        }
     },
 
     dismiss(id) {
