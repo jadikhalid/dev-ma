@@ -74,7 +74,7 @@ class NewsletterDeliveryService
 
     /**
      * Queue all recipients and send the first email immediately.
-     * Remaining emails are sent one per minute by the scheduler.
+     * Remaining emails are sent one every three minutes by the scheduler.
      */
     public function sendNow(Newsletter $newsletter): int
     {

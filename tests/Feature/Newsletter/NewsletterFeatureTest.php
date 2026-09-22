@@ -498,7 +498,7 @@ class NewsletterFeatureTest extends TestCase
             ->post(route('admin.newsletter.send', $newsletter))
             ->assertRedirect(route('admin.newsletter.show', $newsletter));
 
-        // First email is sent immediately; the rest wait for the 1/minute processor.
+        // First email is sent immediately; the rest wait for the 1/3 minutes processor.
         Mail::assertSentCount(1);
         $this->assertSame(Newsletter::STATUS_SENDING, $newsletter->fresh()->status);
         $this->assertSame(2, \App\Models\NewsletterOutbox::query()->where('newsletter_id', $newsletter->id)->count());
