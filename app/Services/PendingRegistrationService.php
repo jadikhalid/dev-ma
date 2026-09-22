@@ -54,7 +54,7 @@ class PendingRegistrationService
                         $cv,
                         1,
                         ProfileDocument::TYPE_CV,
-                        $validated['cv_language'],
+                        $validated['cv_language'] ?? null,
                     )]
                     : [],
             ]);
@@ -113,7 +113,7 @@ class PendingRegistrationService
                     $cv,
                     1,
                     ProfileDocument::TYPE_CV,
-                    $validated['cv_language'],
+                    $validated['cv_language'] ?? null,
                 )]
                 : [],
         ]);
@@ -284,14 +284,19 @@ class PendingRegistrationService
             }
 
             if ($user->role === 'dev') {
-                $sector = ProfessionSector::query()
-                    ->where('slug', $payload['sector'])
-                    ->where('is_active', true)
-                    ->firstOrFail();
+                $sectorId = null;
+                $sectorSlug = $payload['sector'] ?? null;
+
+                if (filled($sectorSlug)) {
+                    $sectorId = ProfessionSector::query()
+                        ->where('slug', $sectorSlug)
+                        ->where('is_active', true)
+                        ->value('id');
+                }
 
                 $profile = $user->profile()->create([
-                    'profession_sector_id' => $sector->id,
-                    'bio' => $payload['description'],
+                    'profession_sector_id' => $sectorId,
+                    'bio' => $payload['description'] ?? null,
                     'experience_years' => 0,
                 ]);
 
@@ -354,7 +359,7 @@ class PendingRegistrationService
             $payload['first_name'] = $firstName;
             $payload['last_name'] = $lastName;
             $payload['name'] = trim($firstName.' '.$lastName);
-            $payload['sector'] = $validated['sector'];
+            $payload['sector'] = $validated['sector'] ?? null;
             $payload['description'] = $validated['description'] ?? null;
             $payload['data_processing_consent_at'] = now()->toIso8601String();
             $payload['data_processing_consent_version'] = (string) config('talenma.data_processing_consent_version');

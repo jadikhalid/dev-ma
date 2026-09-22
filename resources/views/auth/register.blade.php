@@ -1,16 +1,6 @@
 @php
     $initialStep = 1;
 
-    if (old('role') === 'dev' && (
-        $errors->has('sector')
-        || $errors->has('description')
-        || $errors->has('cv')
-        || $errors->has('cv_language')
-        || $errors->has('data_processing_consent')
-    )) {
-        $initialStep = 2;
-    }
-
     if (old('role') === 'company') {
         if (
             $errors->has('first_name')
@@ -80,6 +70,7 @@
         'company_website_invalid' => __('talenma.auth.validation.company_website_invalid'),
         'company_country_required' => __('talenma.auth.validation.company_country_required'),
         'data_processing_consent_required' => __('talenma.auth.validation.data_processing_consent_required'),
+        'register_incomplete_toast' => __('talenma.auth.register_incomplete_toast'),
     ];
 @endphp
 
@@ -127,7 +118,11 @@
             initialCompanyWebsite: @js(old('company_website', '')),
             initialCompanyCountry: @js(old('company_country', '')),
             defaultCompanyCountry: @js(\App\Models\CompanyProfile::DEFAULT_COUNTRY),
-            initialDataProcessingConsent: @js((bool) old('data_processing_consent')),
+            initialDataProcessingConsent: @js(
+                old('data_processing_consent') !== null
+                    ? (bool) old('data_processing_consent')
+                    : old('role', $defaultRole ?? '') !== 'company'
+            ),
             validationMessages: @js($registerValidationMessages),
             checkEmailUrl: @js(route('register.check-email')),
         })"
@@ -136,32 +131,13 @@
             <input type="text" name="website" tabindex="-1" autocomplete="off">
         </div>
 
-        {{-- Indicateur d'étapes --}}
+        {{-- Indicateur d'étapes (entreprise uniquement ; talent = formulaire en un volet) --}}
         <div
-            x-show="navEnabled"
+            x-show="navEnabled && isCompany"
             x-cloak
             class="shrink-0 mb-3"
             aria-live="polite"
         >
-            {{-- Talent : 2 étapes --}}
-            <template x-if="isTalent">
-                <div>
-                    <div class="flex items-center justify-between text-sm sm:text-xs font-medium text-gray-500 mb-1.5">
-                        <span :class="step === 1 ? 'text-indigo-600' : ''">{{ __('talenma.auth.register_step_1_label') }}</span>
-                        <span :class="step === 2 ? 'text-indigo-600' : ''">{{ __('talenma.auth.register_step_2_label') }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors" :class="step === 1 ? 'bg-indigo-600 text-white' : (step1Valid ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-400')">1</span>
-                        <div class="flex-1 h-1 rounded-full bg-gray-200 overflow-hidden">
-                            <div class="h-full bg-indigo-600 transition-all duration-300" :style="`width: ${step === 2 ? '100%' : '0%'}`"></div>
-                        </div>
-                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors" :class="step === 2 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-400'">2</span>
-                    </div>
-                    <p class="mt-1.5 text-sm sm:text-xs text-gray-500 line-clamp-2" x-text="step === 1 ? @js(__('talenma.auth.register_step_1_hint')) : @js(__('talenma.auth.register_step_2_hint'))"></p>
-                </div>
-            </template>
-
-            {{-- Entreprise : 3 étapes --}}
             <template x-if="isCompany">
                 <div>
                     <div class="flex items-center justify-between text-sm sm:text-xs font-medium text-gray-500 mb-1.5">
@@ -270,11 +246,13 @@
                         <div>
                             <x-input-label for="first_name" :value="__('talenma.auth.first_name')" class="!text-base sm:!text-sm" />
                             <x-text-input id="first_name" name="first_name" x-model="firstName" @blur="onFieldBlur('first_name')" @input="onFieldInput('first_name')" x-bind:class="fieldInvalidClass('first_name')" class="mt-1.5 block w-full !text-base !py-3 sm:mt-1 sm:!text-sm sm:!py-2" minlength="2" maxlength="127" autocomplete="given-name" x-bind:required="isTalent" x-bind:disabled="isCompany" />
+                            <p x-show="fieldMessage('first_name')" x-cloak class="mt-1 text-sm sm:text-xs text-red-600" x-text="fieldMessage('first_name')"></p>
                             <x-input-error :messages="$errors->get('first_name')" class="mt-1" />
                         </div>
                         <div>
                             <x-input-label for="last_name" :value="__('talenma.auth.last_name')" class="!text-base sm:!text-sm" />
                             <x-text-input id="last_name" name="last_name" x-model="lastName" @blur="onFieldBlur('last_name')" @input="onFieldInput('last_name')" x-bind:class="fieldInvalidClass('last_name')" class="mt-1.5 block w-full !text-base !py-3 sm:mt-1 sm:!text-sm sm:!py-2" minlength="2" maxlength="127" autocomplete="family-name" x-bind:required="isTalent" x-bind:disabled="isCompany" />
+                            <p x-show="fieldMessage('last_name')" x-cloak class="mt-1 text-sm sm:text-xs text-red-600" x-text="fieldMessage('last_name')"></p>
                             <x-input-error :messages="$errors->get('last_name')" class="mt-1" />
                         </div>
                     </div>
@@ -295,7 +273,7 @@
                             inputmode="email"
                         />
                         <p
-                            x-show="emailStatus"
+                            x-show="emailStatus && !fieldMessage('email')"
                             x-cloak
                             class="mt-1 text-sm sm:text-xs"
                             :class="{
@@ -305,18 +283,50 @@
                             }"
                             x-text="emailMessage"
                         ></p>
+                        <p x-show="fieldMessage('email')" x-cloak class="mt-1 text-sm sm:text-xs text-red-600" x-text="fieldMessage('email')"></p>
                         <x-input-error :messages="$errors->get('email')" class="mt-1" />
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <x-input-label for="password" :value="__('talenma.auth.password')" class="!text-base sm:!text-sm" />
                             <x-text-input id="password" name="password" type="password" x-model="password" @blur="onFieldBlur('password')" @input="onFieldInput('password')" x-bind:class="fieldInvalidClass('password')" class="mt-1.5 block w-full !text-base !py-3 sm:mt-1 sm:!text-sm sm:!py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
+                            <p x-show="fieldMessage('password')" x-cloak class="mt-1 text-sm sm:text-xs text-red-600" x-text="fieldMessage('password')"></p>
                             <x-input-error :messages="$errors->get('password')" class="mt-1" />
                         </div>
                         <div>
                             <x-input-label for="password_confirmation" :value="__('talenma.auth.confirm_password')" class="!text-base sm:!text-sm" />
                             <x-text-input id="password_confirmation" name="password_confirmation" type="password" x-model="passwordConfirmation" @blur="onFieldBlur('password_confirmation')" @input="onFieldInput('password_confirmation')" x-bind:class="fieldInvalidClass('password_confirmation')" class="mt-1.5 block w-full !text-base !py-3 sm:mt-1 sm:!text-sm sm:!py-2" required minlength="8" maxlength="128" autocomplete="new-password" />
+                            <p x-show="fieldMessage('password_confirmation')" x-cloak class="mt-1 text-sm sm:text-xs text-red-600" x-text="fieldMessage('password_confirmation')"></p>
                         </div>
+                    </div>
+
+                    {{-- Consentement talent (un seul volet) --}}
+                    <div
+                        x-show="isTalent"
+                        x-cloak
+                        class="rounded-lg border bg-gray-50 px-3 py-3"
+                        :class="fieldErrors.data_processing_consent ? 'border-red-400' : 'border-gray-200'"
+                    >
+                        <label class="flex items-start gap-2.5 cursor-pointer">
+                            <input
+                                id="data_processing_consent"
+                                name="data_processing_consent"
+                                type="checkbox"
+                                value="1"
+                                x-model="dataProcessingConsent"
+                                x-bind:disabled="!isTalent"
+                                @change="onFieldInput('data_processing_consent')"
+                                x-bind:class="fieldInvalidClass('data_processing_consent')"
+                                class="mt-0.5 size-5 sm:size-4 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                            >
+                            <span class="text-base sm:text-sm text-gray-700 leading-snug">
+                                {!! __('talenma.auth.data_processing_consent', [
+                                    'policy' => '<a href="'.e(route('privacy')).'" target="_blank" rel="noopener noreferrer" class="font-semibold text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800">'.e(__('talenma.auth.privacy_policy')).'</a>',
+                                ]) !!}
+                            </span>
+                        </label>
+                        <p x-show="fieldMessage('data_processing_consent')" x-cloak class="mt-2 text-sm sm:text-xs text-red-600" x-text="fieldMessage('data_processing_consent')"></p>
+                        <x-input-error :messages="$errors->get('data_processing_consent')" class="mt-2" />
                     </div>
                 </div>
             </div>
@@ -463,141 +473,17 @@
                 </div>
             </div>
 
-            {{-- Étape 2 : profil talent --}}
-            <div
-                x-show="isTalent && step === 2"
-                x-cloak
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 translate-x-4"
-                x-transition:enter-end="opacity-100 translate-x-0"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100 translate-x-0"
-                x-transition:leave-end="opacity-0 -translate-x-4"
-                class="space-y-3"
-            >
-                <div>
-                    <x-input-label for="sector" :value="__('talenma.auth.sector')" class="!text-base sm:!text-sm" />
-                    <select id="sector" name="sector" x-model="sector" @blur="onFieldBlur('sector')" @change="onFieldInput('sector')" x-bind:class="fieldInvalidClass('sector')" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm !text-base !py-3 sm:!text-sm sm:!py-2">
-                        <option value="">{{ __('talenma.auth.sector_placeholder') }}</option>
-                        @foreach ($professionSectors as $sectorOption)
-                            <option value="{{ $sectorOption['slug'] }}">{{ $sectorOption['name'] }}</option>
-                        @endforeach
-                    </select>
-                    <x-input-error :messages="$errors->get('sector')" class="mt-1" />
-                </div>
-                {{-- Launch phase: description field hidden; re-enable when signup can be stricter again. --}}
-                <input type="hidden" name="compact_register" value="1">
-                <div
-                    class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 sm:p-4 space-y-3"
-                    :class="{ 'border-red-300 bg-red-50/40': fieldErrors.cv || fieldErrors.cv_language }"
-                >
-                    <div>
-                        <p class="text-base sm:text-sm font-semibold text-gray-900">{{ __('talenma.auth.registration_cv_title') }}</p>
-                        <p class="mt-0.5 text-sm sm:text-xs text-gray-500">{{ __('talenma.auth.registration_cv_intro') }}</p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm sm:text-xs font-medium text-gray-700 mb-1.5">{{ __('talenma.talent.cv_language') }}</p>
-                        <div class="grid grid-cols-4 gap-1.5" role="radiogroup" aria-label="{{ __('talenma.talent.cv_language') }}">
-                            @foreach ($cvLanguageOptions as $code => $label)
-                                <button
-                                    type="button"
-                                    role="radio"
-                                    :aria-checked="cvLanguage === @js($code)"
-                                    x-bind:disabled="!isTalent"
-                                    @click="cvLanguage = @js($code); onFieldInput('cv_language')"
-                                    class="rounded-lg border px-1.5 py-2 text-center text-sm sm:text-xs font-semibold transition"
-                                    :class="cvLanguage === @js($code)
-                                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                                        : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'"
-                                >
-                                    <span class="block uppercase tracking-wide">{{ strtoupper($code) }}</span>
-                                    <span class="mt-0.5 block text-[10px] sm:text-[11px] font-medium opacity-80 truncate">{{ $label }}</span>
-                                </button>
-                            @endforeach
-                        </div>
-                        <input type="hidden" name="cv_language" :value="cvLanguage" x-bind:disabled="!isTalent">
-                        <x-input-error :messages="$errors->get('cv_language')" class="mt-1.5" />
-                    </div>
-
-                    <div>
-                        <p class="text-sm sm:text-xs font-medium text-gray-700 mb-1.5">{{ __('talenma.talent.cv') }}</p>
-                        <div
-                            class="relative rounded-lg border border-dashed transition"
-                            :class="hasCv
-                                ? 'border-indigo-300 bg-white'
-                                : (fieldErrors.cv ? 'border-red-300 bg-white' : 'border-gray-300 bg-white hover:border-indigo-400 hover:bg-indigo-50/50')"
-                        >
-                            <div class="pointer-events-none flex items-center gap-3 px-3 py-3">
-                                <span
-                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                                    :class="hasCv ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'"
-                                >
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </span>
-                                <span class="min-w-0 flex-1">
-                                    <span class="block text-sm sm:text-xs font-semibold text-gray-900" x-text="hasCv ? cvFileName : @js(__('talenma.auth.registration_cv_choose'))"></span>
-                                    <span class="mt-0.5 block text-sm sm:text-xs text-gray-500" x-text="hasCv ? cvFileSizeLabel : @js(__('talenma.auth.registration_cv_formats'))"></span>
-                                </span>
-                                <span
-                                    class="shrink-0 text-sm sm:text-xs font-semibold"
-                                    :class="hasCv ? 'text-indigo-700' : 'text-indigo-600'"
-                                    x-text="hasCv ? @js(__('talenma.auth.registration_cv_change')) : @js(__('talenma.auth.registration_cv_browse'))"
-                                ></span>
-                            </div>
-                            <input
-                                id="cv"
-                                name="cv"
-                                type="file"
-                                x-ref="talentCv"
-                                x-bind:disabled="!isTalent"
-                                @pointerdown="rememberRegisterScroll()"
-                                @change="onCvChange($event)"
-                                @focus="restoreRegisterScroll()"
-                                class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
-                                accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
-                            >
-                        </div>
-                        <div x-show="hasCv" x-cloak class="relative z-20 mt-2 flex justify-end">
-                            <button
-                                type="button"
-                                class="text-sm sm:text-xs font-semibold text-red-600 hover:text-red-700"
-                                @click="clearCv()"
-                            >{{ __('talenma.talent.document_cancel_selection') }}</button>
-                        </div>
-                        <x-input-error :messages="$errors->get('cv')" class="mt-1.5" />
-                    </div>
-                </div>
-                <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
-                    <label class="flex items-start gap-2.5 cursor-pointer">
-                        <input
-                            id="data_processing_consent"
-                            name="data_processing_consent"
-                            type="checkbox"
-                            value="1"
-                            x-model="dataProcessingConsent"
-                            x-bind:disabled="!isTalent"
-                            @change="onFieldInput('data_processing_consent')"
-                            x-bind:class="fieldInvalidClass('data_processing_consent')"
-                            class="mt-0.5 size-5 sm:size-4 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
-                        >
-                        <span class="text-base sm:text-sm text-gray-700 leading-snug">
-                            {!! __('talenma.auth.data_processing_consent', [
-                                'policy' => '<a href="'.e(route('privacy')).'" target="_blank" rel="noopener noreferrer" class="font-semibold text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800">'.e(__('talenma.auth.privacy_policy')).'</a>',
-                            ]) !!}
-                        </span>
-                    </label>
-                    <x-input-error :messages="$errors->get('data_processing_consent')" class="mt-2" />
-                </div>
-            </div>
         </div>
 
         {{-- Navigation fixe en bas --}}
-        <div class="shrink-0 pt-3 mt-3 border-t border-gray-100 flex items-center gap-2 sm:gap-3">
+        <div
+            class="shrink-0 pt-3 mt-3 border-t border-gray-100"
+            :class="isTalent ? '' : 'flex items-center gap-2 sm:gap-3'"
+        >
             <button
                 type="button"
+                x-show="isCompany"
+                x-cloak
                 @click="prev()"
                 :disabled="!canGoBack || submitting"
                 :class="canGoBack
@@ -609,7 +495,7 @@
                 <span class="inline">{{ __('talenma.auth.register_back') }}</span>
             </button>
 
-            <div class="flex-1 flex justify-end min-w-0">
+            <div class="min-w-0" :class="isTalent ? 'w-full' : 'flex-1 flex justify-end'">
                 <button
                     type="button"
                     x-show="showNext"
@@ -630,14 +516,14 @@
                     type="submit"
                     x-show="showSubmit"
                     x-cloak
-                    :disabled="!canSubmit || submitting"
+                    :disabled="isTalent ? submitting : (!canSubmit || submitting)"
                     :aria-busy="submitting"
                     class="relative overflow-hidden"
-                    :class="(canSubmit || submitting)
-                        ? (isCompany
+                    :class="isTalent
+                        ? 'w-full inline-flex items-center justify-center px-4 py-3 sm:py-2.5 bg-indigo-600 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition disabled:opacity-80'
+                        : ((canSubmit || submitting)
                             ? 'inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition disabled:hover:bg-emerald-600'
-                            : 'inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition disabled:hover:bg-indigo-600')
-                        : 'inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-gray-200 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-gray-400 cursor-not-allowed'"
+                            : 'inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-gray-200 border border-transparent rounded-lg font-semibold text-base sm:text-sm text-gray-400 cursor-not-allowed')"
                 >
                     <span class="inline-flex items-center gap-2" :class="submitting ? 'opacity-0' : ''">
                         {{ __('talenma.auth.register_btn') }}

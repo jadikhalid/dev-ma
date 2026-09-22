@@ -33,7 +33,6 @@ class RegisteredUserController extends Controller
         return view('auth.register', [
             'defaultRole' => $defaultRole,
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
-            'cvLanguageOptions' => \App\Services\ProfileDocumentService::cvLanguageOptions(),
             'companyCountryOptions' => \App\Models\CompanyProfile::countryOptions(),
         ]);
     }
@@ -107,7 +106,7 @@ class RegisteredUserController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
-            return $this->redirectAfterImmediateTalentRegistration($user);
+            return $this->redirectAfterImmediateTalentRegistration();
         }
 
         $request->session()->put('pending_registration_email', $email);
@@ -117,14 +116,10 @@ class RegisteredUserController extends Controller
             ->with('toast_success', __('talenma.auth.register_success_verify'));
     }
 
-    private function redirectAfterImmediateTalentRegistration(User $user): RedirectResponse
+    private function redirectAfterImmediateTalentRegistration(): RedirectResponse
     {
-        $toastKey = $user->isApproved()
-            ? 'talenma.auth.registration_verified_approved'
-            : 'talenma.auth.registration_verified_success';
-
         return redirect()
-            ->route($user->homeRouteName())
-            ->with('toast_success', __($toastKey));
+            ->route('profile.edit', ['panel' => 'talent'])
+            ->with('toast_success', __('talenma.auth.registration_welcome_complete_profile'));
     }
 }

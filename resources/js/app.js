@@ -1736,7 +1736,7 @@ Alpine.data('registerWizard', (config) => ({
             this.hasCv = false;
             this.cvFileName = '';
             this.cvFileSizeLabel = '';
-            this.dataProcessingConsent = false;
+            this.dataProcessingConsent = this.role === 'dev';
             this.submitting = false;
             this.clearFieldErrors();
             this.clearEmailStatus();
@@ -1764,7 +1764,7 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get maxStep() {
-        return this.isCompany ? 3 : 2;
+        return this.isCompany ? 3 : 1;
     },
 
     get step1Valid() {
@@ -1782,8 +1782,9 @@ Alpine.data('registerWizard', (config) => ({
             && this.emailStatus !== 'invalid';
         const passwordOk = this.password.length >= 8;
         const confirmOk = this.password === this.passwordConfirmation && this.passwordConfirmation.length > 0;
+        const consentOk = this.isTalent ? this.dataProcessingConsent : true;
 
-        return nameOk && emailOk && passwordOk && confirmOk;
+        return nameOk && emailOk && passwordOk && confirmOk && consentOk;
     },
 
     get companyStep2Valid() {
@@ -1792,13 +1793,6 @@ Alpine.data('registerWizard', (config) => ({
             && this.sector !== ''
             && this.companyDescription.trim().length >= 50
             && this.companyCountry !== '';
-    },
-
-    get talentStep2Valid() {
-        return this.sector !== ''
-            && this.cvLanguage !== ''
-            && this.hasCv
-            && this.dataProcessingConsent;
     },
 
     get companyStep3Valid() {
@@ -1827,10 +1821,6 @@ Alpine.data('registerWizard', (config) => ({
             return this.companyStep3Valid;
         }
 
-        if (this.isTalent && this.step === 2) {
-            return this.talentStep2Valid;
-        }
-
         return false;
     },
 
@@ -1851,7 +1841,7 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get showSubmit() {
-        return (this.isTalent && this.step === 2) || (this.isCompany && this.step === 3);
+        return (this.isTalent && this.step === 1) || (this.isCompany && this.step === 3);
     },
 
     get canSubmit() {
@@ -1863,7 +1853,7 @@ Alpine.data('registerWizard', (config) => ({
             return this.step === 3 && this.step1Valid && this.companyStep2Valid && this.companyStep3Valid;
         }
 
-        return this.step === 2 && this.step1Valid && this.talentStep2Valid;
+        return this.step === 1 && this.step1Valid;
     },
 
     get navEnabled() {
@@ -1878,6 +1868,12 @@ Alpine.data('registerWizard', (config) => ({
         return this.fieldErrors[field]
             ? 'border-red-500 focus:border-red-500 focus:ring-red-500 ring-1 ring-red-500'
             : '';
+    },
+
+    fieldMessage(field) {
+        const value = this.fieldErrors[field];
+
+        return typeof value === 'string' ? value : '';
     },
 
     onFieldInput(field) {
@@ -1961,6 +1957,10 @@ Alpine.data('registerWizard', (config) => ({
                 return this.isTalent;
             }
 
+            if (field === 'data_processing_consent') {
+                return this.isTalent;
+            }
+
             return ['email', 'password', 'password_confirmation'].includes(field);
         }
 
@@ -1977,10 +1977,6 @@ Alpine.data('registerWizard', (config) => ({
 
         if (this.isCompany && this.step === 3) {
             return ['documents', 'data_processing_consent'].includes(field);
-        }
-
-        if (this.isTalent && this.step === 2) {
-            return ['sector', 'cv', 'cv_language', 'data_processing_consent'].includes(field);
         }
 
         return false;
@@ -2461,7 +2457,7 @@ Alpine.data('registerWizard', (config) => ({
         this.companyDescription = '';
         this.companyWebsite = '';
         this.companyCountry = this.defaultCompanyCountry;
-        this.dataProcessingConsent = false;
+        this.dataProcessingConsent = this.role === 'dev';
         this.submitting = false;
         this.clearFieldErrors();
         this.clearEmailStatus();
@@ -2613,15 +2609,78 @@ Alpine.data('registerWizard', (config) => ({
             return;
         }
 
-        // Dernière étape : bloquer Entrée tant que le formulaire n’est pas valide.
+        // Talent : Entrée déclenche la même validation simplifiée que le bouton.
+        if (this.isTalent && this.showSubmit) {
+            return;
+        }
+
+        // Entreprise : bloquer Entrée tant que le formulaire n’est pas valide.
         if (this.showSubmit && ! this.canSubmit) {
             event.preventDefault();
         }
     },
 
-    onSubmit(event) {
+    talentSubmitFields() {
+        return [
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'password_confirmation',
+            'data_processing_consent',
+        ];
+    },
+
+    markTalentSubmitErrors() {
+        let hasError = false;
+
+        this.talentSubmitFields().forEach((field) => {
+            const message = this.validateField(field);
+
+            if (message) {
+                this.fieldErrors[field] = message;
+                hasError = true;
+            } else {
+                delete this.fieldErrors[field];
+            }
+        });
+
+        if (this.emailStatus === 'checking') {
+            this.fieldErrors.email = this.validationMessages.email_checking
+                ?? this.validationMessages.email_invalid
+                ?? true;
+            hasError = true;
+        }
+
+        return hasError;
+    },
+
+    async onSubmit(event) {
         if (this.submitting) {
             event.preventDefault();
+
+            return;
+        }
+
+        if (this.isTalent) {
+            event.preventDefault();
+
+            if (this.emailStatus !== 'available' && this.emailStatus !== 'error' && this.email.trim() !== '') {
+                await this.checkEmailAvailability();
+            }
+
+            if (this.markTalentSubmitErrors()) {
+                this.$dispatch('toast-push', {
+                    type: 'warning',
+                    message: this.validationMessages.register_incomplete_toast
+                        ?? 'Le formulaire n\'est pas encore complet. Vérifiez les champs indiqués.',
+                });
+
+                return;
+            }
+
+            this.submitting = true;
+            this.$el.submit();
 
             return;
         }

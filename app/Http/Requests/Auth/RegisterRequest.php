@@ -95,7 +95,7 @@ class RegisterRequest extends FormRequest
             'role' => ['required', 'string', 'in:dev,company'],
             'website' => ['prohibited'],
             'sector' => [
-                Rule::requiredIf(fn () => in_array($this->input('role'), ['dev', 'company'], true)),
+                Rule::requiredIf(fn () => $this->input('role') === 'company'),
                 'nullable',
                 'string',
                 'max:64',
@@ -108,14 +108,12 @@ class RegisterRequest extends FormRequest
                 'max:2550',
             ],
             'cv' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'dev'),
                 'nullable',
                 'file',
                 'max:1024',
                 'mimes:pdf,jpg,jpeg,png,webp',
             ],
             'cv_language' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'dev'),
                 'nullable',
                 'string',
                 Rule::in(\App\Models\ProfileDocument::CV_LANGUAGES),

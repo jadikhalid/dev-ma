@@ -42,17 +42,14 @@ class TalentAdminValidationSettingTest extends TestCase
             'password' => 'Password1',
             'password_confirmation' => 'Password1',
             'role' => 'dev',
-            'sector' => 'it-digital',
-            'description' => str_repeat('a', 255),
-            'cv' => UploadedFile::fake()->create('cv-fr.pdf', 100, 'application/pdf'),
-            'cv_language' => 'fr',
             'data_processing_consent' => '1',
         ])->assertRedirect();
 
         $pending = PendingRegistration::query()->where('email', 'auto-talent@example.com')->firstOrFail();
         $response = $this->get(route('register.verify', ['token' => $pending->token]));
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('profile.edit', ['panel' => 'talent']));
+        $response->assertSessionHas('toast_success', __('talenma.auth.registration_welcome_complete_profile'));
         $this->assertAuthenticated();
 
         $user = User::query()->where('email', 'auto-talent@example.com')->firstOrFail();
@@ -104,10 +101,6 @@ class TalentAdminValidationSettingTest extends TestCase
             'password' => 'Password1',
             'password_confirmation' => 'Password1',
             'role' => 'dev',
-            'sector' => 'it-digital',
-            'description' => str_repeat('a', 255),
-            'cv' => UploadedFile::fake()->create('cv-fr.pdf', 100, 'application/pdf'),
-            'cv_language' => 'fr',
             'data_processing_consent' => '1',
         ])->assertRedirect();
 
@@ -131,10 +124,6 @@ class TalentAdminValidationSettingTest extends TestCase
             'password' => 'Password1',
             'password_confirmation' => 'Password1',
             'role' => 'dev',
-            'sector' => 'it-digital',
-            'description' => str_repeat('a', 255),
-            'cv' => UploadedFile::fake()->create('cv-fr.pdf', 100, 'application/pdf'),
-            'cv_language' => 'fr',
             'data_processing_consent' => '1',
         ])->assertRedirect();
 
@@ -221,9 +210,6 @@ class TalentAdminValidationSettingTest extends TestCase
             'password' => 'Password1',
             'password_confirmation' => 'Password1',
             'role' => 'dev',
-            'sector' => 'it-digital',
-            'cv' => UploadedFile::fake()->create('cv-fr.pdf', 100, 'application/pdf'),
-            'cv_language' => 'fr',
             'data_processing_consent' => '1',
         ]);
 
@@ -233,7 +219,8 @@ class TalentAdminValidationSettingTest extends TestCase
         $this->assertNull($user->profile?->bio);
         $this->assertDatabaseMissing('pending_registrations', ['email' => 'direct-talent@example.com']);
         $this->assertAuthenticatedAs($user);
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('profile.edit', ['panel' => 'talent']));
+        $response->assertSessionHas('toast_success', __('talenma.auth.registration_welcome_complete_profile'));
         Mail::assertNothingSent();
     }
 

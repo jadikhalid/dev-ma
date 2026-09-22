@@ -38,10 +38,6 @@ class RegistrationTest extends TestCase
     private function validTalentPayload(array $overrides = []): array
     {
         return array_merge($this->validPayload(), [
-            'sector' => 'it-digital',
-            'description' => str_repeat('a', 255),
-            'cv' => UploadedFile::fake()->create('cv-fr.pdf', 100, 'application/pdf'),
-            'cv_language' => 'fr',
             'data_processing_consent' => '1',
         ], $overrides);
     }
@@ -120,7 +116,8 @@ class RegistrationTest extends TestCase
         $response = $this->get(route('register.verify', ['token' => $pending->token]));
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('account.pending'));
+        $response->assertRedirect(route('profile.edit', ['panel' => 'talent']));
+        $response->assertSessionHas('toast_success', __('talenma.auth.registration_welcome_complete_profile'));
 
         $user = User::query()->where('email', 'test@example.com')->first();
         $this->assertNotNull($user);
@@ -129,12 +126,9 @@ class RegistrationTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertNotNull($user->email_verified_at);
         $this->assertNotNull($user->profile);
-        $this->assertSame(str_repeat('a', 255), $user->profile->bio);
-        $this->assertCount(1, $user->profile->documents);
-        $cv = $user->profile->cvDocument('fr');
-        $this->assertNotNull($cv);
-        $this->assertSame('cv', $cv->document_type);
-        $this->assertSame('fr', $cv->language);
+        $this->assertNull($user->profile->bio);
+        $this->assertNull($user->profile->profession_sector_id);
+        $this->assertCount(0, $user->profile->documents);
         $this->assertSame(User::APPROVAL_PENDING, $user->approval_status);
         $this->assertNotNull($user->data_processing_consent_at);
         $this->assertSame(config('talenma.data_processing_consent_version'), $user->data_processing_consent_version);
@@ -347,21 +341,24 @@ class RegistrationTest extends TestCase
         $this->assertCount(1, $profile->documents);
     }
 
-    public function test_talent_registration_requires_sector_and_cv(): void
+    public function test_talent_registration_requires_only_identity_and_consent(): void
     {
         $response = $this->from('/register')->post('/register', $this->validPayload());
 
         $response->assertRedirect('/register');
-        $response->assertSessionHasErrors(['sector', 'cv', 'cv_language', 'data_processing_consent']);
-        $response->assertSessionDoesntHaveErrors('description');
+        $response->assertSessionHasErrors(['data_processing_consent']);
+        $response->assertSessionDoesntHaveErrors(['sector', 'cv', 'cv_language', 'description']);
     }
 
-    public function test_talent_registration_allows_empty_description(): void
+    public function test_talent_registration_allows_empty_optional_profile_fields(): void
     {
         Mail::fake();
 
         $response = $this->post('/register', $this->validTalentPayload([
+            'sector' => null,
             'description' => null,
+            'cv' => null,
+            'cv_language' => null,
         ]));
 
         $this->assertGuest();
@@ -370,15 +367,20 @@ class RegistrationTest extends TestCase
         $this->assertDatabaseHas('pending_registrations', ['email' => 'test@example.com']);
 
         $pending = PendingRegistration::query()->where('email', 'test@example.com')->firstOrFail();
+        $this->assertNull($pending->payload['sector'] ?? null);
         $this->assertNull($pending->payload['description'] ?? null);
+        $this->assertSame([], $pending->document_paths ?? []);
     }
 
-    public function test_registration_screen_hides_talent_description_field(): void
+    public function test_registration_screen_shows_single_talent_panel(): void
     {
         $this->get('/register')
             ->assertOk()
             ->assertDontSee('name="description"', false)
-            ->assertDontSee('id="description"', false);
+            ->assertDontSee('id="description"', false)
+            ->assertDontSee(__('talenma.auth.register_step_2_label'))
+            ->assertDontSee('name="cv"', false)
+            ->assertDontSee('id="cv"', false);
     }
 
     public function test_register_check_email_reports_available_address(): void
@@ -426,30 +428,7 @@ class RegistrationTest extends TestCase
             ->assertJsonPath('available', false);
     }
 
-    public function test_talent_registration_requires_cv_and_language(): void
-    {
-        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
-            'cv' => null,
-            'cv_language' => null,
-        ]));
-
-        $response->assertRedirect('/register');
-        $response->assertSessionHasErrors(['cv', 'cv_language']);
-        $this->assertDatabaseMissing('pending_registrations', ['email' => 'test@example.com']);
-    }
-
-    public function test_talent_registration_rejects_invalid_cv_language(): void
-    {
-        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
-            'cv_language' => 'de',
-        ]));
-
-        $response->assertRedirect('/register');
-        $response->assertSessionHasErrors('cv_language');
-        $this->assertGuest();
-    }
-
-    public function test_talent_registration_stores_cv_in_selected_language(): void
+    public function test_talent_registration_accepts_optional_cv_when_provided(): void
     {
         Mail::fake();
 
@@ -465,6 +444,18 @@ class RegistrationTest extends TestCase
         $this->assertCount(1, $pending->document_paths ?? []);
         $this->assertSame('cv', $pending->document_paths[0]['document_type']);
         $this->assertSame('en', $pending->document_paths[0]['language']);
+    }
+
+    public function test_talent_registration_rejects_invalid_cv_language_when_provided(): void
+    {
+        $response = $this->from('/register')->post('/register', $this->validTalentPayload([
+            'cv' => UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf'),
+            'cv_language' => 'de',
+        ]));
+
+        $response->assertRedirect('/register');
+        $response->assertSessionHasErrors('cv_language');
+        $this->assertGuest();
     }
 
     public function test_verified_pending_talent_cannot_access_dashboard(): void

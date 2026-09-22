@@ -64,6 +64,7 @@
                     x-bind:class="{
                         'bg-green-50 border-green-200 text-green-900': toast.type === 'success',
                         'bg-sky-50 border-sky-200 text-sky-950': toast.type === 'info',
+                        'bg-amber-50 border-amber-200 text-amber-950': toast.type === 'warning',
                         'bg-red-50 border-red-200 text-red-900': toast.type === 'error',
                     }"
                     role="alert"
@@ -74,6 +75,9 @@
                         </svg>
                         <svg x-show="toast.type === 'info'" class="h-5 w-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                        </svg>
+                        <svg x-show="toast.type === 'warning'" class="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m0 3.75h.008v.008H12V16.5Zm-.75-12.75h1.5L19.5 19.5h-15L11.25 3.75Z" />
                         </svg>
                         <svg x-show="toast.type === 'error'" class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
