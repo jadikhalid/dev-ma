@@ -449,6 +449,40 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
+    public function admin_can_deactivate_reactivate_and_purge_subscriber(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $service = app(NewsletterSubscriberService::class);
+        $subscriber = $service->subscribe('liste@example.com', NewsletterSubscriber::SOURCE_ADMIN, createdBy: $admin);
+        $userId = $admin->id;
+
+        $this->actingAs($admin)
+            ->delete(route('admin.newsletter.subscribers.destroy', $subscriber))
+            ->assertRedirect();
+
+        $this->assertFalse($subscriber->fresh()->isActive());
+        $this->assertDatabaseHas('users', ['id' => $userId]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.newsletter.subscribers.reactivate', $subscriber))
+            ->assertRedirect();
+
+        $this->assertTrue($subscriber->fresh()->isActive());
+        $this->assertSame(1, NewsletterSubscriber::query()->active()->where('email', 'liste@example.com')->count());
+
+        $this->actingAs($admin)
+            ->delete(route('admin.newsletter.subscribers.destroy', $subscriber))
+            ->assertRedirect();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.newsletter.subscribers.purge', $subscriber))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('newsletter_subscribers', ['email' => 'liste@example.com']);
+        $this->assertDatabaseHas('users', ['id' => $userId]);
+    }
+
+    #[Test]
     public function profile_newsletter_preference_route_is_removed(): void
     {
         $talent = User::factory()->talent()->create();

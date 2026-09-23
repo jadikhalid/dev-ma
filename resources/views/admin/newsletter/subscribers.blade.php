@@ -57,6 +57,18 @@
                             @method('DELETE')
                             <button type="submit" class="text-sm font-semibold text-rose-700 hover:text-rose-900">{{ __('talenma.newsletter.subscriber_remove') }}</button>
                         </form>
+                    @else
+                        <div class="flex items-center gap-3 shrink-0">
+                            <form method="POST" action="{{ route('admin.newsletter.subscribers.reactivate', $subscriber) }}">
+                                @csrf
+                                <button type="submit" class="text-sm font-semibold text-emerald-700 hover:text-emerald-900">{{ __('talenma.newsletter.subscriber_reactivate') }}</button>
+                            </form>
+                            <form method="POST" action="{{ route('admin.newsletter.subscribers.purge', $subscriber) }}" onsubmit="return confirm(@js(__('talenma.newsletter.subscriber_purge_confirm')))">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-sm font-semibold text-rose-700 hover:text-rose-900">{{ __('talenma.newsletter.subscriber_purge') }}</button>
+                            </form>
+                        </div>
                     @endif
                 </div>
             @empty

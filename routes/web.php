@@ -252,6 +252,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/newsletter', [NewsletterController::class, 'store'])->name('newsletter.store');
             Route::get('/newsletter/subscribers', [NewsletterSubscriberController::class, 'index'])->name('newsletter.subscribers.index');
             Route::post('/newsletter/subscribers', [NewsletterSubscriberController::class, 'store'])->name('newsletter.subscribers.store');
+            Route::post('/newsletter/subscribers/{subscriber}/reactivate', [NewsletterSubscriberController::class, 'reactivate'])->name('newsletter.subscribers.reactivate');
+            Route::delete('/newsletter/subscribers/{subscriber}/purge', [NewsletterSubscriberController::class, 'purge'])->name('newsletter.subscribers.purge');
             Route::delete('/newsletter/subscribers/{subscriber}', [NewsletterSubscriberController::class, 'destroy'])->name('newsletter.subscribers.destroy');
             Route::get('/newsletter/{newsletter}', [NewsletterController::class, 'show'])->name('newsletter.show');
             Route::get('/newsletter/{newsletter}/edit', [NewsletterController::class, 'edit'])->name('newsletter.edit');

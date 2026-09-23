@@ -61,4 +61,18 @@ class NewsletterSubscriberController extends Controller
 
         return back()->with('toast_success', __('talenma.newsletter.subscriber_removed'));
     }
+
+    public function reactivate(NewsletterSubscriber $subscriber): RedirectResponse
+    {
+        $this->subscribers->reactivate($subscriber);
+
+        return back()->with('toast_success', __('talenma.newsletter.subscriber_reactivated'));
+    }
+
+    public function purge(NewsletterSubscriber $subscriber): RedirectResponse
+    {
+        $this->subscribers->removeFromList($subscriber);
+
+        return back()->with('toast_success', __('talenma.newsletter.subscriber_purged'));
+    }
 }

@@ -88,6 +88,28 @@ class NewsletterSubscriberService
             ->update(['newsletter_opt_in_at' => null]);
     }
 
+    public function reactivate(NewsletterSubscriber $subscriber): NewsletterSubscriber
+    {
+        if ($subscriber->isActive()) {
+            return $subscriber;
+        }
+
+        return $this->subscribe(
+            $subscriber->email,
+            $subscriber->source ?: NewsletterSubscriber::SOURCE_ADMIN,
+            $subscriber->user,
+            $subscriber->creator,
+        );
+    }
+
+    /**
+     * Remove the address from the mailing list only (does not delete the user account).
+     */
+    public function removeFromList(NewsletterSubscriber $subscriber): void
+    {
+        $subscriber->delete();
+    }
+
     public function unsubscribeByToken(string $token): ?NewsletterSubscriber
     {
         $subscriber = NewsletterSubscriber::query()
