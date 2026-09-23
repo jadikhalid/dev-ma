@@ -187,6 +187,7 @@
     $education = collect($d['education'] ?? [])->filter(fn ($e) => $has($e['degree'] ?? '') || $has($e['school'] ?? ''));
     $languages = collect($d['languages'] ?? [])->filter(fn ($l) => $has($l['name'] ?? ''));
     $certs = collect($d['certifications'] ?? [])->filter(fn ($c) => $has($c));
+    $interests = collect($d['interests'] ?? [])->filter(fn ($c) => $has($c));
     $socialLinks = collect([
         'linkedin' => (string) ($d['linkedin_url'] ?? ''),
         'github' => (string) ($d['github_url'] ?? ''),
@@ -349,6 +350,17 @@
                     <span class="skill-item">
                         {{ $lang['name'] }}@if ($has($lang['level'] ?? '')) ({{ $lang['level'] }})@endif
                     </span>@if (! $loop->last)<span class="skill-sep" aria-hidden="true"></span>@endif
+                @endforeach
+            </p>
+        </div>
+    @endif
+
+    @if ($interests->isNotEmpty())
+        <div class="section">
+            <p class="section-title">{{ $t('interests') }}</p>
+            <p class="skills-row">
+                @foreach ($interests as $interest)
+                    <span class="skill-item">{{ $interest }}</span>@if (! $loop->last)<span class="skill-sep" aria-hidden="true"></span>@endif
                 @endforeach
             </p>
         </div>

@@ -8983,6 +8983,10 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
             this.data.photo_base64 = '';
         }
 
+        if (! Array.isArray(this.data.interests) || this.data.interests.length === 0) {
+            this.data.interests = [''];
+        }
+
         this.clearPreviewFrame();
 
         window.addEventListener('pageshow', (event) => {
@@ -9613,6 +9617,27 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
             return;
         }
         this.data.certifications.splice(index, 1);
+        this.onDataChange();
+    },
+
+    addInterest() {
+        if (! Array.isArray(this.data.interests)) {
+            this.data.interests = [''];
+        }
+        this.data.interests.push('');
+        this.onDataChange();
+    },
+
+    removeInterest(index) {
+        if (! Array.isArray(this.data.interests)) {
+            this.data.interests = [''];
+
+            return;
+        }
+        if (this.data.interests.length <= 1) {
+            return;
+        }
+        this.data.interests.splice(index, 1);
         this.onDataChange();
     },
 }));

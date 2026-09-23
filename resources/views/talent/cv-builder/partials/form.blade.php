@@ -173,6 +173,20 @@
     </template>
 </section>
 
+{{-- Centres d'intérêts --}}
+<section class="space-y-3">
+    <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-indigo-900">{{ __('talenma.cv_builder.form.interests') }}</h3>
+        <button type="button" @click="addInterest()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">+ {{ __('talenma.cv_builder.form.add_interest') }}</button>
+    </div>
+    <template x-for="(interest, ii) in data.interests" :key="'interest-'+ii">
+        <div class="flex gap-2">
+            <input type="text" x-model="data.interests[ii]" @input="onDataChange()" class="flex-1 rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.cv_builder.form.interest_placeholder') }}">
+            <button type="button" @click="removeInterest(ii)" class="text-gray-400 hover:text-red-600" x-show="data.interests.length > 1">×</button>
+        </div>
+    </template>
+</section>
+
 {{-- Langues --}}
 <section class="space-y-3">
     <div class="flex items-center justify-between">

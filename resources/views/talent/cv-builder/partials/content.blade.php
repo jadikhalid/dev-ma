@@ -83,8 +83,9 @@
     @php
         $languages = collect($d['languages'] ?? [])->filter(fn ($l) => $has($l['name'] ?? ''));
         $certs = collect($d['certifications'] ?? [])->filter(fn ($c) => $has($c));
+        $interests = collect($d['interests'] ?? [])->filter(fn ($c) => $has($c));
     @endphp
-    @if ($languages->isNotEmpty() || $certs->isNotEmpty())
+    @if ($languages->isNotEmpty() || $certs->isNotEmpty() || $interests->isNotEmpty())
         <section class="cv-section cv-section-split">
             @if ($languages->isNotEmpty())
                 <div>
@@ -99,6 +100,14 @@
                     <h2 class="cv-section-title">{{ $t('certifications') }}</h2>
                     @foreach ($certs as $cert)
                         <p>{{ $cert }}</p>
+                    @endforeach
+                </div>
+            @endif
+            @if ($interests->isNotEmpty())
+                <div>
+                    <h2 class="cv-section-title">{{ $t('interests') }}</h2>
+                    @foreach ($interests as $interest)
+                        <p>{{ $interest }}</p>
                     @endforeach
                 </div>
             @endif

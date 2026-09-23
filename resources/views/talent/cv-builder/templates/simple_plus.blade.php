@@ -226,6 +226,7 @@
     $education = collect($d['education'] ?? [])->filter(fn ($e) => $has($e['degree'] ?? '') || $has($e['school'] ?? ''));
     $languages = collect($d['languages'] ?? [])->filter(fn ($l) => $has($l['name'] ?? ''));
     $certs = collect($d['certifications'] ?? [])->filter(fn ($c) => $has($c));
+    $interests = collect($d['interests'] ?? [])->filter(fn ($c) => $has($c));
     $socialLinks = collect([
         'linkedin' => (string) ($d['linkedin_url'] ?? ''),
         'github' => (string) ($d['github_url'] ?? ''),
@@ -350,6 +351,15 @@
                     <div class="side-section">
                         <p class="side-title">{{ $t('availability') }}</p>
                         <p class="lang-row">{{ $d['availability_line'] }}</p>
+                    </div>
+                @endif
+
+                @if ($interests->isNotEmpty())
+                    <div class="side-section">
+                        <p class="side-title">{{ $t('interests') }}</p>
+                        @foreach ($interests as $interest)
+                            <p class="cert-title">« {{ $interest }} »</p>
+                        @endforeach
                     </div>
                 @endif
             </td>

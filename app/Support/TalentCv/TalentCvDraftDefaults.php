@@ -40,6 +40,7 @@ class TalentCvDraftDefaults
                 ['name' => '', 'level' => ''],
             ],
             'certifications' => [''],
+            'interests' => [''],
             'availability_line' => '',
             'photo_source' => 'sample',
             'photo_base64' => '',
@@ -193,6 +194,7 @@ class TalentCvDraftDefaults
         $merged['education'] = self::normalizeList($merged['education'] ?? [], ['degree' => '', 'school' => '', 'year' => '']);
         $merged['languages'] = self::normalizeList($merged['languages'] ?? [], ['name' => '', 'level' => '']);
         $merged['certifications'] = self::normalizeStrings($merged['certifications'] ?? ['']);
+        $merged['interests'] = self::normalizeStrings($merged['interests'] ?? ['']);
 
         if (isset($incoming['photo_source'])) {
             $source = (string) $incoming['photo_source'];
