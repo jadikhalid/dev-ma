@@ -169,7 +169,7 @@ class NewsletterRenderer
 
     private function jobCard(JobPosting $job): string
     {
-        $url = route('jobs.gate', $job);
+        $url = route('jobs.public.show', $job);
         $logo = $this->absolutePublicUrl($job->advertiserLogoUrl());
         $initials = e($job->advertiserInitials());
 

@@ -55,7 +55,7 @@
 
         <div class="space-y-3">
             @forelse ($jobs as $job)
-                @php $publicShareUrl = route('jobs.gate', $job); @endphp
+                @php $publicShareUrl = route('jobs.public.show', $job); @endphp
                 <div class="rounded-xl border bg-white p-5 hover:border-indigo-300 transition">
                     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div class="min-w-0 flex-1">

@@ -9,6 +9,9 @@
     @endphp
     <title>{{ $pageTitle !== '' ? $pageTitle : __('talenma.meta.title') }}</title>
     <meta name="description" content="{{ $pageMetaDescription !== '' ? $pageMetaDescription : __('talenma.meta.description') }}">
+    @hasSection('og')
+        @yield('og')
+    @endif
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet">

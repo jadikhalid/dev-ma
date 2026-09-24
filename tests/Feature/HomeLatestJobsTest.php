@@ -13,7 +13,7 @@ class HomeLatestJobsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_sees_latest_jobs_linking_to_jobs_gate(): void
+    public function test_guest_sees_latest_jobs_linking_to_public_job_page(): void
     {
         $job = $this->seedPublishedJob('Fullstack Maroc');
 
@@ -26,7 +26,7 @@ class HomeLatestJobsTest extends TestCase
             ->assertSee('Description annonce publique.', false)
             ->assertSee('ACME Maroc', false)
             ->assertSee('Technologie', false)
-            ->assertSee(route('jobs.gate', $job), false)
+            ->assertSee(route('jobs.public.show', $job), false)
             ->assertSee(route('jobs.gate'), false);
     }
 

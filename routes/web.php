@@ -30,6 +30,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\JobAccessGateController;
+use App\Http\Controllers\PublicJobController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MarketingCvPreviewController;
 use App\Http\Controllers\ModeratorModeController;
@@ -73,6 +74,9 @@ Route::get('/outils/apercu-cv/{template}', [MarketingCvPreviewController::class,
     ->whereIn('template', TalentCvTemplateCatalog::templateKeys())
     ->name('marketing.cv-preview');
 Route::get('/privacy', [PrivacyController::class, 'show'])->name('privacy');
+Route::get('/annonces/{job}', [PublicJobController::class, 'show'])
+    ->whereNumber('job')
+    ->name('jobs.public.show');
 Route::get('/annonces/acces/{job?}', JobAccessGateController::class)
     ->middleware('auth')
     ->whereNumber('job')

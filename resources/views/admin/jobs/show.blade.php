@@ -21,7 +21,7 @@
                     'backUrl' => route('admin.jobs.index'),
                     'backLinkClass' => 'text-indigo-700 hover:text-indigo-900',
                 ])
-                @php $publicShareUrl = route('jobs.gate', $job); @endphp
+                @php $publicShareUrl = route('jobs.public.show', $job); @endphp
                 <div
                     class="mt-3 flex flex-col gap-1.5"
                     x-data="{ copied: false }"

@@ -95,7 +95,7 @@ class HomeController extends Controller
                     $canManageCompanyJobs && $viewerCompanyProfileId !== null && $viewerCompanyProfileId === (int) $job->company_profile_id
                         => route('company.jobs.show', $job),
                     $canManageCompanyJobs => route('company.jobs.index'),
-                    default => route('jobs.gate', $job),
+                    default => route('jobs.public.show', $job),
                 };
 
                 $publishedAt = $job->published_at ?? $job->created_at;

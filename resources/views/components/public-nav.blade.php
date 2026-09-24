@@ -5,10 +5,13 @@
 @php
     use App\Models\JobPosting;
 
+    $onPublicJobShow = request()->routeIs('jobs.public.show');
     $showAnnoncesNav = ! request()->routeIs('blog.*');
     $onBlogIndex = request()->routeIs('blog.index');
+    $annoncesNavDisabled = $onPublicJobShow;
+    $blogNavDisabled = $onBlogIndex || $onPublicJobShow;
 
-    $freshJobTimestamps = $showAnnoncesNav
+    $freshJobTimestamps = $showAnnoncesNav && ! $annoncesNavDisabled
         ? JobPosting::query()
             ->where('status', JobPosting::STATUS_PUBLISHED)
             ->whereNotNull('published_at')
@@ -19,6 +22,9 @@
             ->values()
             ->all()
         : [];
+
+    $navDisabledClass = 'mr-0.5 sm:mr-1 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-white/45 sm:text-gray-400 cursor-default select-none pointer-events-none';
+    $navLinkClass = 'relative mr-0.5 sm:mr-1 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50';
 @endphp
 
 <header
@@ -47,35 +53,47 @@
             <div class="flex items-center gap-2.5 sm:gap-3">
                 {{-- Desktop / tablette : liens directs --}}
                 @if ($showAnnoncesNav)
-                    <a
-                        href="{{ route('home') }}#opportunites"
-                        class="relative mr-0.5 sm:mr-1 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50"
-                        x-data="homeAnnoncesNav({
-                            timestamps: @js($freshJobTimestamps),
-                            homeUrl: @js(route('home')),
-                            sectionId: 'opportunites',
-                            storageKey: 'tdm.home.annonces.seen_at',
-                        })"
-                        @click="onClick($event)"
-                        :aria-label="badgeCount > 0 ? @js(__('talenma.nav.annonces_with_new')).replace(':count', String(badgeCount)) : @js(__('talenma.nav.jobs'))"
-                    >
-                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.875 1.975-1.95 1.975H5.7c-1.075 0-1.95-.881-1.95-1.975v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.875-1.954-1.95-1.954h-3.15V4.875C14.25 3.839 13.41 3 12.375 3h-0.75C10.59 3 9.75 3.839 9.75 4.875V6.752H6.6c-1.075 0-1.95.873-1.95 1.954v3.783c0 .655.287 1.252.75 1.661m16.5 0H3.75"/>
-                        </svg>
-                        <span class="relative inline-block leading-none">
-                            <span
-                                x-show="badgeCount > 0"
-                                x-cloak
-                                x-text="badgeCount > 99 ? '99+' : badgeCount"
-                                class="pointer-events-none absolute -top-2 -right-2.5 z-20 inline-flex h-4 min-w-4 items-center justify-center rounded-[50%] bg-rose-500 px-1 text-center text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white"
-                            ></span>
+                    @if ($annoncesNavDisabled)
+                        <span
+                            aria-disabled="true"
+                            class="{{ $navDisabledClass }}"
+                        >
+                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.875 1.975-1.95 1.975H5.7c-1.075 0-1.95-.881-1.95-1.975v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.875-1.954-1.95-1.954h-3.15V4.875C14.25 3.839 13.41 3 12.375 3h-0.75C10.59 3 9.75 3.839 9.75 4.875V6.752H6.6c-1.075 0-1.95.873-1.95 1.954v3.783c0 .655.287 1.252.75 1.661m16.5 0H3.75"/>
+                            </svg>
                             <span>{{ __('talenma.nav.jobs') }}</span>
                         </span>
-                    </a>
+                    @else
+                        <a
+                            href="{{ route('home') }}#opportunites"
+                            class="{{ $navLinkClass }}"
+                            x-data="homeAnnoncesNav({
+                                timestamps: @js($freshJobTimestamps),
+                                homeUrl: @js(route('home')),
+                                sectionId: 'opportunites',
+                                storageKey: 'tdm.home.annonces.seen_at',
+                            })"
+                            @click="onClick($event)"
+                            :aria-label="badgeCount > 0 ? @js(__('talenma.nav.annonces_with_new')).replace(':count', String(badgeCount)) : @js(__('talenma.nav.jobs'))"
+                        >
+                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.875 1.975-1.95 1.975H5.7c-1.075 0-1.95-.881-1.95-1.975v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.875-1.954-1.95-1.954h-3.15V4.875C14.25 3.839 13.41 3 12.375 3h-0.75C10.59 3 9.75 3.839 9.75 4.875V6.752H6.6c-1.075 0-1.95.873-1.95 1.954v3.783c0 .655.287 1.252.75 1.661m16.5 0H3.75"/>
+                            </svg>
+                            <span class="relative inline-block leading-none">
+                                <span
+                                    x-show="badgeCount > 0"
+                                    x-cloak
+                                    x-text="badgeCount > 99 ? '99+' : badgeCount"
+                                    class="pointer-events-none absolute -top-2 -right-2.5 z-20 inline-flex h-4 min-w-4 items-center justify-center rounded-[50%] bg-rose-500 px-1 text-center text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white"
+                                ></span>
+                                <span>{{ __('talenma.nav.jobs') }}</span>
+                            </span>
+                        </a>
+                    @endif
                 @endif
-                @if ($onBlogIndex)
+                @if ($blogNavDisabled)
                     <span
-                        aria-current="page"
+                        @if ($onBlogIndex) aria-current="page" @endif
                         aria-disabled="true"
                         @class([
                             'mr-1 sm:mr-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-white/45 sm:text-gray-400 cursor-default select-none pointer-events-none',
@@ -106,6 +124,7 @@
                 @if ($showAnnoncesNav)
                 <div
                     class="relative sm:hidden"
+                    @if (! $annoncesNavDisabled)
                     x-data="homeAnnoncesNav({
                         timestamps: @js($freshJobTimestamps),
                         homeUrl: @js(route('home')),
@@ -113,7 +132,19 @@
                         storageKey: 'tdm.home.annonces.seen_at',
                     })"
                     @keydown.escape.window="closeMenu()"
+                    @endif
                 >
+                    @if ($annoncesNavDisabled)
+                        <span
+                            aria-disabled="true"
+                            class="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/40 cursor-default select-none pointer-events-none"
+                            aria-label="{{ __('talenma.nav.mobile_explore') }}"
+                        >
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                            </svg>
+                        </span>
+                    @else
                     <button
                         type="button"
                         class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/95 hover:bg-white/15 transition"
@@ -181,6 +212,7 @@
                             <span>{{ __('talenma.nav.blog') }}</span>
                         </a>
                     </div>
+                    @endif
                 </div>
                 @endif
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Models\JobPosting;
 use App\Models\PendingRegistration;
 use App\Models\PlatformSetting;
 use App\Models\User;
@@ -29,6 +30,14 @@ class RegisteredUserController extends Controller
     {
         $role = request('role');
         $defaultRole = in_array($role, ['dev', 'company'], true) ? $role : '';
+
+        $fromJobId = (int) request()->integer('from_job');
+        if ($fromJobId > 0) {
+            $job = JobPosting::query()->find($fromJobId);
+            if ($job?->isPublished() && ! $job->isClosed()) {
+                session(['url.intended' => route('jobs.gate', $job)]);
+            }
+        }
 
         return view('auth.register', [
             'defaultRole' => $defaultRole,
