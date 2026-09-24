@@ -55,7 +55,7 @@
             initialCompanyWebsite: '',
             initialCompanyCountry: '',
             defaultCompanyCountry: @js(\App\Models\CompanyProfile::DEFAULT_COUNTRY),
-            initialDataProcessingConsent: @js((bool) old('data_processing_consent')),
+            initialDataProcessingConsent: @js((bool) old('data_processing_consent', true)),
             validationMessages: @js($registerValidationMessages),
             checkEmailUrl: @js(route('register.check-email')),
         })"

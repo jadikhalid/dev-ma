@@ -23,7 +23,7 @@ return [
         'annonces_with_new' => 'Annonces, :count nouvelle(s)',
         'mobile_explore' => 'Menu Annonces et Blog',
         'mobile_explore_with_new' => 'Menu Annonces et Blog, :count nouvelle(s) annonce(s)',
-        'direct_hire' => 'Recrut',
+        'direct_hire' => 'Recrutement',
         'sourcing' => 'Sourcing',
         'my_company' => 'Fiche entreprise',
         'morocco_setup' => 'Implantation Maroc',
@@ -539,6 +539,8 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
         'publications' => [
             'title' => 'Publications de l\'accueil',
             'subtitle' => 'Gérez les actualités du bandeau et les posts réseaux sociaux du slider, sur une seule page.',
+            'column_news' => 'Actualités',
+            'column_social' => 'Posts réseaux sociaux',
             'delete_irreversible' => 'Cette action est irréversible.',
         ],
         'news' => [

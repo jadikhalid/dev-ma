@@ -23,7 +23,7 @@ return [
         'annonces_with_new' => 'Jobs, :count new',
         'mobile_explore' => 'Jobs and Blog menu',
         'mobile_explore_with_new' => 'Jobs and Blog menu, :count new job(s)',
-        'direct_hire' => 'Recrut',
+        'direct_hire' => 'Recruitment',
         'sourcing' => 'Sourcing',
         'my_company' => 'Company profile',
         'morocco_setup' => 'Morocco setup',
@@ -539,6 +539,8 @@ An administrator or moderator is reviewing your application before your company 
         'publications' => [
             'title' => 'Home page publications',
             'subtitle' => 'Manage the news ticker and social media slider from one page.',
+            'column_news' => 'News',
+            'column_social' => 'Social posts',
             'delete_irreversible' => 'This action cannot be undone.',
         ],
         'news' => [

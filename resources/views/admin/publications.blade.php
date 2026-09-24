@@ -9,7 +9,7 @@
     <x-process-help topic="publications" />
 
     <div
-        class="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        class="py-8 max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8"
         x-data="publicationsAdmin()"
         @keydown.escape.window="closeAll()"
         @ajax-form-success.window="onAjaxSuccess($event)"
@@ -17,12 +17,13 @@
         @publications-social-edit.window="openSocialEdit($event.detail)"
         @publications-delete.window="openDeleteConfirm($event.detail)"
     >
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:gap-8 items-start">
-            {{-- Actualités (bandeau haut) --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
+            {{-- Colonne Actualités --}}
             <section id="actualites" class="scroll-mt-24 space-y-4 min-w-0">
                 <div class="flex items-start justify-between gap-3 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
                     <div class="min-w-0">
-                        <h3 class="text-base font-bold text-gray-900">{{ __('talenma.admin.news.title') }}</h3>
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ __('talenma.admin.publications.column_news') }}</p>
+                        <h3 class="mt-0.5 text-base font-bold text-gray-900">{{ __('talenma.admin.news.title') }}</h3>
                         <p class="mt-1 text-sm text-gray-600">{{ __('talenma.admin.news.subtitle', ['max' => $newsMaxItems]) }}</p>
                     </div>
                     <button
@@ -59,11 +60,12 @@
                 @include('admin.publications._news-list')
             </section>
 
-            {{-- Posts réseaux sociaux (slider accueil) --}}
+            {{-- Colonne posts réseaux sociaux --}}
             <section id="reseaux" class="scroll-mt-24 space-y-4 min-w-0">
                 <div class="flex items-start justify-between gap-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/80 via-white to-slate-50 p-4 sm:p-5">
                     <div class="min-w-0">
-                        <h3 class="text-base font-bold text-gray-900">{{ __('talenma.admin.social_posts.title') }}</h3>
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-violet-600">{{ __('talenma.admin.publications.column_social') }}</p>
+                        <h3 class="mt-0.5 text-base font-bold text-gray-900">{{ __('talenma.admin.social_posts.title') }}</h3>
                         <p class="mt-1 text-sm text-gray-600">{{ __('talenma.admin.social_posts.subtitle', ['max' => $socialMaxItems]) }}</p>
                     </div>
                     <button

@@ -7,7 +7,9 @@
 
     $onPublicJobShow = request()->routeIs('jobs.public.show');
     $onCompanyOffer = request()->routeIs('company.offer');
-    $showAnnoncesNav = ! request()->routeIs('blog.*') && ! $onCompanyOffer;
+    $onBlog = request()->routeIs('blog.*');
+    $showCompanyOfferCta = ! $onCompanyOffer && ! $onBlog;
+    $showAnnoncesNav = ! $onBlog && ! $onCompanyOffer;
     $showBlogNav = ! $onCompanyOffer;
     $showAppsLauncher = ! $onCompanyOffer;
     $onBlogIndex = request()->routeIs('blog.index');
@@ -55,7 +57,7 @@
                 </div>
             </div>
 
-            @unless ($onCompanyOffer)
+            @if ($showCompanyOfferCta)
             <div class="hidden min-w-0 flex-1 items-center justify-center px-4 sm:flex">
                 <a
                     href="{{ route('company.offer') }}"
@@ -68,11 +70,11 @@
                     <span class="truncate">{{ __('talenma.nav.company_offer') }}</span>
                 </a>
             </div>
-            @endunless
+            @endif
 
             <div @class([
                 'ml-auto flex shrink-0 items-center gap-2.5 sm:gap-3',
-                'sm:ml-0' => ! $onCompanyOffer,
+                'sm:ml-0' => $showCompanyOfferCta,
             ])>
                 {{-- Desktop / tablette : liens directs --}}
                 @if ($showAnnoncesNav)
