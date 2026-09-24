@@ -2,34 +2,39 @@
 
 namespace App\Mail;
 
-use App\Models\User;
+use App\Models\CompanyTrialRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class CompanyApprovedMail extends Mailable
+class CompanyTrialRequestMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public function __construct(
-        public User $user,
-        public string $plainPassword,
+        public CompanyTrialRequest $trialRequest,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
             from: MailSender::from(),
-            subject: __('talenma.mail.company_approved.subject'),
+            replyTo: [$this->trialRequest->email],
+            subject: __('talenma.mail.company_trial_request.subject', [
+                'company' => $this->trialRequest->company_name,
+            ]),
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.company-approved',
+            view: 'emails.company-trial-request',
+            with: [
+                'trial' => $this->trialRequest,
+            ],
         );
     }
 }

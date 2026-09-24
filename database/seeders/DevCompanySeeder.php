@@ -181,6 +181,9 @@ class DevCompanySeeder extends Seeder
             'hiring_needs' => $hiringNeeds,
             'website' => 'https://example.com/'.$slug,
             'employee_count' => (string) (([10, 50, 120, 300, 800])[($index - 1) % 5]),
+            'is_subscribed' => true,
+            'subscription_expires_at' => null,
+            'trial_ends_at' => null,
         ]);
     }
 }

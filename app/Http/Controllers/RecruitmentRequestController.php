@@ -120,6 +120,12 @@ class RecruitmentRequestController extends Controller
             return redirect()->route('dashboard');
         }
 
+        if (! $request->user()->canAccessTalentPool()) {
+            return redirect()
+                ->route('dashboard')
+                ->with('toast_error', __('talenma.company_offer.plan_required'));
+        }
+
         if ($talent) {
             abort_unless($talent->isTalent() && $talent->approval_status === 'approved', 404);
 
@@ -147,6 +153,18 @@ class RecruitmentRequestController extends Controller
     {
         if (! $request->user()->isCompany()) {
             return redirect()->route('dashboard');
+        }
+
+        if (! $request->user()->canAccessTalentPool()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => __('talenma.company_offer.plan_required'),
+                ], 403);
+            }
+
+            return redirect()
+                ->route('dashboard')
+                ->with('toast_error', __('talenma.company_offer.plan_required'));
         }
 
         $data = $request->validate([

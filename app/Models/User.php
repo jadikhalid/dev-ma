@@ -257,12 +257,40 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canAccessTalentPool(): bool
     {
-        return $this->isCompany() && $this->isApproved() && ! $this->isDisabled();
+        return $this->isCompany()
+            && $this->isApproved()
+            && ! $this->isDisabled()
+            && $this->companyHasActivePlanAccess();
     }
 
     public function canManageJobs(): bool
     {
         return $this->canAccessTalentPool();
+    }
+
+    public function companyHasActivePlanAccess(): bool
+    {
+        if (! $this->isCompany()) {
+            return false;
+        }
+
+        $org = $this->companyOrganization();
+
+        return $org?->hasActivePlanAccess() ?? false;
+    }
+
+    public function companyIsOnTrial(): bool
+    {
+        return $this->companyOrganization()?->isOnTrial() ?? false;
+    }
+
+    public function companyPlanExpired(): bool
+    {
+        if (! $this->isCompany() || ! $this->isApproved() || $this->isDisabled()) {
+            return false;
+        }
+
+        return ! $this->companyHasActivePlanAccess();
     }
 
     public function isAdmin(): bool

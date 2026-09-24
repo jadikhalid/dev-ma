@@ -23,6 +23,34 @@
             <div class="p-3 sm:p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm">{{ __('talenma.dashboard.company.request_sent') }}</div>
         @endif
 
+        @php
+            $orgPlan = $profile;
+            $planExpired = $user->companyPlanExpired();
+            $onTrial = $orgPlan?->isOnTrial() ?? false;
+            $trialDays = $orgPlan?->trialDaysRemaining();
+        @endphp
+
+        @if ($planExpired)
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 sm:px-5 sm:py-4">
+                <p class="text-sm font-semibold text-amber-950">{{ __('talenma.company_offer.banner_expired_title') }}</p>
+                <p class="mt-1 text-sm text-amber-900/80">{{ __('talenma.company_offer.banner_expired_body') }}</p>
+                <a href="{{ route('company.offer') }}#demo" class="mt-3 inline-flex text-sm font-semibold text-amber-950 underline decoration-amber-400 underline-offset-2 hover:text-amber-800">
+                    {{ __('talenma.company_offer.banner_expired_cta') }} →
+                </a>
+            </div>
+        @elseif ($onTrial && $trialDays !== null)
+            <div class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4 sm:px-5 sm:py-4">
+                <p class="text-sm font-semibold text-indigo-950">{{ __('talenma.company_offer.banner_trial_title') }}</p>
+                <p class="mt-1 text-sm text-indigo-900/80">
+                    {{ __('talenma.company_offer.banner_trial_body', [
+                        'days' => $trialDays,
+                        'date' => $orgPlan->trial_ends_at->timezone(config('app.timezone'))->format('d/m/Y'),
+                        'price' => '$'.\App\Models\CompanyProfile::PLAN_PRICE_FROM_USD,
+                    ]) }}
+                </p>
+            </div>
+        @endif
+
         {{-- Bandeau d'accueil + progression --}}
         <div class="bg-white rounded-2xl border px-4 py-4 sm:px-6 sm:py-5">
             <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">

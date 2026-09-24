@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountStatusController;
 use App\Http\Controllers\Admin\BlogPostController;
 use App\Http\Controllers\Admin\CompanyProfileDocumentController;
+use App\Http\Controllers\Admin\CompanyTrialRequestController;
 use App\Http\Controllers\Admin\DirectHireController as AdminDirectHireController;
 use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
 use App\Http\Controllers\Admin\ManagedProfileController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\AtsScoreGateController;
 use App\Http\Controllers\LibraryGateController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\Company\DirectHireController as CompanyDirectHireController;
+use App\Http\Controllers\CompanyOfferController;
 use App\Http\Controllers\CompanyAccompanimentController;
 use App\Http\Controllers\CompanyCatalogSearchController;
 use App\Http\Controllers\CompanyJobController;
@@ -106,6 +108,15 @@ Route::get('/services', [ServiceController::class, 'index'])
     ->middleware(['auth', 'verified', 'account.approved'])
     ->name('services.index');
 
+Route::get('/entreprises', [CompanyOfferController::class, 'show'])
+    ->name('company.offer');
+Route::post('/entreprises/demo', [CompanyOfferController::class, 'storeDemo'])
+    ->middleware('throttle:8,1')
+    ->name('company.demo.store');
+Route::post('/entreprises/trial', [CompanyOfferController::class, 'storeTrial'])
+    ->middleware('throttle:8,1')
+    ->name('company.trial.store');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/account/pending', [AccountStatusController::class, 'pending'])
         ->middleware('account.pending')
@@ -132,6 +143,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('moderator.permission:accounts.view')->group(function () {
             Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
             Route::get('/users/{user}/registration', [UserManagementController::class, 'registration'])->name('users.registration');
+            Route::get('/company-trial-requests', [CompanyTrialRequestController::class, 'index'])
+                ->name('company-trial-requests.index');
             Route::get('/profile-documents/{profileDocument}', [ProfileDocumentController::class, 'show'])->name('profile-documents.show');
             Route::get('/company-profile-documents/{companyProfileDocument}', [CompanyProfileDocumentController::class, 'show'])->name('company-profile-documents.show');
             Route::post('/users/pending-registrations/{pendingRegistration}/resend', [UserManagementController::class, 'resendPendingRegistration'])
@@ -158,6 +171,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/users/{user}/reject', [UserManagementController::class, 'reject'])
             ->middleware('moderator.permission:accounts.reject')
             ->name('users.reject');
+        Route::post('/company-trial-requests/{companyTrialRequest}/provision', [CompanyTrialRequestController::class, 'provision'])
+            ->middleware('moderator.permission:accounts.approve')
+            ->name('company-trial-requests.provision');
+        Route::post('/company-trial-requests/{companyTrialRequest}/reject', [CompanyTrialRequestController::class, 'reject'])
+            ->middleware('moderator.permission:accounts.reject')
+            ->name('company-trial-requests.reject');
         Route::post('/users/pending-registrations/{pendingRegistration}/complete', [UserManagementController::class, 'completePendingRegistration'])
             ->middleware('moderator.permission:accounts.approve')
             ->name('users.pending-registrations.complete');

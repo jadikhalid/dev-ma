@@ -59,6 +59,7 @@
                     @if ($actingAsModerator)
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_VIEW))
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
+                        <x-nav-link :href="route('admin.company-trial-requests.index')" :active="request()->routeIs('admin.company-trial-requests.*')">{{ __('talenma.nav.admin_company_trials') }}</x-nav-link>
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE))
                             <x-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">
@@ -330,6 +331,7 @@
                     @if ($actingAsModerator)
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_VIEW))
                         <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.company-trial-requests.index')" :active="request()->routeIs('admin.company-trial-requests.*')">{{ __('talenma.nav.admin_company_trials') }}</x-responsive-nav-link>
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE))
                             <x-responsive-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">

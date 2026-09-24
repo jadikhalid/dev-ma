@@ -51,7 +51,10 @@ class InboxComposeTest extends TestCase
     public function test_company_can_search_talents_for_inbox_compose(): void
     {
         $company = User::factory()->companyOwner()->create();
-        $company->companyProfile()->create(['country' => 'fr']);
+        $company->companyProfile()->create([
+            'country' => 'fr',
+            'is_subscribed' => true,
+        ]);
         $talent = $this->createContactableTalent();
 
         $response = $this->actingAs($company)->getJson(route('inbox.talent-suggestions', [
@@ -77,7 +80,10 @@ class InboxComposeTest extends TestCase
     public function test_company_can_compose_from_inbox_after_selecting_talent(): void
     {
         $company = User::factory()->companyOwner()->create();
-        $company->companyProfile()->create(['country' => 'fr']);
+        $company->companyProfile()->create([
+            'country' => 'fr',
+            'is_subscribed' => true,
+        ]);
         $talent = $this->createContactableTalent();
 
         $response = $this->actingAs($company)->postJson(route('inbox.store'), [
@@ -98,7 +104,10 @@ class InboxComposeTest extends TestCase
     public function test_company_can_open_separate_threads_for_same_talent(): void
     {
         $company = User::factory()->companyOwner()->create();
-        $company->companyProfile()->create(['country' => 'fr']);
+        $company->companyProfile()->create([
+            'country' => 'fr',
+            'is_subscribed' => true,
+        ]);
         $talent = $this->createContactableTalent();
 
         $this->actingAs($company)->postJson(route('inbox.store'), [
@@ -129,7 +138,10 @@ class InboxComposeTest extends TestCase
     public function test_inbox_page_shows_compose_button_for_company(): void
     {
         $company = User::factory()->companyOwner()->create();
-        $company->companyProfile()->create(['country' => 'fr']);
+        $company->companyProfile()->create([
+            'country' => 'fr',
+            'is_subscribed' => true,
+        ]);
 
         $this->actingAs($company)
             ->get(route('inbox.index'))
@@ -140,7 +152,10 @@ class InboxComposeTest extends TestCase
     public function test_company_can_hide_conversation_from_inbox(): void
     {
         $company = User::factory()->companyOwner()->create();
-        $company->companyProfile()->create(['country' => 'fr']);
+        $company->companyProfile()->create([
+            'country' => 'fr',
+            'is_subscribed' => true,
+        ]);
         $talent = $this->createContactableTalent();
 
         $store = $this->actingAs($company)->postJson(route('inbox.store'), [
@@ -175,7 +190,10 @@ class InboxComposeTest extends TestCase
     public function test_talent_can_hide_conversation_from_inbox(): void
     {
         $company = User::factory()->companyOwner()->create();
-        $company->companyProfile()->create(['country' => 'fr']);
+        $company->companyProfile()->create([
+            'country' => 'fr',
+            'is_subscribed' => true,
+        ]);
         $talent = $this->createContactableTalent();
 
         $store = $this->actingAs($company)->postJson(route('inbox.store'), [

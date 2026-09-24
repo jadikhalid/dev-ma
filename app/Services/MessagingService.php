@@ -533,7 +533,7 @@ class MessagingService
 
     private function assertCompanyCanMessage(User $company): void
     {
-        abort_unless($company->isCompany() && $company->isApproved(), 403);
+        abort_unless($company->canAccessTalentPool(), 403);
     }
 
     private function assertTalentIsContactable(User $talent): void

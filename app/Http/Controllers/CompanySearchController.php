@@ -35,6 +35,12 @@ class CompanySearchController extends Controller
             return redirect()->route('dashboard');
         }
 
+        if (! $request->user()->canAccessTalentPool()) {
+            return redirect()
+                ->route('dashboard')
+                ->with('toast_error', __('talenma.company_offer.plan_required'));
+        }
+
         $company = $request->user();
         $canProposeDirectHire = $this->directHires->companyCanPropose($company);
         $hiredTalentIds = $this->directHires->hiredTalentIdsForCompany($company);
@@ -98,6 +104,12 @@ class CompanySearchController extends Controller
             return redirect()->route('dashboard');
         }
 
+        if (! $request->user()->canAccessTalentPool()) {
+            return redirect()
+                ->route('dashboard')
+                ->with('toast_error', __('talenma.company_offer.plan_required'));
+        }
+
         if ($talent->role !== 'dev' || $talent->approval_status !== User::APPROVAL_APPROVED) {
             abort(404);
         }
@@ -144,7 +156,7 @@ class CompanySearchController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user && $user->isCompany() && $user->isApproved(), 403);
+        abort_unless($user && $user->canAccessTalentPool(), 403);
 
         if ($talent->role !== 'dev' || $talent->approval_status !== User::APPROVAL_APPROVED) {
             abort(404);

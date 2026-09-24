@@ -6,7 +6,10 @@
     use App\Models\JobPosting;
 
     $onPublicJobShow = request()->routeIs('jobs.public.show');
-    $showAnnoncesNav = ! request()->routeIs('blog.*');
+    $onCompanyOffer = request()->routeIs('company.offer');
+    $showAnnoncesNav = ! request()->routeIs('blog.*') && ! $onCompanyOffer;
+    $showBlogNav = ! $onCompanyOffer;
+    $showAppsLauncher = ! $onCompanyOffer;
     $onBlogIndex = request()->routeIs('blog.index');
     $annoncesNavDisabled = $onPublicJobShow;
     $blogNavDisabled = $onBlogIndex || $onPublicJobShow;
@@ -40,17 +43,37 @@
         'max-w-7xl px-4 sm:px-6 lg:px-8' => ! $fullWidth,
     ])>
         <div @class([
-            'flex items-center justify-between h-20 sm:h-16',
+            'flex items-center h-20 sm:h-16',
             '2xl:border-b 2xl:border-gray-100' => $fullWidth,
         ])>
-            <div class="brand-logo-phone">
-                <x-brand-logo href="{{ route('home') }}" size="md" phone />
-            </div>
-            <div class="brand-logo-desktop">
-                <x-brand-logo href="{{ route('home') }}" size="sm" />
+            <div class="flex shrink-0 items-center">
+                <div class="brand-logo-phone">
+                    <x-brand-logo href="{{ route('home') }}" size="md" phone />
+                </div>
+                <div class="brand-logo-desktop">
+                    <x-brand-logo href="{{ route('home') }}" size="sm" />
+                </div>
             </div>
 
-            <div class="flex items-center gap-2.5 sm:gap-3">
+            @unless ($onCompanyOffer)
+            <div class="hidden min-w-0 flex-1 items-center justify-center px-4 sm:flex">
+                <a
+                    href="{{ route('company.offer') }}"
+                    aria-label="{{ __('talenma.nav.company_offer') }}"
+                    class="inline-flex max-w-full shrink items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold tracking-wide transition bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/80 shadow-none hover:bg-indigo-100 hover:ring-indigo-300"
+                >
+                    <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008V7.5Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"/>
+                    </svg>
+                    <span class="truncate">{{ __('talenma.nav.company_offer') }}</span>
+                </a>
+            </div>
+            @endunless
+
+            <div @class([
+                'ml-auto flex shrink-0 items-center gap-2.5 sm:gap-3',
+                'sm:ml-0' => ! $onCompanyOffer,
+            ])>
                 {{-- Desktop / tablette : liens directs --}}
                 @if ($showAnnoncesNav)
                     @if ($annoncesNavDisabled)
@@ -91,6 +114,7 @@
                         </a>
                     @endif
                 @endif
+                @if ($showBlogNav)
                 @if ($blogNavDisabled)
                     <span
                         @if ($onBlogIndex) aria-current="page" @endif
@@ -119,8 +143,9 @@
                         <span>{{ __('talenma.nav.blog') }}</span>
                     </a>
                 @endif
+                @endif
 
-                {{-- Mobile : menu Annonces + Blog (badge visible sur le bouton) — masqué sur le blog --}}
+                {{-- Mobile : menu Annonces + Blog (badge visible sur le bouton) — masqué sur le blog / offre entreprise --}}
                 @if ($showAnnoncesNav)
                 <div
                     class="relative sm:hidden"
@@ -211,6 +236,17 @@
                             </svg>
                             <span>{{ __('talenma.nav.blog') }}</span>
                         </a>
+                        <a
+                            href="{{ route('company.offer') }}"
+                            role="menuitem"
+                            class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+                            @click="closeMenu()"
+                        >
+                            <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008V7.5Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"/>
+                            </svg>
+                            <span>{{ __('talenma.nav.company_offer') }}</span>
+                        </a>
                     </div>
                     @endif
                 </div>
@@ -224,7 +260,7 @@
                     <span class="hidden sm:inline-flex text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap {{ $authUser->roleBadgeClasses() }}">
                         {{ $authUser->roleLabel() }}
                     </span>
-                    @if ($authUser->canAccessWorkspaceApps())
+                    @if ($showAppsLauncher && $authUser->canAccessWorkspaceApps())
                         <x-talent-apps-launcher />
                     @endif
                     @if ($authUser->isTalent())
@@ -305,7 +341,9 @@
                         </x-dropdown>
                     @endif
                 @else
-                    <x-talent-apps-launcher :guest="true" />
+                    @if ($showAppsLauncher)
+                        <x-talent-apps-launcher :guest="true" />
+                    @endif
                     <a
                         href="{{ route('login') }}"
                         class="inline-flex items-center px-4 py-2.5 sm:px-4 sm:py-2 text-base sm:text-sm font-semibold rounded-xl sm:rounded-lg transition-all duration-300 ease-in-out text-white/95 border border-white/30 bg-white/15 hover:bg-white/25 sm:text-indigo-600 sm:border-indigo-200/80 sm:bg-indigo-50/60 sm:hover:bg-indigo-100 sm:hover:border-indigo-300 sm:hover:text-indigo-700 sm:hover:shadow-sm"

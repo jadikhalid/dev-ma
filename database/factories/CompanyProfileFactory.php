@@ -21,6 +21,28 @@ class CompanyProfileFactory extends Factory
             'website' => $this->faker->url(),
             'employee_count' => $this->faker->randomElement(['1-10', '11-50', '51-200', '200+']),
             'hiring_needs' => 'Talents full-stack, mobile et backend pour missions longue durée.',
+            // Tests / seeders: accès actif par défaut (grandfather), sauf état trial()/expired().
+            'is_subscribed' => true,
+            'subscription_expires_at' => null,
+            'trial_ends_at' => null,
         ];
+    }
+
+    public function onTrial(?\DateTimeInterface $endsAt = null): static
+    {
+        return $this->state(fn () => [
+            'is_subscribed' => false,
+            'subscription_expires_at' => null,
+            'trial_ends_at' => $endsAt ?? now()->addMonths(CompanyProfile::TRIAL_MONTHS),
+        ]);
+    }
+
+    public function expired(): static
+    {
+        return $this->state(fn () => [
+            'is_subscribed' => false,
+            'subscription_expires_at' => now()->subDay(),
+            'trial_ends_at' => now()->subDay(),
+        ]);
     }
 }

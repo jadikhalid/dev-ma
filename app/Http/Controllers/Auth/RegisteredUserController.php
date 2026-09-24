@@ -9,7 +9,6 @@ use App\Models\PendingRegistration;
 use App\Models\PlatformSetting;
 use App\Models\User;
 use App\Services\PendingRegistrationService;
-use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,14 +21,16 @@ use Throwable;
 class RegisteredUserController extends Controller
 {
     public function __construct(
-        private ProfessionCatalogService $professionCatalog,
         private PendingRegistrationService $pendingRegistration,
     ) {}
 
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
         $role = request('role');
-        $defaultRole = in_array($role, ['dev', 'company'], true) ? $role : '';
+
+        if ($role === 'company') {
+            return redirect()->route('company.offer', ['tab' => 'trial']);
+        }
 
         $fromJobId = (int) request()->integer('from_job');
         if ($fromJobId > 0) {
@@ -39,11 +40,7 @@ class RegisteredUserController extends Controller
             }
         }
 
-        return view('auth.register', [
-            'defaultRole' => $defaultRole,
-            'professionSectors' => $this->professionCatalog->sectorsForLocale(),
-            'companyCountryOptions' => \App\Models\CompanyProfile::countryOptions(),
-        ]);
+        return view('auth.register');
     }
 
     public function checkEmail(Request $request): JsonResponse

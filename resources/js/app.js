@@ -1692,12 +1692,15 @@ Alpine.data('toastStack', (initialToasts = []) => ({
 }));
 
 Alpine.data('registerWizard', (config) => ({
-    role: config.initialRole ?? '',
+    lockedRole: config.lockedRole ?? null,
+    role: config.lockedRole || config.initialRole || '',
     step: config.initialStep ?? 1,
     firstName: config.initialFirstName ?? '',
     lastName: config.initialLastName ?? '',
     name: config.initialName ?? '',
     email: config.initialEmail ?? '',
+    contactName: config.initialContactName ?? '',
+    phone: config.initialPhone ?? '',
     password: '',
     passwordConfirmation: '',
     sector: config.initialSector ?? '',
@@ -1721,9 +1724,20 @@ Alpine.data('registerWizard', (config) => ({
     fieldErrors: {},
     submitting: false,
     namePattern: /^[\p{L}\p{M}][\p{L}\p{M}\s'\-\.]*$/u,
+    phonePattern: /^\+?[0-9\s\-\.\(\)]{8,20}$/,
 
     init() {
-        this.$watch('role', () => {
+        if (this.lockedRole === 'dev' || this.lockedRole === 'company') {
+            this.role = this.lockedRole;
+        }
+
+        this.$watch('role', (value) => {
+            if (this.lockedRole && value !== this.lockedRole) {
+                this.role = this.lockedRole;
+
+                return;
+            }
+
             this.step = 1;
             this.documentFiles = [];
             this.documentsCount = 0;
@@ -1740,6 +1754,10 @@ Alpine.data('registerWizard', (config) => ({
         this.$watch('step', () => {
             this.clearFieldErrors();
         });
+    },
+
+    get roleIsLocked() {
+        return this.lockedRole === 'dev' || this.lockedRole === 'company';
     },
 
     get isCompactRegister() {
@@ -1759,7 +1777,7 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get maxStep() {
-        return this.isCompany ? 3 : 1;
+        return 1;
     },
 
     get step1Valid() {
@@ -1775,24 +1793,29 @@ Alpine.data('registerWizard', (config) => ({
             && this.emailStatus !== 'taken'
             && this.emailStatus !== 'checking'
             && this.emailStatus !== 'invalid';
-        const passwordOk = this.password.length >= 8;
-        const confirmOk = this.password === this.passwordConfirmation && this.passwordConfirmation.length > 0;
-        const consentOk = this.isTalent ? this.dataProcessingConsent : true;
+        const passwordOk = this.isCompany
+            || (this.password.length >= 8
+                && this.password === this.passwordConfirmation
+                && this.passwordConfirmation.length > 0);
+        const consentOk = this.dataProcessingConsent;
+        const companyOk = ! this.isCompany
+            || (
+                this.contactName.trim().length >= 2
+                && this.phonePattern.test(this.phone.trim())
+                && this.sector !== ''
+                && this.companyDescription.trim().length >= 20
+                && this.companyCountry !== ''
+            );
 
-        return nameOk && emailOk && passwordOk && confirmOk && consentOk;
+        return nameOk && emailOk && passwordOk && consentOk && companyOk;
     },
 
     get companyStep2Valid() {
-        return this.firstName.trim().length >= 2
-            && this.lastName.trim().length >= 2
-            && this.sector !== ''
-            && this.companyDescription.trim().length >= 50
-            && this.companyCountry !== '';
+        return true;
     },
 
     get companyStep3Valid() {
-        return this.documentsCount <= 2
-            && this.dataProcessingConsent;
+        return true;
     },
 
     get documentsMax() {
@@ -1804,23 +1827,11 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get currentStepValid() {
-        if (this.step === 1) {
-            return this.step1Valid;
-        }
-
-        if (this.isCompany && this.step === 2) {
-            return this.companyStep2Valid;
-        }
-
-        if (this.isCompany && this.step === 3) {
-            return this.companyStep3Valid;
-        }
-
-        return false;
+        return this.step === 1 && this.step1Valid;
     },
 
     get canGoBack() {
-        return this.hasRole && this.step > 1 && ! this.submitting;
+        return false;
     },
 
     get showNext() {
@@ -1828,7 +1839,7 @@ Alpine.data('registerWizard', (config) => ({
             return true;
         }
 
-        return this.hasRole && this.step < this.maxStep;
+        return false;
     },
 
     get canGoNext() {
@@ -1836,7 +1847,7 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     get showSubmit() {
-        return (this.isTalent && this.step === 1) || (this.isCompany && this.step === 3);
+        return this.hasRole && this.step === 1;
     },
 
     get canSubmit() {
@@ -1844,15 +1855,11 @@ Alpine.data('registerWizard', (config) => ({
             return false;
         }
 
-        if (this.isCompany) {
-            return this.step === 3 && this.step1Valid && this.companyStep2Valid && this.companyStep3Valid;
-        }
-
         return this.step === 1 && this.step1Valid;
     },
 
     get navEnabled() {
-        return this.hasRole;
+        return false;
     },
 
     clearFieldErrors() {
@@ -1911,6 +1918,10 @@ Alpine.data('registerWizard', (config) => ({
                 return this.name.trim() === '';
             case 'email':
                 return this.email.trim() === '';
+            case 'contact_name':
+                return this.contactName.trim() === '';
+            case 'phone':
+                return this.phone.trim() === '';
             case 'password':
                 return this.password === '';
             case 'password_confirmation':
@@ -1943,26 +1954,31 @@ Alpine.data('registerWizard', (config) => ({
             return false;
         }
 
-        if (this.step === 1) {
-            if (field === 'name') {
-                return this.isCompany;
-            }
-
-            if (field === 'first_name' || field === 'last_name') {
-                return this.isTalent;
-            }
-
-            if (field === 'data_processing_consent') {
-                return this.isTalent;
-            }
-
-            return ['email', 'password', 'password_confirmation'].includes(field);
+        if (this.step !== 1) {
+            return false;
         }
 
-        if (this.isCompany && this.step === 2) {
+        if (field === 'name') {
+            return this.isCompany;
+        }
+
+        if (field === 'first_name' || field === 'last_name') {
+            return this.isTalent;
+        }
+
+        if (field === 'data_processing_consent') {
+            return true;
+        }
+
+        if (field === 'password' || field === 'password_confirmation') {
+            return this.isTalent;
+        }
+
+        if (this.isCompany) {
             return [
-                'first_name',
-                'last_name',
+                'email',
+                'contact_name',
+                'phone',
                 'sector',
                 'company_description',
                 'company_website',
@@ -1970,11 +1986,7 @@ Alpine.data('registerWizard', (config) => ({
             ].includes(field);
         }
 
-        if (this.isCompany && this.step === 3) {
-            return ['documents', 'data_processing_consent'].includes(field);
-        }
-
-        return false;
+        return ['email', 'password', 'password_confirmation'].includes(field);
     },
 
     emailIsValid(value) {
@@ -2089,6 +2101,40 @@ Alpine.data('registerWizard', (config) => ({
 
                 return null;
             }
+            case 'contact_name': {
+                const value = this.contactName.trim();
+
+                if (! value) {
+                    return messages.contact_name_required ?? messages.representative_name_required ?? null;
+                }
+
+                if (value.length < 2) {
+                    return messages.representative_name_min ?? null;
+                }
+
+                if (value.length > 255) {
+                    return messages.representative_name_max ?? null;
+                }
+
+                if (! this.namePattern.test(value)) {
+                    return messages.representative_name_format ?? null;
+                }
+
+                return null;
+            }
+            case 'phone': {
+                const value = this.phone.trim();
+
+                if (! value) {
+                    return messages.phone_required ?? null;
+                }
+
+                if (! this.phonePattern.test(value)) {
+                    return messages.phone_invalid ?? null;
+                }
+
+                return null;
+            }
             case 'password': {
                 if (! this.password) {
                     return messages.password_required ?? null;
@@ -2182,7 +2228,7 @@ Alpine.data('registerWizard', (config) => ({
                     return messages.company_description_required ?? null;
                 }
 
-                if (value.length < 50) {
+                if (value.length < 20) {
                     return messages.company_description_min ?? null;
                 }
 
@@ -2432,6 +2478,10 @@ Alpine.data('registerWizard', (config) => ({
     },
 
     resetRole() {
+        if (this.roleIsLocked) {
+            return;
+        }
+
         this.role = '';
         this.step = 1;
 
@@ -9742,6 +9792,236 @@ Alpine.data('homeAnnoncesNav', (config = {}) => ({
         });
 
         this._observer.observe(section);
+    },
+}));
+
+Alpine.data('companyOfferAjaxForm', (config = {}) => ({
+    mode: config.mode || 'demo',
+    messages: config.messages || {},
+    loadingTargetId: config.loadingTargetId || null,
+    submitting: false,
+    fieldErrors: {},
+    namePattern: /^[\p{L}\p{M}][\p{L}\p{M}\s'\-\.]*$/u,
+    phonePattern: /^\+?[0-9\s\-\.\(\)]{8,20}$/,
+    emailPattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+
+    fieldMessage(field) {
+        return this.fieldErrors[field] || '';
+    },
+
+    fieldInvalidClass(field) {
+        return this.fieldErrors[field]
+            ? '!border-rose-400 focus:!border-rose-500 focus:!ring-rose-500'
+            : '';
+    },
+
+    clearFieldError(field) {
+        if (! this.fieldErrors[field]) {
+            return;
+        }
+
+        const next = { ...this.fieldErrors };
+        delete next[field];
+        this.fieldErrors = next;
+    },
+
+    clearAllErrors() {
+        this.fieldErrors = {};
+    },
+
+    setLoading(loading) {
+        if (! this.loadingTargetId) {
+            return;
+        }
+
+        setPartialLoading(this.loadingTargetId, loading);
+    },
+
+    validateDemo(form) {
+        const errors = {};
+        const companyName = (form.company_name?.value || '').trim();
+        const contactName = (form.contact_name?.value || '').trim();
+        const email = (form.email?.value || '').trim();
+        const message = (form.message?.value || '').trim();
+
+        if (companyName.length < 2) {
+            errors.company_name = this.messages.company_required || '';
+        }
+
+        if (contactName.length < 2) {
+            errors.contact_name = this.messages.contact_required || '';
+        }
+
+        if (! email) {
+            errors.email = this.messages.email_required || '';
+        } else if (! this.emailPattern.test(email)) {
+            errors.email = this.messages.email_invalid || '';
+        }
+
+        if (! message) {
+            errors.message = this.messages.message_required || '';
+        } else if (message.length < 20) {
+            errors.message = this.messages.message_min || '';
+        }
+
+        return errors;
+    },
+
+    validateTrial(form) {
+        const errors = {};
+        const companyName = (form.company_name?.value || '').trim();
+        const contactName = (form.contact_name?.value || '').trim();
+        const email = (form.email?.value || '').trim();
+        const phone = (form.phone?.value || '').trim();
+        const sector = form.sector?.value || '';
+        const country = form.company_country?.value || '';
+        const description = (form.company_description?.value || '').trim();
+        const website = (form.company_website?.value || '').trim();
+        const consent = form.data_processing_consent?.checked;
+
+        if (companyName.length < 2 || ! this.namePattern.test(companyName)) {
+            errors.company_name = this.messages.company_required || '';
+        }
+
+        if (contactName.length < 2 || ! this.namePattern.test(contactName)) {
+            errors.contact_name = this.messages.contact_required || '';
+        }
+
+        if (! email) {
+            errors.email = this.messages.email_required || '';
+        } else if (! this.emailPattern.test(email)) {
+            errors.email = this.messages.email_invalid || '';
+        }
+
+        if (! phone) {
+            errors.phone = this.messages.phone_required || '';
+        } else if (! this.phonePattern.test(phone)) {
+            errors.phone = this.messages.phone_invalid || '';
+        }
+
+        if (! sector) {
+            errors.sector = this.messages.sector_required || '';
+        }
+
+        if (! country) {
+            errors.company_country = this.messages.country_required || '';
+        }
+
+        if (! description) {
+            errors.company_description = this.messages.description_required || '';
+        } else if (description.length < 20) {
+            errors.company_description = this.messages.description_min || '';
+        }
+
+        if (website) {
+            try {
+                const parsed = new URL(website);
+                if (! ['http:', 'https:'].includes(parsed.protocol)) {
+                    errors.company_website = this.messages.website_invalid || '';
+                }
+            } catch {
+                errors.company_website = this.messages.website_invalid || '';
+            }
+        }
+
+        if (! consent) {
+            errors.data_processing_consent = this.messages.consent_required || '';
+        }
+
+        return errors;
+    },
+
+    validate(form) {
+        return this.mode === 'trial'
+            ? this.validateTrial(form)
+            : this.validateDemo(form);
+    },
+
+    applyServerErrors(errors) {
+        const next = {};
+
+        Object.entries(errors || {}).forEach(([field, messages]) => {
+            if (Array.isArray(messages) && messages[0]) {
+                next[field] = messages[0];
+            } else if (typeof messages === 'string') {
+                next[field] = messages;
+            }
+        });
+
+        this.fieldErrors = next;
+    },
+
+    resetForm(form) {
+        form.reset();
+        this.clearAllErrors();
+    },
+
+    async onSubmit(event) {
+        event.preventDefault();
+
+        if (this.submitting) {
+            return;
+        }
+
+        const form = event.target;
+
+        if (! (form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const localErrors = this.validate(form);
+        this.fieldErrors = localErrors;
+
+        if (Object.keys(localErrors).length > 0) {
+            const firstField = Object.keys(localErrors)[0];
+            form.querySelector(`[name="${firstField}"]`)?.focus?.();
+            pushToast('error', this.messages.incomplete || localErrors[firstField]);
+
+            return;
+        }
+
+        this.submitting = true;
+        this.setLoading(true);
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: new FormData(form),
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (! response.ok) {
+                if (payload?.errors) {
+                    this.applyServerErrors(payload.errors);
+                }
+
+                const messages = payload?.errors
+                    ? Object.values(payload.errors).flat()
+                    : [];
+
+                if (messages.length === 0 && payload?.message) {
+                    messages.push(payload.message);
+                }
+
+                pushToast('error', messages[0] || this.messages.network_error || 'Error');
+
+                return;
+            }
+
+            this.resetForm(form);
+            pushToast('success', payload?.message || this.messages.sent || '');
+        } catch {
+            pushToast('error', this.messages.network_error || 'Error');
+        } finally {
+            this.submitting = false;
+            this.setLoading(false);
+        }
     },
 }));
 

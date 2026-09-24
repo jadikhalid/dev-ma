@@ -34,6 +34,12 @@ class PendingRegistrationService
     {
         $validated = $request->validated();
 
+        if (($validated['role'] ?? null) === 'company') {
+            throw ValidationException::withMessages([
+                'role' => __('talenma.auth.validation.role_invalid'),
+            ]);
+        }
+
         $this->purgeExistingForEmail($validated['email']);
 
         $pending = PendingRegistration::query()->create([
@@ -44,27 +50,19 @@ class PendingRegistrationService
             'expires_at' => now()->addMinutes(self::EXPIRY_MINUTES),
         ]);
 
-        if ($validated['role'] === 'dev') {
-            $cv = $request->file('cv');
+        $cv = $request->file('cv');
 
-            $pending->update([
-                'document_paths' => $cv instanceof UploadedFile
-                    ? [$this->storePendingDocument(
-                        $pending,
-                        $cv,
-                        1,
-                        ProfileDocument::TYPE_CV,
-                        $validated['cv_language'] ?? null,
-                    )]
-                    : [],
-            ]);
-        }
-
-        if ($validated['role'] === 'company' && $request->hasFile('documents')) {
-            $pending->update([
-                'document_paths' => $this->storeDocuments($pending, $request->file('documents', [])),
-            ]);
-        }
+        $pending->update([
+            'document_paths' => $cv instanceof UploadedFile
+                ? [$this->storePendingDocument(
+                    $pending,
+                    $cv,
+                    1,
+                    ProfileDocument::TYPE_CV,
+                    $validated['cv_language'] ?? null,
+                )]
+                : [],
+        ]);
 
         try {
             $this->sendVerificationMail($pending);
@@ -273,11 +271,15 @@ class PendingRegistrationService
 
                 $companyProfile = $user->companyProfile()->create([
                     'representative_name' => $payload['representative_name'] ?? null,
+                    'phone' => $payload['phone'] ?? null,
                     'sector' => $sectorLabel,
                     'profession_sector_id' => $sector->id,
                     'description' => $payload['company_description'],
                     'website' => $payload['company_website'] ?? null,
                     'country' => $payload['company_country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY,
+                    'is_subscribed' => false,
+                    'subscription_expires_at' => null,
+                    'trial_ends_at' => null,
                 ]);
 
                 $this->attachCompanyDocuments($companyProfile, $pending);
@@ -347,61 +349,20 @@ class PendingRegistrationService
      */
     private function buildPayload(array $validated): array
     {
-        $payload = [
+        $firstName = $validated['first_name'];
+        $lastName = $validated['last_name'];
+
+        return [
+            'role' => 'dev',
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'name' => trim($firstName.' '.$lastName),
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
+            'sector' => $validated['sector'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'data_processing_consent_at' => now()->toIso8601String(),
+            'data_processing_consent_version' => (string) config('talenma.data_processing_consent_version'),
         ];
-
-        if ($validated['role'] === 'dev') {
-            $firstName = $validated['first_name'];
-            $lastName = $validated['last_name'];
-
-            $payload['first_name'] = $firstName;
-            $payload['last_name'] = $lastName;
-            $payload['name'] = trim($firstName.' '.$lastName);
-            $payload['sector'] = $validated['sector'] ?? null;
-            $payload['description'] = $validated['description'] ?? null;
-            $payload['data_processing_consent_at'] = now()->toIso8601String();
-            $payload['data_processing_consent_version'] = (string) config('talenma.data_processing_consent_version');
-        }
-
-        if ($validated['role'] === 'company') {
-            $firstName = $validated['first_name'];
-            $lastName = $validated['last_name'];
-
-            $payload['name'] = $validated['name'];
-            $payload['first_name'] = $firstName;
-            $payload['last_name'] = $lastName;
-            $payload['representative_name'] = $validated['representative_name']
-                ?? trim($firstName.' '.$lastName);
-            $payload['sector'] = $validated['sector'];
-            $payload['company_description'] = $validated['company_description'];
-            $payload['company_website'] = $validated['company_website'] ?? null;
-            $payload['company_country'] = $validated['company_country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY;
-            $payload['data_processing_consent_at'] = now()->toIso8601String();
-            $payload['data_processing_consent_version'] = (string) config('talenma.data_processing_consent_version');
-        }
-
-        return $payload;
-    }
-
-    /**
-     * @param  list<UploadedFile>  $files
-     * @return list<array<string, mixed>>
-     */
-    private function storeDocuments(PendingRegistration $pending, array $files): array
-    {
-        $stored = [];
-
-        foreach ($files as $index => $file) {
-            if (! $file instanceof UploadedFile) {
-                continue;
-            }
-
-            $stored[] = $this->storePendingDocument($pending, $file, $index + 1);
-        }
-
-        return $stored;
     }
 
     /**

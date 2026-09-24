@@ -47,23 +47,75 @@ class RegistrationTest extends TestCase
         return array_merge([
             'name' => 'Acme SAS',
             'email' => 'company@example.com',
-            'password' => 'Password1',
-            'password_confirmation' => 'Password1',
             'role' => 'company',
-            'first_name' => 'Jean',
-            'last_name' => 'Dupont',
+            'contact_name' => 'Jean Dupont',
+            'phone' => '+33123456789',
             'sector' => 'it-digital',
-            'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile, à la recherche de talents pour accompagner notre croissance.',
+            'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile.',
             'company_country' => 'fr',
             'data_processing_consent' => '1',
         ], $overrides);
     }
 
-    public function test_registration_screen_can_be_rendered(): void
+    public function test_company_self_registration_via_register_is_rejected(): void
     {
-        $response = $this->get('/register');
+        Mail::fake();
 
-        $response->assertStatus(200);
+        $response = $this->from('/register')->post('/register', $this->validCompanyPayload());
+
+        $response->assertRedirect('/register');
+        $response->assertSessionHasErrors('role');
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'company@example.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'company@example.com']);
+        Mail::assertNothingSent();
+    }
+
+    public function test_talent_verification_email_uses_full_name(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', $this->validTalentPayload([
+            'email' => 'talent-greeting@example.com',
+        ]));
+
+        Mail::assertSent(VerifyRegistrationMail::class, function (VerifyRegistrationMail $mail) {
+            return $mail->hasTo('talent-greeting@example.com')
+                && $mail->pending->greetingName() === 'Test User';
+        });
+    }
+
+    public function test_verified_pending_company_cannot_access_dashboard(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'company',
+            'approval_status' => User::APPROVAL_PENDING,
+        ]);
+        $user->companyProfile()->create([
+            'country' => 'fr',
+        ]);
+        $user->markEmailAsVerified();
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertRedirect(route('account.pending'));
+    }
+
+    public function test_admin_can_approve_pending_company(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $company = User::factory()->create([
+            'role' => 'company',
+            'approval_status' => User::APPROVAL_PENDING,
+        ]);
+        $company->companyProfile()->create([
+            'country' => 'fr',
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.users.approve', $company));
+
+        $response->assertRedirect();
+        $company->refresh();
+        $this->assertTrue($company->isApproved());
     }
 
     public function test_registration_stores_pending_until_email_is_verified(): void
@@ -189,156 +241,6 @@ class RegistrationTest extends TestCase
         $response->assertRedirect('/login');
         $response->assertSessionHasErrors('email');
         $this->assertGuest();
-    }
-
-    public function test_company_registration_is_pending_until_email_verification(): void
-    {
-        Mail::fake();
-
-        $response = $this->post('/register', $this->validCompanyPayload([
-            'email' => 'company@example.com',
-            'name' => 'Acme SAS',
-        ]));
-
-        $response->assertRedirect(route('login'));
-        $this->assertDatabaseHas('pending_registrations', ['email' => 'company@example.com']);
-        $this->assertDatabaseMissing('users', ['email' => 'company@example.com']);
-
-        Mail::assertSent(VerifyRegistrationMail::class, function (VerifyRegistrationMail $mail) {
-            return $mail->hasTo('company@example.com')
-                && $mail->pending->greetingName() === 'Jean Dupont';
-        });
-
-        $pending = PendingRegistration::query()->where('email', 'company@example.com')->firstOrFail();
-        $this->get(route('register.verify', ['token' => $pending->token]));
-
-        $user = User::query()->where('email', 'company@example.com')->first();
-        $this->assertNull($user?->profile);
-        $this->assertSame('Acme SAS', $user?->name);
-        $this->assertNotNull($user?->companyProfile);
-        $this->assertSame(User::APPROVAL_PENDING, $user?->approval_status);
-        $this->assertNotNull($user?->data_processing_consent_at);
-        $this->assertSame(config('talenma.data_processing_consent_version'), $user?->data_processing_consent_version);
-    }
-
-    public function test_company_registration_requires_data_processing_consent(): void
-    {
-        Mail::fake();
-
-        $response = $this->from('/register')->post('/register', $this->validCompanyPayload([
-            'email' => 'company-consent@example.com',
-            'data_processing_consent' => null,
-        ]));
-
-        $response->assertRedirect('/register');
-        $response->assertSessionHasErrors('data_processing_consent');
-        $this->assertDatabaseMissing('pending_registrations', ['email' => 'company-consent@example.com']);
-        Mail::assertNothingSent();
-    }
-
-    public function test_talent_verification_email_uses_full_name(): void
-    {
-        Mail::fake();
-
-        $this->post('/register', $this->validTalentPayload([
-            'email' => 'talent-greeting@example.com',
-        ]));
-
-        Mail::assertSent(VerifyRegistrationMail::class, function (VerifyRegistrationMail $mail) {
-            return $mail->hasTo('talent-greeting@example.com')
-                && $mail->pending->greetingName() === 'Test User';
-        });
-    }
-
-    public function test_verified_pending_company_cannot_access_dashboard(): void
-    {
-        $user = User::factory()->create([
-            'role' => 'company',
-            'approval_status' => User::APPROVAL_PENDING,
-        ]);
-        $user->companyProfile()->create([
-            'country' => 'fr',
-        ]);
-        $user->markEmailAsVerified();
-
-        $response = $this->actingAs($user)->get(route('dashboard'));
-
-        $response->assertRedirect(route('account.pending'));
-    }
-
-    public function test_company_email_verification_redirects_to_pending_page(): void
-    {
-        Mail::fake();
-
-        $this->post('/register', $this->validCompanyPayload([
-            'email' => 'company-pending@example.com',
-            'name' => 'Acme SAS',
-        ]));
-
-        $pending = PendingRegistration::query()->where('email', 'company-pending@example.com')->firstOrFail();
-
-        $response = $this->get(route('register.verify', ['token' => $pending->token]));
-
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('account.pending'));
-    }
-
-    public function test_admin_can_approve_pending_company(): void
-    {
-        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
-        $company = User::factory()->create([
-            'role' => 'company',
-            'approval_status' => User::APPROVAL_PENDING,
-        ]);
-        $company->companyProfile()->create([
-            'country' => 'fr',
-        ]);
-
-        $response = $this->actingAs($admin)->post(route('admin.users.approve', $company));
-
-        $response->assertRedirect();
-        $company->refresh();
-        $this->assertTrue($company->isApproved());
-    }
-
-    public function test_company_registration_requires_company_fields(): void
-    {
-        $response = $this->from('/register')->post('/register', $this->validPayload([
-            'role' => 'company',
-            'email' => 'company2@example.com',
-        ]));
-
-        $response->assertRedirect('/register');
-        $response->assertSessionHasErrors(['name', 'sector', 'company_description', 'company_country']);
-    }
-
-    public function test_company_registration_stores_sector_and_documents_on_verify(): void
-    {
-        Mail::fake();
-
-        $response = $this->post('/register', array_merge($this->validCompanyPayload([
-            'email' => 'company-docs@example.com',
-        ]), [
-            'documents' => [
-                UploadedFile::fake()->create('kbis.pdf', 100, 'application/pdf'),
-            ],
-        ]));
-
-        $response->assertRedirect(route('login'));
-
-        $pending = PendingRegistration::query()->where('email', 'company-docs@example.com')->firstOrFail();
-        $this->assertNotEmpty($pending->document_paths);
-
-        $this->get(route('register.verify', ['token' => $pending->token]));
-
-        $user = User::query()->where('email', 'company-docs@example.com')->firstOrFail();
-        $profile = $user->companyProfile;
-
-        $this->assertNotNull($profile);
-        $this->assertNotNull($profile->sector);
-        $this->assertNotNull($profile->description);
-        $this->assertNull($profile->hiring_needs);
-        $this->assertCount(1, $profile->documents);
     }
 
     public function test_talent_registration_requires_only_identity_and_consent(): void

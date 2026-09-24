@@ -10,7 +10,9 @@ use App\Models\ModerationAction;
 use App\Models\ModeratorPermissionCatalog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class UserModerationService
@@ -153,10 +155,25 @@ class UserModerationService
         ]);
 
         if (! $user->companyProfile) {
-            $user->companyProfile()->create();
+            $user->companyProfile()->create([
+                'is_subscribed' => false,
+                'subscription_expires_at' => null,
+                'trial_ends_at' => null,
+            ]);
         }
 
-        Mail::to($user->email)->send(new CompanyApprovedMail($user->fresh()->loadMissing('companyProfile')));
+        $user->loadMissing('companyProfile');
+        $user->companyProfile?->startFreeTrial();
+
+        $plainPassword = Str::password(12);
+        $user->forceFill([
+            'password' => Hash::make($plainPassword),
+        ])->save();
+
+        Mail::to($user->email)->send(new CompanyApprovedMail(
+            $user->fresh()->loadMissing('companyProfile'),
+            $plainPassword,
+        ));
     }
 
     public function rejectCompany(User $user, ?string $reason, User $reviewer): void

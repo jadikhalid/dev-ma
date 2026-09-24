@@ -23,10 +23,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'website',
     'employee_count',
     'hiring_needs',
+    'is_subscribed',
+    'subscription_expires_at',
+    'trial_ends_at',
 ])]
 class CompanyProfile extends Model
 {
     use HasFactory;
+
+    public const TRIAL_MONTHS = 3;
+
+    public const PLAN_PRICE_FROM_USD = 500;
+
+    /**
+     * Accès actif par défaut (tests, seeders, entreprises déjà en place).
+     * L’inscription et le démarrage d’essai forcent explicitement false.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_subscribed' => true,
+    ];
 
     /** ISO 3166-1 alpha-2 (lowercase): EU + Canada + United States + Morocco + Gulf (GCC). */
     public const COUNTRY_CODES = [
@@ -40,9 +57,66 @@ class CompanyProfile extends Model
 
     public const DEFAULT_COUNTRY = 'fr';
 
+    protected function casts(): array
+    {
+        return [
+            'is_subscribed' => 'boolean',
+            'subscription_expires_at' => 'datetime',
+            'trial_ends_at' => 'datetime',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function hasPaidAccess(): bool
+    {
+        if (! $this->is_subscribed) {
+            return false;
+        }
+
+        return $this->subscription_expires_at === null
+            || $this->subscription_expires_at->isFuture();
+    }
+
+    public function isOnTrial(): bool
+    {
+        return $this->trial_ends_at !== null
+            && $this->trial_ends_at->isFuture();
+    }
+
+    public function hasActivePlanAccess(): bool
+    {
+        return $this->hasPaidAccess() || $this->isOnTrial();
+    }
+
+    public function trialDaysRemaining(): ?int
+    {
+        if (! $this->isOnTrial()) {
+            return null;
+        }
+
+        return (int) max(0, now()->startOfDay()->diffInDays($this->trial_ends_at->copy()->startOfDay(), false));
+    }
+
+    /**
+     * Start the free trial for a newly approved company (idempotent if already entitled).
+     */
+    public function startFreeTrial(?\DateTimeInterface $from = null): void
+    {
+        if ($this->hasPaidAccess() || $this->isOnTrial()) {
+            return;
+        }
+
+        $start = $from ? \Illuminate\Support\Carbon::parse($from) : now();
+
+        $this->forceFill([
+            'is_subscribed' => false,
+            'subscription_expires_at' => null,
+            'trial_ends_at' => $start->copy()->addMonths(self::TRIAL_MONTHS),
+        ])->save();
     }
 
     public function professionSector(): BelongsTo

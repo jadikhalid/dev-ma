@@ -32,6 +32,7 @@ class CompanyProfileTest extends TestCase
 
         $user->companyProfile()->create(array_merge([
             'country' => 'fr',
+            'is_subscribed' => true,
         ], $profileOverrides));
 
         return $user->fresh(['companyProfile']);
