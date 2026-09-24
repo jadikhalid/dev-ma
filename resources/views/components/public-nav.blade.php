@@ -8,7 +8,9 @@
     $onPublicJobShow = request()->routeIs('jobs.public.show');
     $onCompanyOffer = request()->routeIs('company.offer');
     $onBlog = request()->routeIs('blog.*');
-    $showCompanyOfferCta = ! $onCompanyOffer && ! $onBlog;
+    $showCompanyOfferCta = Auth::guest()
+        && ! $onCompanyOffer
+        && ! $onBlog;
     $showAnnoncesNav = ! $onBlog && ! $onCompanyOffer;
     $showBlogNav = ! $onCompanyOffer;
     $showAppsLauncher = ! $onCompanyOffer;
@@ -238,6 +240,7 @@
                             </svg>
                             <span>{{ __('talenma.nav.blog') }}</span>
                         </a>
+                        @if ($showCompanyOfferCta)
                         <a
                             href="{{ route('company.offer') }}"
                             role="menuitem"
@@ -249,6 +252,7 @@
                             </svg>
                             <span>{{ __('talenma.nav.company_offer') }}</span>
                         </a>
+                        @endif
                     </div>
                     @endif
                 </div>
