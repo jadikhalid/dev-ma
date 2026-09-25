@@ -12,9 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(prepend: [
-            \App\Http\Middleware\RedirectCanonicalTalentHost::class,
-        ]);
+        // Global: must run even when no domain route matches (e.g. www.*/ → 404).
+        $middleware->prepend(\App\Http\Middleware\RedirectCanonicalTalentHost::class);
 
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,

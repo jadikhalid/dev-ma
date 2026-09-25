@@ -28,6 +28,9 @@ class CompanyPortalHostTest extends TestCase
 
         $this->get('https://www.talentsdumaroc.com/blog')
             ->assertRedirect('https://talentsdumaroc.com/blog');
+
+        $this->get('https://www.talentsdumaroc.com/')
+            ->assertRedirect('https://talentsdumaroc.com/');
     }
 
     public function test_company_portal_root_renders_offer(): void
