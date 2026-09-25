@@ -31,3 +31,4 @@ Avec `composer dev` (serveur sur `127.0.0.1:8000`) :
 2. Alias / domaine additionnel pointant vers le même `public/` Laravel.
 3. SSL couvrant `entreprises.talentsdumaroc.com`.
 4. `.env` : `HOST_*`, `SESSION_DOMAIN=.talentsdumaroc.com`, `SESSION_SECURE_COOKIE=true`.
+5. `HOST_WWW` = hôte canonique talents (ex. `talentsdumaroc.com`). Le jumeau `www.` (ou l’apex si `HOST_WWW` est en `www.`) est redirigé en **301** vers cet hôte.

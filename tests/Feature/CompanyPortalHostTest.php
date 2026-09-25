@@ -19,6 +19,17 @@ class CompanyPortalHostTest extends TestCase
             ->assertRedirect(PortalHost::companyUrl('/', ['tab' => 'trial']));
     }
 
+    public function test_www_subdomain_redirects_to_canonical_talent_host(): void
+    {
+        config([
+            'talenma.hosts.www' => 'talentsdumaroc.com',
+            'app.url' => 'https://talentsdumaroc.com',
+        ]);
+
+        $this->get('https://www.talentsdumaroc.com/blog')
+            ->assertRedirect('https://talentsdumaroc.com/blog');
+    }
+
     public function test_company_portal_root_renders_offer(): void
     {
         $company = config('talenma.hosts.company');
