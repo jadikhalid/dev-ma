@@ -228,11 +228,15 @@
                             <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
                                 <a
                                     href="{{ route('company.offer') }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
                                     x-text="drawerLabels.registerCompany"
                                 ></a>
                                 <a
-                                    href="{{ route('login') }}"
+                                    href="{{ \App\Support\PortalHost::companyLoginUrl() }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                                     x-text="drawerLabels.loginCompany"
                                 ></a>

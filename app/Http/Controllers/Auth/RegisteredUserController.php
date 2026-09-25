@@ -9,6 +9,7 @@ use App\Models\PendingRegistration;
 use App\Models\PlatformSetting;
 use App\Models\User;
 use App\Services\PendingRegistrationService;
+use App\Support\PortalHost;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,10 @@ class RegisteredUserController extends Controller
 
     public function create(): View|RedirectResponse
     {
+        if (PortalHost::isCompanyHost()) {
+            return redirect()->route('company.offer', ['tab' => 'trial']);
+        }
+
         $role = request('role');
 
         if ($role === 'company') {

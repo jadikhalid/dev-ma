@@ -41,7 +41,14 @@
                     @endif
                     <x-primary-button class="w-full sm:w-auto justify-center !text-base !py-3.5 sm:!text-sm sm:!py-2.5">{{ __('talenma.auth.login_btn') }}</x-primary-button>
                 </div>
-                <p class="mt-5 sm:mt-4 text-center text-base sm:text-sm text-gray-600">{{ __('talenma.auth.no_account') }} <a href="{{ route('register') }}" class="text-indigo-600 font-medium">{{ __('talenma.nav.register') }}</a></p>
+                <p class="mt-5 sm:mt-4 text-center text-base sm:text-sm text-gray-600">
+                    @if (! empty($companyPortal))
+                        {{ __('talenma.auth.no_company_account') }}
+                        <a href="{{ route('company.offer', ['tab' => 'trial']) }}" class="text-indigo-600 font-medium">{{ __('talenma.company_offer.cta_trial') }}</a>
+                    @else
+                        {{ __('talenma.auth.no_account') }} <a href="{{ route('register') }}" class="text-indigo-600 font-medium">{{ __('talenma.nav.register') }}</a>
+                    @endif
+                </p>
             </form>
         </div>
     @endif

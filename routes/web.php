@@ -21,6 +21,7 @@ use App\Http\Controllers\LibraryGateController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\Company\DirectHireController as CompanyDirectHireController;
 use App\Http\Controllers\CompanyOfferController;
+use App\Http\Controllers\CompanyPortalLegacyRedirectController;
 use App\Http\Controllers\CompanyAccompanimentController;
 use App\Http\Controllers\CompanyCatalogSearchController;
 use App\Http\Controllers\CompanyJobController;
@@ -53,6 +54,7 @@ use App\Http\Controllers\TalentJobController;
 use App\Http\Controllers\TalentProfileDocumentController;
 use App\Http\Controllers\TalentPresentationVideoController;
 use App\Http\Controllers\TalentSearchController;
+use App\Support\PortalHost;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/locale/suggest-from-ip', [LocaleController::class, 'suggest'])
@@ -67,7 +69,6 @@ Route::post('/newsletter/subscribe', [NewsletterPreferenceController::class, 'su
     ->middleware('throttle:10,1')
     ->name('newsletter.subscribe');
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])
     ->where('slug', '[A-Za-z0-9\-]+')
@@ -108,14 +109,33 @@ Route::get('/services', [ServiceController::class, 'index'])
     ->middleware(['auth', 'verified', 'account.approved'])
     ->name('services.index');
 
-Route::get('/entreprises', [CompanyOfferController::class, 'show'])
-    ->name('company.offer');
-Route::post('/entreprises/demo', [CompanyOfferController::class, 'storeDemo'])
-    ->middleware('throttle:8,1')
-    ->name('company.demo.store');
-Route::post('/entreprises/trial', [CompanyOfferController::class, 'storeTrial'])
-    ->middleware('throttle:8,1')
-    ->name('company.trial.store');
+/*
+|--------------------------------------------------------------------------
+| Domain-specific public roots
+|--------------------------------------------------------------------------
+| Shared routes below work on any host. Only `/` and the company landing
+| differ between www and the entreprises portal.
+*/
+$wwwHost = PortalHost::wwwHost();
+$companyHost = PortalHost::companyHost();
+
+Route::domain($companyHost)->group(function () {
+    Route::get('/', [CompanyOfferController::class, 'show'])->name('company.offer');
+    Route::post('/demo', [CompanyOfferController::class, 'storeDemo'])
+        ->middleware('throttle:8,1')
+        ->name('company.demo.store');
+    Route::post('/trial', [CompanyOfferController::class, 'storeTrial'])
+        ->middleware('throttle:8,1')
+        ->name('company.trial.store');
+    Route::redirect('/entreprises', '/', 301);
+});
+
+Route::domain($wwwHost)->group(function () {
+    Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::match(['get', 'post'], '/entreprises/{path?}', CompanyPortalLegacyRedirectController::class)
+        ->where('path', '.*')
+        ->name('company.offer.legacy');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/account/pending', [AccountStatusController::class, 'pending'])

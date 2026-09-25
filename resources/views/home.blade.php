@@ -66,7 +66,7 @@
                             <a href="{{ route('register', ['role' => 'dev']) }}" class="inline-flex justify-center px-5 py-2.5 bg-white border border-gray-200 text-gray-800 text-sm font-semibold rounded-xl hover:border-indigo-300 hover:text-indigo-700 transition">
                                 {{ __('talenma.home.cta_talent') }}
                             </a>
-                            <a href="{{ route('company.offer') }}" class="inline-flex justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
+                            <a href="{{ route('company.offer') }}" target="_blank" rel="noopener noreferrer" class="inline-flex justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
                                 {{ __('talenma.home.cta_company') }}
                             </a>
                         </div>
@@ -208,7 +208,7 @@
         <p class="mt-4 text-indigo-100">{{ __('talenma.home.cta_subtitle') }}</p>
         <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <a href="{{ route('register', ['role' => 'dev']) }}" class="px-8 py-3.5 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50">{{ __('talenma.home.cta_talent') }}</a>
-            <a href="{{ route('company.offer') }}" class="px-8 py-3.5 border border-white/30 font-semibold rounded-xl hover:bg-white/10">{{ __('talenma.home.cta_company') }}</a>
+            <a href="{{ route('company.offer') }}" target="_blank" rel="noopener noreferrer" class="px-8 py-3.5 border border-white/30 font-semibold rounded-xl hover:bg-white/10">{{ __('talenma.home.cta_company') }}</a>
         </div>
     </div>
 </section>

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use App\Support\PortalHost;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -73,6 +74,26 @@ class LoginRequest extends FormRequest
 
             throw ValidationException::withMessages([
                 'email' => __('talenma.auth.account_disabled'),
+            ]);
+        }
+
+        if ($authenticated && PortalHost::isCompanyHost($this) && $authenticated->isTalent()) {
+            Auth::logout();
+
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => __('talenma.auth.validation.login_wrong_portal_talent'),
+            ]);
+        }
+
+        if ($authenticated && PortalHost::isTalentHost($this) && $authenticated->isCompany()) {
+            Auth::logout();
+
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => __('talenma.auth.validation.login_wrong_portal_company'),
             ]);
         }
 

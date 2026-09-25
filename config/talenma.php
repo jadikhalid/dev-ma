@@ -52,6 +52,18 @@ return [
     'data_processing_consent_version' => '2026-08-12',
 
     /*
+    | Hôtes publics (une seule app Laravel, routage par hostname).
+    | Prod : HOST_WWW=www.talentsdumaroc.com (ou talentsdumaroc.com),
+    |        HOST_COMPANY=entreprises.talentsdumaroc.com
+    | Local : HOST_WWW=127.0.0.1, HOST_COMPANY=entreprises.localhost
+    |         (ouvrir http://entreprises.localhost:8000 — résout vers 127.0.0.1)
+    */
+    'hosts' => [
+        'www' => env('HOST_WWW', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: 'localhost'),
+        'company' => env('HOST_COMPANY', 'entreprises.localhost'),
+    ],
+
+    /*
     | Relance profil talent : délai après validation (heures) avant envoi
     | si le profil minimum (catalogue) n'est pas complet.
     */

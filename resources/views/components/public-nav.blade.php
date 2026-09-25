@@ -63,6 +63,8 @@
             <div class="hidden min-w-0 flex-1 items-center justify-center px-4 sm:flex">
                 <a
                     href="{{ route('company.offer') }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label="{{ __('talenma.nav.company_offer') }}"
                     class="inline-flex max-w-full shrink items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold tracking-wide transition bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/80 shadow-none hover:bg-indigo-100 hover:ring-indigo-300"
                 >
@@ -243,6 +245,8 @@
                         @if ($showCompanyOfferCta)
                         <a
                             href="{{ route('company.offer') }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             role="menuitem"
                             class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
                             @click="closeMenu()"

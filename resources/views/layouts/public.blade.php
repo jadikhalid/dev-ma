@@ -21,9 +21,15 @@
     class="font-sans text-gray-900 antialiased bg-white"
     @if (request()->routeIs('home')) data-mobile-locale-auto="1" data-locale-suggest-url="{{ route('locale.suggest') }}" @endif
 >
-    <x-public-nav :full-width="request()->routeIs('home')" />
+    @if (\App\Support\PortalHost::isCompanyHost())
+        <x-company-public-nav />
+    @else
+        <x-public-nav :full-width="request()->routeIs('home')" />
+    @endif
     <x-toast-stack persistent />
     <main>@yield('content')</main>
-    <x-public-footer />
+    @unless (\App\Support\PortalHost::isCompanyHost())
+        <x-public-footer />
+    @endunless
 </body>
 </html>

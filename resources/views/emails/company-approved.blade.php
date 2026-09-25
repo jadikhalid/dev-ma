@@ -16,7 +16,7 @@
         <p style="margin:0;"><strong>{{ __('talenma.mail.company_approved.password_label') }}</strong> {{ $plainPassword }}</p>
     </div>
     <p style="margin:0 0 24px;">
-        <a href="{{ route('login') }}" style="display:inline-block;padding:12px 24px;background-color:#4f46e5;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;border-radius:12px;">
+        <a href="{{ \App\Support\PortalHost::companyLoginUrl() }}" style="display:inline-block;padding:12px 24px;background-color:#4f46e5;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;border-radius:12px;">
             {{ __('talenma.mail.company_approved.cta') }}
         </a>
     </p>
