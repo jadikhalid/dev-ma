@@ -1,3 +1,8 @@
+@php
+    $brandHomeUrl = \App\Support\PortalHost::isCompanyHost()
+        ? route('company.offer')
+        : route('home');
+@endphp
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}" @class(['sm:h-full' => $viewportFit])>
 <head>
@@ -29,7 +34,7 @@
 
             <div class="relative z-10 flex h-full min-h-0 w-full flex-col px-10 py-8 xl:px-14 xl:py-10">
                 <div class="flex shrink-0 items-center justify-between">
-                    <x-brand-logo href="{{ route('home') }}" white size="lg" />
+                    <x-brand-logo href="{{ $brandHomeUrl }}" white size="lg" />
                     <x-locale-switcher />
                 </div>
 
@@ -59,13 +64,13 @@
             ])>
                 @if ($authPhoneLogo)
                     <div class="brand-logo-phone">
-                        <x-brand-logo href="{{ route('home') }}" size="md" phone phone-variant="register" />
+                        <x-brand-logo href="{{ $brandHomeUrl }}" size="md" phone phone-variant="register" />
                     </div>
                     <div class="brand-logo-desktop">
-                        <x-brand-logo href="{{ route('home') }}" classic />
+                        <x-brand-logo href="{{ $brandHomeUrl }}" classic />
                     </div>
                 @else
-                    <x-brand-logo href="{{ route('home') }}" classic />
+                    <x-brand-logo href="{{ $brandHomeUrl }}" classic />
                 @endif
                 <x-locale-switcher />
             </div>
@@ -87,7 +92,7 @@
                     'mt-6 text-center text-sm text-gray-500',
                     'shrink-0 mt-3 text-sm' => $viewportFit,
                 ])>
-                    <a href="{{ route('home') }}" class="text-indigo-600 font-medium hover:text-indigo-800">{{ __('talenma.nav.back_home') }}</a>
+                    <a href="{{ $brandHomeUrl }}" class="text-indigo-600 font-medium hover:text-indigo-800">{{ __('talenma.nav.back_home') }}</a>
                 </p>
             </div>
         </div>
