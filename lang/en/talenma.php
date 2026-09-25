@@ -18,7 +18,7 @@ return [
         'my_profile' => 'My profile',
         'talents' => 'Talents',
         'jobs' => 'Jobs',
-        'company_offer' => 'Company offer',
+        'company_offer' => 'Company space',
         'company_offer_short' => 'Companies',
         'company_login' => 'Company login',
         'annonces_with_new' => 'Jobs, :count new',
