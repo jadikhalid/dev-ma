@@ -144,7 +144,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
             this._lastAutoScrollTime = time;
 
             if (this.arrowHoldDirection !== 0) {
-                this.marqueeScrollPx -= this.arrowHoldDirection * this.arrowScrollSpeed * delta;
+                this.marqueeScrollPx += this.arrowHoldDirection * this.arrowScrollSpeed * delta;
 
                 return;
             }
