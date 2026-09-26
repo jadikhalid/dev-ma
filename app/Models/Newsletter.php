@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'title',
     'subject',
     'locale',
+    'audience',
     'status',
     'body_blocks',
     'scheduled_at',
@@ -41,6 +42,18 @@ class Newsletter extends Model
     public const LOCALE_FR = 'fr';
 
     public const LOCALE_EN = 'en';
+
+    public const AUDIENCE_ALL = 'all';
+
+    public const AUDIENCE_REGISTERED = 'registered';
+
+    public const AUDIENCE_GUESTS = 'guests';
+
+    public const AUDIENCES = [
+        self::AUDIENCE_ALL,
+        self::AUDIENCE_REGISTERED,
+        self::AUDIENCE_GUESTS,
+    ];
 
     public const BLOCK_HEADER = 'header';
 
@@ -118,6 +131,15 @@ class Newsletter extends Model
     public function statusLabel(): string
     {
         return __('talenma.newsletter.status_'.$this->status);
+    }
+
+    public function audienceLabel(): string
+    {
+        $audience = in_array($this->audience, self::AUDIENCES, true)
+            ? $this->audience
+            : self::AUDIENCE_ALL;
+
+        return __('talenma.newsletter.audience_'.$audience);
     }
 
     /**

@@ -82,6 +82,38 @@
                         <option value="en" @selected(old('locale', $newsletter->locale) === 'en')">EN</option>
                     </select>
                 </div>
+                <div class="sm:col-span-2" x-data="{ audience: @js(old('audience', $newsletter->audience ?: 'all')), counts: @js($recipientCounts) }">
+                    <x-input-label :value="__('talenma.newsletter.field_audience')" />
+                    <p class="mt-1 text-xs text-gray-500">{{ __('talenma.newsletter.field_audience_help') }}</p>
+                    <div class="mt-3 flex flex-col gap-2">
+                        @foreach ([
+                            'all' => __('talenma.newsletter.audience_all'),
+                            'registered' => __('talenma.newsletter.audience_registered'),
+                            'guests' => __('talenma.newsletter.audience_guests'),
+                        ] as $value => $label)
+                            <label class="flex items-start gap-2.5 rounded-lg border border-gray-200 px-3 py-2.5 hover:bg-gray-50 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="audience"
+                                    value="{{ $value }}"
+                                    class="mt-0.5 text-indigo-600"
+                                    x-model="audience"
+                                    @checked(old('audience', $newsletter->audience ?: 'all') === $value)
+                                >
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold text-gray-900">{{ $label }}</span>
+                                    <span class="block text-xs text-gray-500">
+                                        {{ __('talenma.newsletter.audience_count', ['count' => $recipientCounts[$value] ?? 0]) }}
+                                    </span>
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-sm font-medium text-indigo-700">
+                        <span x-text="(@js(__('talenma.newsletter.audience_selected_count'))).replace(':count', String(counts[audience] ?? 0))"></span>
+                    </p>
+                    <x-input-error :messages="$errors->get('audience')" class="mt-2" />
+                </div>
             </div>
 
             <div class="border-t border-gray-100 pt-5 space-y-4">

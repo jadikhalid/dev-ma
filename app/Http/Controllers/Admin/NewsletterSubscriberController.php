@@ -18,18 +18,29 @@ class NewsletterSubscriberController extends Controller
     public function index(Request $request): View
     {
         $q = trim($request->string('q')->toString());
+        $filter = $request->string('filter')->toString();
+        if (! in_array($filter, NewsletterSubscriber::FILTERS, true)) {
+            $filter = NewsletterSubscriber::FILTER_ALL;
+        }
 
         $list = NewsletterSubscriber::query()
             ->with(['creator', 'user'])
+            ->when($filter === NewsletterSubscriber::FILTER_REGISTERED, fn ($query) => $query->registered())
+            ->when($filter === NewsletterSubscriber::FILTER_GUESTS, fn ($query) => $query->guests())
             ->when($q !== '', fn ($query) => $query->where('email', 'like', '%'.$q.'%'))
             ->latest('id')
             ->paginate(40)
             ->withQueryString();
 
+        $baseActive = NewsletterSubscriber::query()->active();
+
         return view('admin.newsletter.subscribers', [
             'subscribers' => $list,
-            'activeCount' => NewsletterSubscriber::query()->active()->count(),
+            'filter' => $filter,
             'q' => $q,
+            'activeCount' => (clone $baseActive)->count(),
+            'registeredCount' => (clone $baseActive)->registered()->count(),
+            'guestsCount' => (clone $baseActive)->guests()->count(),
         ]);
     }
 

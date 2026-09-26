@@ -16,6 +16,7 @@
                 <p class="mt-1 text-sm text-gray-500">{{ $newsletter->subject }}</p>
                 <div class="mt-2 flex flex-wrap gap-2 items-center">
                     <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusBadge }}">{{ $newsletter->statusLabel() }}</span>
+                    <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{{ $newsletter->audienceLabel() }}</span>
                     <span class="text-xs text-gray-500">{{ __('talenma.newsletter.admin_subtitle', ['count' => $recipientCount]) }}</span>
                     @if ($newsletter->status === 'sending' || (($deliveryProgress['queued'] ?? 0) > 0 && $newsletter->status === 'sent'))
                         <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800">

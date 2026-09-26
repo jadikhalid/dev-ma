@@ -549,6 +549,127 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
+    public function subscribers_index_can_filter_registered_and_guests(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $service = app(NewsletterSubscriberService::class);
+
+        $registeredUser = User::factory()->talent()->create(['email' => 'inscrit@example.com']);
+        $service->subscribe('inscrit@example.com', NewsletterSubscriber::SOURCE_ACCOUNT, $registeredUser);
+        $service->subscribe('invite@example.com', NewsletterSubscriber::SOURCE_PUBLIC);
+
+        $this->actingAs($admin)
+            ->get(route('admin.newsletter.subscribers.index', ['filter' => 'registered']))
+            ->assertOk()
+            ->assertSee('inscrit@example.com', false)
+            ->assertDontSee('invite@example.com', false);
+
+        $this->actingAs($admin)
+            ->get(route('admin.newsletter.subscribers.index', ['filter' => 'guests']))
+            ->assertOk()
+            ->assertSee('invite@example.com', false)
+            ->assertDontSee('inscrit@example.com', false);
+    }
+
+    #[Test]
+    public function queue_delivery_respects_guests_audience(): void
+    {
+        Mail::fake();
+
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $service = app(NewsletterSubscriberService::class);
+        $delivery = app(\App\Services\NewsletterDeliveryService::class);
+
+        User::factory()->talent()->create(['email' => 'talent@example.com']);
+        $guest = $service->subscribe('invite@example.com');
+
+        $newsletter = Newsletter::query()->create([
+            'title' => 'Guests only',
+            'subject' => 'Sujet',
+            'locale' => 'fr',
+            'audience' => Newsletter::AUDIENCE_GUESTS,
+            'status' => Newsletter::STATUS_DRAFT,
+            'body_blocks' => [
+                ['type' => 'header', 'title' => 'Hello', 'subtitle' => ''],
+            ],
+            'created_by' => $admin->id,
+        ]);
+
+        $queued = $delivery->queueDelivery($newsletter);
+
+        $this->assertSame(1, $queued);
+        $emails = \App\Models\NewsletterOutbox::query()
+            ->where('newsletter_id', $newsletter->id)
+            ->pluck('email')
+            ->all();
+        $this->assertSame([$guest->email], $emails);
+    }
+
+    #[Test]
+    public function queue_delivery_respects_registered_audience(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $service = app(NewsletterSubscriberService::class);
+        $delivery = app(\App\Services\NewsletterDeliveryService::class);
+
+        $talent = User::factory()->talent()->create(['email' => 'talent@example.com']);
+        $registeredUser = User::factory()->create([
+            'role' => 'company',
+            'approval_status' => User::APPROVAL_APPROVED,
+            'email' => 'company@example.com',
+        ]);
+        $service->subscribe('company@example.com', NewsletterSubscriber::SOURCE_ACCOUNT, $registeredUser);
+        $service->subscribe('invite@example.com');
+
+        $newsletter = Newsletter::query()->create([
+            'title' => 'Registered only',
+            'subject' => 'Sujet',
+            'locale' => 'fr',
+            'audience' => Newsletter::AUDIENCE_REGISTERED,
+            'status' => Newsletter::STATUS_DRAFT,
+            'body_blocks' => [
+                ['type' => 'header', 'title' => 'Hello', 'subtitle' => ''],
+            ],
+            'created_by' => $admin->id,
+        ]);
+
+        $queued = $delivery->queueDelivery($newsletter);
+        $emails = \App\Models\NewsletterOutbox::query()
+            ->where('newsletter_id', $newsletter->id)
+            ->pluck('email')
+            ->sort()
+            ->values()
+            ->all();
+
+        $this->assertSame(2, $queued);
+        $this->assertSame(['company@example.com', 'talent@example.com'], $emails);
+        $this->assertNotContains('invite@example.com', $emails);
+        $this->assertNotNull($talent->fresh());
+    }
+
+    #[Test]
+    public function admin_can_save_newsletter_audience(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.newsletter.store'), [
+                'title' => 'Audience guests',
+                'subject' => 'Sujet',
+                'locale' => 'fr',
+                'audience' => Newsletter::AUDIENCE_GUESTS,
+                'body_blocks' => json_encode([
+                    ['type' => 'header', 'title' => 'Bonjour', 'subtitle' => ''],
+                ]),
+            ])
+            ->assertRedirect();
+
+        $newsletter = Newsletter::query()->first();
+        $this->assertNotNull($newsletter);
+        $this->assertSame(Newsletter::AUDIENCE_GUESTS, $newsletter->audience);
+    }
+
+    #[Test]
     public function admin_can_send_test_email_without_starting_campaign(): void
     {
         Mail::fake();

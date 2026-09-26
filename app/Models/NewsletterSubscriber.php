@@ -26,6 +26,18 @@ class NewsletterSubscriber extends Model
 
     public const SOURCE_TALENT = 'talent';
 
+    public const FILTER_ALL = 'all';
+
+    public const FILTER_REGISTERED = 'registered';
+
+    public const FILTER_GUESTS = 'guests';
+
+    public const FILTERS = [
+        self::FILTER_ALL,
+        self::FILTER_REGISTERED,
+        self::FILTER_GUESTS,
+    ];
+
     protected function casts(): array
     {
         return [
@@ -49,9 +61,52 @@ class NewsletterSubscriber extends Model
         return $query->whereNull('unsubscribed_at')->whereNotNull('subscribed_at');
     }
 
+    /**
+     * Linked to a platform account (user_id or matching users.email).
+     */
+    public function scopeRegistered(Builder $query): Builder
+    {
+        return $query->where(function (Builder $inner): void {
+            $inner->whereNotNull('user_id')
+                ->orWhereExists(function ($sub): void {
+                    $sub->selectRaw('1')
+                        ->from('users')
+                        ->whereRaw('lower(users.email) = lower(newsletter_subscribers.email)');
+                });
+        });
+    }
+
+    /**
+     * Open-list email with no matching platform account.
+     */
+    public function scopeGuests(Builder $query): Builder
+    {
+        return $query->whereNull('user_id')
+            ->whereNotExists(function ($sub): void {
+                $sub->selectRaw('1')
+                    ->from('users')
+                    ->whereRaw('lower(users.email) = lower(newsletter_subscribers.email)');
+            });
+    }
+
     public function isActive(): bool
     {
         return $this->subscribed_at !== null && $this->unsubscribed_at === null;
+    }
+
+    public function isRegistered(): bool
+    {
+        if ($this->user_id !== null) {
+            return true;
+        }
+
+        if ($this->relationLoaded('user') && $this->user !== null) {
+            return true;
+        }
+
+        return User::query()
+            ->whereRaw('lower(email) = ?', [mb_strtolower((string) $this->email)])
+            ->exists();
     }
 
     public function ensureUnsubscribeToken(): string

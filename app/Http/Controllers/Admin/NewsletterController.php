@@ -36,6 +36,7 @@ class NewsletterController extends Controller
         return view('admin.newsletter.index', [
             'newsletters' => $newsletters,
             'recipientCount' => $this->delivery->recipientCount(),
+            'recipientCounts' => $this->delivery->recipientCountsByAudience(),
         ]);
     }
 
@@ -44,6 +45,7 @@ class NewsletterController extends Controller
         return view('admin.newsletter.form', [
             'newsletter' => new Newsletter([
                 'locale' => app()->getLocale() === 'en' ? Newsletter::LOCALE_EN : Newsletter::LOCALE_FR,
+                'audience' => Newsletter::AUDIENCE_ALL,
                 'status' => Newsletter::STATUS_DRAFT,
                 'body_blocks' => [
                     [
@@ -54,6 +56,7 @@ class NewsletterController extends Controller
                 ],
             ]),
             'recipientCount' => $this->delivery->recipientCount(),
+            'recipientCounts' => $this->delivery->recipientCountsByAudience(),
             'picker' => $this->pickerPayload(),
         ]);
     }
@@ -83,7 +86,8 @@ class NewsletterController extends Controller
 
         return view('admin.newsletter.form', [
             'newsletter' => $newsletter,
-            'recipientCount' => $this->delivery->recipientCount(),
+            'recipientCount' => $this->delivery->recipientCount($newsletter->audience),
+            'recipientCounts' => $this->delivery->recipientCountsByAudience(),
             'picker' => $this->pickerPayload(),
         ]);
     }
@@ -114,7 +118,7 @@ class NewsletterController extends Controller
         return view('admin.newsletter.show', [
             'newsletter' => $newsletter,
             'previewHtml' => $this->renderer->renderHtml($newsletter),
-            'recipientCount' => $this->delivery->recipientCount(),
+            'recipientCount' => $this->delivery->recipientCount($newsletter->audience),
             'deliveryProgress' => $this->delivery->progress($newsletter),
         ]);
     }
@@ -315,8 +319,13 @@ class NewsletterController extends Controller
             'title' => [$forPreview ? 'nullable' : 'required', 'string', 'max:255'],
             'subject' => [$forPreview ? 'nullable' : 'required', 'string', 'max:255'],
             'locale' => ['required', 'string', Rule::in([Newsletter::LOCALE_FR, Newsletter::LOCALE_EN])],
+            'audience' => ['nullable', 'string', Rule::in(Newsletter::AUDIENCES)],
             'body_blocks' => ['nullable'],
         ]);
+
+        $data['audience'] = in_array($data['audience'] ?? null, Newsletter::AUDIENCES, true)
+            ? $data['audience']
+            : Newsletter::AUDIENCE_ALL;
 
         $blocks = $data['body_blocks'] ?? [];
         if (is_string($blocks)) {

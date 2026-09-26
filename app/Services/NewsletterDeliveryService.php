@@ -21,43 +21,69 @@ class NewsletterDeliveryService
     ) {}
 
     /**
-     * Destinataires : liste ouverte active + tous les talents approuvés (envoi systématique).
+     * Destinataires selon l'audience :
+     * - all : liste ouverte active + talents approuvés
+     * - registered : abonnés liés à un compte + talents approuvés
+     * - guests : abonnés actifs sans compte (sans injecter les talents)
      *
      * @return Collection<int, NewsletterSubscriber>
      */
-    public function recipients(): Collection
+    public function recipients(?string $audience = null): Collection
     {
+        $audience = $this->normalizeAudience($audience);
         $byEmail = [];
 
-        foreach (NewsletterSubscriber::query()->active()->orderBy('id')->cursor() as $subscriber) {
+        $query = NewsletterSubscriber::query()->active()->orderBy('id');
+
+        if ($audience === Newsletter::AUDIENCE_REGISTERED) {
+            $query->registered();
+        } elseif ($audience === Newsletter::AUDIENCE_GUESTS) {
+            $query->guests();
+        }
+
+        foreach ($query->cursor() as $subscriber) {
             /** @var NewsletterSubscriber $subscriber */
             $email = $this->subscribers->normalizeEmail($subscriber->email);
             $byEmail[$email] = $subscriber;
         }
 
-        $talents = User::query()
-            ->where('role', 'dev')
-            ->where('approval_status', User::APPROVAL_APPROVED)
-            ->whereNull('disabled_at')
-            ->whereNotNull('email_verified_at')
-            ->orderBy('id')
-            ->cursor();
+        if ($audience !== Newsletter::AUDIENCE_GUESTS) {
+            $talents = User::query()
+                ->where('role', 'dev')
+                ->where('approval_status', User::APPROVAL_APPROVED)
+                ->whereNull('disabled_at')
+                ->whereNotNull('email_verified_at')
+                ->orderBy('id')
+                ->cursor();
 
-        foreach ($talents as $talent) {
-            $email = $this->subscribers->normalizeEmail((string) $talent->email);
-            if ($email === '') {
-                continue;
+            foreach ($talents as $talent) {
+                $email = $this->subscribers->normalizeEmail((string) $talent->email);
+                if ($email === '') {
+                    continue;
+                }
+
+                $byEmail[$email] = $this->subscribers->ensureTalentRecipient($talent);
             }
-
-            $byEmail[$email] = $this->subscribers->ensureTalentRecipient($talent);
         }
 
         return collect(array_values($byEmail));
     }
 
-    public function recipientCount(): int
+    public function recipientCount(?string $audience = null): int
     {
-        return $this->recipients()->count();
+        return $this->recipients($audience)->count();
+    }
+
+    /**
+     * @return array{all: int, registered: int, guests: int}
+     */
+    public function recipientCountsByAudience(): array
+    {
+        return [
+            Newsletter::AUDIENCE_ALL => $this->recipientCount(Newsletter::AUDIENCE_ALL),
+            Newsletter::AUDIENCE_REGISTERED => $this->recipientCount(Newsletter::AUDIENCE_REGISTERED),
+            Newsletter::AUDIENCE_GUESTS => $this->recipientCount(Newsletter::AUDIENCE_GUESTS),
+        ];
     }
 
     public function schedule(Newsletter $newsletter, \DateTimeInterface $when): void
@@ -116,7 +142,7 @@ class NewsletterDeliveryService
             $rows = [];
             $now = now();
 
-            foreach ($this->recipients() as $subscriber) {
+            foreach ($this->recipients($fresh->audience) as $subscriber) {
                 $subscriber->ensureUnsubscribeToken();
                 $email = $this->subscribers->normalizeEmail($subscriber->email);
 
@@ -358,5 +384,14 @@ class NewsletterDeliveryService
             'failed' => $failed,
             'pending' => $pending,
         ];
+    }
+
+    private function normalizeAudience(?string $audience): string
+    {
+        if (in_array($audience, Newsletter::AUDIENCES, true)) {
+            return $audience;
+        }
+
+        return Newsletter::AUDIENCE_ALL;
     }
 }
