@@ -119,6 +119,43 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
+    public function newsletter_email_uses_custom_headline_when_set(): void
+    {
+        $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
+            'locale' => 'fr',
+            'headline' => 'Spécial rentrée 2026',
+            'body_blocks' => [
+                ['type' => 'text', 'body' => 'Contenu'],
+            ],
+        ]));
+
+        $this->assertStringContainsString('Spécial rentrée 2026', $html);
+        $this->assertStringNotContainsString('Newsletter du', $html);
+    }
+
+    #[Test]
+    public function admin_can_save_newsletter_headline(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.newsletter.store'), [
+                'title' => 'Interne',
+                'subject' => 'Objet mail',
+                'headline' => 'Édition spéciale mars',
+                'locale' => 'fr',
+                'body_blocks' => json_encode([
+                    ['type' => 'header', 'title' => 'Bonjour', 'subtitle' => ''],
+                ]),
+            ])
+            ->assertRedirect();
+
+        $newsletter = Newsletter::query()->first();
+        $this->assertNotNull($newsletter);
+        $this->assertSame('Édition spéciale mars', $newsletter->headline);
+    }
+
+    #[Test]
     public function newsletter_email_includes_fixed_site_footer(): void
     {
         $html = app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([

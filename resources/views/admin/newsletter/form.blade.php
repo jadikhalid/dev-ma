@@ -75,6 +75,19 @@
                     <x-text-input id="subject" name="subject" class="mt-1 block w-full" :value="old('subject', $newsletter->subject)" required maxlength="255" />
                     <x-input-error :messages="$errors->get('subject')" class="mt-2" />
                 </div>
+                <div class="sm:col-span-2">
+                    <x-input-label for="headline" :value="__('talenma.newsletter.field_headline')" />
+                    <p class="mt-1 text-xs text-gray-500">{{ __('talenma.newsletter.field_headline_help') }}</p>
+                    <x-text-input
+                        id="headline"
+                        name="headline"
+                        class="mt-1 block w-full"
+                        :value="old('headline', $newsletter->headline)"
+                        maxlength="255"
+                        :placeholder="$defaultHeadline"
+                    />
+                    <x-input-error :messages="$errors->get('headline')" class="mt-2" />
+                </div>
                 <div>
                     <x-input-label for="locale" :value="__('talenma.newsletter.field_locale')" />
                     <select id="locale" name="locale" class="mt-1 block w-full rounded-lg border-gray-300 text-sm">

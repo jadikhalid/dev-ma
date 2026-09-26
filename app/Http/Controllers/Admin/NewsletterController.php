@@ -57,6 +57,9 @@ class NewsletterController extends Controller
             ]),
             'recipientCount' => $this->delivery->recipientCount(),
             'recipientCounts' => $this->delivery->recipientCountsByAudience(),
+            'defaultHeadline' => $this->renderer->defaultDatedHeadline(new Newsletter([
+                'locale' => app()->getLocale() === 'en' ? Newsletter::LOCALE_EN : Newsletter::LOCALE_FR,
+            ])),
             'picker' => $this->pickerPayload(),
         ]);
     }
@@ -88,6 +91,7 @@ class NewsletterController extends Controller
             'newsletter' => $newsletter,
             'recipientCount' => $this->delivery->recipientCount($newsletter->audience),
             'recipientCounts' => $this->delivery->recipientCountsByAudience(),
+            'defaultHeadline' => $this->renderer->defaultDatedHeadline($newsletter),
             'picker' => $this->pickerPayload(),
         ]);
     }
@@ -318,6 +322,7 @@ class NewsletterController extends Controller
         $data = $request->validate([
             'title' => [$forPreview ? 'nullable' : 'required', 'string', 'max:255'],
             'subject' => [$forPreview ? 'nullable' : 'required', 'string', 'max:255'],
+            'headline' => ['nullable', 'string', 'max:255'],
             'locale' => ['required', 'string', Rule::in([Newsletter::LOCALE_FR, Newsletter::LOCALE_EN])],
             'audience' => ['nullable', 'string', Rule::in(Newsletter::AUDIENCES)],
             'body_blocks' => ['nullable'],
@@ -326,6 +331,9 @@ class NewsletterController extends Controller
         $data['audience'] = in_array($data['audience'] ?? null, Newsletter::AUDIENCES, true)
             ? $data['audience']
             : Newsletter::AUDIENCE_ALL;
+
+        $headline = trim((string) ($data['headline'] ?? ''));
+        $data['headline'] = $headline !== '' ? $headline : null;
 
         $blocks = $data['body_blocks'] ?? [];
         if (is_string($blocks)) {

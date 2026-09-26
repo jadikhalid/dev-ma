@@ -949,6 +949,8 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
         'edit_title' => 'Modifier la newsletter',
         'edit' => 'Modifier',
         'form_help' => 'Composez des blocs, enregistrez, puis envoyez. Destinataires selon l’audience choisie (:count).',
+        'field_headline' => 'Titre en tête de l’e-mail',
+        'field_headline_help' => 'Affiché tout en haut du corps (logo). Laissez vide pour la date automatique du jour.',
         'field_audience' => 'Audience d’envoi',
         'field_audience_help' => 'Choisissez qui recevra cette campagne. Les talents approuvés sont inclus dans « Tous » et « Inscrits ».',
         'audience_all' => 'Tous (liste + talents)',

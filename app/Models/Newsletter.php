@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'title',
     'subject',
+    'headline',
     'locale',
     'audience',
     'status',

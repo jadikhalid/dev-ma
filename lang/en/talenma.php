@@ -949,6 +949,8 @@ An administrator or moderator is reviewing your application before your company 
         'edit_title' => 'Edit newsletter',
         'edit' => 'Edit',
         'form_help' => 'Compose blocks, save, then send. Recipients depend on the selected audience (:count).',
+        'field_headline' => 'Email header title',
+        'field_headline_help' => 'Shown at the top of the email body (logo area). Leave empty to use today’s automatic date title.',
         'field_audience' => 'Send audience',
         'field_audience_help' => 'Choose who receives this campaign. Approved talents are included in “All” and “Registered”.',
         'audience_all' => 'All (list + talents)',

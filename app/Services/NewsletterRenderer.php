@@ -41,11 +41,28 @@ class NewsletterRenderer
 
         return view('emails.newsletter-campaign', [
             'bodyHtml' => $body,
-            'datedTitle' => $this->datedTitle($newsletter),
+            'datedTitle' => $this->displayHeadline($newsletter),
         ])->render();
     }
 
-    private function datedTitle(Newsletter $newsletter): string
+    /**
+     * Titre affiché en haut de l'e-mail (personnalisé ou date auto).
+     */
+    public function displayHeadline(Newsletter $newsletter): string
+    {
+        $custom = trim((string) ($newsletter->headline ?? ''));
+
+        if ($custom !== '') {
+            return $custom;
+        }
+
+        return $this->defaultDatedHeadline($newsletter);
+    }
+
+    /**
+     * Suggestion par défaut (ex. « Newsletter du Samedi 26 Septembre 2026 »).
+     */
+    public function defaultDatedHeadline(Newsletter $newsletter): string
     {
         $locale = $newsletter->locale === Newsletter::LOCALE_EN ? 'en' : 'fr';
         $date = $newsletter->sent_at
