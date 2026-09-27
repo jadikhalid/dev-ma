@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\SocialFeedItem;
+use App\Models\SocialPost;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -35,7 +36,7 @@ class NewsPruneTest extends TestCase
             ->pluck('id')
             ->all();
 
-        $this->assertCount(5, $idsBeyondMax);
+        $this->assertCount(15 - SocialFeedItem::MAX_ITEMS, $idsBeyondMax);
 
         SocialFeedItem::pruneExcess();
 
@@ -82,5 +83,30 @@ class NewsPruneTest extends TestCase
             ->assertOk();
 
         $this->assertSame(SocialFeedItem::MAX_ITEMS, SocialFeedItem::query()->where('source', 'article')->count());
+    }
+
+    public function test_admin_publications_page_prunes_excess_social_posts(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        for ($i = 1; $i <= 10; $i++) {
+            SocialPost::query()->create([
+                'title' => "Post {$i}",
+                'subtitle' => "Subtitle {$i}",
+                'url' => "https://www.linkedin.com/posts/post-{$i}",
+                'network' => 'linkedin',
+                'created_by' => $admin->id,
+                'created_at' => now()->subMinutes(10 - $i),
+                'updated_at' => now()->subMinutes(10 - $i),
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('admin.publications.index'))
+            ->assertOk();
+
+        $this->assertSame(SocialPost::MAX_ITEMS, SocialPost::query()->count());
+        $this->assertTrue(SocialPost::query()->where('title', 'Post 1')->doesntExist());
+        $this->assertTrue(SocialPost::query()->where('title', 'Post 10')->exists());
     }
 }

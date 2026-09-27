@@ -18,6 +18,7 @@ class PublicationsController extends Controller
     public function index(): View
     {
         SocialFeedItem::pruneExcess();
+        SocialPost::pruneExcess();
 
         return view('admin.publications', [
             'newsItems' => SocialFeedItem::forNewsTicker(),

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SocialFeedItem extends Model
 {
-    public const MAX_ITEMS = 10;
+    public const MAX_ITEMS = 7;
 
     public const SOURCES = [
         'article',

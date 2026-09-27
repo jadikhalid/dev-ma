@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SocialPost extends Model
 {
-    public const MAX_ITEMS = 10;
+    public const MAX_ITEMS = 7;
 
     public const NETWORKS = [
         'linkedin',
@@ -143,10 +143,8 @@ class SocialPost extends Model
         );
     }
 
-    public static function pushPost(array $attributes): self
+    public static function pruneExcess(): void
     {
-        $post = self::create($attributes);
-
         $idsToKeep = self::query()
             ->latest()
             ->limit(self::MAX_ITEMS)
@@ -156,6 +154,13 @@ class SocialPost extends Model
             ->whereNotIn('id', $idsToKeep)
             ->get()
             ->each->delete();
+    }
+
+    public static function pushPost(array $attributes): self
+    {
+        $post = self::create($attributes);
+
+        self::pruneExcess();
 
         return $post;
     }
