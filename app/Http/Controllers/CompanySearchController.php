@@ -164,13 +164,6 @@ class CompanySearchController extends Controller
 
         $talent->loadMissing('profile.documents');
 
-        $forceReveal = $this->directHires->companyHasOpenRequestWithTalent($user, $talent)
-            || $this->companyHasJobApplicationFromTalent($user, $talent);
-        abort_unless(
-            $talent->profile?->isRevealedAsPublic($forceReveal) ?? false,
-            403
-        );
-
         $lang = $request->query('lang');
         $cv = $talent->profile?->cvDocument(
             filled($lang) && in_array($lang, ProfileDocument::CV_LANGUAGES, true) ? $lang : null
@@ -304,7 +297,7 @@ class CompanySearchController extends Controller
             'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
                 ? $profile->presentation_video_url
                 : null,
-            'cv_url' => ($isPublic && $profile?->cvDocument())
+            'cv_url' => $profile?->cvDocument()
                 ? route('company.talent.cv', $talent)
                 : null,
             'profile_url' => route('company.talent.show', $talent),
@@ -359,7 +352,7 @@ class CompanySearchController extends Controller
             'linkedin_url' => $isPublic ? $profile?->linkedin_url : null,
             'github_url' => $isPublic ? $profile?->github_url : null,
             'portfolio_url' => $isPublic ? $profile?->portfolio_url : null,
-            'cv_url' => ($isPublic && $cv) ? route('company.talent.cv', $talent) : null,
+            'cv_url' => $cv ? route('company.talent.cv', $talent) : null,
             'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
                 ? $profile->presentation_video_url
                 : null,

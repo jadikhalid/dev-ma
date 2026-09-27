@@ -59,7 +59,7 @@
                 'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
                     ? $profile->presentation_video_url
                     : null,
-                'cv_url' => ($isPublic && $profile?->cvDocument())
+                'cv_url' => $profile?->cvDocument()
                     ? route('company.talent.cv', $talent)
                     : null,
                 'profile_url' => route('company.talent.show', $talent),
