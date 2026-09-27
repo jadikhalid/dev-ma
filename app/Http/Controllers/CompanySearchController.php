@@ -202,7 +202,7 @@ class CompanySearchController extends Controller
         $query = User::where('role', 'dev')
             ->where('approval_status', User::APPROVAL_APPROVED)
             ->with(['profile.profession', 'profile.professionSector', 'profile.documents'])
-            ->whereHas('profile', fn ($q) => $q->whereNotNull('profession_id')->whereNotNull('bio'));
+            ->whereHas('profile', fn ($q) => $q->listable());
 
         if ($request->filled('sector')) {
             $query->whereHas('profile.professionSector', fn ($q) => $q->where('slug', $request->sector));

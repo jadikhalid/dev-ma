@@ -23,7 +23,7 @@ class TalentSearchService
             ->where('role', 'dev')
             ->where('approval_status', User::APPROVAL_APPROVED)
             ->with(['profile.profession', 'profile.professionSector', 'profile.documents'])
-            ->whereHas('profile', fn ($q) => $q->whereNotNull('profession_id')->whereNotNull('bio'));
+            ->whereHas('profile', fn ($q) => $q->listable());
 
         if ($sectorSlug) {
             $query->whereHas('profile.professionSector', fn ($q) => $q->where('slug', $sectorSlug));

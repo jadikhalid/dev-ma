@@ -1,7 +1,9 @@
 @php
     use App\Models\ModeratorPermissionCatalog;
+    use App\Support\PortalHost;
 
     $authUser = Auth::user();
+    $homeUrl = PortalHost::isCompanyHost() ? route('company.offer') : route('home');
     $pendingAccount = $authUser->isPendingApproval();
     $companyOrg = $authUser->isCompany() ? $authUser->companyOrganization() : null;
     $isCompanyOwner = $authUser->isCompanyOwner();
@@ -40,10 +42,10 @@
         <div class="flex justify-between h-16">
             <div class="flex items-center gap-2 sm:gap-4 min-w-0">
                 <div class="brand-logo-phone">
-                    <x-brand-logo :href="route('home')" size="sm" phone :linked="! $pendingAccount" />
+                    <x-brand-logo :href="$homeUrl" size="sm" phone :linked="! $pendingAccount" />
                 </div>
                 <div class="brand-logo-desktop">
-                    <x-brand-logo :href="route('home')" size="sm" :linked="! $pendingAccount" />
+                    <x-brand-logo :href="$homeUrl" size="sm" :linked="! $pendingAccount" />
                 </div>
                 <div class="hidden lg:flex items-center gap-1 min-w-0">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingAccount">
@@ -248,7 +250,7 @@
                         </button>
                     </x-slot>
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('home')" :disabled="$pendingAccount">
+                        <x-dropdown-link :href="$homeUrl" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-2">
                                 <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
                                 {{ __('talenma.nav.home') }}
@@ -580,7 +582,7 @@
                     @endif
                 </div>
             @endunless
-            <x-dropdown-link :href="route('home')" :disabled="$pendingAccount">
+            <x-dropdown-link :href="$homeUrl" :disabled="$pendingAccount">
                 <span class="inline-flex items-center gap-2">
                     <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
                     {{ __('talenma.nav.home') }}

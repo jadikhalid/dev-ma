@@ -125,11 +125,7 @@ class InboxController extends Controller
         $results = User::query()
             ->where('role', 'dev')
             ->where('approval_status', User::APPROVAL_APPROVED)
-            ->whereHas('profile', function ($query) {
-                $query->whereNotNull('profession_id')
-                    ->whereNotNull('bio')
-                    ->where('bio', '!=', '');
-            })
+            ->whereHas('profile', fn ($query) => $query->listable())
             ->with('profile.profession')
             ->where(function ($query) use ($like) {
                 $query->where('name', 'like', $like)

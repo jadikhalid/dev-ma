@@ -333,6 +333,15 @@ class Profile extends Model
         return $this->hasMany(ProfileDocument::class)->orderBy('sort_order');
     }
 
+    /**
+     * Profils visibles des entreprises : métier choisi et au moins un CV déposé.
+     */
+    public function scopeListable(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->whereNotNull('profession_id')
+            ->whereHas('documents', fn ($q) => $q->where('document_type', ProfileDocument::TYPE_CV));
+    }
+
     public function cvDocument(?string $language = null): ?ProfileDocument
     {
         $cvs = $this->documents->where('document_type', ProfileDocument::TYPE_CV);

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Profession;
 use App\Models\ProfessionSector;
+use App\Models\ProfileDocument;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -38,11 +39,20 @@ class InboxComposeTest extends TestCase
             'email' => 'amine.benali@example.com',
         ], $overrides));
 
-        $talent->profile()->create([
+        $profile = $talent->profile()->create([
             'profession_id' => $profession->id,
             'profession_sector_id' => $sector->id,
             'bio' => 'Développeur Laravel avec plusieurs années d’expérience sur des applications métier.',
             'experience_years' => 5,
+        ]);
+
+        $profile->documents()->create([
+            'document_type' => ProfileDocument::TYPE_CV,
+            'language' => 'fr',
+            'path' => 'profile-documents/cv-amine.pdf',
+            'original_name' => 'cv-amine.pdf',
+            'mime_type' => 'application/pdf',
+            'size' => 1024,
         ]);
 
         return $talent->fresh('profile');

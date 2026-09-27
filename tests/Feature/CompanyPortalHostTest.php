@@ -44,6 +44,22 @@ class CompanyPortalHostTest extends TestCase
             ->assertDontSee(__('talenma.nav.jobs'), false);
     }
 
+    public function test_company_dashboard_home_link_targets_company_portal_root(): void
+    {
+        $companyUser = User::factory()->companyOwner()->create([
+            'email_verified_at' => now(),
+        ]);
+
+        $company = config('talenma.hosts.company');
+        $www = config('talenma.hosts.www');
+
+        $this->actingAs($companyUser)
+            ->get('http://'.$company.'/dashboard')
+            ->assertOk()
+            ->assertSee('href="'.PortalHost::companyRootUrl().'"', false)
+            ->assertDontSee('href="http://'.$www.'"', false);
+    }
+
     public function test_talent_cannot_login_on_company_portal(): void
     {
         $talent = User::factory()->talent()->create([
