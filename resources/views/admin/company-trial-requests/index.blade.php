@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<x-app-layout>
 <div class="py-8">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -112,4 +110,4 @@
         </div>
     </div>
 </div>
-@endsection
+</x-app-layout>

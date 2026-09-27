@@ -223,6 +223,27 @@ class CompanyOfferAndTrialTest extends TestCase
         Mail::assertSent(CompanyTrialRequestMail::class);
     }
 
+    public function test_admin_can_list_trial_requests(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        CompanyTrialRequest::query()->create([
+            'company_name' => 'Acme Listing',
+            'contact_name' => 'Jean Dupont',
+            'email' => 'listing@acme.test',
+            'phone' => '+33123456789',
+            'sector' => 'it-digital',
+            'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile.',
+            'company_country' => 'fr',
+            'status' => CompanyTrialRequest::STATUS_PENDING,
+            'locale' => 'fr',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.company-trial-requests.index'))
+            ->assertOk()
+            ->assertSee('Acme Listing');
+    }
+
     public function test_admin_can_provision_trial_request_and_email_credentials(): void
     {
         Mail::fake();

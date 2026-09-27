@@ -22,31 +22,7 @@
                     'backLinkClass' => 'text-indigo-700 hover:text-indigo-900',
                 ])
                 @php $publicShareUrl = route('jobs.public.show', $job); @endphp
-                <div
-                    class="mt-3 flex flex-col gap-1.5"
-                    x-data="{ copied: false }"
-                >
-                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                        {{ __('talenma.jobs.public_share_url_label') }}
-                    </span>
-                    <div class="min-w-0 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5">
-                        <a
-                            href="{{ $publicShareUrl }}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="min-w-0 truncate text-xs font-medium text-indigo-700 hover:text-indigo-900"
-                            title="{{ $publicShareUrl }}"
-                        >{{ $publicShareUrl }}</a>
-                        <button
-                            type="button"
-                            class="shrink-0 inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                            @click="navigator.clipboard.writeText(@js($publicShareUrl)).then(() => { copied = true; setTimeout(() => copied = false, 1600) })"
-                        >
-                            <span x-show="!copied">{{ __('talenma.jobs.public_share_url_copy') }}</span>
-                            <span x-cloak x-show="copied">{{ __('talenma.jobs.public_share_url_copied') }}</span>
-                        </button>
-                    </div>
-                </div>
+                <x-share-link class="mt-3" :url="$publicShareUrl" :title="$job->title" />
             </div>
             <div class="flex flex-wrap gap-2 sm:w-1/2 sm:justify-end">
                 @if ($job->isClosed())

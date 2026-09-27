@@ -111,6 +111,7 @@
                         @endif
                         @if ($authUser->isAdmin())
                             <x-nav-link :href="route('admin.library.books.index')" :active="request()->routeIs('admin.library.*')">{{ __('talenma.nav.admin_library') }}</x-nav-link>
+                            <x-nav-link :href="route('admin.cv-templates.index')" :active="request()->routeIs('admin.cv-templates.*')">{{ __('talenma.nav.admin_cv_templates') }}</x-nav-link>
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::NEWSLETTER_MANAGE))
                             <x-nav-link :href="route('admin.newsletter.index')" :active="request()->routeIs('admin.newsletter.*')">{{ __('talenma.nav.admin_newsletter') }}</x-nav-link>
@@ -383,6 +384,7 @@
                         @endif
                         @if ($authUser->isAdmin())
                             <x-responsive-nav-link :href="route('admin.library.books.index')" :active="request()->routeIs('admin.library.*')">{{ __('talenma.nav.admin_library') }}</x-responsive-nav-link>
+                            <x-responsive-nav-link :href="route('admin.cv-templates.index')" :active="request()->routeIs('admin.cv-templates.*')">{{ __('talenma.nav.admin_cv_templates') }}</x-responsive-nav-link>
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::NEWSLETTER_MANAGE))
                             <x-responsive-nav-link :href="route('admin.newsletter.index')" :active="request()->routeIs('admin.newsletter.*')">{{ __('talenma.nav.admin_newsletter') }}</x-responsive-nav-link>

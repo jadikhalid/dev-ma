@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\PromoController;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\JobPosting;
 use App\Models\PendingRegistration;
@@ -43,6 +44,11 @@ class RegisteredUserController extends Controller
             if ($job?->isPublished() && ! $job->isClosed()) {
                 session(['url.intended' => route('jobs.gate', $job)]);
             }
+        }
+
+        $fromPromo = (string) request()->query('from_promo', '');
+        if ($fromPromo !== '' && ($promoGateUrl = PromoController::gateUrlForRef($fromPromo))) {
+            session(['url.intended' => $promoGateUrl]);
         }
 
         return view('auth.register');

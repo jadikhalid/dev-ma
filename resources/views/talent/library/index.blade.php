@@ -31,6 +31,9 @@
                     this.$watch('drawerOpen', (open) => {
                         document.body.classList.toggle('overflow-hidden', open);
                     });
+                    if (config.featuredBook) {
+                        this.openBook(config.featuredBook);
+                    }
                 },
                 get subOptions() {
                     const root = this.tree.find((n) => String(n.id) === String(this.disciplineId));
@@ -214,6 +217,7 @@
         x-data="libraryFilters({
             tree: @js($treePayload),
             initialCategoryId: @js($filters['category']),
+            featuredBook: @js($featuredBook),
             endpoint: @js(route('talent.library.index')),
         })"
     >

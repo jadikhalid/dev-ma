@@ -14,6 +14,16 @@
     </x-slot>
 
     <div class="py-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        @if ($book->exists && $book->is_published)
+            <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                <x-share-link
+                    :url="route('promo.library', $book)"
+                    :title="$book->title"
+                    :label="__('talenma.promo.admin_link_label')"
+                />
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
                 <p class="font-semibold">{{ __('talenma.admin.library.form_errors_title') }}</p>

@@ -88,31 +88,7 @@
                             </p>
                             <p class="mt-1 text-sm text-gray-500 line-clamp-2">{{ Str::limit(strip_tags($job->description), 140) }}</p>
 
-                            <div
-                                class="mt-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2"
-                                x-data="{ copied: false }"
-                            >
-                                <span class="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                    {{ __('talenma.jobs.public_share_url_label') }}
-                                </span>
-                                <div class="min-w-0 flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5">
-                                    <a
-                                        href="{{ $publicShareUrl }}"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="min-w-0 truncate text-xs font-medium text-indigo-700 hover:text-indigo-900"
-                                        title="{{ $publicShareUrl }}"
-                                    >{{ $publicShareUrl }}</a>
-                                    <button
-                                        type="button"
-                                        class="shrink-0 inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                                        @click="navigator.clipboard.writeText(@js($publicShareUrl)).then(() => { copied = true; setTimeout(() => copied = false, 1600) })"
-                                    >
-                                        <span x-show="!copied">{{ __('talenma.jobs.public_share_url_copy') }}</span>
-                                        <span x-cloak x-show="copied">{{ __('talenma.jobs.public_share_url_copied') }}</span>
-                                    </button>
-                                </div>
-                            </div>
+                            <x-share-link class="mt-3" :url="$publicShareUrl" :title="$job->title" :inline="true" />
                         </div>
                         <div class="flex flex-wrap items-center gap-2 shrink-0">
                             <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusBadge($job->status) }}">

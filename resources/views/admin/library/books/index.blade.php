@@ -9,6 +9,9 @@
                 <a href="{{ route('admin.library.categories.index') }}" class="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
                     {{ __('talenma.admin.library.nav_categories') }}
                 </a>
+                <a href="{{ route('admin.cv-templates.index') }}" class="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    {{ __('talenma.promo.admin_cv_templates_nav') }}
+                </a>
                 <a href="{{ route('admin.library.books.create') }}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
                     {{ __('talenma.admin.library.upload_book') }}
                 </a>
@@ -49,9 +52,17 @@
                                     @else
                                         <span class="h-12 w-9 rounded bg-amber-50 border border-amber-100 shrink-0"></span>
                                     @endif
-                                    <div>
+                                    <div class="min-w-0">
                                         <p class="font-semibold text-gray-900">{{ $book->title }}</p>
                                         <p class="text-xs text-gray-400">{{ $book->author ?: '—' }} · {{ $book->formattedSize() }}</p>
+                                        @if ($book->is_published)
+                                            <x-share-link
+                                                class="mt-2"
+                                                :url="route('promo.library', $book)"
+                                                :title="$book->title"
+                                                :label="__('talenma.promo.admin_link_label')"
+                                            />
+                                        @endif
                                     </div>
                                 </div>
                             </td>

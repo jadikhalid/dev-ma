@@ -38,6 +38,7 @@ class TalentLibraryController extends Controller
 
         return view('talent.library.index', [
             'books' => $books,
+            'featuredBook' => $this->featuredBookPayload($request->integer('book') ?: null),
             'treePayload' => $treePayload,
             'filters' => [
                 'category' => $categoryId,
@@ -59,6 +60,35 @@ class TalentLibraryController extends Controller
             : $book->original_filename.'.pdf';
 
         return LibraryBookStorage::download($book->file_path, $downloadName);
+    }
+
+    /**
+     * Book opened on arrival (promo links: /talent/library?book=12).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function featuredBookPayload(?int $bookId): ?array
+    {
+        if (! $bookId) {
+            return null;
+        }
+
+        $book = LibraryBook::query()->published()->with('category')->find($bookId);
+
+        if (! $book) {
+            return null;
+        }
+
+        return [
+            'id' => $book->id,
+            'title' => $book->title,
+            'author' => $book->author,
+            'description' => $book->description,
+            'category_path' => $book->category ? $this->catalog->breadcrumb($book->category) : '',
+            'cover_url' => $book->coverUrl(),
+            'size' => $book->formattedSize(),
+            'download_url' => route('talent.library.download', $book),
+        ];
     }
 
     /**

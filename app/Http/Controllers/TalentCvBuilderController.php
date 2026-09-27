@@ -20,6 +20,11 @@ class TalentCvBuilderController extends Controller
 
         $draft = $this->builder->draftForUser($user);
 
+        $requestedTemplate = (string) $request->query('template', '');
+        if (TalentCvTemplateCatalog::isValidTemplate($requestedTemplate)) {
+            $draft->template = $requestedTemplate;
+        }
+
         return view('talent.cv-builder.index', [
             'draft' => $draft,
             'templateOptions' => TalentCvTemplateCatalog::pickerOptions(),

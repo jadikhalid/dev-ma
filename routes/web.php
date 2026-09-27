@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\PublicationsController;
 use App\Http\Controllers\Admin\RecruitmentRequestController as AdminRecruitmentRequestController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\CvTemplatePromoController as AdminCvTemplatePromoController;
 use App\Http\Controllers\Admin\LibraryBookController as AdminLibraryBookController;
 use App\Http\Controllers\Admin\LibraryCategoryController as AdminLibraryCategoryController;
 use App\Http\Controllers\AtsScoreGateController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\ModeratorModeController;
 use App\Http\Controllers\NewsletterPreferenceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PrivacyController;
+use App\Http\Controllers\PromoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileDetailsController;
 use App\Http\Controllers\RecruitmentRequestController;
@@ -84,6 +86,20 @@ Route::get('/annonces/acces/{job?}', JobAccessGateController::class)
     ->middleware('auth')
     ->whereNumber('job')
     ->name('jobs.gate');
+Route::get('/nouveautes/bibliotheque/{book}', [PromoController::class, 'library'])
+    ->whereNumber('book')
+    ->name('promo.library');
+Route::get('/nouveautes/modeles-cv/{template}', [PromoController::class, 'cvTemplate'])
+    ->whereIn('template', TalentCvTemplateCatalog::templateKeys())
+    ->name('promo.cv-template');
+Route::get('/nouveautes/acces/bibliotheque/{book}', [PromoController::class, 'libraryGate'])
+    ->middleware('auth')
+    ->whereNumber('book')
+    ->name('promo.library.gate');
+Route::get('/nouveautes/acces/modeles-cv/{template}', [PromoController::class, 'cvTemplateGate'])
+    ->middleware('auth')
+    ->whereIn('template', TalentCvTemplateCatalog::templateKeys())
+    ->name('promo.cv-template.gate');
 Route::get('/cv-builder/acces', CvBuilderGateController::class)
     ->middleware('auth')
     ->name('cv-builder.gate');
@@ -288,6 +304,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/books/{book}', [AdminLibraryBookController::class, 'update'])->name('books.update');
             Route::delete('/books/{book}', [AdminLibraryBookController::class, 'destroy'])->name('books.destroy');
         });
+
+        Route::get('/cv-templates', AdminCvTemplatePromoController::class)
+            ->middleware('admin')
+            ->name('cv-templates.index');
 
         Route::middleware('moderator.permission:newsletter.manage')->group(function () {
             Route::get('/newsletter', [NewsletterController::class, 'index'])->name('newsletter.index');
