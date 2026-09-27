@@ -9,7 +9,7 @@ Une seule app Laravel écoute plusieurs hostnames.
 | `APP_URL` | URL « canonique » (www) | `http://127.0.0.1:8000` | `https://www.talentsdumaroc.com` |
 | `HOST_WWW` | Hôte site talents | `127.0.0.1` | `www.talentsdumaroc.com` |
 | `HOST_COMPANY` | Hôte portail entreprises | `entreprises.localhost` | `entreprises.talentsdumaroc.com` |
-| `SESSION_DOMAIN` | Cookie partagé (prod) | `null` | `.talentsdumaroc.com` |
+| `SESSION_DOMAIN` | Cookie par hôte (connexions séparées) | `null` | `null` |
 
 ## URLs locales
 
@@ -30,5 +30,5 @@ Avec `composer dev` (serveur sur `127.0.0.1:8000`) :
 1. DNS : enregistrement `A` / `CNAME` pour `entreprises` vers le même serveur que www.
 2. Alias / domaine additionnel pointant vers le même `public/` Laravel.
 3. SSL couvrant `entreprises.talentsdumaroc.com`.
-4. `.env` : `HOST_*`, `SESSION_DOMAIN=.talentsdumaroc.com`, `SESSION_SECURE_COOKIE=true`.
+4. `.env` : `HOST_*`, `SESSION_DOMAIN=null`, `SESSION_SECURE_COOKIE=true`. Les sessions ne sont **pas** partagées : une entreprise connectée sur le portail ne l'est pas sur le site talents. Les e-mails (`App\Mail\PortalMailable`) génèrent leurs liens sur le portail du destinataire.
 5. `HOST_WWW` = hôte canonique talents (ex. `talentsdumaroc.com`). Le jumeau `www.` (ou l’apex si `HOST_WWW` est en `www.`) est redirigé en **301** vers cet hôte.

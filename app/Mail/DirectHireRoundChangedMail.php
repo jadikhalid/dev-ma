@@ -5,12 +5,11 @@ namespace App\Mail;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class DirectHireRoundChangedMail extends Mailable
+class DirectHireRoundChangedMail extends PortalMailable
 {
     use Queueable, SerializesModels;
 

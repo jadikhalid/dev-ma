@@ -3,12 +3,11 @@
 namespace App\Mail;
 
 use App\Models\User;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
 
-class ConfirmPendingEmailMail extends Mailable
+class ConfirmPendingEmailMail extends PortalMailable
 {
     public function __construct(
         public User $user,

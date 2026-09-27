@@ -4,12 +4,11 @@ namespace App\Mail;
 
 use App\Models\RecruitmentRequest;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class RecruitmentRequestSubmittedMail extends Mailable
+class RecruitmentRequestSubmittedMail extends PortalMailable
 {
     use Queueable, SerializesModels;
 

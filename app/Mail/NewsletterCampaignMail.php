@@ -6,12 +6,11 @@ use App\Models\Newsletter;
 use App\Models\NewsletterSubscriber;
 use App\Services\NewsletterRenderer;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class NewsletterCampaignMail extends Mailable
+class NewsletterCampaignMail extends PortalMailable
 {
     use Queueable, SerializesModels;
 

@@ -6,13 +6,12 @@ use App\Models\RecruitmentRequest;
 use App\Models\RecruitmentRequestMessage;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Str;
 
-class RecruitmentRequestChatMessageMail extends Mailable
+class RecruitmentRequestChatMessageMail extends PortalMailable
 {
     use Queueable, SerializesModels;
 

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 
@@ -84,12 +85,53 @@ class PortalHost
      */
     public static function onCompanyHost(callable $callback): mixed
     {
-        $previous = URL::to('/');
-        URL::forceRootUrl(self::companyRootUrl());
+        return self::withRootUrl(self::companyRootUrl(), $callback);
+    }
+
+    /**
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    public static function onWwwHost(callable $callback): mixed
+    {
+        return self::withRootUrl(self::wwwRootUrl(), $callback);
+    }
+
+    /**
+     * Generate URLs on the portal where this user can sign in
+     * (sessions are not shared between hosts).
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    public static function forUser(?User $user, callable $callback): mixed
+    {
+        if (! $user) {
+            return $callback();
+        }
+
+        return $user->isCompany()
+            ? self::onCompanyHost($callback)
+            : self::onWwwHost($callback);
+    }
+
+    /** @var list<string|null> */
+    private static array $forcedRootStack = [];
+
+    private static function withRootUrl(string $root, callable $callback): mixed
+    {
+        $previous = self::$forcedRootStack === [] ? null : end(self::$forcedRootStack);
+        self::$forcedRootStack[] = $root;
+        URL::forceRootUrl($root);
 
         try {
             return $callback();
         } finally {
+            array_pop(self::$forcedRootStack);
             URL::forceRootUrl($previous);
         }
     }

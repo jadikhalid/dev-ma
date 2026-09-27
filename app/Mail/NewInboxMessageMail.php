@@ -6,12 +6,11 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class NewInboxMessageMail extends Mailable
+class NewInboxMessageMail extends PortalMailable
 {
     use Queueable, SerializesModels;
 

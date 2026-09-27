@@ -15,6 +15,20 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global: must run even when no domain route matches (e.g. www.*/ → 404).
         $middleware->prepend(\App\Http\Middleware\RedirectCanonicalTalentHost::class);
 
+        // Sessions are per host: company-only pages opened on the talents host
+        // must send the guest to the entreprises portal, where companies sign in.
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if (
+                $request->isMethod('GET')
+                && \App\Support\PortalHost::isTalentHost($request)
+                && $request->route()?->named('company.*', 'sourcing.*', 'recruitment.*')
+            ) {
+                return \App\Support\PortalHost::companyUrl($request->getRequestUri());
+            }
+
+            return route('login');
+        });
+
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\EnsureUserIsNotDisabled::class,

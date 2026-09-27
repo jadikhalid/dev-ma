@@ -5,12 +5,11 @@ namespace App\Mail;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class DirectHireRoundCancelledMail extends Mailable
+class DirectHireRoundCancelledMail extends PortalMailable
 {
     use Queueable, SerializesModels;
 

@@ -3,12 +3,11 @@
 namespace App\Mail;
 
 use App\Models\PendingRegistration;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
 
-class VerifyRegistrationMail extends Mailable
+class VerifyRegistrationMail extends PortalMailable
 {
     public function __construct(
         public PendingRegistration $pending,

@@ -6,12 +6,11 @@ use App\Models\DirectHireMessage;
 use App\Models\DirectHireRequest;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class DirectHireChatMessageMail extends Mailable
+class DirectHireChatMessageMail extends PortalMailable
 {
     use Queueable, SerializesModels;
 
