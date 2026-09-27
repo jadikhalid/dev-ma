@@ -60,6 +60,24 @@ class CompanyPortalHostTest extends TestCase
             ->assertDontSee('href="http://'.$www.'"', false);
     }
 
+    public function test_company_portal_header_shows_company_identity(): void
+    {
+        $companyUser = User::factory()->companyOwner()->create([
+            'email_verified_at' => now(),
+        ]);
+
+        $company = config('talenma.hosts.company');
+
+        $this->actingAs($companyUser)
+            ->get('http://'.$company.'/')
+            ->assertOk()
+            ->assertSee('data-company-portal-identity', false)
+            ->assertSee($companyUser->roleLabel(), false)
+            ->assertSee($companyUser->headerDisplayName(), false)
+            ->assertSee('href="'.route('dashboard').'"', false)
+            ->assertSee('action="'.route('logout').'"', false);
+    }
+
     public function test_talent_cannot_login_on_company_portal(): void
     {
         $talent = User::factory()->talent()->create([
