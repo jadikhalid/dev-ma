@@ -176,16 +176,12 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * CV builder, ATS Score and future shared workspace apps.
+     * « Mes applications » (CV builder, ATS Score, bibliothèque…) : réservé aux talents.
      */
     public function canAccessWorkspaceApps(): bool
     {
         if (! $this->isApproved()) {
             return false;
-        }
-
-        if ($this->isCompany()) {
-            return true;
         }
 
         return $this->isTalent() && ! $this->isActingAsModerator();

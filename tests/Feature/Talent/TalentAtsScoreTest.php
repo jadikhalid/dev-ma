@@ -131,14 +131,13 @@ TXT;
     }
 
     #[Test]
-    public function company_owner_can_access_ats_score(): void
+    public function company_owner_cannot_access_ats_score(): void
     {
         $company = User::factory()->companyOwner()->create();
 
         $this->actingAs($company)
             ->get(route('talent.ats-score.index'))
-            ->assertOk()
-            ->assertSee('ATS Score', false);
+            ->assertForbidden();
     }
 
     #[Test]

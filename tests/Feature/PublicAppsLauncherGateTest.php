@@ -29,23 +29,34 @@ class PublicAppsLauncherGateTest extends TestCase
     }
 
     #[Test]
-    public function company_passing_ats_score_gate_reaches_app(): void
+    public function company_hitting_ats_score_gate_is_sent_to_dashboard(): void
     {
         $company = User::factory()->companyOwner()->create();
 
         $this->actingAs($company)
             ->get(route('ats-score.gate'))
-            ->assertRedirect(route('talent.ats-score.index'));
+            ->assertRedirect(route($company->homeRouteName()));
     }
 
     #[Test]
-    public function company_member_can_open_ats_score(): void
+    public function company_member_cannot_open_ats_score(): void
     {
         $member = User::factory()->companyMember()->create();
 
         $this->actingAs($member)
             ->get(route('talent.ats-score.index'))
-            ->assertOk();
+            ->assertForbidden();
+    }
+
+    #[Test]
+    public function company_dashboard_hides_apps_launcher(): void
+    {
+        $company = User::factory()->companyOwner()->create();
+
+        $this->actingAs($company)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee(__('talenma.nav.apps_launcher_title'), false);
     }
 
     #[Test]
