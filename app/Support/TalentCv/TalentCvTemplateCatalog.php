@@ -11,6 +11,7 @@ class TalentCvTemplateCatalog
     {
         return [
             TalentCvDraft::TEMPLATE_BASIC,
+            TalentCvDraft::TEMPLATE_BASIC_PLUS,
             TalentCvDraft::TEMPLATE_ARTIST,
             TalentCvDraft::TEMPLATE_CLASSIC,
             TalentCvDraft::TEMPLATE_MODERN,
@@ -45,6 +46,7 @@ class TalentCvTemplateCatalog
             TalentCvDraft::TEMPLATE_GIRLY => __('talenma.cv_builder.templates.girly'),
             TalentCvDraft::TEMPLATE_ARTIST => __('talenma.cv_builder.templates.artist'),
             TalentCvDraft::TEMPLATE_BASIC => __('talenma.cv_builder.templates.basic'),
+            TalentCvDraft::TEMPLATE_BASIC_PLUS => __('talenma.cv_builder.templates.basic_plus'),
         ];
     }
 

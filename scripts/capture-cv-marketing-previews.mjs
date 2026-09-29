@@ -30,6 +30,8 @@ for (const [template, locale, filename] of [
     ['artist', 'en', 'marketing-preview-artist-en.png'],
     ['basic', 'fr', 'marketing-preview-basic-fr.png'],
     ['basic', 'en', 'marketing-preview-basic-en.png'],
+    ['basic_plus', 'fr', 'marketing-preview-basic_plus-fr.png'],
+    ['basic_plus', 'en', 'marketing-preview-basic_plus-en.png'],
 ]) {
     if (onlyTemplates.length > 0 && !onlyTemplates.includes(template)) {
         continue;

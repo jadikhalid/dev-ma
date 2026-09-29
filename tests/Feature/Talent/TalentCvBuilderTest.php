@@ -112,6 +112,7 @@ class TalentCvBuilderTest extends TestCase
 
         $templates = [
             TalentCvDraft::TEMPLATE_BASIC => 'hobbies',
+            TalentCvDraft::TEMPLATE_BASIC_PLUS => 'interests',
             TalentCvDraft::TEMPLATE_SIMPLE => 'interests',
             TalentCvDraft::TEMPLATE_VIBRANT => 'interests',
         ];
@@ -144,6 +145,31 @@ class TalentCvBuilderTest extends TestCase
         $this->assertSame(TalentCvDraft::TEMPLATE_BASIC, $options[0]['key']);
         $this->assertSame('Simple', $options[0]['label']);
         $this->assertStringContainsString('marketing-preview-basic-', $options[0]['previews']['fr']);
+
+        $this->assertSame(TalentCvDraft::TEMPLATE_BASIC_PLUS, $options[1]['key']);
+        $this->assertSame('Simple +', $options[1]['label']);
+        $this->assertStringContainsString('marketing-preview-basic_plus-', $options[1]['previews']['fr']);
+    }
+
+    public function test_basic_plus_template_preview_uses_photo_header_and_lavender_titles(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_BASIC_PLUS,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('cv-template" content="basic_plus"', false)
+            ->assertSee('headline-rule', false)
+            ->assertSee('7b6fb4', false)
+            ->assertSee('class="photo"', false)
+            ->assertSee('<strong>Backend</strong> :', false)
+            ->assertDontSee('skill-item', false)
+            ->assertSee('Contactez-moi', false)
+            ->assertSee('cv-preview-page-pads', false);
     }
 
     public function test_artist_template_preview_uses_two_column_yellow_accent_layout(): void
