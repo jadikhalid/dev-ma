@@ -6,10 +6,11 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'public', 'images', 'cv-builder');
 const baseUrl = process.env.APP_URL ?? 'http://localhost:8000';
+const onlyTemplates = (process.env.CV_TEMPLATES ?? '').split(',').map((t) => t.trim()).filter(Boolean);
 
 await mkdir(outDir, { recursive: true });
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {});
 const page = await browser.newPage({ viewport: { width: 820, height: 1200 } });
 
 for (const [template, locale, filename] of [
@@ -27,7 +28,13 @@ for (const [template, locale, filename] of [
     ['girly', 'en', 'marketing-preview-girly-en.png'],
     ['artist', 'fr', 'marketing-preview-artist-fr.png'],
     ['artist', 'en', 'marketing-preview-artist-en.png'],
+    ['basic', 'fr', 'marketing-preview-basic-fr.png'],
+    ['basic', 'en', 'marketing-preview-basic-en.png'],
 ]) {
+    if (onlyTemplates.length > 0 && !onlyTemplates.includes(template)) {
+        continue;
+    }
+
     const url = `${baseUrl}/outils/apercu-cv/${template}?locale=${locale}`;
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.waitForSelector(`meta[name="cv-template"][content="${template}"]`, {

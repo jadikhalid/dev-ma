@@ -83,6 +83,69 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('Prénom', false);
     }
 
+    public function test_basic_template_preview_uses_single_column_timeline_without_photo(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.cv-builder.preview'), [
+                'template' => TalentCvDraft::TEMPLATE_BASIC,
+                'locale' => 'fr',
+                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
+            ], ['Accept' => 'text/html'])
+            ->assertOk()
+            ->assertSee('cv-template" content="basic"', false)
+            ->assertSee('header-contact', false)
+            ->assertSee('table class="timeline entry"', false)
+            ->assertSee('À propos de moi', false)
+            ->assertSee('cv-preview-page-pads', false)
+            ->assertDontSee('class="photo"', false);
+    }
+
+    public function test_interests_block_is_last_in_single_column_templates(): void
+    {
+        $talent = User::factory()->talent()->create();
+        $data = \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr');
+        $data['interests'] = ['Randonnée', 'Photographie'];
+        $data['availability_line'] = 'Disponible immédiatement';
+        $data['linkedin_url'] = 'https://www.linkedin.com/in/prenom-nom';
+
+        $templates = [
+            TalentCvDraft::TEMPLATE_BASIC => 'hobbies',
+            TalentCvDraft::TEMPLATE_SIMPLE => 'interests',
+            TalentCvDraft::TEMPLATE_VIBRANT => 'interests',
+        ];
+
+        foreach ($templates as $template => $interestsKey) {
+            $html = $this->actingAs($talent)
+                ->postJson(route('talent.cv-builder.preview'), [
+                    'template' => $template,
+                    'locale' => 'fr',
+                    'data' => $data,
+                ], ['Accept' => 'text/html'])
+                ->assertOk()
+                ->getContent();
+
+            preg_match_all('/<p class="section-title">(.*?)<\/p>/su', $html, $matches);
+            $titles = array_map(fn ($title) => html_entity_decode(trim($title), ENT_QUOTES), $matches[1]);
+
+            $this->assertSame(
+                __("talenma.cv_builder.sections.{$interestsKey}", [], 'fr'),
+                end($titles),
+                "Le bloc centres d'intérêts doit être le dernier du modèle {$template}."
+            );
+        }
+    }
+
+    public function test_basic_template_is_listed_first_in_picker(): void
+    {
+        $options = \App\Support\TalentCv\TalentCvTemplateCatalog::pickerOptions();
+
+        $this->assertSame(TalentCvDraft::TEMPLATE_BASIC, $options[0]['key']);
+        $this->assertSame('Simple', $options[0]['label']);
+        $this->assertStringContainsString('marketing-preview-basic-', $options[0]['previews']['fr']);
+    }
+
     public function test_artist_template_preview_uses_two_column_yellow_accent_layout(): void
     {
         $talent = User::factory()->talent()->create();

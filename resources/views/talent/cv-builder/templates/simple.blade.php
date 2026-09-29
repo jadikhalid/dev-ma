@@ -266,19 +266,19 @@
         </div>
     @endif
 
+    @if ($has($d['availability_line'] ?? ''))
+        <div class="section">
+            <p class="section-title">{{ $t('availability') }}</p>
+            <p class="summary">{{ $d['availability_line'] }}</p>
+        </div>
+    @endif
+
     @if ($interests->isNotEmpty())
         <div class="section">
             <p class="section-title">{{ $t('interests') }}</p>
             @foreach ($interests as $interest)
                 <p class="cert-row">{{ $interest }}</p>
             @endforeach
-        </div>
-    @endif
-
-    @if ($has($d['availability_line'] ?? ''))
-        <div class="section">
-            <p class="section-title">{{ $t('availability') }}</p>
-            <p class="summary">{{ $d['availability_line'] }}</p>
         </div>
     @endif
 </div>
