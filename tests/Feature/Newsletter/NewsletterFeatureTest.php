@@ -408,22 +408,22 @@ class NewsletterFeatureTest extends TestCase
             'body_blocks' => [[
                 'type' => Newsletter::BLOCK_CV_TEMPLATES,
                 'heading' => 'Nouveaux modèles de CV',
-                'template_keys' => ['normal', 'starter', 'not-a-template'],
+                'template_keys' => ['classic', 'artist', 'not-a-template'],
                 'template_descriptions' => [
-                    'normal' => "Mise en page claire\npour un premier job",
-                    'starter' => 'Idéal pour démarrer',
+                    'classic' => "Mise en page claire\npour un premier job",
+                    'artist' => 'Idéal pour démarrer',
                 ],
             ]],
         ]));
 
         $this->assertStringContainsString('Nouveaux modèles de CV', $html);
         $this->assertStringContainsString('background:#eef2ff', $html);
-        $this->assertStringContainsString('Normal', $html);
-        $this->assertStringContainsString('Starter', $html);
+        $this->assertStringContainsString('Classique', $html);
+        $this->assertStringContainsString('The Artist', $html);
         $this->assertStringContainsString('Mise en page claire', $html);
         $this->assertStringContainsString('pour un premier job', $html);
         $this->assertStringContainsString('Idéal pour démarrer', $html);
-        $this->assertStringContainsString('marketing-preview-normal-fr.png', $html);
+        $this->assertStringContainsString('marketing-preview-classic-fr.png', $html);
         $this->assertStringContainsString('width="96"', $html);
         $this->assertStringContainsString('height:88px', $html);
         $this->assertStringContainsString('valign="middle"', $html);

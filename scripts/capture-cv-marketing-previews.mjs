@@ -25,12 +25,6 @@ for (const [template, locale, filename] of [
     ['vibrant', 'en', 'marketing-preview-vibrant-en.png'],
     ['girly', 'fr', 'marketing-preview-girly-fr.png'],
     ['girly', 'en', 'marketing-preview-girly-en.png'],
-    ['simple_plus', 'fr', 'marketing-preview-simple_plus-fr.png'],
-    ['simple_plus', 'en', 'marketing-preview-simple_plus-en.png'],
-    ['starter', 'fr', 'marketing-preview-starter-fr.png'],
-    ['starter', 'en', 'marketing-preview-starter-en.png'],
-    ['normal', 'fr', 'marketing-preview-normal-fr.png'],
-    ['normal', 'en', 'marketing-preview-normal-en.png'],
     ['artist', 'fr', 'marketing-preview-artist-fr.png'],
     ['artist', 'en', 'marketing-preview-artist-en.png'],
 ]) {

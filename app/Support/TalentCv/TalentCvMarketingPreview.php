@@ -46,9 +46,6 @@ class TalentCvMarketingPreview
             TalentCvDraft::TEMPLATE_SIMPLE => "marketing-preview-simple-{$locale}.png",
             TalentCvDraft::TEMPLATE_VIBRANT => "marketing-preview-vibrant-{$locale}.png",
             TalentCvDraft::TEMPLATE_GIRLY => "marketing-preview-girly-{$locale}.png",
-            TalentCvDraft::TEMPLATE_SIMPLE_PLUS => "marketing-preview-simple_plus-{$locale}.png",
-            TalentCvDraft::TEMPLATE_STARTER => "marketing-preview-starter-{$locale}.png",
-            TalentCvDraft::TEMPLATE_NORMAL => "marketing-preview-normal-{$locale}.png",
             TalentCvDraft::TEMPLATE_ARTIST => "marketing-preview-artist-{$locale}.png",
             default => "marketing-preview-modern-{$locale}.png",
         };

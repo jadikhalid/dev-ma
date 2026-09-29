@@ -10,9 +10,6 @@ class TalentCvTemplateCatalog
     public static function templateKeys(): array
     {
         return [
-            TalentCvDraft::TEMPLATE_STARTER,
-            TalentCvDraft::TEMPLATE_SIMPLE_PLUS,
-            TalentCvDraft::TEMPLATE_NORMAL,
             TalentCvDraft::TEMPLATE_ARTIST,
             TalentCvDraft::TEMPLATE_CLASSIC,
             TalentCvDraft::TEMPLATE_MODERN,
@@ -45,9 +42,6 @@ class TalentCvTemplateCatalog
             TalentCvDraft::TEMPLATE_SIMPLE => __('talenma.cv_builder.templates.simple'),
             TalentCvDraft::TEMPLATE_VIBRANT => __('talenma.cv_builder.templates.vibrant'),
             TalentCvDraft::TEMPLATE_GIRLY => __('talenma.cv_builder.templates.girly'),
-            TalentCvDraft::TEMPLATE_SIMPLE_PLUS => __('talenma.cv_builder.templates.simple_plus'),
-            TalentCvDraft::TEMPLATE_STARTER => __('talenma.cv_builder.templates.starter'),
-            TalentCvDraft::TEMPLATE_NORMAL => __('talenma.cv_builder.templates.normal'),
             TalentCvDraft::TEMPLATE_ARTIST => __('talenma.cv_builder.templates.artist'),
         ];
     }

@@ -83,45 +83,6 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('Prénom', false);
     }
 
-    public function test_simple_plus_template_preview_uses_teal_editorial_layout(): void
-    {
-        $talent = User::factory()->talent()->create();
-
-        $this->actingAs($talent)
-            ->postJson(route('talent.cv-builder.preview'), [
-                'template' => TalentCvDraft::TEMPLATE_SIMPLE_PLUS,
-                'locale' => 'fr',
-                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
-            ], ['Accept' => 'text/html'])
-            ->assertOk()
-            ->assertSee('cv-template" content="simple_plus"', false)
-            ->assertSee('profile-box', false)
-            ->assertSee('0f766e', false)
-            ->assertSee('tool-pill', false)
-            ->assertSee('name-last', false)
-            ->assertSee('Prénom', false);
-    }
-
-    public function test_starter_template_preview_uses_blue_single_column_layout(): void
-    {
-        $talent = User::factory()->talent()->create();
-
-        $this->actingAs($talent)
-            ->postJson(route('talent.cv-builder.preview'), [
-                'template' => TalentCvDraft::TEMPLATE_STARTER,
-                'locale' => 'fr',
-                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
-            ], ['Accept' => 'text/html'])
-            ->assertOk()
-            ->assertSee('cv-template" content="starter"', false)
-            ->assertSee('2c84b5', false)
-            ->assertSee('strengths', false)
-            ->assertSee('skills-row', false)
-            ->assertSee('header-photo', false)
-            ->assertSee('cv-preview-page-pads', false)
-            ->assertSee('class="body"', false);
-    }
-
     public function test_artist_template_preview_uses_two_column_yellow_accent_layout(): void
     {
         $talent = User::factory()->talent()->create();
@@ -141,28 +102,6 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('photo-wrap', false)
             ->assertSee('cv-preview-page-pads', false)
             ->assertSee('TechScale SAS', false);
-    }
-
-    public function test_normal_template_preview_uses_minimal_timeline_layout(): void
-    {
-        $talent = User::factory()->talent()->create();
-
-        $this->actingAs($talent)
-            ->postJson(route('talent.cv-builder.preview'), [
-                'template' => TalentCvDraft::TEMPLATE_NORMAL,
-                'locale' => 'fr',
-                'data' => \App\Support\TalentCv\TalentCvDraftDefaults::sampleData('fr'),
-            ], ['Accept' => 'text/html'])
-            ->assertOk()
-            ->assertSee('cv-template" content="normal"', false)
-            ->assertSee('skills-grid', false)
-            ->assertSee('timeline', false)
-            ->assertSee('skill-dots', false)
-            ->assertSee('Profil professionnel', false)
-            ->assertSee('Réseaux sociaux et liens', false)
-            ->assertSee('cv-preview-page-pads', false)
-            ->assertSee('header-photo', false)
-            ->assertDontSee('cv-sidebar-band', false);
     }
 
     public function test_modern_template_preview_includes_photo_header(): void
@@ -254,10 +193,10 @@ class TalentCvBuilderTest extends TestCase
             ->assertSee('marketing-preview-classic', false)
             ->assertSee('marketing-preview-vibrant', false)
             ->assertSee('marketing-preview-girly', false)
-            ->assertSee('marketing-preview-simple_plus', false)
-            ->assertSee('marketing-preview-starter', false)
-            ->assertSee('marketing-preview-normal', false)
             ->assertSee('marketing-preview-artist', false)
+            ->assertDontSee('marketing-preview-simple_plus', false)
+            ->assertDontSee('marketing-preview-starter', false)
+            ->assertDontSee('marketing-preview-normal', false)
             ->assertDontSee('cv-template-choose', false)
             ->assertSee('selectTemplate(option.key)', false)
             ->assertSee('templatePreviewSrc', false);
