@@ -88,15 +88,78 @@ class CompanyPortalHostTest extends TestCase
 
         $company = config('talenma.hosts.company');
 
-        $this->from('http://'.$company.'/login')
+        $this->from('http://'.$company.'/')
             ->post('http://'.$company.'/login', [
+                'login_panel' => '1',
                 'email' => $talent->email,
                 'password' => 'password',
             ])
             ->assertSessionHasErrors('email')
-            ->assertRedirect('http://'.$company.'/login');
+            ->assertRedirect('http://'.$company.'/');
 
         $this->assertGuest();
+
+        $this->get('http://'.$company.'/')
+            ->assertOk()
+            ->assertSee('x-data="{ open: true }"', false)
+            ->assertSee('value="'.$talent->email.'"', false);
+    }
+
+    public function test_company_portal_login_page_redirects_to_home_with_login_panel_open(): void
+    {
+        $company = config('talenma.hosts.company');
+
+        $this->get('http://'.$company.'/login')
+            ->assertRedirect(route('company.offer', ['login' => 1]));
+
+        $this->get(route('company.offer', ['login' => 1]))
+            ->assertOk()
+            ->assertSee('data-company-login-panel', false)
+            ->assertSee('x-data="{ open: true }"', false)
+            ->assertSee('action="'.route('login').'"', false)
+            ->assertSee('name="password"', false)
+            ->assertSee('name="remember"', false);
+    }
+
+    public function test_company_portal_home_renders_closed_login_panel_by_default(): void
+    {
+        $company = config('talenma.hosts.company');
+
+        $this->get('http://'.$company.'/')
+            ->assertOk()
+            ->assertSee('data-company-login-panel', false)
+            ->assertSee('x-data="{ open: false }"', false)
+            ->assertDontSee('href="'.PortalHost::companyUrl('/login').'"', false);
+    }
+
+    public function test_company_can_login_from_portal_login_panel(): void
+    {
+        $companyUser = User::factory()->companyOwner()->create([
+            'email' => 'panel@example.com',
+            'password' => 'password',
+            'email_verified_at' => now(),
+        ]);
+
+        $company = config('talenma.hosts.company');
+
+        $this->from('http://'.$company.'/')
+            ->post('http://'.$company.'/login', [
+                'login_panel' => '1',
+                'email' => $companyUser->email,
+                'password' => 'password',
+            ])
+            ->assertRedirect();
+
+        $this->assertAuthenticatedAs($companyUser);
+    }
+
+    public function test_www_login_page_is_unchanged(): void
+    {
+        $www = config('talenma.hosts.www');
+
+        $this->get('http://'.$www.'/login')
+            ->assertOk()
+            ->assertSee('name="password"', false);
     }
 
     public function test_company_cannot_login_on_talent_host(): void

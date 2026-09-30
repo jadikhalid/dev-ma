@@ -1,3 +1,6 @@
+@php
+    $trialOld = old('offer_form') !== 'demo' && ! old('login_panel');
+@endphp
 <form
     id="company-trial-request-form"
     method="POST"
@@ -29,6 +32,7 @@
     })"
 >
     @csrf
+    <input type="hidden" name="offer_form" value="trial">
 
     <div>
         <label for="trial_company_name" class="block text-sm font-semibold text-gray-700">{{ __('talenma.auth.company_name') }}</label>
@@ -38,7 +42,7 @@
             type="text"
             required
             maxlength="255"
-            value="{{ old('company_name') }}"
+            value="{{ $trialOld ? old('company_name') : '' }}"
             @input="clearFieldError('company_name')"
             :class="fieldInvalidClass('company_name')"
             class="mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
@@ -54,7 +58,7 @@
             type="text"
             required
             maxlength="255"
-            value="{{ old('contact_name') }}"
+            value="{{ $trialOld ? old('contact_name') : '' }}"
             @input="clearFieldError('contact_name')"
             :class="fieldInvalidClass('contact_name')"
             class="mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
@@ -71,7 +75,7 @@
                 type="email"
                 required
                 maxlength="255"
-                value="{{ old('email') }}"
+                value="{{ $trialOld ? old('email') : '' }}"
                 @input="clearFieldError('email')"
                 :class="fieldInvalidClass('email')"
                 class="mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
@@ -86,7 +90,7 @@
                 type="tel"
                 required
                 maxlength="50"
-                value="{{ old('phone') }}"
+                value="{{ $trialOld ? old('phone') : '' }}"
                 placeholder="+212 6 00 00 00 00"
                 @input="clearFieldError('phone')"
                 :class="fieldInvalidClass('phone')"
@@ -109,7 +113,7 @@
             >
                 <option value="">{{ __('talenma.auth.sector_placeholder') }}</option>
                 @foreach ($professionSectors as $sectorOption)
-                    <option value="{{ $sectorOption['slug'] }}" @selected(old('sector') === $sectorOption['slug'])>{{ $sectorOption['name'] }}</option>
+                    <option value="{{ $sectorOption['slug'] }}" @selected($trialOld && old('sector') === $sectorOption['slug'])>{{ $sectorOption['name'] }}</option>
                 @endforeach
             </select>
             <p x-show="fieldMessage('sector')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('sector')"></p>
@@ -126,7 +130,7 @@
             >
                 <option value="">{{ __('talenma.talent.country_placeholder') }}</option>
                 @foreach ($companyCountryOptions as $code => $label)
-                    <option value="{{ $code }}" @selected(old('company_country') === $code)>{{ $label }}</option>
+                    <option value="{{ $code }}" @selected($trialOld && old('company_country') === $code)>{{ $label }}</option>
                 @endforeach
             </select>
             <p x-show="fieldMessage('company_country')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('company_country')"></p>
@@ -145,7 +149,7 @@
             :class="fieldInvalidClass('company_description')"
             class="mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-emerald-500 focus:ring-emerald-500 resize-none"
             placeholder="{{ __('talenma.company.description_placeholder') }}"
-        >{{ old('company_description') }}</textarea>
+        >{{ $trialOld ? old('company_description') : '' }}</textarea>
         <p class="mt-1 text-xs text-gray-500">{{ __('talenma.company_offer.trial_description_hint') }}</p>
         <p x-show="fieldMessage('company_description')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('company_description')"></p>
     </div>
@@ -157,7 +161,7 @@
             name="company_website"
             type="url"
             maxlength="255"
-            value="{{ old('company_website') }}"
+            value="{{ $trialOld ? old('company_website') : '' }}"
             placeholder="https://..."
             @input="clearFieldError('company_website')"
             :class="fieldInvalidClass('company_website')"
@@ -176,7 +180,7 @@
                 name="data_processing_consent"
                 type="checkbox"
                 value="1"
-                @checked(old('data_processing_consent'))
+                @checked($trialOld && old('data_processing_consent'))
                 @change="clearFieldError('data_processing_consent')"
                 class="mt-0.5 size-4 rounded border-gray-300 text-emerald-600 shadow-sm focus:ring-emerald-500"
                 required

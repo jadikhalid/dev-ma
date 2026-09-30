@@ -15,8 +15,14 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request): View|RedirectResponse
     {
+        if (PortalHost::isCompanyHost($request)) {
+            $request->session()->reflash();
+
+            return redirect()->route('company.offer', ['login' => 1]);
+        }
+
         return view('auth.login', [
             'companyPortal' => PortalHost::isCompanyHost(),
         ]);

@@ -1,3 +1,8 @@
+@props([
+    'newsletter' => true,
+    'agencyCreditOnly' => false,
+])
+
 <footer class="bg-gray-900 text-gray-300">
     <div class="home-shell py-12">
         <div class="flex flex-col gap-6">
@@ -9,6 +14,7 @@
                 </div>
             </div>
             <p class="text-sm text-gray-400 max-w-md">{{ __('talenma.footer.tagline') }}</p>
+            @if ($newsletter)
             <div class="mt-6 max-w-md">
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">{{ __('talenma.newsletter.public_subscribe_title') }}</p>
                 <p class="mt-1 text-sm text-gray-400">{{ __('talenma.newsletter.public_subscribe_help') }}</p>
@@ -31,6 +37,7 @@
                     <p class="mt-2 text-xs text-rose-400">{{ $message }}</p>
                 @enderror
             </div>
+            @endif
         </div>
         <div class="mt-10 pt-6 border-t border-gray-800 text-sm text-gray-500 flex flex-col sm:flex-row justify-between gap-2">
             <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -38,6 +45,12 @@
                 <a href="{{ route('privacy') }}" class="text-gray-400 underline hover:text-white transition">{{ __('talenma.footer.privacy') }}</a>
             </div>
             <div class="sm:text-right rounded-lg border border-gray-700/80 bg-gray-800/50 px-3.5 py-2 text-sm leading-relaxed">
+                @if ($agencyCreditOnly)
+                <p>
+                    <span class="text-gray-500">{{ __('talenma.footer.developed_by') }}</span>
+                    <a href="https://www.jadi-digital.com/" target="_blank" rel="noopener noreferrer" class="font-semibold text-indigo-300 hover:text-indigo-200 transition">{{ __('talenma.footer.jadi_digital') }}</a>
+                </p>
+                @else
                 <p>
                     <span class="text-gray-500">{{ __('talenma.footer.developed_by') }}</span>
                     <a href="https://www.linkedin.com/in/khalid-j-a73662254/" target="_blank" rel="noopener noreferrer" class="font-semibold text-white hover:text-amber-200 transition">{{ __('talenma.footer.developer_name') }}</a>
@@ -47,6 +60,7 @@
                     <span class="text-gray-500">{{ __('talenma.footer.developed_for') }}</span>
                     <a href="https://www.jadi-digital.com/" target="_blank" rel="noopener noreferrer" class="font-semibold text-indigo-300 hover:text-indigo-200 transition">{{ __('talenma.footer.jadi_digital') }}</a>
                 </p>
+                @endif
             </div>
         </div>
     </div>

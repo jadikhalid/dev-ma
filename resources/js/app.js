@@ -10016,6 +10016,7 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
 
             this.resetForm(form);
             pushToast('success', payload?.message || this.messages.sent || '');
+            this.$dispatch('company-offer-form-sent', { mode: this.mode });
         } catch {
             pushToast('error', this.messages.network_error || 'Error');
         } finally {

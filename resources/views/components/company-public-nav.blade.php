@@ -5,7 +5,7 @@
 @endphp
 
 <header class="sticky top-0 z-50 w-full border-b border-indigo-100/80 bg-white/95 backdrop-blur-md">
-    <div class="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+    <div class="home-align-wide mx-auto flex h-20 w-full items-center justify-between gap-3 px-4 sm:h-16 sm:px-6 lg:px-10 xl:px-12 2xl:px-10">
         <div class="flex shrink-0 items-center">
             <x-brand-logo href="{{ route('company.offer') }}" size="sm" />
         </div>
@@ -60,10 +60,86 @@
                     >{{ __('talenma.nav.public_site') }}</a>
                 @endif
             @else
-                <a
-                    href="{{ route('login') }}"
-                    class="inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
-                >{{ __('talenma.nav.company_login') }}</a>
+                @php
+                    $loginPanelOpen = request()->boolean('login') || filled(old('login_panel')) || filled(session('status'));
+                @endphp
+                <div
+                    class="relative"
+                    x-data="{ open: @js($loginPanelOpen) }"
+                    x-init="$watch('open', (value) => { if (value) $nextTick(() => $refs.loginEmail.focus()) }); if (open) $nextTick(() => $refs.loginEmail.focus())"
+                    @keydown.escape.window="open = false"
+                    @click.outside="open = false"
+                    data-company-login-panel
+                >
+                    <button
+                        type="button"
+                        @click="open = ! open"
+                        :aria-expanded="open.toString()"
+                        aria-controls="company-login-panel"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+                    >
+                        {{ __('talenma.nav.company_login') }}
+                        <svg class="h-4 w-4 shrink-0 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                    </button>
+
+                    <div
+                        id="company-login-panel"
+                        x-show="open"
+                        x-cloak
+                        x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 -translate-y-3 scale-y-95"
+                        x-transition:enter-end="opacity-100 translate-y-0 scale-y-100"
+                        x-transition:leave="transition ease-in duration-200"
+                        x-transition:leave-start="opacity-100 translate-y-0 scale-y-100"
+                        x-transition:leave-end="opacity-0 -translate-y-3 scale-y-95"
+                        class="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-sm origin-top rounded-2xl border border-gray-200 bg-white p-5 shadow-xl sm:w-96"
+                        role="dialog"
+                        aria-label="{{ __('talenma.auth.login_title') }}"
+                    >
+                        <x-auth-session-status class="mb-4" :status="session('status')" />
+                        <form method="POST" action="{{ route('login') }}">@csrf
+                            <input type="hidden" name="login_panel" value="1">
+                            <div>
+                                <x-input-label for="company-login-email" :value="__('talenma.auth.email')" />
+                                <x-text-input
+                                    id="company-login-email"
+                                    name="email"
+                                    type="email"
+                                    class="mt-1 block w-full"
+                                    :value="old('login_panel') ? old('email') : ''"
+                                    required
+                                    autocomplete="username"
+                                    inputmode="email"
+                                    x-ref="loginEmail"
+                                />
+                            </div>
+                            <div class="mt-4">
+                                <x-input-label for="company-login-password" :value="__('talenma.auth.password')" />
+                                <x-text-input id="company-login-password" name="password" type="password" class="mt-1 block w-full" required autocomplete="current-password" />
+                            </div>
+                            <label class="mt-4 flex items-center">
+                                <input type="checkbox" name="remember" class="size-4 rounded text-indigo-600" autocomplete="off">
+                                <span class="ms-2.5 text-sm text-gray-600">{{ __('talenma.auth.remember') }}</span>
+                            </label>
+                            <div class="mt-5 flex items-center justify-between gap-3">
+                                @if (Route::has('password.request'))
+                                    <a href="{{ route('password.request') }}" class="text-sm text-indigo-600 hover:text-indigo-800">{{ __('talenma.auth.forgot') }}</a>
+                                @endif
+                                <x-primary-button class="justify-center">{{ __('talenma.auth.login_btn') }}</x-primary-button>
+                            </div>
+                            <p class="mt-4 text-center text-sm text-gray-600">
+                                {{ __('talenma.auth.no_company_account') }}
+                                <a
+                                    href="{{ route('company.offer', ['tab' => 'trial']) }}"
+                                    @if (request()->routeIs('company.offer'))
+                                        @click.prevent="open = false; $dispatch('company-offer-drawer', 'trial')"
+                                    @endif
+                                    class="font-medium text-indigo-600"
+                                >{{ __('talenma.company_offer.cta_trial') }}</a>
+                            </p>
+                        </form>
+                    </div>
+                </div>
             @endauth
         </div>
     </div>

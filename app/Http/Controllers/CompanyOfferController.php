@@ -8,6 +8,7 @@ use App\Mail\CompanyTrialRequestMail;
 use App\Models\CompanyDemoRequest;
 use App\Models\CompanyProfile;
 use App\Models\CompanyTrialRequest;
+use App\Models\User;
 use App\Services\MessagingService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
@@ -30,6 +31,15 @@ class CompanyOfferController extends Controller
             'priceFromUsd' => CompanyProfile::PLAN_PRICE_FROM_USD,
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'companyCountryOptions' => CompanyProfile::countryOptions(),
+            'talentCount' => User::query()
+                ->where('role', 'dev')
+                ->where('approval_status', User::APPROVAL_APPROVED)
+                ->count(),
+            'companyCount' => CompanyProfile::query()
+                ->whereHas('user', fn ($query) => $query
+                    ->where('role', 'company')
+                    ->where('approval_status', User::APPROVAL_APPROVED))
+                ->count(),
         ]);
     }
 

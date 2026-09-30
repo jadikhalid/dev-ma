@@ -28,8 +28,10 @@
     @endif
     <x-toast-stack persistent />
     <main>@yield('content')</main>
-    @unless (\App\Support\PortalHost::isCompanyHost())
+    @if (\App\Support\PortalHost::isCompanyHost())
+        <x-public-footer :newsletter="false" agency-credit-only />
+    @else
         <x-public-footer />
-    @endunless
+    @endif
 </body>
 </html>

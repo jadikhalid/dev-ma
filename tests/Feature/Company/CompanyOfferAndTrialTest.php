@@ -41,14 +41,77 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertDontSee(__('talenma.nav.apps_launcher_title'), false)
             ->assertSee('name="contact_name"', false)
             ->assertSee('name="phone"', false)
-            ->assertDontSee('name="password"', false)
             ->assertDontSee('name="role"', false)
             ->assertSee(route('company.trial.store'), false);
+
+        $this->assertSame(1, substr_count($response->getContent(), 'name="password"'));
+        $response->assertSee('id="company-login-password"', false);
 
         $response->assertSeeText(__('talenma.company_offer.includes_1'));
         $response->assertSeeText(__('talenma.company_offer.includes_2'));
         $response->assertSeeText(__('talenma.company_offer.includes_3'));
         $response->assertSeeText(__('talenma.company_offer.includes_4'));
+    }
+
+    public function test_company_offer_hero_renders_closed_form_drawers(): void
+    {
+        User::factory()->count(2)->create(['role' => 'dev', 'approval_status' => User::APPROVAL_APPROVED]);
+        User::factory()->create(['role' => 'dev', 'approval_status' => User::APPROVAL_PENDING]);
+
+        $this->get(route('company.offer'))
+            ->assertOk()
+            ->assertSeeText(__('talenma.company_offer.hero_title'))
+            ->assertSee('drawer: null', false)
+            ->assertSee('data-company-offer-drawer="demo"', false)
+            ->assertSee('data-company-offer-drawer="trial"', false)
+            ->assertSee('<p class="text-2xl font-extrabold text-gray-950 sm:text-3xl" data-company-offer-talent-count>2+</p>', false);
+    }
+
+    public function test_company_offer_hero_shows_approved_company_count(): void
+    {
+        foreach ([User::APPROVAL_APPROVED, User::APPROVAL_APPROVED, User::APPROVAL_APPROVED, User::APPROVAL_PENDING] as $status) {
+            $company = User::factory()->companyOwner()->create(['approval_status' => $status]);
+            CompanyProfile::factory()->create(['user_id' => $company->id]);
+        }
+
+        $this->get(route('company.offer'))
+            ->assertOk()
+            ->assertSee('data-company-offer-company-count>3+</p>', false);
+    }
+
+    public function test_company_offer_footer_has_no_newsletter_and_agency_credit_only(): void
+    {
+        $this->get(route('company.offer'))
+            ->assertOk()
+            ->assertSee('<footer', false)
+            ->assertSee(route('privacy'), false)
+            ->assertSee('https://www.jadi-digital.com/', false)
+            ->assertDontSee(route('newsletter.subscribe'), false)
+            ->assertDontSee(__('talenma.footer.developer_name'), false);
+    }
+
+    public function test_logged_in_company_does_not_see_demo_and_trial_ctas_or_drawers(): void
+    {
+        $company = User::factory()->companyOwner()->create();
+        CompanyProfile::factory()->onTrial()->create(['user_id' => $company->id]);
+
+        $this->actingAs($company)
+            ->get(route('company.offer', ['tab' => 'trial']))
+            ->assertOk()
+            ->assertSeeText(__('talenma.company_offer.hero_title'))
+            ->assertDontSee(__('talenma.company_offer.hero_cta_demo'), false)
+            ->assertDontSee(__('talenma.company_offer.hero_cta_trial'), false)
+            ->assertDontSee('data-company-offer-drawer', false)
+            ->assertDontSee(route('company.demo.store'), false)
+            ->assertDontSee(route('company.trial.store'), false)
+            ->assertSee('data-company-offer-dashboard-link', false);
+    }
+
+    public function test_company_offer_trial_tab_opens_trial_drawer(): void
+    {
+        $this->get(route('company.offer', ['tab' => 'trial']))
+            ->assertOk()
+            ->assertSee('drawer: \'trial\'', false);
     }
 
     public function test_register_company_query_redirects_to_offer(): void
