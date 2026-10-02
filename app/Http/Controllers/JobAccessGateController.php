@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class JobAccessGateController extends Controller
 {
     /**
-     * Send an authenticated user to the role-appropriate jobs page.
+     * Send an approved talent to the jobs pages; every other account goes to its home.
      * Guests hit this via home links; auth middleware stores the intended URL for post-login return.
      */
     public function __invoke(Request $request, ?JobPosting $job = null): RedirectResponse
@@ -22,16 +22,6 @@ class JobAccessGateController extends Controller
             }
 
             return redirect()->route('talent.jobs.index');
-        }
-
-        if ($user->canManageJobs()) {
-            $orgId = $user->companyOrganization()?->id;
-
-            if ($job && $orgId && (int) $job->company_profile_id === (int) $orgId) {
-                return redirect()->route('company.jobs.show', $job);
-            }
-
-            return redirect()->route('company.jobs.index');
         }
 
         return redirect()->route($user->homeRouteName());

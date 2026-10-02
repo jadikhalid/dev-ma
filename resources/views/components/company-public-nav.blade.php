@@ -43,8 +43,8 @@
     data-company-header
 >
     <div
-        class="h-full border-b border-indigo-100/80 bg-white/95 backdrop-blur-md transition duration-500 ease-in-out"
-        :class="scrolled ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'"
+        class="h-full border-b border-indigo-100/80 bg-white transition duration-500 ease-in-out"
+        :class="scrolled ? '-translate-y-full opacity-0' : 'opacity-100'"
         data-company-header-bar
     >
     <div class="home-align-wide mx-auto flex h-16 w-full items-center sm:h-28 justify-between gap-3 px-4 sm:px-6 lg:px-10 xl:px-12 2xl:px-10">
@@ -108,7 +108,11 @@
                 <div
                     class="relative"
                     x-data="{ open: @js($loginPanelOpen) }"
-                    x-init="$watch('open', (value) => { if (value) $nextTick(() => $refs.loginEmail.focus()) }); if (open) $nextTick(() => $refs.loginEmail.focus())"
+                    x-init="
+                        const autofocus = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches && $nextTick(() => $refs.loginEmail.focus());
+                        $watch('open', (value) => { if (value) autofocus() });
+                        if (open) autofocus();
+                    "
                     @keydown.escape.window="open = false"
                     @click.outside="open = false"
                     data-company-login-panel
@@ -134,7 +138,7 @@
                         x-transition:leave="transition ease-in duration-200"
                         x-transition:leave-start="opacity-100 translate-y-0 scale-y-100"
                         x-transition:leave-end="opacity-0 -translate-y-3 scale-y-95"
-                        class="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-sm origin-top rounded-2xl border border-gray-200 bg-white p-5 shadow-xl sm:w-96"
+                        class="fixed inset-x-4 top-16 z-50 mt-2 origin-top rounded-2xl border border-gray-200 bg-white p-5 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-96"
                         role="dialog"
                         aria-label="{{ __('talenma.auth.login_title') }}"
                     >

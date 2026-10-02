@@ -62,7 +62,7 @@ class HomeLatestJobsTest extends TestCase
             ->assertRedirect(route('talent.jobs.show', $job));
     }
 
-    public function test_guest_jobs_index_gate_redirects_to_company_jobs_after_auth(): void
+    public function test_company_cannot_log_in_through_talent_jobs_gate(): void
     {
         [$owner] = $this->makeCompanyOwner();
         $owner->forceFill([
@@ -76,10 +76,18 @@ class HomeLatestJobsTest extends TestCase
         $this->post(route('login'), [
             'email' => 'company.gate@example.com',
             'password' => 'password',
-        ])->assertRedirect(route('jobs.gate'));
+        ])->assertSessionHasErrors('email');
 
-        $this->get(route('jobs.gate'))
-            ->assertRedirect(route('company.jobs.index'));
+        $this->assertGuest();
+    }
+
+    public function test_jobs_gate_sends_company_account_to_its_home_not_company_jobs(): void
+    {
+        [$owner] = $this->makeCompanyOwner();
+
+        $this->actingAs($owner)
+            ->get(route('jobs.gate'))
+            ->assertRedirect(route($owner->homeRouteName()));
     }
 
     public function test_approved_talent_sees_links_to_talent_job_pages(): void
