@@ -90,6 +90,63 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertDontSee(__('talenma.footer.developer_name'), false);
     }
 
+    public function test_case_studies_page_renders_company_header_band_and_footer(): void
+    {
+        $this->get(route('company.offer'))
+            ->assertSee(route('company.case-studies'), false)
+            ->assertSee(__('talenma.nav.case_studies'));
+
+        $this->get(route('company.case-studies'))
+            ->assertOk()
+            ->assertSee('data-company-header-band', false)
+            ->assertSee('data-company-case-studies', false)
+            ->assertSee('aria-current="page"', false)
+            ->assertSee('https://www.jadi-digital.com/', false)
+            ->assertDontSee(route('newsletter.subscribe'), false);
+    }
+
+    public function test_offers_and_about_pages_render_with_band_links(): void
+    {
+        $this->get(route('company.offer'))
+            ->assertSee(route('company.offers'), false)
+            ->assertSee(route('company.about'), false)
+            ->assertSee(__('talenma.nav.offers'))
+            ->assertSee(__('talenma.nav.about'), false);
+
+        foreach (['company.offers' => 'data-company-offers', 'company.about' => 'data-company-about'] as $route => $marker) {
+            $this->get(route($route))
+                ->assertOk()
+                ->assertSee('data-company-header-band', false)
+                ->assertSee($marker, false)
+                ->assertSee('aria-current="page"', false)
+                ->assertSee('https://www.jadi-digital.com/', false);
+        }
+    }
+
+    public function test_mobile_nav_drawer_lists_band_links_and_offer_ctas(): void
+    {
+        $this->get(route('company.offer'))
+            ->assertOk()
+            ->assertSee('data-company-mobile-nav-toggle', false)
+            ->assertSee('data-company-mobile-nav', false)
+            ->assertSee('data-company-mobile-platform-toggle', false)
+            ->assertSee('data-company-mobile-demo', false)
+            ->assertSee('data-company-mobile-trial', false);
+    }
+
+    public function test_company_offer_header_platform_menu_lists_the_four_services(): void
+    {
+        $response = $this->get(route('company.offer'))
+            ->assertOk()
+            ->assertSee('data-company-platform-trigger', false)
+            ->assertSee('data-company-platform-menu', false)
+            ->assertSee(__('talenma.nav.platform_menu_title'));
+
+        foreach (range(1, 4) as $index) {
+            $response->assertSee(__('talenma.company_offer.includes_'.$index));
+        }
+    }
+
     public function test_logged_in_company_does_not_see_demo_and_trial_ctas_or_drawers(): void
     {
         $company = User::factory()->companyOwner()->create();

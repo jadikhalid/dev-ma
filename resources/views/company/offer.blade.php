@@ -60,7 +60,7 @@
     data-company-offer-hero
 >
     <div class="home-shell relative">
-    <div class="grid min-h-[calc(100vh-5rem)] items-center gap-12 py-12 sm:min-h-[calc(100vh-4rem)] lg:grid-cols-2 lg:gap-16 lg:px-10 lg:py-16 xl:px-16 2xl:px-24">
+    <div class="grid items-center gap-12 pb-12 pt-8 sm:pt-[4.5rem] lg:grid-cols-2 lg:gap-16 lg:px-10 lg:pb-16 lg:pt-[6.25rem] xl:px-16 xl:pt-[6.75rem] 2xl:px-24 2xl:pt-[7.25rem]">
         {{-- Colonne gauche --}}
         <div>
             <p class="mb-5 inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-500 px-5 py-2.5 text-base font-bold tracking-wide text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-700/20">

@@ -137,6 +137,9 @@ $companyHost = PortalHost::companyHost();
 
 Route::domain($companyHost)->group(function () {
     Route::get('/', [CompanyOfferController::class, 'show'])->name('company.offer');
+    Route::view('/nos-offres', 'company.offers')->name('company.offers');
+    Route::view('/etude-de-cas', 'company.case-studies')->name('company.case-studies');
+    Route::view('/a-propos', 'company.about')->name('company.about');
     Route::post('/demo', [CompanyOfferController::class, 'storeDemo'])
         ->middleware('throttle:8,1')
         ->name('company.demo.store');
