@@ -6,9 +6,9 @@
 <footer class="bg-gray-900 text-gray-300">
     <div class="home-shell py-12">
         <div class="flex flex-col gap-6">
-            <div class="flex items-start justify-between gap-4">
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                 <x-brand-logo white size="sm" :linked="false" />
-                <div class="flex flex-col items-end gap-3 shrink-0">
+                <div class="flex flex-col items-start gap-3 sm:shrink-0 sm:items-end">
                     <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">{{ __('talenma.footer.follow_us') }}</p>
                     <x-social-links variant="dark" />
                 </div>

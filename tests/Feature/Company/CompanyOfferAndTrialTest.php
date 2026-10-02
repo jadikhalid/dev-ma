@@ -64,7 +64,7 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSee('drawer: null', false)
             ->assertSee('data-company-offer-drawer="demo"', false)
             ->assertSee('data-company-offer-drawer="trial"', false)
-            ->assertSee('<p class="text-2xl font-extrabold text-gray-950 sm:text-3xl" data-company-offer-talent-count>2+</p>', false);
+            ->assertSee('<p class="text-xl font-extrabold text-gray-950 sm:text-3xl" data-company-offer-talent-count>2+</p>', false);
     }
 
     public function test_company_offer_hero_shows_approved_company_count(): void
@@ -128,6 +128,7 @@ class CompanyOfferAndTrialTest extends TestCase
         $this->get(route('company.offer'))
             ->assertOk()
             ->assertSee('data-company-mobile-nav-toggle', false)
+            ->assertSee('data-company-mobile-home', false)
             ->assertSee('data-company-mobile-nav', false)
             ->assertSee('data-company-mobile-platform-toggle', false)
             ->assertSee('data-company-mobile-demo', false)

@@ -49,6 +49,20 @@
         </div>
 
         <nav class="flex-1 overflow-y-auto px-4 py-4">
+            <a
+                href="{{ route('company.offer') }}"
+                @class([
+                    'mb-2 flex items-center gap-3 rounded-xl border px-4 py-3.5 text-[0.9375rem] font-semibold transition-colors duration-300',
+                    'border-indigo-600 bg-indigo-600 text-white' => $onOfferPage,
+                    'border-gray-200 text-gray-950 hover:border-indigo-300 hover:bg-indigo-50' => ! $onOfferPage,
+                ])
+                @if ($onOfferPage) aria-current="page" @endif
+                data-company-mobile-home
+            >
+                <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955a1.126 1.126 0 0 1 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+                {{ __('talenma.nav.home') }}
+            </a>
+
             <div class="rounded-xl border border-gray-200">
                 <button
                     type="button"
