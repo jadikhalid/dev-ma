@@ -17,6 +17,27 @@ class AdminLibraryTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
+    public function book_pdf_limit_is_65_mb(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.library.books.store'), [
+                'file' => UploadedFile::fake()->create('ok.pdf', 64 * 1024, 'application/pdf'),
+            ])
+            ->assertSessionDoesntHaveErrors('file');
+
+        $this->actingAs($admin)
+            ->post(route('admin.library.books.store'), [
+                'file' => UploadedFile::fake()->create('too-big.pdf', 66 * 1024, 'application/pdf'),
+            ])
+            ->assertSessionHasErrors(['file' => __('talenma.admin.library.file_max')]);
+    }
+
+    #[Test]
     public function admin_can_manage_categories_and_books(): void
     {
         Storage::fake('local');

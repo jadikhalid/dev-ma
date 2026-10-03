@@ -131,7 +131,7 @@ class LibraryBookController extends Controller
                 'nullable',
                 'file',
                 'mimes:pdf',
-                'max:51200',
+                'max:66560',
             ],
             'cover' => [
                 Rule::requiredIf($requireCover),

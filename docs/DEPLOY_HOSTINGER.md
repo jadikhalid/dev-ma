@@ -169,8 +169,8 @@ CLOUDINARY_VIDEO_MAX_KB=40960
 
 Sur Hostinger (hPanel → PHP Configuration), monter aussi :
 
-- `upload_max_filesize` ≥ `40M`
-- `post_max_size` ≥ `40M`
+- `upload_max_filesize` ≥ `80M`
+- `post_max_size` ≥ `80M`
 - `max_execution_time` ≥ `180` (upload synchrone vers Cloudinary)
 
 Après modification du `.env` prod : `php artisan config:cache`.
