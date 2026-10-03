@@ -78,11 +78,18 @@
                 <div id="company-mobile-platform" x-show="mobilePlatform" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="px-3 pb-3">
                     <ul class="space-y-1.5" role="list">
                         @foreach ($platformMenuItems as $index => $item)
-                            <li class="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-800">
-                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $item['icon'] }}"/></svg>
-                                </span>
-                                <span>{{ __('talenma.company_offer.includes_'.($index + 1)) }}</span>
+                            <li>
+                                <a
+                                    href="{{ route('company.offer') }}#{{ $item['anchor'] }}"
+                                    @click="mobileNav = false"
+                                    class="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-indigo-50 hover:text-indigo-700"
+                                    data-company-mobile-platform-link="{{ $item['anchor'] }}"
+                                >
+                                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $item['icon'] }}"/></svg>
+                                    </span>
+                                    <span>{{ __('talenma.company_offer.includes_'.($index + 1)) }}</span>
+                                </a>
                             </li>
                         @endforeach
                     </ul>

@@ -324,4 +324,6 @@
     </aside>
     @endif
 </section>
+
+@include('company.partials.platform-services')
 @endsection

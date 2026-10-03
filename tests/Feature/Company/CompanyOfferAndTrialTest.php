@@ -148,6 +148,23 @@ class CompanyOfferAndTrialTest extends TestCase
         }
     }
 
+    public function test_company_offer_shows_a_showcase_section_for_each_platform_service(): void
+    {
+        $response = $this->get(route('company.offer'))
+            ->assertOk()
+            ->assertSee('data-company-platform-intro', false)
+            ->assertSee(__('talenma.company_offer.platform_title'))
+            ->assertSee('data-company-platform-final', false);
+
+        foreach (['catalogue', 'applications', 'sourcing', 'jobs'] as $key) {
+            $response
+                ->assertSee('data-company-platform-service="'.$key.'"', false)
+                ->assertSee('id="platform-'.$key.'"', false)
+                ->assertSee('data-company-platform-link="platform-'.$key.'"', false)
+                ->assertSee(__('talenma.company_offer.services.'.$key.'.title'));
+        }
+    }
+
     public function test_logged_in_company_does_not_see_demo_and_trial_ctas_or_drawers(): void
     {
         $company = User::factory()->companyOwner()->create();
