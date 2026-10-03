@@ -24,8 +24,12 @@ class CompanyOfferController extends Controller
         private ProfessionCatalogService $professionCatalog,
     ) {}
 
-    public function show(): View
+    public function show(Request $request): View|RedirectResponse
     {
+        if ($request->user()?->isCompany()) {
+            return redirect()->route('dashboard');
+        }
+
         return view('company.offer', [
             'trialMonths' => CompanyProfile::TRIAL_MONTHS,
             'priceFromUsd' => CompanyProfile::PLAN_PRICE_FROM_USD,

@@ -39,12 +39,12 @@ class CompanyPortalHostTest extends TestCase
 
         $this->get('http://'.$company.'/')
             ->assertOk()
-            ->assertSee(__('talenma.company_offer.cta_trial'), false)
+            ->assertSee(__('talenma.company_offer.hero_cta_trial'), false)
             ->assertSee(__('talenma.nav.company_login'), false)
             ->assertDontSee(__('talenma.nav.jobs'), false);
     }
 
-    public function test_company_dashboard_home_link_targets_company_portal_root(): void
+    public function test_company_dashboard_logo_targets_dashboard_not_portal_root(): void
     {
         $companyUser = User::factory()->companyOwner()->create([
             'email_verified_at' => now(),
@@ -56,7 +56,8 @@ class CompanyPortalHostTest extends TestCase
         $this->actingAs($companyUser)
             ->get('http://'.$company.'/dashboard')
             ->assertOk()
-            ->assertSee('href="'.PortalHost::companyRootUrl().'"', false)
+            ->assertSee('href="'.route('dashboard').'"', false)
+            ->assertDontSee('href="'.PortalHost::companyRootUrl().'"', false)
             ->assertDontSee('href="http://'.$www.'"', false);
     }
 
@@ -70,6 +71,10 @@ class CompanyPortalHostTest extends TestCase
 
         $this->actingAs($companyUser)
             ->get('http://'.$company.'/')
+            ->assertRedirect(route('dashboard'));
+
+        $this->actingAs($companyUser)
+            ->get('http://'.$company.'/a-propos')
             ->assertOk()
             ->assertSee('data-company-portal-identity', false)
             ->assertSee($companyUser->roleLabel(), false)

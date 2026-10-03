@@ -60,18 +60,18 @@
     data-company-offer-hero
 >
     <div class="home-shell relative">
-    <div class="grid items-center gap-12 pb-12 pt-8 sm:pt-[4.5rem] lg:grid-cols-2 lg:gap-16 lg:px-10 lg:pb-16 lg:pt-[6.25rem] xl:px-16 xl:pt-[6.75rem] 2xl:px-24 2xl:pt-[7.25rem]">
-        {{-- Colonne gauche --}}
-        <div>
-            <p class="mb-5 inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-500 px-5 py-2.5 text-base font-bold tracking-wide text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-700/20">
+    <div class="grid items-center pb-12 pt-8 sm:gap-12 sm:pt-[4.5rem] lg:grid-cols-2 lg:gap-16 lg:px-10 lg:pb-16 lg:pt-[6.25rem] xl:px-16 xl:pt-[6.75rem] 2xl:px-24 2xl:pt-[7.25rem]">
+        {{-- Colonne gauche (sur téléphone, ses enfants sont réordonnés autour de l'image) --}}
+        <div class="contents sm:block">
+            <p class="mb-5 inline-flex items-center order-1 justify-self-start sm:order-none sm:justify-self-auto gap-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-500 px-5 py-2.5 text-base font-bold tracking-wide text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-700/20">
                 <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/></svg>
                 {{ __('talenma.company_offer.hero_badge') }}
             </p>
-            <h1 class="pl-1.5 text-4xl font-extrabold leading-[1.1] tracking-tight text-gray-950 sm:pl-0 sm:text-5xl lg:text-[2.8rem]">
+            <h1 class="order-2 pl-1.5 text-4xl sm:order-none font-extrabold leading-[1.1] tracking-tight text-gray-950 sm:pl-0 sm:text-5xl lg:text-[2.8rem]">
                 {{ __('talenma.company_offer.hero_title') }}
             </h1>
 
-            <ol class="mt-6 space-y-2 pl-1.5 sm:pl-[10%]" role="list">
+            <ol class="order-4 mt-12 space-y-2 pl-1.5 sm:order-none sm:mt-6 sm:pl-[10%]" role="list">
                 @foreach ($offerIncludes as $index => $include)
                     <li class="flex items-start gap-3 text-[0.9375rem] leading-snug text-gray-800">
                         <span class="mt-px inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-950 text-[10px] font-bold text-white" aria-hidden="true">{{ $index + 1 }}</span>
@@ -81,7 +81,7 @@
             </ol>
 
             @if ($showOfferForms)
-            <div class="mt-8 grid grid-cols-1 gap-2.5 sm:inline-grid sm:grid-cols-2 sm:gap-3">
+            <div class="mt-8 grid grid-cols-1 order-5 gap-2.5 sm:order-none sm:inline-grid sm:grid-cols-2 sm:gap-3">
                 <button
                     type="button"
                     @click="open('demo')"
@@ -96,14 +96,14 @@
             @else
             <a
                 href="{{ route('dashboard') }}"
-                class="mt-8 inline-flex items-center justify-center rounded-md border-2 border-gray-950 bg-gray-950 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-gray-800 hover:bg-gray-800"
+                class="mt-8 inline-flex items-center justify-center order-5 sm:order-none rounded-md border-2 border-gray-950 bg-gray-950 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-gray-800 hover:bg-gray-800"
                 data-company-offer-dashboard-link
             >{{ auth()->user()->dashboardNavLabel() }}</a>
             @endif
         </div>
 
         {{-- Colonne droite --}}
-        <div class="relative mx-auto w-full max-w-md lg:max-w-none">
+        <div class="relative mx-auto w-full order-3 mt-10 max-w-md sm:order-none sm:mt-0 lg:max-w-none">
             <img
                 src="{{ asset('images/company/offer-hero.jpg') }}"
                 alt="{{ __('talenma.company_offer.hero_image_alt') }}"

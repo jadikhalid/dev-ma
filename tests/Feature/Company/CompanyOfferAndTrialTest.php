@@ -34,7 +34,7 @@ class CompanyOfferAndTrialTest extends TestCase
         $response
             ->assertOk()
             ->assertSee(__('talenma.company_offer.cta_demo'), false)
-            ->assertSee(__('talenma.company_offer.cta_trial'), false)
+            ->assertSee(__('talenma.company_offer.hero_cta_trial'), false)
             ->assertSee(__('talenma.company_offer.trial_submit'), false)
             ->assertDontSee(__('talenma.nav.jobs'), false)
             ->assertDontSee(__('talenma.nav.blog'), false)
@@ -165,21 +165,26 @@ class CompanyOfferAndTrialTest extends TestCase
         }
     }
 
-    public function test_logged_in_company_does_not_see_demo_and_trial_ctas_or_drawers(): void
+    public function test_logged_in_company_home_redirects_to_dashboard(): void
     {
         $company = User::factory()->companyOwner()->create();
         CompanyProfile::factory()->onTrial()->create(['user_id' => $company->id]);
 
         $this->actingAs($company)
             ->get(route('company.offer', ['tab' => 'trial']))
+            ->assertRedirect(route('dashboard'));
+    }
+
+    public function test_logged_in_company_header_has_no_home_link_and_logo_targets_dashboard(): void
+    {
+        $company = User::factory()->companyOwner()->create();
+        CompanyProfile::factory()->onTrial()->create(['user_id' => $company->id]);
+
+        $this->actingAs($company)
+            ->get(route('dashboard'))
             ->assertOk()
-            ->assertSeeText(__('talenma.company_offer.hero_title'))
-            ->assertDontSee(__('talenma.company_offer.hero_cta_demo'), false)
-            ->assertDontSee(__('talenma.company_offer.hero_cta_trial'), false)
-            ->assertDontSee('data-company-offer-drawer', false)
-            ->assertDontSee(route('company.demo.store'), false)
-            ->assertDontSee(route('company.trial.store'), false)
-            ->assertSee('data-company-offer-dashboard-link', false);
+            ->assertDontSee('data-nav-home-link', false)
+            ->assertDontSee('href="'.route('company.offer').'"', false);
     }
 
     public function test_company_offer_trial_tab_opens_trial_drawer(): void
