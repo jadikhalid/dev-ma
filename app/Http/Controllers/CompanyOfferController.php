@@ -64,6 +64,15 @@ class CompanyOfferController extends Controller
             'hiring_locations.*' => ['string', Rule::in(CompanyDemoRequest::HIRING_LOCATIONS)],
             'hiring_city' => ['nullable', 'string', 'max:120'],
             'uses_ats' => ['required', Rule::in(CompanyDemoRequest::ATS_OPTIONS)],
+            'preferred_date' => [
+                'required',
+                'date',
+                'after:today',
+                Rule::in(CompanyDemoRequest::availableBookingDates()->map->toDateString()->all()),
+            ],
+            'preferred_slots' => ['required', 'array', 'min:1'],
+            'preferred_slots.*' => ['string', Rule::in(CompanyDemoRequest::SLOT_STARTS)],
+            'meeting_platform' => ['required', Rule::in(CompanyDemoRequest::MEETING_PLATFORMS)],
             'message' => ['nullable', 'string', 'max:5000'],
         ], [
             'first_name.required' => __('talenma.company_offer.demo_form.first_name_required'),
@@ -77,6 +86,10 @@ class CompanyOfferController extends Controller
             'hires_planned.required' => __('talenma.company_offer.demo_form.hires_planned_required'),
             'hiring_locations.required' => __('talenma.company_offer.demo_form.hiring_locations_required'),
             'uses_ats.required' => __('talenma.company_offer.demo_form.uses_ats_required'),
+            'preferred_date.required' => __('talenma.company_offer.demo_form.preferred_date_required'),
+            'preferred_date.in' => __('talenma.company_offer.demo_form.preferred_date_invalid'),
+            'preferred_slots.required' => __('talenma.company_offer.demo_form.preferred_slots_required'),
+            'meeting_platform.required' => __('talenma.company_offer.demo_form.meeting_platform_required'),
         ]);
 
         $firstName = trim($data['first_name']);
@@ -85,6 +98,12 @@ class CompanyOfferController extends Controller
         if (! str_starts_with($phone, '+') && filled($data['phone_country'] ?? null)) {
             $phone = CompanyDemoRequest::PHONE_COUNTRIES[$data['phone_country']]['dial'].' '.ltrim($phone, '0');
         }
+
+        $slots = collect($data['preferred_slots'])
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
 
         $demo = CompanyDemoRequest::query()->create([
             'company_name' => trim($data['company_name']),
@@ -98,6 +117,9 @@ class CompanyOfferController extends Controller
             'hiring_locations' => array_values(array_unique($data['hiring_locations'])),
             'hiring_city' => filled($data['hiring_city'] ?? null) ? trim($data['hiring_city']) : null,
             'uses_ats' => $data['uses_ats'],
+            'preferred_date' => $data['preferred_date'],
+            'preferred_slots' => $slots,
+            'meeting_platform' => $data['meeting_platform'],
             'message' => filled($data['message'] ?? null) ? trim($data['message']) : null,
             'locale' => app()->getLocale(),
             'ip_address' => $request->ip(),
@@ -119,33 +141,12 @@ class CompanyOfferController extends Controller
         $message = __('talenma.company_offer.demo_sent');
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'message' => $message,
-                'booking_url' => $this->demoBookingUrl($demo),
-            ]);
+            return response()->json(['message' => $message]);
         }
 
         return redirect()
             ->to(route('company.offer', ['tab' => 'demo']).'#demo')
             ->with('toast_success', $message);
-    }
-
-    private function demoBookingUrl(CompanyDemoRequest $demo): ?string
-    {
-        $url = config('services.calendly.demo_url');
-        if (blank($url)) {
-            return null;
-        }
-
-        $query = http_build_query([
-            'name' => $demo->contact_name,
-            'email' => $demo->email,
-            'a1' => $demo->company_name,
-            'hide_gdpr_banner' => 1,
-            'hide_event_type_details' => 1,
-        ]);
-
-        return $url.(str_contains($url, '?') ? '&' : '?').$query;
     }
 
     public function storeTrial(StoreCompanyTrialRequest $request): RedirectResponse|JsonResponse

@@ -35,8 +35,14 @@
             if (window.location.hash === '#trial') this.drawer = 'trial';
             if (window.location.hash === '#demo') this.drawer = 'demo';
             this.lockScroll(this.drawer);
-            this.$watch('drawer', (value) => {
+            this.$watch('drawer', (value, previous) => {
                 this.lockScroll(value);
+                if (previous === 'demo' && value !== 'demo') {
+                    window.dispatchEvent(new CustomEvent('company-offer-demo-reset'));
+                }
+                if (previous === 'trial' && value !== 'trial') {
+                    window.dispatchEvent(new CustomEvent('company-offer-trial-reset'));
+                }
                 const hash = value ? '#' + value : '';
                 if (window.location.hash !== hash) {
                     history.replaceState(null, '', window.location.pathname + window.location.search + hash);
@@ -55,6 +61,7 @@
     }"
     @company-offer-drawer.window="open($event.detail)"
     @company-offer-form-sent="close()"
+    @company-offer-drawer-close="close()"
     @keydown.escape.window="close()"
     @endif
     data-company-offer-hero
@@ -157,7 +164,7 @@
         x-transition:leave="transition ease-in duration-200"
         x-transition:leave-start="translate-x-0"
         x-transition:leave-end="translate-x-full"
-        class="fixed inset-y-0 right-0 z-[70] flex h-screen w-full flex-col bg-white shadow-2xl md:w-[60vw] lg:w-[45vw]"
+        class="fixed inset-y-0 right-0 z-[70] flex h-screen w-full flex-col bg-white shadow-2xl md:w-[min(34rem,80vw)] lg:w-[min(36rem,52vw)] xl:w-[min(38rem,42vw)] 2xl:w-[min(40rem,34vw)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="company-demo-drawer-title"
@@ -189,7 +196,7 @@
         x-transition:leave="transition ease-in duration-200"
         x-transition:leave-start="translate-x-0"
         x-transition:leave-end="translate-x-full"
-        class="fixed inset-y-0 right-0 z-[70] flex h-screen w-full flex-col bg-white shadow-2xl md:w-[60vw] lg:w-[45vw]"
+        class="fixed inset-y-0 right-0 z-[70] flex h-screen w-full flex-col bg-white shadow-2xl md:w-[min(34rem,80vw)] lg:w-[min(36rem,52vw)] xl:w-[min(38rem,42vw)] 2xl:w-[min(40rem,34vw)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="company-trial-drawer-title"

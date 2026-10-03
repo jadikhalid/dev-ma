@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 
 #[Fillable([
     'company_name',
@@ -18,6 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'hiring_locations',
     'hiring_city',
     'uses_ats',
+    'preferred_date',
+    'preferred_slots',
+    'meeting_platform',
     'message',
     'status',
     'handled_by',
@@ -47,6 +52,13 @@ class CompanyDemoRequest extends Model
 
     public const ATS_OPTIONS = ['yes', 'no', 'unsure'];
 
+    /** Créneaux d'1 h, 9h–17h (début). */
+    public const SLOT_STARTS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
+
+    public const MEETING_PLATFORMS = ['teams', 'meet', 'zoom'];
+
+    public const BOOKING_WEEKDAYS_AHEAD = 15;
+
     /** Indicatifs proposés devant le numéro de mobile (clé = code pays ISO). */
     public const PHONE_COUNTRIES = [
         'ma' => ['dial' => '+212', 'flag' => '🇲🇦'],
@@ -69,13 +81,43 @@ class CompanyDemoRequest extends Model
     {
         return [
             'handled_at' => 'datetime',
+            'preferred_date' => 'date',
             'hiring_locations' => 'array',
+            'preferred_slots' => 'array',
         ];
     }
 
     public function handler(): BelongsTo
     {
         return $this->belongsTo(User::class, 'handled_by');
+    }
+
+    /**
+     * Prochains jours ouvrés (lun–ven) proposés pour la démo.
+     *
+     * @return Collection<int, Carbon>
+     */
+    public static function availableBookingDates(?Carbon $from = null): Collection
+    {
+        $cursor = ($from ?? now())->copy()->startOfDay()->addDay();
+        $dates = collect();
+
+        while ($dates->count() < self::BOOKING_WEEKDAYS_AHEAD) {
+            if ($cursor->isWeekday()) {
+                $dates->push($cursor->copy());
+            }
+            $cursor->addDay();
+        }
+
+        return $dates;
+    }
+
+    public static function slotLabel(string $start): string
+    {
+        [$hour, $minute] = array_pad(explode(':', $start), 2, '00');
+        $endHour = str_pad((string) (((int) $hour) + 1), 2, '0', STR_PAD_LEFT);
+
+        return $start.' – '.$endHour.':'.$minute;
     }
 
     /**
@@ -97,6 +139,11 @@ class CompanyDemoRequest extends Model
             __($prefix.'uses_ats') => $this->uses_ats
                 ? __('talenma.company_offer.demo_form.ats.'.$this->uses_ats)
                 : null,
+            __($prefix.'preferred_date') => $this->preferred_date?->translatedFormat('l j F Y'),
+            __($prefix.'preferred_slots') => $this->preferredSlotLabels() ? implode(', ', $this->preferredSlotLabels()) : null,
+            __($prefix.'meeting_platform') => $this->meeting_platform
+                ? __('talenma.company_offer.demo_form.platforms.'.$this->meeting_platform)
+                : null,
         ], fn ($value) => filled($value));
     }
 
@@ -107,6 +154,17 @@ class CompanyDemoRequest extends Model
     {
         return collect($this->hiring_locations ?? [])
             ->map(fn (string $code) => __('talenma.company_offer.demo_form.locations.'.$code))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function preferredSlotLabels(): array
+    {
+        return collect($this->preferred_slots ?? [])
+            ->map(fn (string $start) => self::slotLabel($start))
             ->values()
             ->all();
     }

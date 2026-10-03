@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Company;
 
+use App\Models\CompanyDemoRequest;
 use App\Models\CompanyProfile;
 use App\Models\CompanyTrialRequest;
 use App\Models\User;
@@ -17,15 +18,32 @@ class StoreCompanyTrialRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $firstName = is_string($this->first_name)
+            ? trim(preg_replace('/\s+/u', ' ', $this->first_name) ?? '')
+            : '';
+        $lastName = is_string($this->last_name)
+            ? trim(preg_replace('/\s+/u', ' ', $this->last_name) ?? '')
+            : '';
+        $contactName = trim($firstName.' '.$lastName);
+        if ($contactName === '' && is_string($this->contact_name)) {
+            $contactName = trim(preg_replace('/\s+/u', ' ', $this->contact_name) ?? '');
+        }
+
+        $phone = is_string($this->phone) ? trim($this->phone) : $this->phone;
+        $phoneCountry = is_string($this->phone_country) ? $this->phone_country : null;
+        if (is_string($phone) && $phone !== '' && ! str_starts_with($phone, '+') && filled($phoneCountry) && isset(CompanyDemoRequest::PHONE_COUNTRIES[$phoneCountry])) {
+            $phone = CompanyDemoRequest::PHONE_COUNTRIES[$phoneCountry]['dial'].' '.ltrim($phone, '0');
+        }
+
         $this->merge([
+            'first_name' => $firstName !== '' ? $firstName : null,
+            'last_name' => $lastName !== '' ? $lastName : null,
             'company_name' => is_string($this->company_name)
                 ? trim(preg_replace('/\s+/u', ' ', $this->company_name) ?? '')
                 : $this->company_name,
-            'contact_name' => is_string($this->contact_name)
-                ? trim(preg_replace('/\s+/u', ' ', $this->contact_name) ?? '')
-                : $this->contact_name,
+            'contact_name' => $contactName,
             'email' => is_string($this->email) ? strtolower(trim($this->email)) : $this->email,
-            'phone' => is_string($this->phone) ? trim($this->phone) : $this->phone,
+            'phone' => $phone,
             'company_description' => is_string($this->company_description)
                 ? trim($this->company_description)
                 : $this->company_description,
@@ -44,6 +62,20 @@ class StoreCompanyTrialRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'first_name' => [
+                'required',
+                'string',
+                'min:1',
+                'max:100',
+                'regex:/^[\p{L}\p{M}][\p{L}\p{M}\s\'\-\.]*$/u',
+            ],
+            'last_name' => [
+                'required',
+                'string',
+                'min:1',
+                'max:100',
+                'regex:/^[\p{L}\p{M}][\p{L}\p{M}\s\'\-\.]*$/u',
+            ],
             'company_name' => [
                 'required',
                 'string',
@@ -67,6 +99,7 @@ class StoreCompanyTrialRequest extends FormRequest
                     fn ($query) => $query->where('status', CompanyTrialRequest::STATUS_PENDING)
                 ),
             ],
+            'phone_country' => ['nullable', Rule::in(array_keys(CompanyDemoRequest::PHONE_COUNTRIES))],
             'phone' => ['required', 'string', 'max:50', 'regex:/^\+?[0-9\s\-\.\(\)]{8,20}$/'],
             'sector' => [
                 'required',
@@ -87,6 +120,8 @@ class StoreCompanyTrialRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'first_name.required' => __('talenma.company_offer.demo_form.first_name_required'),
+            'last_name.required' => __('talenma.company_offer.demo_form.last_name_required'),
             'company_name.required' => __('talenma.company_offer.demo_company_required'),
             'contact_name.required' => __('talenma.company_offer.trial_contact_required'),
             'email.required' => __('talenma.company_offer.demo_email_required'),

@@ -40,8 +40,9 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertDontSee(__('talenma.nav.jobs'), false)
             ->assertDontSee(__('talenma.nav.blog'), false)
             ->assertDontSee(__('talenma.nav.apps_launcher_title'), false)
-            ->assertSee('name="contact_name"', false)
+            ->assertSee('name="first_name"', false)
             ->assertSee('name="phone"', false)
+            ->assertSee('data-trial-wizard', false)
             ->assertDontSee('name="role"', false)
             ->assertSee(route('company.trial.store'), false);
 
@@ -379,6 +380,9 @@ class CompanyOfferAndTrialTest extends TestCase
         $this->assertSame('Casablanca', $demo->hiring_city);
         $this->assertSame('no', $demo->uses_ats);
         $this->assertNull($demo->message);
+        $this->assertSame($this->demoPreferredDate(), $demo->preferred_date?->toDateString());
+        $this->assertSame(['10:00', '14:00'], $demo->preferred_slots);
+        $this->assertSame('teams', $demo->meeting_platform);
     }
 
     public function test_demo_request_requires_qualification_fields(): void
@@ -389,33 +393,37 @@ class CompanyOfferAndTrialTest extends TestCase
             'hires_planned' => '999',
             'hiring_locations' => [],
             'uses_ats' => '',
+            'preferred_date' => '',
+            'preferred_slots' => [],
+            'meeting_platform' => '',
         ]))
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['phone', 'company_size', 'hires_planned', 'hiring_locations', 'uses_ats']);
+            ->assertJsonValidationErrors([
+                'phone',
+                'company_size',
+                'hires_planned',
+                'hiring_locations',
+                'uses_ats',
+                'preferred_date',
+                'preferred_slots',
+                'meeting_platform',
+            ]);
 
         $this->assertSame(0, CompanyDemoRequest::query()->count());
     }
 
-    public function test_demo_ajax_response_includes_prefilled_calendly_url_when_configured(): void
+    public function test_demo_request_rejects_weekend_and_invalid_slot(): void
     {
         Mail::fake();
         User::factory()->create(['role' => 'admin']);
-        config(['services.calendly.demo_url' => null]);
 
-        $this->postJson(route('company.demo.store'), $this->demoPayload())
-            ->assertOk()
-            ->assertJsonPath('booking_url', null);
-
-        config(['services.calendly.demo_url' => 'https://calendly.com/talentsdumaroc/demo']);
-
-        $url = $this->postJson(route('company.demo.store'), $this->demoPayload(['email' => 'second@acme.test']))
-            ->assertOk()
-            ->json('booking_url');
-
-        $this->assertStringStartsWith('https://calendly.com/talentsdumaroc/demo?', $url);
-        $this->assertStringContainsString('name=Jean+Dupont', $url);
-        $this->assertStringContainsString('email=second%40acme.test', $url);
-        $this->assertStringContainsString('hide_event_type_details=1', $url);
+        $this->postJson(route('company.demo.store'), $this->demoPayload([
+            'preferred_date' => now()->next('Saturday')->toDateString(),
+            'preferred_slots' => ['08:00'],
+            'meeting_platform' => 'skype',
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['preferred_date', 'preferred_slots.0', 'meeting_platform']);
     }
 
     public function test_company_offer_renders_demo_wizard_steps(): void
@@ -426,9 +434,27 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSee('data-demo-step="1"', false)
             ->assertSee('data-demo-step="2"', false)
             ->assertSee('data-demo-step="3"', false)
+            ->assertSee('data-demo-step="4"', false)
             ->assertSee('name="first_name"', false)
             ->assertSee('name="hiring_locations[]"', false)
+            ->assertSee('name="preferred_slots[]"', false)
+            ->assertSee('name="meeting_platform"', false)
+            ->assertSee('data-demo-cancel', false)
+            ->assertSee(__('talenma.company_offer.demo_form.cancel'))
+            ->assertDontSee('calendly.com', false)
             ->assertSee(__('talenma.company_offer.demo_form.thanks_title'));
+    }
+
+    public function test_company_offer_renders_trial_wizard_steps(): void
+    {
+        $this->get(route('company.offer'))
+            ->assertOk()
+            ->assertSee('data-trial-wizard', false)
+            ->assertSee('data-trial-step="1"', false)
+            ->assertSee('data-trial-step="2"', false)
+            ->assertSee('data-trial-step="3"', false)
+            ->assertSee('data-trial-cancel', false)
+            ->assertSee(__('talenma.company_offer.trial_form.thanks_title'));
     }
 
     public function test_admin_demo_page_shows_qualification_answers(): void
@@ -439,6 +465,9 @@ class CompanyOfferAndTrialTest extends TestCase
             'hires_planned' => '5-10',
             'hiring_locations' => ['ma'],
             'uses_ats' => 'yes',
+            'preferred_date' => $this->demoPreferredDate(),
+            'preferred_slots' => ['09:00', '11:00'],
+            'meeting_platform' => 'zoom',
         ]);
 
         $this->actingAs($admin)
@@ -446,7 +475,14 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertOk()
             ->assertSee('data-demo-needs', false)
             ->assertSee('51-200')
-            ->assertSee(__('talenma.company_offer.demo_form.locations.ma'));
+            ->assertSee(__('talenma.company_offer.demo_form.locations.ma'))
+            ->assertSee('09:00 – 10:00')
+            ->assertSee(__('talenma.company_offer.demo_form.platforms.zoom'));
+    }
+
+    private function demoPreferredDate(): string
+    {
+        return CompanyDemoRequest::availableBookingDates()->first()->toDateString();
     }
 
     private function demoPayload(array $overrides = []): array
@@ -463,6 +499,9 @@ class CompanyOfferAndTrialTest extends TestCase
             'hiring_locations' => ['ma'],
             'hiring_city' => 'Casablanca',
             'uses_ats' => 'no',
+            'preferred_date' => $this->demoPreferredDate(),
+            'preferred_slots' => ['10:00', '14:00'],
+            'meeting_platform' => 'teams',
             'message' => 'Bonjour, je souhaite une démonstration de la plateforme pour notre équipe RH.',
         ], $overrides);
     }
@@ -515,9 +554,11 @@ class CompanyOfferAndTrialTest extends TestCase
         ]);
 
         $response = $this->post(route('company.trial.store'), [
+            'first_name' => 'Jean',
+            'last_name' => 'Dupont',
             'company_name' => 'Acme SAS',
-            'contact_name' => 'Jean Dupont',
             'email' => 'trial@acme.test',
+            'phone_country' => 'fr',
             'phone' => '+33123456789',
             'sector' => 'it-digital',
             'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile.',
@@ -552,10 +593,12 @@ class CompanyOfferAndTrialTest extends TestCase
         ]);
 
         $response = $this->postJson(route('company.trial.store'), [
+            'first_name' => 'Jean',
+            'last_name' => 'Dupont',
             'company_name' => 'Acme SAS',
-            'contact_name' => 'Jean Dupont',
             'email' => 'ajax-trial@acme.test',
-            'phone' => '+33123456789',
+            'phone_country' => 'ma',
+            'phone' => '0612345678',
             'sector' => 'it-digital',
             'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile.',
             'company_country' => 'fr',
@@ -570,6 +613,8 @@ class CompanyOfferAndTrialTest extends TestCase
 
         $this->assertDatabaseHas('company_trial_requests', [
             'email' => 'ajax-trial@acme.test',
+            'contact_name' => 'Jean Dupont',
+            'phone' => '+212 612345678',
             'status' => CompanyTrialRequest::STATUS_PENDING,
         ]);
         $this->assertDatabaseMissing('users', ['email' => 'ajax-trial@acme.test']);

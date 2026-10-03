@@ -9805,24 +9805,90 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
     submitting: false,
     fieldErrors: {},
     step: 1,
-    bookingUrl: null,
+    demoStepTitles: {
+        1: config.messages?.step_contact || '',
+        2: config.messages?.step_needs || '',
+        3: config.messages?.step_booking || '',
+    },
+    trialStepTitles: {
+        1: config.messages?.step_contact || '',
+        2: config.messages?.step_company || '',
+    },
     demoStepOneFields: ['first_name', 'last_name', 'email', 'phone', 'company_name', 'company_size'],
+    demoStepTwoFields: ['hires_planned', 'hiring_locations', 'uses_ats'],
+    demoStepThreeFields: ['preferred_date', 'preferred_slots', 'meeting_platform'],
+    trialStepOneFields: ['first_name', 'last_name', 'email', 'phone', 'company_name'],
+    trialStepTwoFields: ['sector', 'company_country', 'company_description', 'company_website', 'data_processing_consent'],
     namePattern: /^[\p{L}\p{M}][\p{L}\p{M}\s'\-\.]*$/u,
     phonePattern: /^\+?[0-9\s\-\.\(\)]{8,20}$/,
     demoPhonePattern: /^\+?[0-9\s\-\.\(\)]{6,20}$/,
     emailPattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 
     init() {
-        if (this.mode !== 'demo') {
-            return;
+        this.resetWizard = this.resetWizard.bind(this);
+        window.addEventListener(`company-offer-${this.mode}-reset`, this.resetWizard);
+
+        if (this.mode === 'demo') {
+            this.demoStepTitles = {
+                1: this.messages.step_contact || '',
+                2: this.messages.step_needs || '',
+                3: this.messages.step_booking || '',
+            };
         }
 
-        this.$watch('drawer', (value) => {
-            if (! value && this.step === 3) {
-                this.step = 1;
-                this.bookingUrl = null;
-            }
+        if (this.mode === 'trial') {
+            this.trialStepTitles = {
+                1: this.messages.step_contact || '',
+                2: this.messages.step_company || '',
+            };
+        }
+    },
+
+    destroy() {
+        window.removeEventListener(`company-offer-${this.mode}-reset`, this.resetWizard);
+    },
+
+    stepTitle() {
+        if (this.mode === 'trial') {
+            return this.trialStepTitles[this.step] || '';
+        }
+
+        return this.demoStepTitles[this.step] || '';
+    },
+
+    thanksStep() {
+        return this.mode === 'trial' ? 3 : 4;
+    },
+
+    lastFormStep() {
+        return this.mode === 'trial' ? 2 : 3;
+    },
+
+    wizardForm() {
+        return this.$root.querySelector(
+            this.mode === 'trial' ? '#company-trial-request-form' : '#company-demo-request-form'
+        );
+    },
+
+    resetWizard() {
+        const form = this.wizardForm();
+        if (form instanceof HTMLFormElement) {
+            this.resetForm(form);
+        } else {
+            this.clearAllErrors();
+        }
+
+        this.submitting = false;
+        this.step = 1;
+        this.setLoading(false);
+        this.$nextTick(() => {
+            this.$root.closest('.overflow-y-auto')?.scrollTo({ top: 0 });
         });
+    },
+
+    cancel() {
+        this.resetWizard();
+        this.$dispatch('company-offer-drawer-close');
     },
 
     goToStep(step) {
@@ -9833,7 +9899,16 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
     },
 
     nextStep(form) {
-        const errors = this.validateDemoStepOne(form);
+        let errors = {};
+
+        if (this.mode === 'demo') {
+            errors = this.step === 1
+                ? this.validateDemoStepOne(form)
+                : this.validateDemoStepTwo(form);
+        } else if (this.mode === 'trial') {
+            errors = this.validateTrialStepOne(form);
+        }
+
         this.fieldErrors = errors;
 
         if (Object.keys(errors).length > 0) {
@@ -9844,21 +9919,11 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
             return;
         }
 
-        this.goToStep(2);
+        this.goToStep(this.step + 1);
     },
 
     previousStep() {
-        this.goToStep(1);
-    },
-
-    bookingFrameUrl() {
-        if (! this.bookingUrl) {
-            return '';
-        }
-
-        const separator = this.bookingUrl.includes('?') ? '&' : '?';
-
-        return `${this.bookingUrl}${separator}embed_type=Inline&embed_domain=${encodeURIComponent(window.location.hostname)}`;
+        this.goToStep(Math.max(1, this.step - 1));
     },
 
     fieldMessage(field) {
@@ -9950,37 +10015,68 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
         return errors;
     },
 
+    validateDemoStepThree(form) {
+        const errors = {};
+
+        if (! form.preferred_date?.value) {
+            errors.preferred_date = this.messages.preferred_date_required || '';
+        }
+
+        if (form.querySelectorAll('[name="preferred_slots[]"]:checked').length === 0) {
+            errors.preferred_slots = this.messages.preferred_slots_required || '';
+        }
+
+        if (! form.meeting_platform?.value) {
+            errors.meeting_platform = this.messages.meeting_platform_required || '';
+        }
+
+        return errors;
+    },
+
     validateDemo(form) {
         return {
             ...this.validateDemoStepOne(form),
             ...this.validateDemoStepTwo(form),
+            ...this.validateDemoStepThree(form),
         };
     },
 
     returnToStepWithErrors() {
-        if (this.mode === 'demo' && this.demoStepOneFields.some((field) => this.fieldErrors[field])) {
-            this.goToStep(1);
+        if (this.mode === 'demo') {
+            if (this.demoStepOneFields.some((field) => this.fieldErrors[field])) {
+                this.goToStep(1);
+            } else if (this.demoStepTwoFields.some((field) => this.fieldErrors[field])) {
+                this.goToStep(2);
+            } else if (this.demoStepThreeFields.some((field) => this.fieldErrors[field])) {
+                this.goToStep(3);
+            }
+
+            return;
+        }
+
+        if (this.mode === 'trial') {
+            if (this.trialStepOneFields.some((field) => this.fieldErrors[field] || this.fieldErrors.contact_name)) {
+                this.goToStep(1);
+            } else if (this.trialStepTwoFields.some((field) => this.fieldErrors[field])) {
+                this.goToStep(2);
+            }
         }
     },
 
-    validateTrial(form) {
+    validateTrialStepOne(form) {
         const errors = {};
-        const companyName = (form.company_name?.value || '').trim();
-        const contactName = (form.contact_name?.value || '').trim();
+        const firstName = (form.first_name?.value || '').trim();
+        const lastName = (form.last_name?.value || '').trim();
         const email = (form.email?.value || '').trim();
         const phone = (form.phone?.value || '').trim();
-        const sector = form.sector?.value || '';
-        const country = form.company_country?.value || '';
-        const description = (form.company_description?.value || '').trim();
-        const website = (form.company_website?.value || '').trim();
-        const consent = form.data_processing_consent?.checked;
+        const companyName = (form.company_name?.value || '').trim();
 
-        if (companyName.length < 2 || ! this.namePattern.test(companyName)) {
-            errors.company_name = this.messages.company_required || '';
+        if (! firstName || ! this.namePattern.test(firstName)) {
+            errors.first_name = this.messages.first_name_required || '';
         }
 
-        if (contactName.length < 2 || ! this.namePattern.test(contactName)) {
-            errors.contact_name = this.messages.contact_required || '';
+        if (! lastName || ! this.namePattern.test(lastName)) {
+            errors.last_name = this.messages.last_name_required || '';
         }
 
         if (! email) {
@@ -9991,9 +10087,31 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
 
         if (! phone) {
             errors.phone = this.messages.phone_required || '';
-        } else if (! this.phonePattern.test(phone)) {
+        } else if (! this.phonePattern.test(phone) && ! this.demoPhonePattern.test(phone)) {
             errors.phone = this.messages.phone_invalid || '';
         }
+
+        if (companyName.length < 2 || ! this.namePattern.test(companyName)) {
+            errors.company_name = this.messages.company_required || '';
+        }
+
+        return errors;
+    },
+
+    validateTrial(form) {
+        return {
+            ...this.validateTrialStepOne(form),
+            ...this.validateTrialStepTwo(form),
+        };
+    },
+
+    validateTrialStepTwo(form) {
+        const errors = {};
+        const sector = form.sector?.value || '';
+        const country = form.company_country?.value || '';
+        const description = (form.company_description?.value || '').trim();
+        const website = (form.company_website?.value || '').trim();
+        const consent = form.data_processing_consent?.checked;
 
         if (! sector) {
             errors.sector = this.messages.sector_required || '';
@@ -10071,7 +10189,7 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
             return;
         }
 
-        if (this.mode === 'demo' && this.step === 1) {
+        if ((this.mode === 'demo' || this.mode === 'trial') && this.step < this.lastFormStep()) {
             this.nextStep(form);
 
             return;
@@ -10125,9 +10243,8 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
 
             this.resetForm(form);
 
-            if (this.mode === 'demo') {
-                this.bookingUrl = payload?.booking_url || null;
-                this.goToStep(3);
+            if (this.mode === 'demo' || this.mode === 'trial') {
+                this.goToStep(this.thanksStep());
 
                 return;
             }
