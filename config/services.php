@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'calendly' => [
+        // Lien public d'un type d'événement Calendly, ex. https://calendly.com/talentsdumaroc/demo
+        'demo_url' => env('CALENDLY_DEMO_URL'),
+    ],
+
 ];

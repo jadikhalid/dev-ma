@@ -3,6 +3,7 @@
 namespace Tests\Feature\Company;
 
 use App\Mail\CompanyApprovedMail;
+use App\Mail\CompanyDemoConfirmationMail;
 use App\Mail\CompanyDemoRequestMail;
 use App\Mail\CompanyTrialRequestMail;
 use App\Models\CompanyDemoRequest;
@@ -242,13 +243,7 @@ class CompanyOfferAndTrialTest extends TestCase
             'email' => 'admin@example.com',
         ]);
 
-        $response = $this->post(route('company.demo.store'), [
-            'company_name' => 'Acme SAS',
-            'contact_name' => 'Jean Dupont',
-            'email' => 'jean@acme.test',
-            'phone' => '+33123456789',
-            'message' => 'Bonjour, je souhaite une démonstration de la plateforme pour notre équipe RH.',
-        ]);
+        $response = $this->post(route('company.demo.store'), $this->demoPayload());
 
         $response->assertRedirect();
         $response->assertSessionHas('toast_success');
@@ -264,6 +259,224 @@ class CompanyOfferAndTrialTest extends TestCase
         });
 
         $this->assertSame(1, CompanyDemoRequest::query()->count());
+
+        Mail::assertSent(CompanyDemoConfirmationMail::class, function (CompanyDemoConfirmationMail $mail) {
+            return $mail->hasTo('jean@acme.test')
+                && $mail->demoRequest->company_name === 'Acme SAS';
+        });
+        $this->assertSame(CompanyDemoRequest::STATUS_NEW, CompanyDemoRequest::query()->first()->status);
+    }
+
+    public function test_demo_confirmation_mail_mentions_company_and_message(): void
+    {
+        $demo = $this->makeDemoRequest();
+
+        $html = (new CompanyDemoConfirmationMail($demo))->render();
+
+        $this->assertStringContainsString('Acme SAS', $html);
+        $this->assertStringContainsString('Jean Dupont', $html);
+        $this->assertStringContainsString('Nous voulons voir la plateforme.', $html);
+    }
+
+    public function test_admin_can_list_demo_requests_by_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makeDemoRequest(['company_name' => 'Nouvelle SARL']);
+        $this->makeDemoRequest(['company_name' => 'Planifiee SA', 'status' => CompanyDemoRequest::STATUS_SCHEDULED]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.company-demo-requests.index'))
+            ->assertOk()
+            ->assertSee('Nouvelle SARL')
+            ->assertDontSee('Planifiee SA')
+            ->assertSee('data-demo-new-count', false);
+
+        $this->actingAs($admin)
+            ->get(route('admin.company-demo-requests.index', ['status' => CompanyDemoRequest::STATUS_SCHEDULED]))
+            ->assertOk()
+            ->assertSee('Planifiee SA')
+            ->assertDontSee('Nouvelle SARL');
+    }
+
+    public function test_admin_can_update_demo_request_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $demo = $this->makeDemoRequest();
+
+        $this->actingAs($admin)
+            ->patch(route('admin.company-demo-requests.status', $demo), ['status' => CompanyDemoRequest::STATUS_SCHEDULED])
+            ->assertRedirect()
+            ->assertSessionHas('toast_success');
+
+        $demo->refresh();
+        $this->assertSame(CompanyDemoRequest::STATUS_SCHEDULED, $demo->status);
+        $this->assertSame($admin->id, $demo->handled_by);
+        $this->assertNotNull($demo->handled_at);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.company-demo-requests.status', $demo), ['status' => CompanyDemoRequest::STATUS_NEW]);
+
+        $demo->refresh();
+        $this->assertSame(CompanyDemoRequest::STATUS_NEW, $demo->status);
+        $this->assertNull($demo->handled_by);
+        $this->assertNull($demo->handled_at);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.company-demo-requests.status', $demo), ['status' => 'bogus'])
+            ->assertSessionHasErrors('status');
+    }
+
+    public function test_non_staff_cannot_access_demo_requests(): void
+    {
+        $company = User::factory()->create(['role' => 'company']);
+        $demo = $this->makeDemoRequest();
+
+        $this->actingAs($company)
+            ->get(route('admin.company-demo-requests.index'))
+            ->assertForbidden();
+
+        $this->actingAs($company)
+            ->patch(route('admin.company-demo-requests.status', $demo), ['status' => CompanyDemoRequest::STATUS_DONE])
+            ->assertForbidden();
+
+        $this->assertSame(CompanyDemoRequest::STATUS_NEW, $demo->fresh()->status);
+    }
+
+    public function test_admin_header_links_sit_in_an_overflow_row_with_more_menu(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.company-demo-requests.index'))
+            ->assertOk()
+            ->assertSee('x-data="navOverflow"', false)
+            ->assertSee('data-nav-overflow-row', false)
+            ->assertSee('data-nav-more-button', false)
+            ->assertSee('aria-label="'.__('talenma.nav.more').'"', false)
+            ->assertSee(__('talenma.nav.admin_company_demos'));
+    }
+
+    public function test_demo_request_stores_qualification_answers_and_combines_phone(): void
+    {
+        Mail::fake();
+        User::factory()->create(['role' => 'admin']);
+
+        $this->postJson(route('company.demo.store'), $this->demoPayload([
+            'phone_country' => 'ma',
+            'phone' => '0622119177',
+            'hiring_locations' => ['ma', 'fr', 'ma'],
+            'message' => '',
+        ]))->assertOk();
+
+        $demo = CompanyDemoRequest::query()->firstOrFail();
+        $this->assertSame('Jean', $demo->first_name);
+        $this->assertSame('Dupont', $demo->last_name);
+        $this->assertSame('Jean Dupont', $demo->contact_name);
+        $this->assertSame('+212 622119177', $demo->phone);
+        $this->assertSame('11-50', $demo->company_size);
+        $this->assertSame('1-4', $demo->hires_planned);
+        $this->assertSame(['ma', 'fr'], $demo->hiring_locations);
+        $this->assertSame('Casablanca', $demo->hiring_city);
+        $this->assertSame('no', $demo->uses_ats);
+        $this->assertNull($demo->message);
+    }
+
+    public function test_demo_request_requires_qualification_fields(): void
+    {
+        $this->postJson(route('company.demo.store'), $this->demoPayload([
+            'phone' => '',
+            'company_size' => '',
+            'hires_planned' => '999',
+            'hiring_locations' => [],
+            'uses_ats' => '',
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['phone', 'company_size', 'hires_planned', 'hiring_locations', 'uses_ats']);
+
+        $this->assertSame(0, CompanyDemoRequest::query()->count());
+    }
+
+    public function test_demo_ajax_response_includes_prefilled_calendly_url_when_configured(): void
+    {
+        Mail::fake();
+        User::factory()->create(['role' => 'admin']);
+        config(['services.calendly.demo_url' => null]);
+
+        $this->postJson(route('company.demo.store'), $this->demoPayload())
+            ->assertOk()
+            ->assertJsonPath('booking_url', null);
+
+        config(['services.calendly.demo_url' => 'https://calendly.com/talentsdumaroc/demo']);
+
+        $url = $this->postJson(route('company.demo.store'), $this->demoPayload(['email' => 'second@acme.test']))
+            ->assertOk()
+            ->json('booking_url');
+
+        $this->assertStringStartsWith('https://calendly.com/talentsdumaroc/demo?', $url);
+        $this->assertStringContainsString('name=Jean+Dupont', $url);
+        $this->assertStringContainsString('email=second%40acme.test', $url);
+        $this->assertStringContainsString('hide_event_type_details=1', $url);
+    }
+
+    public function test_company_offer_renders_demo_wizard_steps(): void
+    {
+        $this->get(route('company.offer'))
+            ->assertOk()
+            ->assertSee('data-demo-wizard', false)
+            ->assertSee('data-demo-step="1"', false)
+            ->assertSee('data-demo-step="2"', false)
+            ->assertSee('data-demo-step="3"', false)
+            ->assertSee('name="first_name"', false)
+            ->assertSee('name="hiring_locations[]"', false)
+            ->assertSee(__('talenma.company_offer.demo_form.thanks_title'));
+    }
+
+    public function test_admin_demo_page_shows_qualification_answers(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->makeDemoRequest([
+            'company_size' => '51-200',
+            'hires_planned' => '5-10',
+            'hiring_locations' => ['ma'],
+            'uses_ats' => 'yes',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.company-demo-requests.index'))
+            ->assertOk()
+            ->assertSee('data-demo-needs', false)
+            ->assertSee('51-200')
+            ->assertSee(__('talenma.company_offer.demo_form.locations.ma'));
+    }
+
+    private function demoPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'first_name' => 'Jean',
+            'last_name' => 'Dupont',
+            'email' => 'jean@acme.test',
+            'phone_country' => 'fr',
+            'phone' => '+33123456789',
+            'company_name' => 'Acme SAS',
+            'company_size' => '11-50',
+            'hires_planned' => '1-4',
+            'hiring_locations' => ['ma'],
+            'hiring_city' => 'Casablanca',
+            'uses_ats' => 'no',
+            'message' => 'Bonjour, je souhaite une démonstration de la plateforme pour notre équipe RH.',
+        ], $overrides);
+    }
+
+    private function makeDemoRequest(array $overrides = []): CompanyDemoRequest
+    {
+        return CompanyDemoRequest::query()->create(array_merge([
+            'company_name' => 'Acme SAS',
+            'contact_name' => 'Jean Dupont',
+            'email' => 'jean@acme.test',
+            'phone' => '+33123456789',
+            'message' => 'Nous voulons voir la plateforme.',
+            'locale' => 'fr',
+        ], $overrides));
     }
 
     public function test_demo_request_can_be_submitted_via_ajax(): void
@@ -275,13 +488,10 @@ class CompanyOfferAndTrialTest extends TestCase
             'email' => 'admin@example.com',
         ]);
 
-        $response = $this->postJson(route('company.demo.store'), [
-            'company_name' => 'Acme SAS',
-            'contact_name' => 'Jean Dupont',
+        $response = $this->postJson(route('company.demo.store'), $this->demoPayload([
             'email' => 'ajax-demo@acme.test',
-            'phone' => '+33123456789',
-            'message' => 'Bonjour, je souhaite une démonstration de la plateforme pour notre équipe RH.',
-        ]);
+            'message' => '',
+        ]));
 
         $response
             ->assertOk()

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountStatusController;
 use App\Http\Controllers\Admin\BlogPostController;
 use App\Http\Controllers\Admin\CompanyProfileDocumentController;
+use App\Http\Controllers\Admin\CompanyDemoRequestController;
 use App\Http\Controllers\Admin\CompanyTrialRequestController;
 use App\Http\Controllers\Admin\DirectHireController as AdminDirectHireController;
 use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
@@ -184,6 +185,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/users/{user}/registration', [UserManagementController::class, 'registration'])->name('users.registration');
             Route::get('/company-trial-requests', [CompanyTrialRequestController::class, 'index'])
                 ->name('company-trial-requests.index');
+            Route::get('/company-demo-requests', [CompanyDemoRequestController::class, 'index'])
+                ->name('company-demo-requests.index');
+            Route::patch('/company-demo-requests/{companyDemoRequest}/status', [CompanyDemoRequestController::class, 'updateStatus'])
+                ->name('company-demo-requests.status');
             Route::get('/profile-documents/{profileDocument}', [ProfileDocumentController::class, 'show'])->name('profile-documents.show');
             Route::get('/company-profile-documents/{companyProfileDocument}', [CompanyProfileDocumentController::class, 'show'])->name('company-profile-documents.show');
             Route::post('/users/pending-registrations/{pendingRegistration}/resend', [UserManagementController::class, 'resendPendingRegistration'])

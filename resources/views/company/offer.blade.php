@@ -157,7 +157,7 @@
         x-transition:leave="transition ease-in duration-200"
         x-transition:leave-start="translate-x-0"
         x-transition:leave-end="translate-x-full"
-        class="fixed inset-y-0 right-0 z-[70] flex h-screen w-full flex-col bg-white shadow-2xl md:w-[60vw] lg:w-[35vw]"
+        class="fixed inset-y-0 right-0 z-[70] flex h-screen w-full flex-col bg-white shadow-2xl md:w-[60vw] lg:w-[45vw]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="company-demo-drawer-title"
@@ -174,117 +174,7 @@
         </div>
 
         <div class="flex-1 overflow-y-auto px-6 py-6">
-            <form
-                id="company-demo-request-form"
-                method="POST"
-                action="{{ route('company.demo.store') }}"
-                class="relative space-y-4"
-                novalidate
-                @submit="onSubmit($event)"
-                :aria-busy="submitting"
-                x-data="companyOfferAjaxForm({
-                    mode: 'demo',
-                    loadingTargetId: 'company-demo-request-form',
-                    messages: {
-                        company_required: @js(__('talenma.company_offer.demo_company_required')),
-                        contact_required: @js(__('talenma.company_offer.demo_contact_required')),
-                        email_required: @js(__('talenma.company_offer.demo_email_required')),
-                        email_invalid: @js(__('talenma.company_offer.demo_email_invalid')),
-                        message_required: @js(__('talenma.company_offer.demo_message_required')),
-                        message_min: @js(__('talenma.company_offer.demo_message_min')),
-                        incomplete: @js(__('talenma.auth.register_incomplete_toast')),
-                        network_error: @js(__('talenma.common.network_error')),
-                        sent: @js(__('talenma.company_offer.demo_sent')),
-                    },
-                })"
-            >
-                @csrf
-                <input type="hidden" name="offer_form" value="demo">
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label for="company_name" class="block text-sm font-semibold text-gray-700">{{ __('talenma.company_offer.demo_company') }}</label>
-                        <input
-                            id="company_name"
-                            name="company_name"
-                            type="text"
-                            required
-                            value="{{ $demoOld ? old('company_name') : '' }}"
-                            @input="clearFieldError('company_name')"
-                            :class="fieldInvalidClass('company_name')"
-                            class="mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                        <p x-show="fieldMessage('company_name')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('company_name')"></p>
-                    </div>
-                    <div>
-                        <label for="contact_name" class="block text-sm font-semibold text-gray-700">{{ __('talenma.company_offer.demo_contact') }}</label>
-                        <input
-                            id="contact_name"
-                            name="contact_name"
-                            type="text"
-                            required
-                            value="{{ $demoOld ? old('contact_name') : '' }}"
-                            @input="clearFieldError('contact_name')"
-                            :class="fieldInvalidClass('contact_name')"
-                            class="mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                        <p x-show="fieldMessage('contact_name')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('contact_name')"></p>
-                    </div>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label for="demo_email" class="block text-sm font-semibold text-gray-700">{{ __('talenma.company_offer.demo_email') }}</label>
-                        <input
-                            id="demo_email"
-                            name="email"
-                            type="email"
-                            required
-                            value="{{ $demoOld ? old('email') : '' }}"
-                            @input="clearFieldError('email')"
-                            :class="fieldInvalidClass('email')"
-                            class="mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                        <p x-show="fieldMessage('email')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('email')"></p>
-                    </div>
-                    <div>
-                        <label for="phone" class="block text-sm font-semibold text-gray-700">{{ __('talenma.company_offer.demo_phone') }}</label>
-                        <input
-                            id="phone"
-                            name="phone"
-                            type="text"
-                            value="{{ $demoOld ? old('phone') : '' }}"
-                            class="mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                    </div>
-                </div>
-
-                <div>
-                    <label for="message" class="block text-sm font-semibold text-gray-700">{{ __('talenma.company_offer.demo_message') }}</label>
-                    <textarea
-                        id="message"
-                        name="message"
-                        rows="8"
-                        required
-                        @input="clearFieldError('message')"
-                        :class="fieldInvalidClass('message')"
-                        class="mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    >{{ $demoOld ? old('message') : '' }}</textarea>
-                    <p x-show="fieldMessage('message')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('message')"></p>
-                </div>
-
-                <div class="flex flex-col gap-3 pt-1">
-                    <button
-                        type="submit"
-                        :disabled="submitting"
-                        class="inline-flex justify-center rounded-md bg-gray-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:opacity-70"
-                    >
-                        <span x-show="!submitting">{{ __('talenma.company_offer.demo_submit') }}</span>
-                        <span x-show="submitting" x-cloak>{{ __('talenma.auth.register_submitting') }}</span>
-                    </button>
-                    <p class="text-xs text-gray-500">{{ __('talenma.company_offer.demo_privacy') }}</p>
-                </div>
-            </form>
+            @include('company.partials.demo-request-form')
         </div>
     </aside>
 
@@ -299,7 +189,7 @@
         x-transition:leave="transition ease-in duration-200"
         x-transition:leave-start="translate-x-0"
         x-transition:leave-end="translate-x-full"
-        class="fixed inset-y-0 right-0 z-[70] flex h-screen w-full flex-col bg-white shadow-2xl md:w-[60vw] lg:w-[35vw]"
+        class="fixed inset-y-0 right-0 z-[70] flex h-screen w-full flex-col bg-white shadow-2xl md:w-[60vw] lg:w-[45vw]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="company-trial-drawer-title"

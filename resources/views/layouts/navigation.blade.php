@@ -44,14 +44,15 @@
 <nav x-data="{ open: false }" class="relative sticky top-0 z-40 border-b backdrop-blur-md bg-indigo-600/90 border-white/10 sm:bg-white sm:border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
-            <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div class="flex flex-1 items-center gap-2 sm:gap-4 min-w-0">
                 <div class="brand-logo-phone">
                     <x-brand-logo :href="$homeUrl" size="sm" phone :linked="! $pendingAccount" />
                 </div>
                 <div class="brand-logo-desktop">
                     <x-brand-logo :href="$homeUrl" size="sm" :linked="! $pendingAccount" />
                 </div>
-                <div class="hidden lg:flex items-center gap-1 min-w-0">
+                <div x-data="navOverflow" class="hidden lg:flex flex-1 items-center gap-1 min-w-0 pr-4" data-nav-overflow>
+                    <div x-ref="row" class="flex items-center gap-1 min-w-0 whitespace-nowrap" data-nav-overflow-row>
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingAccount">
                         @if ($actingAsModerator || $authUser->isCompany())
                             {{ $authUser->dashboardNavLabel() }}
@@ -66,6 +67,7 @@
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_VIEW))
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-nav-link>
                         <x-nav-link :href="route('admin.company-trial-requests.index')" :active="request()->routeIs('admin.company-trial-requests.*')">{{ __('talenma.nav.admin_company_trials') }}</x-nav-link>
+                        <x-nav-link :href="route('admin.company-demo-requests.index')" :active="request()->routeIs('admin.company-demo-requests.*')">{{ __('talenma.nav.admin_company_demos') }}</x-nav-link>
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE))
                             <x-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">
@@ -217,6 +219,44 @@
                             </span>
                         </x-nav-link>
                     @endif
+                    </div>
+                    <div
+                        class="relative shrink-0"
+                        x-show="overflowCount > 0"
+                        x-cloak
+                        @click.outside="moreOpen = false"
+                        @keydown.escape.window="moreOpen = false"
+                        data-nav-more
+                    >
+                        <button
+                            type="button"
+                            @click="moreOpen = ! moreOpen"
+                            :aria-expanded="moreOpen.toString()"
+                            aria-haspopup="menu"
+                            aria-label="{{ __('talenma.nav.more') }}"
+                            title="{{ __('talenma.nav.more') }}"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition"
+                            :class="moreOpen || hasActiveOverflow ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
+                            data-nav-more-button
+                        >
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="12" cy="19" r="1.75"/></svg>
+                        </button>
+                        <div
+                            x-ref="menu"
+                            x-show="moreOpen"
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="opacity-0 -translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0"
+                            @click="moreOpen = false"
+                            role="menu"
+                            class="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-gray-100 bg-white py-2 shadow-lg"
+                            style="display: none;"
+                            data-nav-more-menu
+                        ></div>
+                    </div>
                 </div>
             </div>
             <div class="hidden lg:flex items-center gap-3 shrink-0">
@@ -342,6 +382,7 @@
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::ACCOUNTS_VIEW))
                         <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">{{ __('talenma.nav.admin_users') }}</x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('admin.company-trial-requests.index')" :active="request()->routeIs('admin.company-trial-requests.*')">{{ __('talenma.nav.admin_company_trials') }}</x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.company-demo-requests.index')" :active="request()->routeIs('admin.company-demo-requests.*')">{{ __('talenma.nav.admin_company_demos') }}</x-responsive-nav-link>
                         @endif
                         @if ($authUser->hasModeratorPermission(ModeratorPermissionCatalog::SOURCING_MANAGE))
                             <x-responsive-nav-link :href="route('admin.recruitment.index')" :active="request()->routeIs('admin.recruitment.*')">
