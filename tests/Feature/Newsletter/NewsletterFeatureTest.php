@@ -786,6 +786,39 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
+    public function seeded_guest_campaign_with_relative_hero_path_can_be_edited_and_saved(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $campaign = Newsletter::query()
+            ->where('title', 'Invitation à créer un compte — abonnés non inscrits')
+            ->sole();
+
+        $this->actingAs($admin)
+            ->get(route('admin.newsletter.edit', $campaign))
+            ->assertOk()
+            ->assertDontSee('type="url" class="w-full rounded-lg border-gray-300 text-sm" placeholder="https://…" x-model="block.image_url"', false)
+            ->assertSee('x-model="block.image_url"', false);
+
+        $blocks = $campaign->normalizedBlocks();
+        $blocks[0]['title'] = 'Titre modifié';
+
+        $this->actingAs($admin)
+            ->put(route('admin.newsletter.update', $campaign), [
+                'title' => $campaign->title,
+                'subject' => $campaign->subject,
+                'locale' => $campaign->locale,
+                'audience' => $campaign->audience,
+                'body_blocks' => json_encode($blocks),
+            ])
+            ->assertRedirect(route('admin.newsletter.show', $campaign));
+
+        $campaign->refresh();
+        $this->assertSame('Titre modifié', $campaign->normalizedBlocks()[0]['title']);
+        $this->assertSame('/images/newsletter/guest-signup-hero.jpg', $campaign->normalizedBlocks()[1]['image_url']);
+        $this->assertSame(Newsletter::AUDIENCE_GUESTS, $campaign->audience);
+    }
+
+    #[Test]
     public function feature_block_renders_image_text_and_optional_button(): void
     {
         $renderer = app(\App\Services\NewsletterRenderer::class);

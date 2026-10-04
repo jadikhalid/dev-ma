@@ -174,7 +174,7 @@
 
                         <template x-if="block.type === 'hero'">
                             <div class="space-y-2">
-                                <input type="url" class="w-full rounded-lg border-gray-300 text-sm" placeholder="https://…" x-model="block.image_url">
+                                <input type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.newsletter.field_feature_image') }}" x-model="block.image_url">
                                 <input type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="Alt" x-model="block.alt">
                             </div>
                         </template>
