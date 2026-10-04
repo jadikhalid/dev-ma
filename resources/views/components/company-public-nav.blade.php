@@ -173,6 +173,16 @@
                                 @endif
                                 <x-primary-button class="justify-center">{{ __('talenma.auth.login_btn') }}</x-primary-button>
                             </div>
+                            <p class="mt-4 text-center text-sm text-gray-600" data-company-login-trial-link>
+                                {{ __('talenma.auth.no_company_account') }}
+                                <a
+                                    href="{{ route('company.offer', ['tab' => 'trial']) }}"
+                                    @if (request()->routeIs('company.offer'))
+                                        @click.prevent="open = false; $dispatch('company-offer-drawer', 'trial')"
+                                    @endif
+                                    class="font-medium text-indigo-600 hover:text-indigo-800"
+                                >{{ __('talenma.company_offer.cta_trial') }}</a>
+                            </p>
                         </form>
                     </div>
                 </div>

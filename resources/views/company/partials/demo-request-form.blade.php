@@ -8,6 +8,19 @@
     $oldSlots = $demoOld ? (array) old('preferred_slots', []) : [];
     $oldPhoneCountry = $demoOld ? old('phone_country', 'ma') : 'ma';
     $bookingDates = CompanyDemoRequest::availableBookingDates();
+    $bookingDateKeys = $bookingDates->map->toDateString()->all();
+    $oldPreferredDate = $demoOld ? old('preferred_date') : null;
+    $calendarWeeks = [];
+    for ($weekStart = $bookingDates->first()->copy()->startOfWeek(); $weekStart->lte($bookingDates->last()); $weekStart->addWeek()) {
+        $calendarWeeks[] = collect(range(0, 4))->map(fn (int $offset) => $weekStart->copy()->addDays($offset))->all();
+    }
+    $firstMonth = $bookingDates->first()->translatedFormat('F Y');
+    $lastMonth = $bookingDates->last()->translatedFormat('F Y');
+    $calendarTitle = \Illuminate\Support\Str::ucfirst($firstMonth === $lastMonth
+        ? $firstMonth
+        : ($bookingDates->first()->year === $bookingDates->last()->year
+            ? $bookingDates->first()->translatedFormat('F').' – '.$lastMonth
+            : $firstMonth.' – '.$lastMonth));
 @endphp
 
 <div
@@ -219,16 +232,46 @@
             <p class="text-sm leading-relaxed text-gray-600">{{ __('talenma.company_offer.demo_form.booking_intro') }}</p>
 
             <div>
-                <label for="demo_preferred_date" class="block text-sm font-semibold text-gray-700">{{ __('talenma.company_offer.demo_form.preferred_date') }}<span class="text-rose-500">*</span></label>
-                <select id="demo_preferred_date" name="preferred_date" required
-                    @change="clearFieldError('preferred_date')" :class="fieldInvalidClass('preferred_date')" class="{{ $inputClass }}" data-demo-preferred-date>
-                    <option value="">{{ __('talenma.company_offer.demo_form.select_placeholder') }}</option>
-                    @foreach ($bookingDates as $date)
-                        <option value="{{ $date->toDateString() }}" @selected($demoOld && old('preferred_date') === $date->toDateString())>
-                            {{ $date->translatedFormat('l j F Y') }}
-                        </option>
-                    @endforeach
-                </select>
+                <p class="block text-sm font-semibold text-gray-700" id="demo_preferred_date_label">{{ __('talenma.company_offer.demo_form.preferred_date') }}<span class="text-rose-500">*</span></p>
+                <div
+                    class="mt-2 rounded-xl border p-3 sm:p-4"
+                    :class="fieldMessage('preferred_date') ? 'border-rose-400' : 'border-gray-200'"
+                    role="radiogroup"
+                    aria-labelledby="demo_preferred_date_label"
+                    data-demo-preferred-date
+                >
+                    <p class="text-center text-sm font-bold text-gray-900">{{ $calendarTitle }}</p>
+                    <div class="mt-3 grid grid-cols-5 gap-1.5 text-center text-[11px] font-semibold uppercase tracking-wide text-gray-400" aria-hidden="true">
+                        @foreach ($calendarWeeks[0] as $day)
+                            <span>{{ rtrim($day->translatedFormat('D'), '.') }}</span>
+                        @endforeach
+                    </div>
+                    <div class="mt-1.5 space-y-1.5">
+                        @foreach ($calendarWeeks as $week)
+                            <div class="grid grid-cols-5 gap-1.5">
+                                @foreach ($week as $day)
+                                    @php($dayKey = $day->toDateString())
+                                    @if (in_array($dayKey, $bookingDateKeys, true))
+                                        <label class="relative">
+                                            <input type="radio" name="preferred_date" value="{{ $dayKey }}" class="peer sr-only"
+                                                @checked($oldPreferredDate === $dayKey)
+                                                @change="clearFieldError('preferred_date')"
+                                                aria-label="{{ $day->translatedFormat('l j F Y') }}">
+                                            <span class="flex h-12 cursor-pointer select-none flex-col items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-800 transition hover:border-indigo-300 hover:bg-indigo-50 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-500 peer-focus-visible:ring-offset-1">
+                                                <span class="text-sm font-bold leading-none">{{ $day->day }}</span>
+                                                @if ($day->day === 1 || $loop->parent->first && $loop->first || $day->isSameDay($bookingDates->first()))
+                                                    <span class="mt-1 text-[10px] font-medium leading-none opacity-70">{{ rtrim($day->translatedFormat('M'), '.') }}</span>
+                                                @endif
+                                            </span>
+                                        </label>
+                                    @else
+                                        <span class="flex h-12 items-center justify-center rounded-lg text-sm text-gray-300" aria-hidden="true">{{ $day->day }}</span>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
                 <p x-show="fieldMessage('preferred_date')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('preferred_date')"></p>
             </div>
 

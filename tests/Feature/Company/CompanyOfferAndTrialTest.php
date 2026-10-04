@@ -28,6 +28,25 @@ class CompanyOfferAndTrialTest extends TestCase
         $this->seed(ProfessionSeeder::class);
     }
 
+    public function test_demo_form_shows_booking_days_as_weekday_calendar(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-28 10:00:00'));
+
+        $response = $this->get(route('company.offer'))->assertOk();
+        $html = $response->getContent();
+
+        $response
+            ->assertSee('data-demo-preferred-date', false)
+            ->assertSee('Octobre – novembre 2026')
+            ->assertSee('value="2026-10-29"', false)
+            ->assertSee('value="2026-11-18"', false)
+            ->assertDontSee('value="2026-10-31"', false)
+            ->assertDontSee('value="2026-11-19"', false)
+            ->assertDontSee('<select id="demo_preferred_date"', false);
+
+        $this->assertSame(CompanyDemoRequest::BOOKING_WEEKDAYS_AHEAD, substr_count($html, 'type="radio" name="preferred_date"'));
+    }
+
     public function test_company_offer_page_is_public(): void
     {
         $response = $this->get(route('company.offer'));
