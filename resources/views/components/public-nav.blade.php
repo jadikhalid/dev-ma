@@ -30,8 +30,8 @@
             ->all()
         : [];
 
-    $navDisabledClass = 'mr-0.5 sm:mr-1 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-white/45 sm:text-gray-400 cursor-default select-none pointer-events-none';
-    $navLinkClass = 'relative mr-0.5 sm:mr-1 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50';
+    $navDisabledClass = 'mr-0.5 sm:mr-0 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-white/45 sm:text-gray-400 cursor-default select-none pointer-events-none';
+    $navLinkClass = 'relative mr-0.5 sm:mr-0 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-white sm:hover:shadow-sm sm:hover:ring-1 sm:hover:ring-indigo-100';
 @endphp
 
 <header
@@ -85,6 +85,8 @@
                 'sm:ml-0' => $showCompanyOfferCta,
             ])>
                 {{-- Desktop / tablette : liens directs --}}
+                @if ($showAnnoncesNav || $showBlogNav)
+                <div class="contents sm:mr-1 sm:flex sm:items-center sm:gap-0.5 sm:rounded-xl sm:border sm:border-indigo-100 sm:bg-indigo-50/60 sm:p-1" data-header-nav-group>
                 @if ($showAnnoncesNav)
                     @if ($annoncesNavDisabled)
                         <span
@@ -151,7 +153,9 @@
                         @if ($onBlogIndex) aria-current="page" @endif
                         aria-disabled="true"
                         @class([
-                            'mr-1 sm:mr-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-white/45 sm:text-gray-400 cursor-default select-none pointer-events-none',
+                            'mr-1 sm:mr-0 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold cursor-default select-none pointer-events-none',
+                            'text-white/45 sm:text-gray-400' => ! $onBlogIndex,
+                            'text-white sm:bg-white sm:text-indigo-700 sm:shadow-sm sm:ring-1 sm:ring-indigo-100' => $onBlogIndex,
                             'hidden sm:inline-flex' => $showAnnoncesNav,
                         ])
                     >
@@ -164,7 +168,7 @@
                     <a
                         href="{{ route('blog.index') }}"
                         @class([
-                            'mr-1 sm:mr-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-indigo-50',
+                            'mr-1 sm:mr-0 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-white sm:hover:shadow-sm sm:hover:ring-1 sm:hover:ring-indigo-100',
                             'hidden sm:inline-flex' => $showAnnoncesNav,
                         ])
                     >
@@ -174,6 +178,8 @@
                         <span>{{ __('talenma.nav.blog') }}</span>
                     </a>
                 @endif
+                @endif
+                </div>
                 @endif
 
                 {{-- Mobile : menu Annonces + Blog (badge visible sur le bouton) — masqué sur le blog / offre entreprise --}}

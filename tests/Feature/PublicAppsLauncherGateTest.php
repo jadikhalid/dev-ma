@@ -106,6 +106,21 @@ class PublicAppsLauncherGateTest extends TestCase
     }
 
     #[Test]
+    public function public_home_groups_annonces_companies_and_blog_links(): void
+    {
+        $html = $this->get(route('home'))->assertOk()->getContent();
+
+        $groupStart = strpos($html, 'data-header-nav-group');
+        $this->assertNotFalse($groupStart);
+
+        $group = substr($html, $groupStart, strpos($html, 'Mobile : menu', $groupStart) - $groupStart);
+
+        $this->assertStringContainsString(route('home').'#opportunites', $group);
+        $this->assertStringContainsString('data-header-partner-companies-link', $group);
+        $this->assertStringContainsString(route('blog.index'), $group);
+    }
+
+    #[Test]
     public function public_home_shows_apps_launcher_for_guests(): void
     {
         $this->get(route('home'))
