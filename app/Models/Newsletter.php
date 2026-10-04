@@ -76,6 +76,8 @@ class Newsletter extends Model
 
     public const BLOCK_CTA = 'cta';
 
+    public const BLOCK_FEATURE = 'feature';
+
     public const BLOCK_REGISTER = 'register';
 
     public const BLOCK_LIBRARY = 'library';
@@ -95,6 +97,7 @@ class Newsletter extends Model
         self::BLOCK_STATS,
         self::BLOCK_TEXT,
         self::BLOCK_CTA,
+        self::BLOCK_FEATURE,
         self::BLOCK_REGISTER,
         self::BLOCK_LIBRARY,
         self::BLOCK_CV_TEMPLATES,

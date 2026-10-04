@@ -41,7 +41,7 @@ class NewsletterFeatureTest extends TestCase
             ])
             ->assertRedirect();
 
-        $newsletter = Newsletter::query()->first();
+        $newsletter = Newsletter::query()->latest('id')->first();
         $this->assertNotNull($newsletter);
         $this->assertSame(Newsletter::STATUS_DRAFT, $newsletter->status);
         $this->assertSame('Semaine du 8 sept', $newsletter->title);
@@ -150,7 +150,7 @@ class NewsletterFeatureTest extends TestCase
             ])
             ->assertRedirect();
 
-        $newsletter = Newsletter::query()->first();
+        $newsletter = Newsletter::query()->latest('id')->first();
         $this->assertNotNull($newsletter);
         $this->assertSame('Édition spéciale mars', $newsletter->headline);
     }
@@ -251,8 +251,16 @@ class NewsletterFeatureTest extends TestCase
         $this->assertStringContainsString('Rejoignez la communauté', $html);
         $this->assertStringNotContainsString('Espace talents', $html);
         $this->assertStringNotContainsString('vitrine talent', $html);
-        $this->assertStringContainsString('background:#4f46e5', $html);
+        $this->assertStringContainsString('linear-gradient(135deg,#1e1b4b', $html);
         $this->assertStringContainsString('background:#fbbf24', $html);
+        $this->assertStringContainsString('Visible à l’international', $html);
+        $this->assertStringContainsString('Gratuit · 2 minutes · Sans engagement', $html);
+
+        $english = app(\App\Services\NewsletterRenderer::class)->renderBlock([
+            'type' => Newsletter::BLOCK_REGISTER,
+        ], 'en');
+        $this->assertStringContainsString('Join the community', $english);
+        $this->assertStringContainsString('Create my account', $english);
     }
 
     #[Test]
@@ -701,7 +709,7 @@ class NewsletterFeatureTest extends TestCase
             ])
             ->assertRedirect();
 
-        $newsletter = Newsletter::query()->first();
+        $newsletter = Newsletter::query()->latest('id')->first();
         $this->assertNotNull($newsletter);
         $this->assertSame(Newsletter::AUDIENCE_GUESTS, $newsletter->audience);
     }
@@ -775,6 +783,63 @@ class NewsletterFeatureTest extends TestCase
         Queue::assertPushed(SendNewsletterJob::class, function (SendNewsletterJob $job) use ($newsletter) {
             return $job->newsletterId === $newsletter->id;
         });
+    }
+
+    #[Test]
+    public function feature_block_renders_image_text_and_optional_button(): void
+    {
+        $renderer = app(\App\Services\NewsletterRenderer::class);
+
+        $html = $renderer->renderBlock([
+            'type' => Newsletter::BLOCK_FEATURE,
+            'image_url' => '/images/hero/tarik.jpg',
+            'title' => 'Visible',
+            'body' => 'Texte court',
+            'cta_label' => 'Créer mon profil',
+            'cta_url' => 'https://talentsdumaroc.com/register',
+        ], 'fr');
+
+        $this->assertStringContainsString(url('/images/hero/tarik.jpg'), $html);
+        $this->assertStringContainsString('Visible', $html);
+        $this->assertStringContainsString('Texte court', $html);
+        $this->assertStringContainsString('href="https://talentsdumaroc.com/register"', $html);
+
+        $withoutButton = $renderer->renderBlock([
+            'type' => Newsletter::BLOCK_FEATURE,
+            'title' => 'Visible',
+        ], 'fr');
+        $this->assertStringNotContainsString('<a ', $withoutButton);
+        $this->assertStringNotContainsString('<img', $withoutButton);
+
+        $this->assertSame('', $renderer->renderBlock(['type' => Newsletter::BLOCK_FEATURE], 'fr'));
+    }
+
+    #[Test]
+    public function guest_signup_invitation_campaign_is_seeded_as_unsent_draft_for_guests(): void
+    {
+        $campaign = Newsletter::query()
+            ->where('title', 'Invitation à créer un compte — abonnés non inscrits')
+            ->sole();
+
+        $this->assertSame(Newsletter::STATUS_DRAFT, $campaign->status);
+        $this->assertSame(Newsletter::AUDIENCE_GUESTS, $campaign->audience);
+        $this->assertNull($campaign->sent_at);
+        $this->assertNull($campaign->scheduled_at);
+
+        $types = array_column($campaign->normalizedBlocks(), 'type');
+        $this->assertSame(Newsletter::BLOCK_HERO, $types[1]);
+        $this->assertSame([Newsletter::BLOCK_FEATURE, Newsletter::BLOCK_FEATURE], [$types[2], $types[3]]);
+        $this->assertFileExists(public_path('images/newsletter/guest-signup-hero.jpg'));
+        $this->assertNotContains(Newsletter::BLOCK_JOBS, $types);
+        $this->assertNotContains(Newsletter::BLOCK_CV_TEMPLATES, $types);
+        $this->assertNotContains(Newsletter::BLOCK_LIBRARY, $types);
+        $this->assertSame(Newsletter::BLOCK_REGISTER, end($types));
+
+        $html = app(\App\Services\NewsletterRenderer::class)->renderHtml($campaign);
+        $this->assertStringContainsString('MES APPLICATIONS', $html);
+        $this->assertStringNotContainsString('/images/hero/', $html);
+        $this->assertStringContainsString(url('/images/newsletter/guest-signup-hero.jpg'), $html);
+        $this->assertStringContainsString('https://talentsdumaroc.com/register', $html);
     }
 
     private function libraryCategory(): LibraryCategory

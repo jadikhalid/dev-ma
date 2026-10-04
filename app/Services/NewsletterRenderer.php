@@ -109,7 +109,8 @@ class NewsletterRenderer
             Newsletter::BLOCK_STATS => $this->renderStats($block),
             Newsletter::BLOCK_TEXT => $this->renderText($block),
             Newsletter::BLOCK_CTA => $this->renderCta($block),
-            Newsletter::BLOCK_REGISTER => $this->renderRegister(),
+            Newsletter::BLOCK_FEATURE => $this->renderFeature($block),
+            Newsletter::BLOCK_REGISTER => $this->renderRegister($locale),
             Newsletter::BLOCK_LIBRARY => $this->renderLibrary($block, $locale),
             Newsletter::BLOCK_CV_TEMPLATES => $this->renderCvTemplates($block, $locale),
             default => '',
@@ -143,7 +144,7 @@ class NewsletterRenderer
      */
     private function renderHero(array $block): string
     {
-        $url = trim((string) ($block['image_url'] ?? ''));
+        $url = (string) $this->absolutePublicUrl(trim((string) ($block['image_url'] ?? '')));
         if ($url === '') {
             return '';
         }
@@ -552,20 +553,80 @@ class NewsletterRenderer
             .'</a></p>';
     }
 
-    private function renderRegister(): string
+    /**
+     * @param  array<string, mixed>  $block
+     */
+    private function renderFeature(array $block): string
     {
-        $url = 'https://talentsdumaroc.com/register';
-        $title = __('talenma.newsletter.register_banner_title');
-        $body = __('talenma.newsletter.register_banner_body');
-        $cta = __('talenma.newsletter.register_banner_cta');
+        $title = trim((string) ($block['title'] ?? ''));
+        $body = trim((string) ($block['body'] ?? ''));
+        if ($title === '' && $body === '') {
+            return '';
+        }
 
-        return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;">'
-            .'<tr><td style="padding:22px 20px;background:#4f46e5;text-align:center;">'
-            .'<p style="margin:0 0 10px;font-size:22px;line-height:1.25;font-weight:800;color:#ffffff;">'.e($title).'</p>'
-            .'<p style="margin:0 0 16px;font-size:14px;line-height:1.5;color:#e0e7ff;">'.e($body).'</p>'
-            .'<a href="'.e($url).'" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 22px;background:#fbbf24;color:#1f2937;font-size:14px;font-weight:800;text-decoration:none;">'
-            .e($cta)
+        $image = $this->absolutePublicUrl(trim((string) ($block['image_url'] ?? '')));
+        $ctaLabel = trim((string) ($block['cta_label'] ?? ''));
+        $ctaUrl = trim((string) ($block['cta_url'] ?? ''));
+
+        $text = '';
+        if ($title !== '') {
+            $text .= '<p style="margin:0 0 8px;font-size:18px;line-height:1.3;font-weight:800;color:#111827;">'.e($title).'</p>';
+        }
+        if ($body !== '') {
+            $text .= '<p style="margin:0;font-size:14px;line-height:1.6;color:#4b5563;">'.nl2br(e($body), false).'</p>';
+        }
+        if ($ctaLabel !== '' && $ctaUrl !== '') {
+            $text .= '<table role="presentation" cellspacing="0" cellpadding="0" style="margin:16px 0 0;border-collapse:separate;">'
+                .'<tr><td bgcolor="#4f46e5" style="background:#4f46e5;border-radius:10px;">'
+                .'<a href="'.e($ctaUrl).'" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:11px 20px;font-size:14px;line-height:18px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">'
+                .e($ctaLabel).' &rarr;'
+                .'</a></td></tr></table>';
+        }
+
+        $html = '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 16px;border:1px solid #e5e7eb;border-radius:16px;border-collapse:separate;background:#ffffff;overflow:hidden;">'
+            .'<tr>';
+
+        if ($image) {
+            $html .= '<td width="200" valign="top" style="width:200px;padding:0;">'
+                .'<img src="'.e($image).'" alt="" width="200" height="200" style="display:block;width:200px;height:200px;object-fit:cover;border:0;border-radius:15px 0 0 15px;">'
+                .'</td>';
+        }
+
+        $html .= '<td valign="middle" style="padding:20px 22px;">'.$text.'</td>'
+            .'</tr></table>';
+
+        return $html;
+    }
+
+    private function renderRegister(string $locale): string
+    {
+        $locale = $locale === Newsletter::LOCALE_EN ? 'en' : 'fr';
+        $t = fn (string $key): string => __('talenma.newsletter.register_banner_'.$key, [], $locale);
+        $url = 'https://talentsdumaroc.com/register';
+
+        $perks = '';
+        foreach (['visibility', 'jobs', 'apps'] as $perk) {
+            $perks .= '<span style="display:inline-block;margin:4px;padding:7px 12px 7px 8px;background:#4c46c9;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);border-radius:999px;font-size:13px;line-height:18px;font-weight:600;color:#ffffff;white-space:nowrap;">'
+                .'<span style="display:inline-block;width:18px;height:18px;margin-right:6px;background:#fbbf24;border-radius:50%;font-size:11px;line-height:18px;font-weight:800;color:#1e1b4b;text-align:center;vertical-align:top;">✓</span>'
+                .e($t('perk_'.$perk))
+                .'</span>';
+        }
+
+        return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:28px 0 8px;border-collapse:separate;">'
+            .'<tr><td bgcolor="#3730a3" style="padding:36px 24px 30px;background-color:#3730a3;background-image:linear-gradient(135deg,#1e1b4b 0%,#4338ca 55%,#7c3aed 100%);border-radius:20px;text-align:center;">'
+            .'<span style="display:inline-block;margin:0 0 16px;padding:6px 14px;background:#4338ca;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.28);border-radius:999px;font-size:11px;line-height:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#fde68a;">'
+            .'✦ '.e($t('eyebrow'))
+            .'</span>'
+            .'<p style="margin:0 0 12px;font-size:28px;line-height:1.2;font-weight:800;letter-spacing:-0.5px;color:#ffffff;">'.e($t('title')).'</p>'
+            .'<p style="margin:0 auto 20px;max-width:440px;font-size:15px;line-height:1.6;color:#e0e7ff;">'.e($t('body')).'</p>'
+            .'<div style="margin:0 0 26px;">'.$perks.'</div>'
+            .'<table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto;border-collapse:separate;">'
+            .'<tr><td bgcolor="#fbbf24" style="background:#fbbf24;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.25);">'
+            .'<a href="'.e($url).'" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:15px 30px;font-size:15px;line-height:18px;font-weight:800;color:#1e1b4b;text-decoration:none;border-radius:12px;">'
+            .e($t('cta')).' &rarr;'
             .'</a>'
+            .'</td></tr></table>'
+            .'<p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:#c7d2fe;">'.e($t('note')).'</p>'
             .'</td></tr></table>';
     }
 

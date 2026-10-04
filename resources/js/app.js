@@ -5337,7 +5337,7 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
     blocks: [],
     picker: config.picker || {},
     labels: config.labels || {},
-    blockTypes: ['header', 'hero', 'jobs', 'blog', 'social', 'talents', 'companies', 'stats', 'text', 'cta', 'register', 'library', 'cv_templates'],
+    blockTypes: ['header', 'hero', 'jobs', 'blog', 'social', 'talents', 'companies', 'stats', 'text', 'cta', 'feature', 'register', 'library', 'cv_templates'],
     _uidSeq: 0,
 
     init() {
@@ -5395,6 +5395,8 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
                 return { type, body: '' };
             case 'cta':
                 return { type, label: '', url: '' };
+            case 'feature':
+                return { type, image_url: '', title: '', body: '', cta_label: '', cta_url: '' };
             case 'register':
                 return { type };
             case 'library':

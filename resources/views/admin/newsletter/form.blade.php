@@ -43,6 +43,7 @@
                     'stats' => __('talenma.newsletter.block_type_stats'),
                     'text' => __('talenma.newsletter.block_type_text'),
                     'cta' => __('talenma.newsletter.block_type_cta'),
+                    'feature' => __('talenma.newsletter.block_type_feature'),
                     'register' => __('talenma.newsletter.block_type_register'),
                     'library' => __('talenma.newsletter.block_type_library'),
                     'cv_templates' => __('talenma.newsletter.block_type_cv_templates'),
@@ -234,6 +235,18 @@
                             <div class="grid sm:grid-cols-2 gap-2">
                                 <input type="text" class="rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.newsletter.field_cta_label') }}" x-model="block.label">
                                 <input type="url" class="rounded-lg border-gray-300 text-sm" placeholder="https://…" x-model="block.url">
+                            </div>
+                        </template>
+
+                        <template x-if="block.type === 'feature'">
+                            <div class="space-y-2">
+                                <input type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.newsletter.field_feature_image') }}" x-model="block.image_url">
+                                <input type="text" class="w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.newsletter.field_feature_title') }}" x-model="block.title">
+                                <textarea rows="2" class="w-full rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.newsletter.field_feature_body') }}" x-model="block.body"></textarea>
+                                <div class="grid sm:grid-cols-2 gap-2">
+                                    <input type="text" class="rounded-lg border-gray-300 text-sm" placeholder="{{ __('talenma.newsletter.field_cta_label') }}" x-model="block.cta_label">
+                                    <input type="url" class="rounded-lg border-gray-300 text-sm" placeholder="https://…" x-model="block.cta_url">
+                                </div>
                             </div>
                         </template>
 
