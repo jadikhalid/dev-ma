@@ -57,6 +57,10 @@
                 <div class="brand-logo-desktop">
                     <x-brand-logo href="{{ route('home') }}" size="sm" />
                 </div>
+                <div class="hidden lg:flex items-center" data-header-locale-switcher>
+                    <span class="mx-5 h-9 w-0.5 rounded-full bg-gradient-to-b from-indigo-600 via-violet-400 to-amber-400 opacity-80" aria-hidden="true" data-header-locale-divider></span>
+                    <x-locale-switcher />
+                </div>
             </div>
 
             @if ($showCompanyOfferCta)
@@ -71,7 +75,7 @@
                     <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008V7.5Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"/>
                     </svg>
-                    <span class="truncate">{{ __('talenma.nav.company_offer') }}</span>
+                    <span class="hidden truncate xl:inline">{{ __('talenma.nav.company_offer') }}</span>
                 </a>
             </div>
             @endif
@@ -117,6 +121,27 @@
                                 ></span>
                                 <span>{{ __('talenma.nav.jobs') }}</span>
                             </span>
+                        </a>
+                    @endif
+                    @if ($annoncesNavDisabled)
+                        <span aria-disabled="true" class="{{ $navDisabledClass }}">
+                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
+                            </svg>
+                            <span>{{ __('talenma.nav.partner_companies') }}</span>
+                        </span>
+                    @else
+                        <a
+                            href="{{ route('home') }}#entreprises"
+                            class="{{ $navLinkClass }}"
+                            x-data="homeSectionLink({ sectionId: 'entreprises' })"
+                            @click="onClick($event)"
+                            data-header-partner-companies-link
+                        >
+                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
+                            </svg>
+                            <span>{{ __('talenma.nav.partner_companies') }}</span>
                         </a>
                     @endif
                 @endif
@@ -232,6 +257,17 @@
                             </span>
                         </a>
                         <a
+                            href="{{ route('home') }}#entreprises"
+                            role="menuitem"
+                            class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+                            @click="goToSection($event, 'entreprises')"
+                        >
+                            <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
+                            </svg>
+                            <span>{{ __('talenma.nav.partner_companies') }}</span>
+                        </a>
+                        <a
                             href="{{ route('blog.index') }}"
                             role="menuitem"
                             class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
@@ -262,9 +298,6 @@
                 </div>
                 @endif
 
-                <div class="hidden lg:block">
-                    <x-locale-switcher />
-                </div>
                 @auth
                     @php $authUser = Auth::user(); @endphp
                     <span class="hidden sm:inline-flex text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap {{ $authUser->roleBadgeClasses() }}">
@@ -284,10 +317,8 @@
                                     data-header-display-aria
                                 >
                                     <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-white/40 sm:ring-gray-200" />
-                                    <svg class="sm:hidden h-4 w-4 shrink-0 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M19 9l-7 7-7-7"/>
-                                    </svg>
                                     <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
+                                    <svg class="h-4 w-4 shrink-0 text-white/90 transition-transform duration-300 ease-in-out sm:text-gray-400" :class="open ? 'rotate-180' : 'rotate-0'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" data-header-account-chevron><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
                                 </button>
                             </x-slot>
                             <x-slot name="content">
@@ -308,10 +339,8 @@
                                     data-header-display-aria
                                 >
                                     <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-white/40 sm:ring-gray-200" />
-                                    <svg class="sm:hidden h-4 w-4 shrink-0 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M19 9l-7 7-7-7"/>
-                                    </svg>
                                     <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
+                                    <svg class="h-4 w-4 shrink-0 text-white/90 transition-transform duration-300 ease-in-out sm:text-gray-400" :class="open ? 'rotate-180' : 'rotate-0'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" data-header-account-chevron><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
                                 </button>
                             </x-slot>
                             <x-slot name="content">
@@ -336,10 +365,8 @@
                                         size="xs"
                                         class="ring-1 ring-white/40 sm:ring-gray-200"
                                     />
-                                    <svg class="sm:hidden h-4 w-4 shrink-0 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M19 9l-7 7-7-7"/>
-                                    </svg>
                                     <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
+                                    <svg class="h-4 w-4 shrink-0 text-white/90 transition-transform duration-300 ease-in-out sm:text-gray-400" :class="open ? 'rotate-180' : 'rotate-0'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" data-header-account-chevron><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
                                 </button>
                             </x-slot>
                             <x-slot name="content">

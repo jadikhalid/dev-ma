@@ -9697,6 +9697,48 @@ Alpine.data('talentCvBuilder', (config = {}) => ({
     },
 }));
 
+function smoothScrollToHomeSection(sectionId) {
+    const section = document.getElementById(sectionId);
+
+    if (! section) {
+        return false;
+    }
+
+    const headerOffset = 88;
+    const top = section.getBoundingClientRect().top + window.scrollY - headerOffset;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+
+    return true;
+}
+
+Alpine.data('homeSectionLink', (config = {}) => ({
+    sectionId: config.sectionId,
+
+    onClick(event) {
+        if (smoothScrollToHomeSection(this.sectionId)) {
+            event.preventDefault();
+        }
+    },
+}));
+
+Alpine.data('companyPageTabs', () => ({
+    tab: window.location.hash === '#offres' ? 'jobs' : 'about',
+
+    openTab(tab, scrollToTabs = false) {
+        this.tab = tab;
+
+        const hash = tab === 'jobs' ? '#offres' : '';
+        window.history.replaceState(null, '', window.location.pathname + window.location.search + hash);
+
+        const headerHeight = document.querySelector('header')?.offsetHeight ?? 64;
+        const anchorTop = this.$refs.tabsAnchor.getBoundingClientRect().top + window.scrollY - headerHeight;
+
+        if (scrollToTabs || window.scrollY > anchorTop) {
+            window.scrollTo({ top: Math.max(0, anchorTop), behavior: 'smooth' });
+        }
+    },
+}));
+
 Alpine.data('homeAnnoncesNav', (config = {}) => ({
     storageKey: config.storageKey || 'tdm.home.annonces.seen_at',
     homeUrl: config.homeUrl || '/',
@@ -9748,17 +9790,15 @@ Alpine.data('homeAnnoncesNav', (config = {}) => ({
     },
 
     scrollToSection() {
-        const section = document.getElementById(this.sectionId);
+        return smoothScrollToHomeSection(this.sectionId);
+    },
 
-        if (! section) {
-            return false;
+    goToSection(event, sectionId) {
+        if (smoothScrollToHomeSection(sectionId)) {
+            event.preventDefault();
         }
 
-        const headerOffset = 88;
-        const top = section.getBoundingClientRect().top + window.scrollY - headerOffset;
-        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-
-        return true;
+        this.closeMenu();
     },
 
     onClick(event) {

@@ -35,6 +35,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\JobAccessGateController;
+use App\Http\Controllers\PublicCompanyController;
 use App\Http\Controllers\PublicJobController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MarketingCvPreviewController;
@@ -83,6 +84,12 @@ Route::get('/privacy', [PrivacyController::class, 'show'])->name('privacy');
 Route::get('/annonces/{job}', [PublicJobController::class, 'show'])
     ->whereNumber('job')
     ->name('jobs.public.show');
+Route::get('/entreprises-partenaires', [PublicCompanyController::class, 'index'])
+    ->middleware('throttle:60,1')
+    ->name('companies.public.index');
+Route::get('/entreprises-partenaires/{company}', [PublicCompanyController::class, 'show'])
+    ->whereNumber('company')
+    ->name('companies.public.show');
 Route::get('/annonces/acces/{job?}', JobAccessGateController::class)
     ->middleware('auth')
     ->whereNumber('job')

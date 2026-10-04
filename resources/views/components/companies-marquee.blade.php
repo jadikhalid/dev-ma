@@ -3,13 +3,37 @@
 @if ($companies->isNotEmpty())
 <section id="entreprises" class="scroll-mt-28 border-y border-gray-100 bg-gray-50 py-16">
     <div class="home-shell">
-        <div class="max-w-2xl">
-            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">{{ __('talenma.home.companies_marquee_eyebrow') }}</p>
-            <h2 class="mt-3 text-3xl font-bold text-gray-900">{{ __('talenma.home.companies_marquee_title') }}</h2>
+    <div class="w-full rounded-2xl border border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-teal-50/40 p-5 sm:p-6 lg:p-7 shadow-sm ring-1 ring-indigo-100/60">
+        <div class="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div class="min-w-0">
+                <p class="text-[12px] sm:text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-600">
+                    {{ __('talenma.home.companies_marquee_eyebrow') }}
+                </p>
+                <div class="mt-1.5 flex items-center gap-2.5">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/25">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
+                        </svg>
+                    </span>
+                    <h2 class="truncate text-lg font-bold tracking-tight text-gray-900 sm:text-xl">
+                        {{ __('talenma.home.companies_marquee_title') }}
+                    </h2>
+                </div>
+            </div>
+            <a
+                href="{{ route('companies.public.index') }}"
+                class="inline-flex shrink-0 items-center justify-center gap-1.5 self-start rounded-xl border border-indigo-200 bg-white px-3.5 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 sm:text-xs sm:self-auto"
+                data-companies-view-all
+            >
+                {{ __('talenma.home.companies_marquee_view_all') }}
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
         </div>
 
         <div
-            class="group/marquee relative mt-10 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+            class="group/marquee relative overflow-hidden rounded-2xl border border-white/80 bg-white/90 shadow-sm backdrop-blur-sm"
             x-data="magazineTicker({ inline: true })"
             @resize.window.passive="onResize()"
             @mouseenter="onBannerEnter()"
@@ -68,8 +92,11 @@
                         data-initial-count="{{ $companies->count() }}"
                     >
                         @foreach ($companies as $company)
-                            <div class="flex shrink-0 items-center gap-3 border-r border-gray-100 px-6 sm:gap-4 sm:px-8">
-                                <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 text-sm font-bold text-white ring-1 ring-gray-200/80 shadow-sm sm:h-14 sm:w-14">
+                            <{{ ! empty($company['url']) ? 'a' : 'div' }}
+                                @if (! empty($company['url'])) href="{{ $company['url'] }}" data-company-marquee-link @endif
+                                class="group mx-2 flex shrink-0 items-center gap-3 rounded-xl border border-gray-100 bg-white px-5 py-3 shadow-sm transition duration-300 sm:mx-2.5 sm:gap-4 sm:px-6 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 [@media(hover:hover)_and_(pointer:fine)]:hover:border-indigo-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-indigo-50/50 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md"
+                            >
+                                <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-600 text-sm font-bold text-white shadow-md shadow-indigo-600/20 ring-2 ring-white sm:h-14 sm:w-14">
                                     @if ($company['logo_url'])
                                         <img src="{{ $company['logo_url'] }}" alt="" class="h-full w-full object-cover" loading="lazy" decoding="async">
                                     @else
@@ -77,7 +104,7 @@
                                     @endif
                                 </div>
                                 <div class="flex min-w-[10rem] max-w-xs flex-col justify-center sm:min-w-[14rem] sm:max-w-sm">
-                                    <span class="line-clamp-1 text-sm font-semibold text-gray-900 sm:text-base">
+                                    <span class="line-clamp-1 text-sm font-bold text-gray-900 transition-colors duration-300 sm:text-base [@media(hover:hover)_and_(pointer:fine)]:group-hover:text-indigo-700">
                                         {{ $company['name'] }}
                                     </span>
                                     @if ($company['sector'] || $company['country'])
@@ -86,7 +113,7 @@
                                         </span>
                                     @endif
                                 </div>
-                            </div>
+                            </{{ ! empty($company['url']) ? 'a' : 'div' }}>
                         @endforeach
                     </div>
                     <div
@@ -97,6 +124,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </section>
 @endif

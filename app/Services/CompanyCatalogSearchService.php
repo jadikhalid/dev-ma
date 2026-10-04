@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CompanyProfile;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -95,18 +96,48 @@ class CompanyCatalogSearchService
     }
 
     /**
-     * Échantillon d'entreprises approuvées pour le bandeau de la page d'accueil.
-     *
-     * @return Collection<int, array{name: string, initials: string, logo_url: ?string, sector: ?string, country: ?string}>
+     * Entreprises visibles publiquement : approuvées, avec une fiche et un nom.
      */
-    public function featuredForHome(int $limit = 10): Collection
+    public function publicCompaniesQuery(): Builder
     {
-        $companies = User::query()
+        return User::query()
             ->where('role', 'company')
             ->where('approval_status', User::APPROVAL_APPROVED)
             ->with(['companyProfile.professionSector'])
             ->whereHas('companyProfile')
-            ->where(fn ($q) => $q->whereNotNull('name')->where('name', '!=', ''))
+            ->where(fn ($q) => $q->whereNotNull('name')->where('name', '!=', ''));
+    }
+
+    public function isPubliclyVisible(User $company): bool
+    {
+        return $this->publicCompaniesQuery()->whereKey($company->getKey())->exists();
+    }
+
+    /**
+     * @return array{id: int, url: string, name: string, initials: string, logo_url: ?string, sector: ?string, country: ?string, city: ?string, employee_count: ?string, excerpt: ?string, open_jobs: int}
+     */
+    public function presentForDirectory(User $company): array
+    {
+        $profile = $company->companyProfile;
+        $about = trim(strip_tags((string) ($profile?->description ?: $profile?->hiring_needs ?: '')));
+
+        return [
+            ...$this->presentForMarquee($company),
+            'city' => $profile?->city,
+            'employee_count' => $profile?->employee_count,
+            'excerpt' => $about !== '' ? Str::limit($about, 150) : null,
+            'open_jobs' => (int) ($profile?->open_jobs_count ?? 0),
+        ];
+    }
+
+    /**
+     * Échantillon d'entreprises approuvées pour le bandeau de la page d'accueil.
+     *
+     * @return Collection<int, array{id?: int, url?: string, name: string, initials: string, logo_url: ?string, sector: ?string, country: ?string}>
+     */
+    public function featuredForHome(int $limit = 10): Collection
+    {
+        $companies = $this->publicCompaniesQuery()
             ->inRandomOrder()
             ->limit($limit)
             ->get()
@@ -157,13 +188,15 @@ class CompanyCatalogSearchService
     }
 
     /**
-     * @return array{name: string, initials: string, logo_url: ?string, sector: ?string, country: ?string}
+     * @return array{id: int, url: string, name: string, initials: string, logo_url: ?string, sector: ?string, country: ?string}
      */
     private function presentForMarquee(User $company): array
     {
         $profile = $company->companyProfile;
 
         return [
+            'id' => $company->id,
+            'url' => route('companies.public.show', $company),
             'name' => $company->name,
             'initials' => $profile?->initials() ?: '—',
             'logo_url' => $profile?->logoUrl(),
