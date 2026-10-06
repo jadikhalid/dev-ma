@@ -1161,6 +1161,8 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
         'register_banner_perk_jobs' => 'Annonces d’emploi',
         'register_banner_perk_apps' => 'Mes applications',
         'register_banner_note' => 'Gratuit · 2 minutes · Sans engagement',
+        'talent_from_city' => 'de :city',
+        'talent_from_city_elided' => 'd’:city',
         'block_jobs_heading' => 'Annonces à la une',
         'block_blog_heading' => 'Sur le blog',
         'block_social_heading' => 'Sur nos réseaux',

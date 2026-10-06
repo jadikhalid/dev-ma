@@ -1161,6 +1161,8 @@ An administrator or moderator is reviewing your application before your company 
         'register_banner_perk_jobs' => 'Job postings',
         'register_banner_perk_apps' => 'My apps',
         'register_banner_note' => 'Free · 2 minutes · No commitment',
+        'talent_from_city' => 'from :city',
+        'talent_from_city_elided' => 'from :city',
         'block_jobs_heading' => 'Featured jobs',
         'block_blog_heading' => 'From the blog',
         'block_social_heading' => 'On our networks',

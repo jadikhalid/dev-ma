@@ -269,6 +269,8 @@ class NewsletterController extends Controller
         $talents = User::query()
             ->where('role', 'dev')
             ->where('approval_status', User::APPROVAL_APPROVED)
+            ->whereNotNull('avatar_path')
+            ->where('avatar_path', '!=', '')
             ->when($q !== '', function ($query) use ($q): void {
                 $query->where(function ($inner) use ($q): void {
                     $inner->where('name', 'like', '%'.$q.'%')
@@ -400,6 +402,8 @@ class NewsletterController extends Controller
             'talents' => User::query()
                 ->where('role', 'dev')
                 ->where('approval_status', User::APPROVAL_APPROVED)
+                ->whereNotNull('avatar_path')
+                ->where('avatar_path', '!=', '')
                 ->latest('approved_at')
                 ->limit(30)
                 ->get()

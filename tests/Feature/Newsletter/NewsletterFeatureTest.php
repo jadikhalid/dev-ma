@@ -268,10 +268,17 @@ class NewsletterFeatureTest extends TestCase
     }
 
     #[Test]
-    public function talent_spotlight_cards_include_name_and_photo(): void
+    public function talent_spotlight_cards_show_short_name_profession_city_and_blurred_photo(): void
     {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $photo = imagecreatetruecolor(300, 200);
+        imagefill($photo, 0, 0, imagecolorallocate($photo, 200, 30, 30));
+        ob_start();
+        imagepng($photo);
+        \Illuminate\Support\Facades\Storage::disk('public')->put('avatars/amina.png', (string) ob_get_clean());
+
         $talent = User::factory()->talent()->create([
-            'first_name' => 'Amina',
+            'first_name' => 'amina',
             'last_name' => 'El Fassi',
             'avatar_path' => 'avatars/amina.png',
         ]);
@@ -288,11 +295,61 @@ class NewsletterFeatureTest extends TestCase
         ]));
 
         $this->assertStringContainsString('Talents à découvrir', $html);
-        $this->assertStringContainsString('background:#eef2ff', $html);
-        $this->assertStringContainsString('Amina El Fassi', $html);
-        $this->assertStringContainsString('Casablanca', $html);
-        $this->assertStringContainsString('avatars/amina.png', $html);
+        $this->assertStringContainsString('Amina E.', $html);
+        $this->assertStringNotContainsString('El Fassi', $html);
+        $this->assertStringContainsString('de Casablanca', $html);
+        $this->assertStringNotContainsString('avatars/amina.png', $html);
+        $this->assertStringContainsString('/storage/newsletter/blurred-avatars/', $html);
         $this->assertStringContainsString('border-radius:50%', $html);
+
+        $blurred = \Illuminate\Support\Facades\Storage::disk('public')->files('newsletter/blurred-avatars');
+        $this->assertCount(1, $blurred);
+        $this->assertSame([112, 112], array_slice(getimagesizefromstring(\Illuminate\Support\Facades\Storage::disk('public')->get($blurred[0])), 0, 2));
+    }
+
+    #[Test]
+    public function talent_spotlight_picker_only_offers_talents_with_a_photo(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        User::factory()->talent()->create(['first_name' => 'Zineb', 'last_name' => 'Photo', 'avatar_path' => 'avatars/zineb.png']);
+        User::factory()->talent()->create(['first_name' => 'Omar', 'last_name' => 'Sansphoto', 'avatar_path' => null]);
+        User::factory()->talent()->create(['first_name' => 'Nadia', 'last_name' => 'Vide', 'avatar_path' => '']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.newsletter.create'))
+            ->assertOk()
+            ->assertSee('Photo')
+            ->assertDontSee('Sansphoto')
+            ->assertDontSee('Vide');
+
+        $labels = collect($this->actingAs($admin)
+            ->getJson(route('admin.newsletter.search.talents'))
+            ->assertOk()
+            ->json('items'))->pluck('label')->implode(' ');
+
+        $this->assertStringContainsString('Photo', $labels);
+        $this->assertStringNotContainsString('Sansphoto', $labels);
+        $this->assertStringNotContainsString('Vide', $labels);
+    }
+
+    #[Test]
+    public function talent_spotlight_elides_city_preposition_and_falls_back_to_initials(): void
+    {
+        $talent = User::factory()->talent()->create([
+            'first_name' => 'Youssef',
+            'last_name' => 'Bennani',
+            'avatar_path' => null,
+        ]);
+        $talent->profile()->create(['experience_years' => 0, 'city' => 'Agadir']);
+
+        $render = fn (string $locale) => app(\App\Services\NewsletterRenderer::class)->renderHtml(new Newsletter([
+            'locale' => $locale,
+            'body_blocks' => [['type' => Newsletter::BLOCK_TALENTS, 'user_ids' => [$talent->id]]],
+        ]));
+
+        $this->assertStringContainsString('d’Agadir', $render('fr'));
+        $this->assertStringContainsString('from Agadir', $render('en'));
+        $this->assertStringContainsString('>YB<', $render('fr'));
     }
 
     #[Test]

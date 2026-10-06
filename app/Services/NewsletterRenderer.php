@@ -19,6 +19,10 @@ class NewsletterRenderer
 {
     private const REGISTER_BANNER_LOGO = '/images/newsletter/logo-talents-du-maroc.png';
 
+    public function __construct(
+        private NewsletterBlurredAvatar $blurredAvatar,
+    ) {}
+
     /**
      * @param  list<array<string, mixed>>|null  $blocks
      */
@@ -106,7 +110,7 @@ class NewsletterRenderer
             Newsletter::BLOCK_JOBS => $this->renderJobs($block),
             Newsletter::BLOCK_BLOG => $this->renderBlog($block, $locale),
             Newsletter::BLOCK_SOCIAL => $this->renderSocial($block),
-            Newsletter::BLOCK_TALENTS => $this->renderTalents($block),
+            Newsletter::BLOCK_TALENTS => $this->renderTalents($block, $locale),
             Newsletter::BLOCK_COMPANIES => $this->renderCompanies($block),
             Newsletter::BLOCK_STATS => $this->renderStats($block),
             Newsletter::BLOCK_TEXT => $this->renderText($block),
@@ -300,7 +304,7 @@ class NewsletterRenderer
     /**
      * @param  array<string, mixed>  $block
      */
-    private function renderTalents(array $block): string
+    private function renderTalents(array $block, string $locale): string
     {
         $ids = $this->idList($block['user_ids'] ?? []);
         if ($ids === []) {
@@ -329,7 +333,7 @@ class NewsletterRenderer
                 $html .= '</tr><tr>';
             }
 
-            $html .= '<td width="50%" valign="top" style="padding:0 6px 12px;">'.$this->talentCard($talent).'</td>';
+            $html .= '<td width="50%" valign="top" style="padding:0 6px 12px;">'.$this->talentCard($talent, $locale).'</td>';
             $index++;
         }
 
@@ -643,13 +647,15 @@ class NewsletterRenderer
             .'</td></tr></table>';
     }
 
-    private function talentCard(User $talent): string
+    private function talentCard(User $talent, string $locale): string
     {
-        $name = $talent->formalDisplayName();
-        $sector = $talent->profile?->professionSector?->localizedName() ?? '';
-        $profession = $talent->profile?->profession?->localizedName() ?? '';
+        $locale = $locale === Newsletter::LOCALE_EN ? 'en' : 'fr';
+        $name = $talent->publicDisplayName();
+        $name = mb_strtoupper(mb_substr($name, 0, 1)).mb_substr($name, 1);
+        $profession = $talent->profile?->profession?->localizedName($locale)
+            ?: ($talent->profile?->professionSector?->localizedName($locale) ?? '');
         $city = trim((string) ($talent->profile?->city ?? ''));
-        $photo = $this->absolutePublicUrl($talent->avatarUrl());
+        $photo = $this->absolutePublicUrl($this->blurredAvatar->urlFor($talent));
         $initials = e($talent->initials());
 
         $photoHtml = $photo
@@ -661,14 +667,11 @@ class NewsletterRenderer
             .'<div style="margin:0 auto 8px;width:56px;">'.$photoHtml.'</div>'
             .'<p style="margin:0 0 4px;font-size:13px;line-height:1.3;font-weight:800;color:#111827;">'.e($name).'</p>';
 
-        if ($sector !== '') {
-            $html .= '<p style="margin:0 0 2px;font-size:11px;line-height:1.35;color:#4f46e5;font-weight:700;">'.e($sector).'</p>';
-        }
         if ($profession !== '') {
-            $html .= '<p style="margin:0 0 2px;font-size:12px;line-height:1.35;color:#6b7280;">'.e($profession).'</p>';
+            $html .= '<p style="margin:0 0 2px;font-size:12px;line-height:1.35;color:#4f46e5;font-weight:700;">'.e($profession).'</p>';
         }
         if ($city !== '') {
-            $html .= '<p style="margin:0;font-size:11px;line-height:1.35;color:#6b7280;">'.e($city).'</p>';
+            $html .= '<p style="margin:0;font-size:12px;line-height:1.35;color:#6b7280;">'.e($this->fromCity($city, $locale)).'</p>';
         }
 
         $html .= '</td></tr></table>';
@@ -729,6 +732,20 @@ class NewsletterRenderer
             .'<a href="'.e($url).'" style="text-decoration:none;color:inherit;">'.$right.'</a>'
             .'</td>'
             .'</tr></table>';
+    }
+
+    private function fromCity(string $city, string $locale): string
+    {
+        if ($locale === 'en') {
+            return __('talenma.newsletter.talent_from_city', ['city' => $city], 'en');
+        }
+
+        $first = mb_strtolower(Str::ascii(mb_substr($city, 0, 1)));
+        $key = in_array($first, ['a', 'e', 'i', 'o', 'u', 'y', 'h'], true)
+            ? 'talent_from_city_elided'
+            : 'talent_from_city';
+
+        return __('talenma.newsletter.'.$key, ['city' => $city], 'fr');
     }
 
     private function absolutePublicUrl(?string $path): ?string
