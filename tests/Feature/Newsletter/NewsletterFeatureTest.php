@@ -447,7 +447,7 @@ class NewsletterFeatureTest extends TestCase
         $this->assertStringContainsString('max-height:28px', $html);
         $this->assertStringContainsString('width="33%"', $html);
         $this->assertStringNotContainsString('width="50%"', $html);
-        $this->assertStringContainsString(route('library.gate'), $html);
+        $this->assertStringNotContainsString(route('library.gate'), $html);
         $this->assertStringNotContainsString('Brouillon secret', $html);
     }
 

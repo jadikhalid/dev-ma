@@ -687,14 +687,12 @@ class NewsletterRenderer
         }
         $discipline = $book->category?->rootAncestor()->localizedName($locale) ?? '';
         $cover = $this->absolutePublicUrl($book->coverUrl());
-        $url = route('library.gate');
 
         $coverHtml = $cover
             ? '<img src="'.e($cover).'" alt="" width="96" height="88" style="display:block;width:96px;height:88px;max-width:96px;object-fit:cover;margin:8px auto 0;border:0;">'
             : '<div style="width:96px;height:88px;margin:8px auto 0;background:#fef3c7;"></div>';
 
-        $html = '<a href="'.e($url).'" style="text-decoration:none;color:inherit;">'
-            .'<table role="presentation" width="100%" height="176" cellspacing="0" cellpadding="0" style="height:176px;width:100%;border:1px solid #e5e7eb;background:#ffffff;">'
+        $html = '<table role="presentation" width="100%" height="176" cellspacing="0" cellpadding="0" style="height:176px;width:100%;border:1px solid #e5e7eb;background:#ffffff;">'
             .'<tr><td valign="top" height="176" style="padding:0 4px 8px;height:176px;text-align:center;">'
             .$coverHtml
             .'<p style="margin:8px 2px 3px;height:28px;max-height:28px;line-height:14px;font-size:11px;font-weight:800;color:#111827;overflow:hidden;">'.e($title).'</p>';
@@ -703,7 +701,7 @@ class NewsletterRenderer
             $html .= '<p style="margin:0 2px 2px;height:14px;max-height:14px;line-height:14px;font-size:10px;color:#4f46e5;font-weight:700;overflow:hidden;white-space:nowrap;">'.e($discipline).'</p>';
         }
 
-        $html .= '</td></tr></table></a>';
+        $html .= '</td></tr></table>';
 
         return $html;
     }
