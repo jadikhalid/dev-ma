@@ -251,8 +251,12 @@ class NewsletterFeatureTest extends TestCase
         $this->assertStringContainsString('Rejoignez la communauté', $html);
         $this->assertStringNotContainsString('Espace talents', $html);
         $this->assertStringNotContainsString('vitrine talent', $html);
-        $this->assertStringContainsString('linear-gradient(135deg,#1e1b4b', $html);
-        $this->assertStringContainsString('background:#fbbf24', $html);
+        $this->assertStringContainsString(url('/images/newsletter/logo-talents-du-maroc.png'), $html);
+        $this->assertStringContainsString('alt="Talents du Maroc"', $html);
+        $this->assertStringContainsString('background:#ffffff', $html);
+        $this->assertStringContainsString('bgcolor="#5b2a91"', $html);
+        $this->assertStringNotContainsString('linear-gradient(135deg,#1e1b4b', $html);
+        $this->assertFileExists(public_path('images/newsletter/logo-talents-du-maroc.png'));
         $this->assertStringContainsString('Visible à l’international', $html);
         $this->assertStringContainsString('Gratuit · 2 minutes · Sans engagement', $html);
 
