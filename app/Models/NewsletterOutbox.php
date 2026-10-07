@@ -22,13 +22,17 @@ class NewsletterOutbox extends Model
         'newsletter_subscriber_id',
         'email',
         'status',
+        'attempts',
         'error',
+        'retry_at',
         'sent_at',
     ];
 
     protected function casts(): array
     {
         return [
+            'attempts' => 'integer',
+            'retry_at' => 'datetime',
             'sent_at' => 'datetime',
         ];
     }

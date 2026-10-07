@@ -9,6 +9,7 @@ use App\Models\NewsletterOutbox;
 use App\Models\NewsletterSubscriber;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,16 @@ use Throwable;
 
 class NewsletterDeliveryService
 {
+    public const MAX_ATTEMPTS = 5;
+
+    /** Delay before each new attempt after a temporary SMTP refusal (4xx). */
+    private const RETRY_DELAYS_MINUTES = [30, 60, 120, 240];
+
+    /** Pause the whole outbox after a temporary refusal so the SMTP quota can recover. */
+    public const SMTP_COOLDOWN_CACHE_KEY = 'newsletter:smtp_cooldown';
+
+    private const SMTP_COOLDOWN_MINUTES = 30;
+
     public function __construct(
         private NewsletterSubscriberService $subscribers,
     ) {}
@@ -193,9 +204,14 @@ class NewsletterDeliveryService
      */
     public function processNextPending(): bool
     {
+        if (Cache::has(self::SMTP_COOLDOWN_CACHE_KEY)) {
+            return false;
+        }
+
         $itemId = DB::transaction(function () {
             $row = NewsletterOutbox::query()
                 ->where('status', NewsletterOutbox::STATUS_PENDING)
+                ->where(fn ($query) => $query->whereNull('retry_at')->orWhere('retry_at', '<=', now()))
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->first();
@@ -251,13 +267,26 @@ class NewsletterDeliveryService
 
             $item->update([
                 'status' => NewsletterOutbox::STATUS_SENT,
+                'attempts' => $item->attempts + 1,
                 'error' => null,
+                'retry_at' => null,
                 'sent_at' => now(),
             ]);
         } catch (Throwable $e) {
+            $attempts = $item->attempts + 1;
+            $retry = $this->isTemporarySmtpRefusal($e) && $attempts < self::MAX_ATTEMPTS;
+
+            if ($retry) {
+                Cache::put(self::SMTP_COOLDOWN_CACHE_KEY, true, now()->addMinutes(self::SMTP_COOLDOWN_MINUTES));
+            }
+
+            $delay = self::RETRY_DELAYS_MINUTES[min($attempts, count(self::RETRY_DELAYS_MINUTES)) - 1];
+
             $item->update([
-                'status' => NewsletterOutbox::STATUS_FAILED,
+                'status' => $retry ? NewsletterOutbox::STATUS_PENDING : NewsletterOutbox::STATUS_FAILED,
+                'attempts' => $attempts,
                 'error' => mb_substr($e->getMessage(), 0, 500),
+                'retry_at' => $retry ? now()->addMinutes($delay) : null,
                 'sent_at' => null,
             ]);
         }
@@ -384,6 +413,17 @@ class NewsletterDeliveryService
             'failed' => $failed,
             'pending' => $pending,
         ];
+    }
+
+    private function isTemporarySmtpRefusal(Throwable $e): bool
+    {
+        $code = (int) $e->getCode();
+
+        if ($code >= 400 && $code < 500) {
+            return true;
+        }
+
+        return (bool) preg_match('/got code "4\d\d"|\b4\d\d 4\.\d+\.\d+\b/', $e->getMessage());
     }
 
     private function normalizeAudience(?string $audience): string

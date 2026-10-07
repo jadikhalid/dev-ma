@@ -654,6 +654,84 @@ class NewsletterFeatureTest extends TestCase
         $this->assertSame(2, $newsletter->fresh()->recipient_count);
     }
 
+    private function queuedSingleRecipientNewsletter(): Newsletter
+    {
+        app(NewsletterSubscriberService::class)->subscribe('quota@example.com');
+
+        $newsletter = Newsletter::query()->create([
+            'title' => 'Campagne',
+            'subject' => 'Sujet',
+            'locale' => 'fr',
+            'status' => Newsletter::STATUS_DRAFT,
+            'body_blocks' => [['type' => 'header', 'title' => 'Hello', 'subtitle' => '']],
+        ]);
+
+        app(\App\Services\NewsletterDeliveryService::class)->queueDelivery($newsletter);
+
+        return $newsletter;
+    }
+
+    private function failMailWith(string $message, int $code): void
+    {
+        Mail::shouldReceive('to')->andReturnSelf();
+        Mail::shouldReceive('send')->andThrow(new \Symfony\Component\Mailer\Exception\TransportException($message, $code));
+    }
+
+    #[Test]
+    public function temporary_smtp_refusal_is_retried_later_instead_of_failing(): void
+    {
+        $newsletter = $this->queuedSingleRecipientNewsletter();
+        $this->failMailWith('Expected response code "250" but got code "451", with message "451 4.7.1 Ratelimit "hostinger_out_ratelimit" exceeded".', 451);
+        $delivery = app(\App\Services\NewsletterDeliveryService::class);
+
+        $this->assertTrue($delivery->processNextPending());
+
+        $row = \App\Models\NewsletterOutbox::query()->where('newsletter_id', $newsletter->id)->sole();
+        $this->assertSame(\App\Models\NewsletterOutbox::STATUS_PENDING, $row->status);
+        $this->assertSame(1, $row->attempts);
+        $this->assertTrue($row->retry_at->isFuture());
+        $this->assertSame(Newsletter::STATUS_SENDING, $newsletter->fresh()->status);
+
+        // The outbox pauses during the SMTP cooldown, then waits for retry_at.
+        $this->assertFalse($delivery->processNextPending());
+        \Illuminate\Support\Facades\Cache::forget(\App\Services\NewsletterDeliveryService::SMTP_COOLDOWN_CACHE_KEY);
+        $this->assertFalse($delivery->processNextPending());
+
+        $this->travelTo($row->retry_at->addMinute());
+        $this->assertTrue($delivery->processNextPending());
+        $this->assertSame(2, $row->fresh()->attempts);
+    }
+
+    #[Test]
+    public function temporary_smtp_refusal_fails_after_max_attempts(): void
+    {
+        $newsletter = $this->queuedSingleRecipientNewsletter();
+        \App\Models\NewsletterOutbox::query()->where('newsletter_id', $newsletter->id)
+            ->update(['attempts' => \App\Services\NewsletterDeliveryService::MAX_ATTEMPTS - 1]);
+        $this->failMailWith('Expected response code "250" but got code "451", with message "451 4.7.1 Ratelimit".', 451);
+
+        app(\App\Services\NewsletterDeliveryService::class)->processNextPending();
+
+        $row = \App\Models\NewsletterOutbox::query()->where('newsletter_id', $newsletter->id)->sole();
+        $this->assertSame(\App\Models\NewsletterOutbox::STATUS_FAILED, $row->status);
+        $this->assertNull($row->retry_at);
+        $this->assertSame(Newsletter::STATUS_SENT, $newsletter->fresh()->status);
+    }
+
+    #[Test]
+    public function permanent_smtp_refusal_fails_immediately(): void
+    {
+        $newsletter = $this->queuedSingleRecipientNewsletter();
+        $this->failMailWith('Expected response code "250" but got code "550", with message "550 5.1.1 User unknown".', 550);
+
+        app(\App\Services\NewsletterDeliveryService::class)->processNextPending();
+
+        $row = \App\Models\NewsletterOutbox::query()->where('newsletter_id', $newsletter->id)->sole();
+        $this->assertSame(\App\Models\NewsletterOutbox::STATUS_FAILED, $row->status);
+        $this->assertSame(1, $row->attempts);
+        $this->assertFalse(\Illuminate\Support\Facades\Cache::has(\App\Services\NewsletterDeliveryService::SMTP_COOLDOWN_CACHE_KEY));
+    }
+
     #[Test]
     public function subscribers_index_can_filter_registered_and_guests(): void
     {
