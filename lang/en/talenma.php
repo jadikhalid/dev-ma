@@ -1471,7 +1471,7 @@ An administrator or moderator is reviewing your application before your company 
             'video_empty_desc' => 'Introduce yourself in 60–90 seconds to strengthen your profile.',
             'video_thumbnail_label' => 'Video introduction',
             'stats' => [
-                'title' => 'Activity',
+                'title' => 'My Activities',
                 'views' => 'Profile views',
                 'views_7d' => 'Last 7 days',
                 'views_total' => ':count total',

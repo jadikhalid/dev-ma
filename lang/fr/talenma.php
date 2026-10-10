@@ -1471,7 +1471,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
             'video_empty_desc' => 'Présentez-vous en 60 à 90 secondes pour renforcer votre profil.',
             'video_thumbnail_label' => 'Présentation vidéo',
             'stats' => [
-                'title' => 'Activité',
+                'title' => 'Mes Activités',
                 'views' => 'Vues du profil',
                 'views_7d' => '7 derniers jours',
                 'views_total' => ':count au total',
