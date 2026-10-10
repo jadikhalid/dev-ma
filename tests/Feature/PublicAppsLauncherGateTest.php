@@ -60,6 +60,25 @@ class PublicAppsLauncherGateTest extends TestCase
     }
 
     #[Test]
+    public function talent_dashboard_shows_mes_applications_tiles_under_welcome(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-dashboard-apps', false)
+            ->assertSee(__('talenma.dashboard.talent.apps_section_title'), false)
+            ->assertSee('href="'.route('talent.cv-builder.index').'"', false)
+            ->assertSee('href="'.route('talent.ats-score.index').'"', false)
+            ->assertSee('href="'.route('talent.library.index').'"', false)
+            ->assertSee('data-dashboard-app="cv-builder"', false)
+            ->assertSee('data-dashboard-app="ats-score"', false)
+            ->assertSee('data-dashboard-app="library"', false)
+            ->assertSee(__('talenma.dashboard.talent.profile_section_title'), false);
+    }
+
+    #[Test]
     public function public_home_shows_account_chevron_after_talent_name(): void
     {
         $talent = User::factory()->talent()->create();
