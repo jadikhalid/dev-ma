@@ -145,6 +145,38 @@ class CompanyMultiUserAndJobsTest extends TestCase
         $this->assertSame('Finance', $member->companyMembership?->job_title);
     }
 
+    public function test_company_can_create_job_without_profession_and_matching_uses_sector(): void
+    {
+        [$owner] = $this->makeCompanyOwner();
+        [$sector, $profession] = $this->makeProfessionCatalog();
+
+        $this->actingAs($owner)
+            ->post(route('company.jobs.store'), [
+                'title' => 'Chef de projet',
+                'description' => str_repeat('Description du poste pour annonce entreprise. ', 3),
+                'sector' => $sector->slug,
+                'profession' => '',
+                'experience_level' => JobPosting::EXPERIENCE_JUNIOR,
+                'work_modes' => ['remote'],
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $job = JobPosting::query()->sole();
+        $this->assertSame($sector->id, $job->profession_sector_id);
+        $this->assertNull($job->profession_id);
+
+        $talent = User::factory()->talent()->create();
+        $talent->profile()->create([
+            'profession_sector_id' => $sector->id,
+            'profession_id' => $profession->id,
+            'experience_years' => 4,
+            'work_modes' => ['remote'],
+        ]);
+
+        $this->assertTrue($job->matchesTalentProfile($talent->fresh()));
+    }
+
     public function test_owner_and_member_can_manage_jobs(): void
     {
         [$owner, $profile] = $this->makeCompanyOwner();

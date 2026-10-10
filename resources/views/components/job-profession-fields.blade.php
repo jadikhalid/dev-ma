@@ -46,7 +46,7 @@
     </div>
 
     <div class="relative">
-        <x-input-label for="job-profession" :value="__('talenma.jobs.field_profession')" />
+        <x-input-label for="job-profession" :value="__('talenma.jobs.field_profession_optional')" />
         <select
             id="job-profession"
             name="profession"
@@ -54,8 +54,6 @@
             @change="onProfessionChange()"
             class="{{ $selectClass }}"
             :disabled="!filteredProfessions.length"
-            data-required
-            data-required-message="{{ __('talenma.jobs.profession_required') }}"
         >
             <option value="">{{ __('talenma.talent.profession_placeholder') }}</option>
             <template x-for="professionOption in filteredProfessions" :key="professionOption.slug">

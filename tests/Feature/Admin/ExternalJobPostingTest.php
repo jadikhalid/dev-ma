@@ -33,7 +33,9 @@ class ExternalJobPostingTest extends TestCase
         $this->assertSame($sector->id, $job->profession_sector_id);
         $this->assertNull($job->profession_id);
         $this->assertNull($job->experience_level);
-        $this->assertNull($job->work_modes);
+        $this->assertSame('fr', $job->location_country);
+        $this->assertSame(['remote'], $job->work_modes);
+        $this->assertTrue($job->remote_ok);
         $this->assertSame('Acme Partners', $job->external_company_name);
         $this->assertSame(JobPosting::STATUS_DRAFT, $job->status);
 
@@ -42,6 +44,18 @@ class ExternalJobPostingTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(JobPosting::STATUS_PUBLISHED, $job->fresh()->status);
+    }
+
+    #[Test]
+    public function external_job_form_shows_country_and_work_modes(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.jobs.create'))
+            ->assertOk()
+            ->assertSee('name="location_country"', false)
+            ->assertSee('name="work_modes[]"', false);
     }
 
     #[Test]
@@ -168,6 +182,8 @@ class ExternalJobPostingTest extends TestCase
             'sector' => $sectorSlug,
             'external_company_name' => 'Acme Partners',
             'external_apply_url' => 'https://acme.example/jobs/apply',
+            'location_country' => 'fr',
+            'work_modes' => ['remote'],
         ];
     }
 }

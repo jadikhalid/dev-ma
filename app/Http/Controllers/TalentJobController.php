@@ -249,8 +249,6 @@ class TalentJobController extends Controller
             'title' => $job->title,
             'url' => route('talent.jobs.show', $job),
             'company' => $job->advertiserName(),
-            'external' => $job->isExternalApplication(),
-            'external_badge' => __('talenma.jobs.external_badge'),
             'summary' => implode(' · ', $summaryParts),
             'location' => $job->locationLabel() !== '' ? $job->locationLabel() : '—',
             'applied' => $application !== null,

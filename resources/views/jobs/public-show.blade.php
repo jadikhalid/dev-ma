@@ -36,9 +36,6 @@
                     @endif
                     <span class="font-medium text-gray-800">{{ $job->advertiserName() }}</span>
                 </span>
-                @if ($job->isExternalApplication())
-                    <span class="inline-flex ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-800 align-middle">{{ __('talenma.jobs.external_badge') }}</span>
-                @endif
                 @if ($job->professionSummary() !== '')
                     · {{ $job->professionSummary() }}
                 @endif

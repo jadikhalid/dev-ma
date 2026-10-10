@@ -11,26 +11,21 @@
     <x-slot name="header">
         <div>
             <h2 class="text-xl font-bold text-gray-900">{{ $job->title }}</h2>
-            <p class="mt-1 text-sm text-gray-500">
-                <span class="inline-flex items-center gap-2">
-                    @if ($job->advertiserLogoUrl())
-                        <img src="{{ $job->advertiserLogoUrl() }}" alt="" class="h-6 w-6 rounded object-cover ring-1 ring-slate-200">
-                    @endif
-                    <span>{{ $job->advertiserName() }}</span>
-                </span>
-                @if ($job->isExternalApplication())
-                    <span class="inline-flex ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-800 align-middle">{{ __('talenma.jobs.external_badge') }}</span>
+            <div class="mt-1 flex items-center gap-2 text-sm text-gray-500">
+                @if ($job->advertiserLogoUrl())
+                    <img src="{{ $job->advertiserLogoUrl() }}" alt="" class="h-6 w-6 shrink-0 rounded object-cover ring-1 ring-slate-200">
                 @endif
-                @if ($job->professionSummary() !== '')
-                    · {{ $job->professionSummary() }}
-                @endif
-                @if ($job->locationLabel() !== '')
-                    · {{ $job->locationLabel() }}
-                @endif
-                @if ($job->workModesSummary() !== '')
-                    · {{ $job->workModesSummary() }}
-                @endif
-            </p>
+                <p class="min-w-0 truncate">{{ $job->advertiserName() }}</p>
+            </div>
+            @php
+                $headerDetails = array_filter([
+                    (string) \App\Models\CompanyProfile::countryLabelFor($job->location_country),
+                    $job->workModesSummary(),
+                ], fn ($part) => $part !== '');
+            @endphp
+            @if ($headerDetails !== [])
+                <p class="mt-1 text-sm text-gray-500">{{ implode(' · ', $headerDetails) }}</p>
+            @endif
             <a
                 href="{{ route('talent.jobs.index') }}"
                 class="mt-2 inline-flex text-sm font-medium text-indigo-700 hover:text-indigo-900"
@@ -48,18 +43,6 @@
         @endif
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-4 lg:gap-5 lg:items-start">
             <article class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-3 min-w-0">
-                <p class="text-sm text-gray-500">
-                    {{ $job->contractTypeLabel() }}
-                    @if ($job->professionSummary() !== '')
-                        · {{ $job->professionSummary() }}
-                    @endif
-                    @if ($job->experienceLabel() !== '')
-                        · {{ $job->experienceLabel() }}
-                    @endif
-                    @if ($job->workModesSummary() !== '')
-                        · {{ $job->workModesSummary() }}
-                    @endif
-                </p>
                 <div class="prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">{{ $job->description }}</div>
             </article>
 

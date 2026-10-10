@@ -163,6 +163,39 @@ class ProfessionCatalogService
         ];
     }
 
+    /**
+     * Job postings: sector required, profession optional.
+     *
+     * @return array{profession_sector_id: int, profession_id: int|null}
+     */
+    public function resolveJobSelection(string $sectorSlug, ?string $professionSlug): array
+    {
+        if (filled($professionSlug)) {
+            $resolved = $this->resolveSelection($sectorSlug, $professionSlug, null);
+
+            return [
+                'profession_sector_id' => $resolved['profession_sector_id'],
+                'profession_id' => $resolved['profession_id'],
+            ];
+        }
+
+        $sectorId = ProfessionSector::query()
+            ->where('slug', $sectorSlug)
+            ->where('is_active', true)
+            ->value('id');
+
+        if (! $sectorId) {
+            throw ValidationException::withMessages([
+                'sector' => __('talenma.talent.sector_invalid'),
+            ]);
+        }
+
+        return [
+            'profession_sector_id' => (int) $sectorId,
+            'profession_id' => null,
+        ];
+    }
+
     public function slugsFromProfile(?int $sectorId, ?int $professionId): array
     {
         $sectorSlug = $sectorId

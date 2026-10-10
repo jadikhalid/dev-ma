@@ -130,6 +130,38 @@
                     <x-input-error :messages="$errors->get('sector')" class="mt-2" />
                 </div>
 
+                <div>
+                    <x-input-label for="location_country" :value="__('talenma.talent.country')" />
+                    @php $selectedCountry = old('location_country', $job->location_country ?: \App\Models\CompanyProfile::DEFAULT_COUNTRY); @endphp
+                    <select id="location_country" name="location_country" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm text-sm">
+                        <option value="">{{ __('talenma.talent.country_placeholder') }}</option>
+                        @foreach ($countryOptions as $code => $label)
+                            <option value="{{ $code }}" @selected($selectedCountry === $code)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('location_country')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label :value="__('talenma.jobs.field_work_modes')" />
+                    <div class="mt-3 grid sm:grid-cols-3 gap-3">
+                        @php $selectedModes = old('work_modes', $job->work_modes ?? []); @endphp
+                        @foreach ($workModeOptions as $value => $label)
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-indigo-200 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    name="work_modes[]"
+                                    value="{{ $value }}"
+                                    class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    @checked(in_array($value, $selectedModes, true))
+                                >
+                                <span class="text-sm text-gray-700">{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <x-input-error :messages="$errors->get('work_modes')" class="mt-2" />
+                </div>
+
                 <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
                     <a href="{{ route('admin.jobs.index') }}" class="inline-flex justify-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.jobs.cancel') }}</a>
                     <x-primary-button type="submit">{{ __('talenma.jobs.save') }}</x-primary-button>

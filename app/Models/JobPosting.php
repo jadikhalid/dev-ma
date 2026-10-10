@@ -274,8 +274,8 @@ class JobPosting extends Model
             return false;
         }
 
-        if (! $this->profession_id
-            || (int) $profile->profession_id !== (int) $this->profession_id) {
+        if ($this->profession_id
+            && (int) $profile->profession_id !== (int) $this->profession_id) {
             return false;
         }
 

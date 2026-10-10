@@ -77,6 +77,8 @@ class JobPostingController extends Controller
             ]),
             'professionSectors' => $this->professions->sectorsForLocale(),
             'sectorSlug' => old('sector', ''),
+            'countryOptions' => CompanyProfile::countryOptions(),
+            'workModeOptions' => Profile::workModeOptions(),
         ]);
     }
 
@@ -91,10 +93,7 @@ class JobPostingController extends Controller
         $data['profession_id'] = null;
         $data['experience_level'] = null;
         $data['contract_type'] = null;
-        $data['location_country'] = null;
         $data['location_city'] = null;
-        $data['work_modes'] = null;
-        $data['remote_ok'] = false;
 
         if ($request->hasFile('external_company_logo')) {
             $data['external_company_logo_path'] = JobExternalLogoStorage::storeUpload(
@@ -124,6 +123,8 @@ class JobPostingController extends Controller
                 'job' => $job,
                 'professionSectors' => $this->professions->sectorsForLocale(),
                 'sectorSlug' => old('sector', $slugs['sector']),
+                'countryOptions' => CompanyProfile::countryOptions(),
+                'workModeOptions' => Profile::workModeOptions(),
             ]);
         }
 
@@ -310,7 +311,7 @@ class JobPostingController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'min:50', 'max:10000'],
             'sector' => ['required', 'string', 'max:100'],
-            'profession' => ['required', 'string', 'max:100'],
+            'profession' => ['nullable', 'string', 'max:100'],
             'experience_level' => ['required', 'string', Rule::in(JobPosting::EXPERIENCE_LEVELS)],
             'contract_type' => ['nullable', 'string', Rule::in(JobPosting::CONTRACT_TYPES)],
             'location_country' => ['nullable', 'string', Rule::in(CompanyProfile::COUNTRY_CODES)],
@@ -336,11 +337,7 @@ class JobPostingController extends Controller
             'work_modes.*' => ['string', Rule::in(array_keys(Profile::workModeOptions()))],
         ]);
 
-        $resolved = $this->professions->resolveSelection(
-            $data['sector'],
-            $data['profession'],
-            null,
-        );
+        $resolved = $this->professions->resolveJobSelection($data['sector'], $data['profession'] ?? null);
 
         unset($data['sector'], $data['profession']);
 
@@ -365,6 +362,9 @@ class JobPostingController extends Controller
             'external_apply_url' => ['required', 'url', 'max:2048'],
             'external_company_logo' => ['nullable', 'image', 'max:2048'],
             'remove_external_company_logo' => ['nullable', 'boolean'],
+            'location_country' => ['nullable', 'string', Rule::in(CompanyProfile::COUNTRY_CODES)],
+            'work_modes' => ['required', 'array', 'min:1'],
+            'work_modes.*' => ['string', Rule::in(array_keys(Profile::workModeOptions()))],
         ]);
 
         $sector = ProfessionSector::query()
@@ -382,6 +382,9 @@ class JobPostingController extends Controller
 
         $data['profession_sector_id'] = $sector->id;
         $data['profession_id'] = null;
+        $data['location_country'] = $data['location_country'] ?? null;
+        $data['work_modes'] = array_values(array_unique($data['work_modes']));
+        $data['remote_ok'] = in_array('remote', $data['work_modes'], true);
 
         return $data;
     }

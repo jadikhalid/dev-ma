@@ -361,7 +361,7 @@ class CompanyJobController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'min:50', 'max:10000'],
             'sector' => ['required', 'string', 'max:100'],
-            'profession' => ['required', 'string', 'max:100'],
+            'profession' => ['nullable', 'string', 'max:100'],
             'experience_level' => ['required', 'string', Rule::in(JobPosting::EXPERIENCE_LEVELS)],
             'contract_type' => ['nullable', 'string', Rule::in(JobPosting::CONTRACT_TYPES)],
             'location_country' => ['nullable', 'string', Rule::in(CompanyProfile::COUNTRY_CODES)],
@@ -387,11 +387,7 @@ class CompanyJobController extends Controller
             'work_modes.*' => ['string', Rule::in(array_keys(Profile::workModeOptions()))],
         ]);
 
-        $resolved = $this->professions->resolveSelection(
-            $data['sector'],
-            $data['profession'],
-            null,
-        );
+        $resolved = $this->professions->resolveJobSelection($data['sector'], $data['profession'] ?? null);
 
         unset($data['sector'], $data['profession']);
 
