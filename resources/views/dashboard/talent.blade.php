@@ -75,7 +75,7 @@
             <div class="rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4 py-3.5">
                 <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
                     <h2 class="text-sm font-bold uppercase tracking-[0.11em] text-indigo-900">{{ __('talenma.dashboard.talent.apps_section_title') }}</h2>
-                    <p class="text-xs text-indigo-800/70">{{ __('talenma.dashboard.talent.apps_section_subtitle') }}</p>
+                    <p class="hidden sm:block text-xs text-indigo-800/70" data-dashboard-apps-subtitle>{{ __('talenma.dashboard.talent.apps_section_subtitle') }}</p>
                 </div>
             </div>
 
@@ -242,7 +242,7 @@
                             <p class="text-sm text-slate-500 max-w-sm mx-auto">{{ __('talenma.dashboard.talent.stats.recent_empty') }}</p>
                         </div>
                     @else
-                        <ol class="activity-scroll relative mt-4 max-h-[calc(5*3.85rem+4*0.5rem)] space-y-2 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[0.95rem] before:top-2.5 before:bottom-2.5 before:w-px before:bg-indigo-100/90">
+                        <ol class="activity-scroll relative mt-4 max-h-[calc(5*3.85rem+4*0.5rem)] space-y-2 overflow-y-auto overscroll-auto sm:overscroll-contain pr-1 before:absolute before:left-[0.95rem] before:top-2.5 before:bottom-2.5 before:w-px before:bg-indigo-100/90">
                             @foreach ($stats['recent_activity'] as $item)
                                 @php
                                     $label = match ($item['type']) {
