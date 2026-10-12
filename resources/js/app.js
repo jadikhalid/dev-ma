@@ -3823,11 +3823,51 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
     sectors: Array.isArray(config.sectors) ? config.sectors : [],
     counts: config.initialCounts ?? { all: 0, applied: 0, closed: 0 },
     jobs: Array.isArray(config.initialJobs) ? config.initialJobs : [],
-    total: Array.isArray(config.initialJobs) ? config.initialJobs.length : 0,
+    total: config.initialPagination?.total ?? (Array.isArray(config.initialJobs) ? config.initialJobs.length : 0),
+    pagination: config.initialPagination ?? { page: 1, last_page: 1, from: 0, to: 0, total: 0 },
+    page: config.initialPagination?.page ?? 1,
     labels: config.labels ?? {},
     loading: false,
     error: null,
     requestToken: 0,
+
+    get paginationSummary() {
+        const template = this.labels.paginationSummary ?? ':from – :to / :total';
+
+        return template
+            .replace(':from', this.pagination.from)
+            .replace(':to', this.pagination.to)
+            .replace(':total', this.pagination.total);
+    },
+
+    get pageNumbers() {
+        const last = Number(this.pagination.last_page ?? 1);
+        const current = Number(this.pagination.page ?? 1);
+        const pages = [];
+
+        for (let n = 1; n <= last; n++) {
+            if (n === 1 || n === last || Math.abs(n - current) <= 1) {
+                pages.push(n);
+            } else if (pages[pages.length - 1] !== '…') {
+                pages.push('…');
+            }
+        }
+
+        return pages;
+    },
+
+    goToPage(page) {
+        const target = Number(page);
+
+        if (! Number.isInteger(target) || target < 1 || target > this.pagination.last_page || target === this.pagination.page) {
+            return;
+        }
+
+        this.page = target;
+        this.refresh().then(() => {
+            this.$refs.jobsList?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    },
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
@@ -3878,6 +3918,7 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             this.professionSlug = '';
         }
 
+        this.page = 1;
         this.refresh();
     },
 
@@ -3894,6 +3935,7 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             this.professionSlug = '';
         }
 
+        this.page = 1;
         this.refresh();
     },
 
@@ -3902,6 +3944,7 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             return;
         }
 
+        this.page = 1;
         this.refresh();
     },
 
@@ -3922,6 +3965,10 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             if (this.professionSlug) {
                 params.set('profession', this.professionSlug);
             }
+        }
+
+        if (this.page > 1) {
+            params.set('page', String(this.page));
         }
 
         const query = params.toString();
@@ -3945,6 +3992,10 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             if (this.professionSlug) {
                 params.set('profession', this.professionSlug);
             }
+        }
+
+        if (this.page > 1) {
+            params.set('page', String(this.page));
         }
 
         this.loading = true;
@@ -3972,6 +4023,8 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
 
             this.jobs = Array.isArray(payload.jobs) ? payload.jobs : [];
             this.total = Number(payload.total ?? this.jobs.length);
+            this.pagination = payload.pagination ?? this.pagination;
+            this.page = Number(this.pagination.page ?? 1);
             this.counts = payload.counts ?? this.counts;
             this.scope = payload.scope ?? this.scope;
 

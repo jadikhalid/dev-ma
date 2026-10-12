@@ -14,6 +14,6 @@
     </div>
 
     <div>
-        {{ $books->links() }}
+        {{ $books->links('talent.library._pagination') }}
     </div>
 </section>

@@ -82,12 +82,44 @@ class JobPosting extends Model
         self::EXPERIENCE_SENIOR,
     ];
 
+    public const CONTENT_FIELDS = [
+        'profession_sector_id',
+        'profession_id',
+        'experience_level',
+        'title',
+        'description',
+        'contract_type',
+        'location_city',
+        'location_country',
+        'work_modes',
+        'external_company_name',
+        'external_company_logo_path',
+        'external_apply_url',
+    ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (JobPosting $job): void {
+            if ($job->getOriginal('published_at') !== null && $job->isDirty(self::CONTENT_FIELDS)) {
+                $job->content_updated_at = now();
+            }
+        });
+    }
+
+    public function contentUpdatedAfterPublication(): bool
+    {
+        return $this->published_at !== null
+            && $this->content_updated_at !== null
+            && $this->content_updated_at->gt($this->published_at);
+    }
+
     protected function casts(): array
     {
         return [
             'remote_ok' => 'boolean',
             'work_modes' => 'array',
             'published_at' => 'datetime',
+            'content_updated_at' => 'datetime',
             'closed_at' => 'datetime',
             'company_seen_at' => 'datetime',
             'staff_seen_at' => 'datetime',

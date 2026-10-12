@@ -60,7 +60,7 @@ class TalentLibraryTest extends TestCase
                 'X-Requested-With' => 'XMLHttpRequest',
             ])
             ->assertOk()
-            ->assertSee(__('talenma.library.catalog_title'), false)
+            ->assertSee('data-library-results-label', false)
             ->assertSee('Book Alpha', false)
             ->assertDontSee('Book Beta', false)
             ->assertDontSee(__('talenma.library.page_title'), false);
@@ -85,13 +85,16 @@ class TalentLibraryTest extends TestCase
             ->assertOk()
             ->assertSee('Book 11', false)
             ->assertSee('Book 02', false)
-            ->assertDontSee('Book 01', false);
+            ->assertDontSee('Book 01', false)
+            ->assertSee('Ouvrages 1 à 10 sur 11', false)
+            ->assertDontSee('Showing', false);
 
         $this->actingAs($talent)
             ->get(route('talent.library.index', ['page' => 2]))
             ->assertOk()
             ->assertSee('Book 01', false)
-            ->assertDontSee('Book 11', false);
+            ->assertDontSee('Book 11', false)
+            ->assertSee('Ouvrages 11 à 11 sur 11', false);
     }
 
     #[Test]

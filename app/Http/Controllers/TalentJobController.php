@@ -15,6 +15,8 @@ use Illuminate\View\View;
 
 class TalentJobController extends Controller
 {
+    private const JOBS_PER_PAGE = 10;
+
     public function __construct(
         private JobPostingService $jobs,
         private ProfessionCatalogService $professions,
@@ -94,7 +96,11 @@ class TalentJobController extends Controller
                 fn ($query) => $query->latest('published_at'),
             );
 
-        $jobs = $jobsQuery->limit(100)->get();
+        $jobs = $jobsQuery->paginate(self::JOBS_PER_PAGE);
+
+        if ($jobs->isEmpty() && $jobs->currentPage() > 1) {
+            $jobs = $jobsQuery->paginate(self::JOBS_PER_PAGE, ['*'], 'page', $jobs->lastPage());
+        }
 
         $applications = JobApplication::query()
             ->where('talent_user_id', $user->id)
@@ -102,17 +108,26 @@ class TalentJobController extends Controller
             ->get()
             ->keyBy('job_posting_id');
 
-        $presented = $jobs->map(fn (JobPosting $job) => $this->presentJobCard(
+        $presented = $jobs->getCollection()->map(fn (JobPosting $job) => $this->presentJobCard(
             $job,
             $applications->get($job->id),
         ))->values();
+
+        $pagination = [
+            'page' => $jobs->currentPage(),
+            'last_page' => $jobs->lastPage(),
+            'from' => $jobs->firstItem() ?? 0,
+            'to' => $jobs->lastItem() ?? 0,
+            'total' => $jobs->total(),
+        ];
 
         if ($request->wantsJson()) {
             return response()->json([
                 'scope' => $scope,
                 'sector' => $applySearchFilters ? $sectorSlug : '',
                 'profession' => $applySearchFilters ? $professionSlug : '',
-                'total' => $presented->count(),
+                'total' => $jobs->total(),
+                'pagination' => $pagination,
                 'counts' => $counts,
                 'jobs' => $presented,
             ]);
@@ -120,6 +135,7 @@ class TalentJobController extends Controller
 
         return view('talent.jobs.index', [
             'jobs' => $presented,
+            'pagination' => $pagination,
             'scope' => $scope,
             'counts' => $counts,
             'sectorSlug' => $applySearchFilters ? $sectorSlug : '',
@@ -228,8 +244,13 @@ class TalentJobController extends Controller
      *     title: string,
      *     url: string,
      *     company: string,
+     *     company_logo: string|null,
+     *     company_initials: string,
      *     summary: string,
+     *     tags: list<string>,
      *     location: string,
+     *     published_label: string|null,
+     *     updated_label: string|null,
      *     applied: bool,
      *     applied_label: string,
      *     application_status: string|null,
@@ -244,13 +265,30 @@ class TalentJobController extends Controller
             $job->experienceLabel() !== '' ? $job->experienceLabel() : null,
         ]);
 
+        $tags = array_values(array_filter([
+            $job->professionLabel(),
+            $job->experienceLabel(),
+            ...$job->workModeLabels(),
+        ], fn ($tag) => filled($tag)));
+
+        $publishedAt = $job->published_at ?? $job->created_at;
+
         return [
             'id' => $job->id,
             'title' => $job->title,
             'url' => route('talent.jobs.show', $job),
             'company' => $job->advertiserName(),
+            'company_logo' => $job->advertiserLogoUrl(),
+            'company_initials' => $job->advertiserInitials(),
             'summary' => implode(' · ', $summaryParts),
+            'tags' => $tags,
             'location' => $job->locationLabel() !== '' ? $job->locationLabel() : '—',
+            'published_label' => $publishedAt
+                ? __('talenma.jobs.card_published_on', ['date' => $publishedAt->translatedFormat('d M Y')])
+                : null,
+            'updated_label' => $job->contentUpdatedAfterPublication()
+                ? __('talenma.jobs.card_updated_on', ['date' => $job->content_updated_at->translatedFormat('d M Y')])
+                : null,
             'applied' => $application !== null,
             'applied_label' => __('talenma.jobs.applied_badge'),
             'application_status' => $application?->status,

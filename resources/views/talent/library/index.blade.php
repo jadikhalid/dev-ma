@@ -175,7 +175,13 @@
                         this.subId = '';
                     }
 
-                    this.refreshResults(page);
+                    const isPageLink = link.hasAttribute('data-library-page-link');
+
+                    this.refreshResults(page).then(() => {
+                        if (isPageLink) {
+                            this.$refs.catalogTop?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
                 },
                 hydrateFromCategory(categoryId) {
                     this.disciplineId = '';
@@ -262,7 +268,7 @@
             </div>
 
             <div class="space-y-4">
-                <div class="flex items-center justify-between gap-3">
+                <div x-ref="catalogTop" class="flex scroll-mt-24 items-center justify-between gap-3">
                     <div class="flex min-w-0 items-center gap-2.5">
                         <h2 class="text-lg font-semibold text-gray-900">{{ __('talenma.library.catalog_title') }}</h2>
                         <span

@@ -1,19 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div class="flex items-center gap-3">
-                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z"/>
-                    </svg>
-                </span>
-                <h1 class="font-semibold text-xl text-gray-800 leading-tight">
-                    {{ __('talenma.cv_builder.page_title') }}
-                </h1>
-            </div>
-            <a href="{{ route('dashboard') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                {{ __('talenma.cv_builder.back_dashboard') }}
-            </a>
+        <div class="flex items-center gap-3">
+            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z"/>
+                </svg>
+            </span>
+            <h1 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('talenma.cv_builder.page_title') }}
+            </h1>
         </div>
     </x-slot>
 
@@ -46,7 +41,10 @@
     >
         <div class="mb-5 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ __('talenma.cv_builder.template_label') }}</p>
+                <div>
+                    <h2 class="text-sm font-bold uppercase tracking-[0.11em] text-indigo-900">{{ __('talenma.cv_builder.template_label') }}</h2>
+                    <p class="mt-1 text-sm text-gray-500" data-cv-builder-intro>{{ __('talenma.cv_builder.template_intro') }}</p>
+                </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <label class="text-xs font-semibold text-gray-500 uppercase">{{ __('talenma.cv_builder.locale_label') }}</label>
                     <select x-model="locale" @change="onSettingsChange()" class="rounded-lg border-gray-300 text-sm">

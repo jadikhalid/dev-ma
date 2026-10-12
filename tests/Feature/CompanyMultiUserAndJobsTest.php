@@ -285,6 +285,70 @@ class CompanyMultiUserAndJobsTest extends TestCase
         $this->assertSame(JobApplication::STATUS_CLOSED, $application->fresh()->status);
     }
 
+    public function test_talent_job_cards_show_publication_date_and_only_content_updates(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner();
+        $talent = User::factory()->talent()->create();
+
+        $this->travelTo(now()->subDays(5));
+        $job = JobPosting::create([
+            'company_profile_id' => $profile->id,
+            'created_by' => $owner->id,
+            'title' => 'Backend engineer',
+            'description' => str_repeat('Looking for experienced backend talent. ', 3),
+            'status' => JobPosting::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'work_modes' => ['remote'],
+        ]);
+        $this->travelBack();
+
+        $card = fn () => collect($this->actingAs($talent)
+            ->getJson(route('talent.jobs.index'))
+            ->assertOk()
+            ->json('jobs'))->firstWhere('id', $job->id);
+
+        $this->assertNotNull($card()['published_label']);
+        $this->assertNull($card()['updated_label']);
+
+        $this->actingAs($talent)->post(route('talent.jobs.apply', $job), ['cover_message' => 'Motivé.']);
+        $job->refresh()->update(['staff_seen_at' => now()]);
+        $this->assertNull($card()['updated_label']);
+
+        $job->refresh()->update(['title' => 'Senior backend engineer']);
+        $this->assertNotNull($card()['updated_label']);
+    }
+
+    public function test_talent_jobs_index_is_paginated_by_ten(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner();
+        $talent = User::factory()->talent()->create();
+
+        foreach (range(1, 12) as $i) {
+            JobPosting::create([
+                'company_profile_id' => $profile->id,
+                'created_by' => $owner->id,
+                'title' => "Job {$i}",
+                'description' => str_repeat('Looking for experienced backend talent. ', 3),
+                'status' => JobPosting::STATUS_PUBLISHED,
+                'published_at' => now()->subMinutes(20 - $i),
+            ]);
+        }
+
+        $first = $this->actingAs($talent)->getJson(route('talent.jobs.index'))->assertOk();
+        $this->assertCount(10, $first->json('jobs'));
+        $this->assertSame(['page' => 1, 'last_page' => 2, 'from' => 1, 'to' => 10, 'total' => 12], $first->json('pagination'));
+        $this->assertSame(12, $first->json('total'));
+
+        $second = $this->actingAs($talent)->getJson(route('talent.jobs.index', ['page' => 2]))->assertOk();
+        $this->assertCount(2, $second->json('jobs'));
+        $this->assertSame(11, $second->json('pagination.from'));
+
+        $this->actingAs($talent)
+            ->get(route('talent.jobs.index'))
+            ->assertOk()
+            ->assertSee('Annonces', false);
+    }
+
     public function test_member_cannot_apply_to_jobs_as_talent_route(): void
     {
         [$owner, $profile] = $this->makeCompanyOwner();
