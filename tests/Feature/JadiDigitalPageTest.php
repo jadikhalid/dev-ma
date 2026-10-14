@@ -16,6 +16,9 @@ class JadiDigitalPageTest extends TestCase
             ->assertSee('data-jadi-page', false)
             ->assertSee(__('talenma.jadi_page.title'))
             ->assertSee(__('talenma.jadi_page.case_title'))
+            ->assertSee('data-jadi-founder', false)
+            ->assertSee('images/brand/jadi-founder.jpg', false)
+            ->assertDontSee('+212', false)
             ->assertSee('mailto:khalid@jadi-digital.com', false);
 
         $this->assertSame(

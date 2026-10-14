@@ -76,6 +76,83 @@
         </div>
     </section>
 
+    {{-- Fondateur --}}
+    <section class="bg-gray-50 py-20 sm:py-24" data-jadi-founder>
+        <div class="max-w-7xl mx-auto grid gap-12 px-4 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-16 lg:px-8">
+            <div class="relative mx-auto w-full max-w-sm lg:sticky lg:top-28 lg:max-w-[488px]">
+                <div class="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-teal-300/40 via-indigo-300/30 to-amber-200/40 blur-xl" aria-hidden="true"></div>
+                <img
+                    src="{{ asset('images/brand/jadi-founder.jpg') }}"
+                    alt="{{ __('talenma.jadi_page.founder_photo_alt') }}"
+                    width="488"
+                    height="610"
+                    loading="lazy"
+                    class="relative aspect-[4/5] w-full rounded-3xl object-cover shadow-xl ring-1 ring-gray-900/5"
+                >
+                <div class="absolute -bottom-5 left-6 right-6 rounded-2xl bg-white/95 px-5 py-4 shadow-lg ring-1 ring-gray-900/5 backdrop-blur">
+                    <p class="text-base font-bold text-gray-900">{{ __('talenma.jadi_page.founder_name') }}</p>
+                    <p class="text-sm text-indigo-600">{{ __('talenma.jadi_page.founder_role') }}</p>
+                </div>
+            </div>
+
+            <div class="pt-4 lg:pt-0">
+                <p class="text-sm font-semibold uppercase tracking-wider text-indigo-600">{{ __('talenma.jadi_page.founder_eyebrow') }}</p>
+                <h2 class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{{ __('talenma.jadi_page.founder_name') }}</h2>
+                <div class="mt-5 space-y-4 text-gray-600">
+                    @foreach (__('talenma.jadi_page.founder_summary') as $paragraph)
+                        <p class="leading-relaxed">{{ $paragraph }}</p>
+                    @endforeach
+                </div>
+
+                <dl class="mt-8 grid gap-4 sm:grid-cols-3">
+                    @foreach (__('talenma.jadi_page.founder_stats') as $stat)
+                        <div class="rounded-2xl bg-white p-5 ring-1 ring-gray-100">
+                            <dt class="sr-only">{{ $stat['label'] }}</dt>
+                            <dd>
+                                <span class="block text-2xl font-bold text-indigo-600">{{ $stat['value'] }}</span>
+                                <span class="mt-1 block text-sm text-gray-600">{{ $stat['label'] }}</span>
+                            </dd>
+                        </div>
+                    @endforeach
+                </dl>
+
+                <h3 class="mt-10 text-sm font-semibold uppercase tracking-wider text-gray-900">{{ __('talenma.jadi_page.founder_skills_title') }}</h3>
+                <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+                    @foreach (__('talenma.jadi_page.founder_skills') as $skill)
+                        <li class="flex items-start gap-2.5 text-sm text-gray-700">
+                            <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-500" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                            <span>{{ $skill }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+
+                <h3 class="mt-10 text-sm font-semibold uppercase tracking-wider text-gray-900">{{ __('talenma.jadi_page.founder_career_title') }}</h3>
+                <ol class="mt-4 border-l-2 border-indigo-100">
+                    @foreach (__('talenma.jadi_page.founder_career') as $step)
+                        <li class="relative pb-5 pl-6 last:pb-0">
+                            <span @class([
+                                'absolute -left-[7px] top-1.5 h-3 w-3 rounded-full ring-4 ring-gray-50',
+                                'bg-teal-400' => $loop->first,
+                                'bg-indigo-300' => ! $loop->first,
+                            ]) aria-hidden="true"></span>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ $step['period'] }}</p>
+                            <p class="mt-0.5 text-sm font-semibold text-gray-900">{{ $step['role'] }}</p>
+                            <p class="text-sm text-gray-600">{{ $step['company'] }}</p>
+                            @if (! empty($step['summary']))
+                                <p class="mt-1.5 text-sm leading-relaxed text-gray-500">{{ $step['summary'] }}</p>
+                            @endif
+                        </li>
+                    @endforeach
+                </ol>
+
+                <p class="mt-8 text-sm text-gray-600">
+                    <span class="font-semibold text-gray-900">{{ __('talenma.jadi_page.founder_languages_label') }}</span>
+                    {{ __('talenma.jadi_page.founder_languages') }}
+                </p>
+            </div>
+        </div>
+    </section>
+
     {{-- Offres --}}
     <section id="offres" class="scroll-mt-24 bg-white py-20 sm:py-24">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
