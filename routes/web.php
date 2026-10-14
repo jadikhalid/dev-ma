@@ -81,6 +81,7 @@ Route::get('/outils/apercu-cv/{template}', [MarketingCvPreviewController::class,
     ->whereIn('template', TalentCvTemplateCatalog::templateKeys())
     ->name('marketing.cv-preview');
 Route::get('/privacy', [PrivacyController::class, 'show'])->name('privacy');
+Route::view('/jadi-digital', 'jadi-digital')->name('jadi-digital');
 Route::get('/annonces/{job}', [PublicJobController::class, 'show'])
     ->whereNumber('job')
     ->name('jobs.public.show');

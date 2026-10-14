@@ -106,7 +106,7 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertOk()
             ->assertSee('<footer', false)
             ->assertSee(route('privacy'), false)
-            ->assertSee('https://www.jadi-digital.com/', false)
+            ->assertSee('data-footer-jadi-link', false)
             ->assertDontSee(route('newsletter.subscribe'), false)
             ->assertDontSee(__('talenma.footer.developer_name'), false);
     }
@@ -122,7 +122,7 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSee('data-company-header-band', false)
             ->assertSee('data-company-case-studies', false)
             ->assertSee('aria-current="page"', false)
-            ->assertSee('https://www.jadi-digital.com/', false)
+            ->assertSee('data-footer-jadi-link', false)
             ->assertDontSee(route('newsletter.subscribe'), false);
     }
 
@@ -140,7 +140,7 @@ class CompanyOfferAndTrialTest extends TestCase
                 ->assertSee('data-company-header-band', false)
                 ->assertSee($marker, false)
                 ->assertSee('aria-current="page"', false)
-                ->assertSee('https://www.jadi-digital.com/', false);
+                ->assertSee('data-footer-jadi-link', false);
         }
     }
 
