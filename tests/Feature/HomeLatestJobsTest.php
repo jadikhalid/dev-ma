@@ -30,6 +30,14 @@ class HomeLatestJobsTest extends TestCase
             ->assertSee(route('jobs.gate'), false);
     }
 
+    public function test_home_footer_credits_only_the_agency(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee(__('talenma.footer.jadi_digital'), false)
+            ->assertDontSee(__('talenma.footer.developer_name'), false);
+    }
+
     public function test_home_header_exposes_fresh_job_timestamps_for_annonces_badge(): void
     {
         $fresh = $this->seedPublishedJob('Fresh job', publishedAt: now()->subHours(2));

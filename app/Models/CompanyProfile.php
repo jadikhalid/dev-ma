@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id',
     'logo_path',
+    'banner_path',
     'representative_name',
     'representative_photo_path',
     'phone',
@@ -457,6 +458,15 @@ class CompanyProfile extends Model
 
         // Legacy company_profiles.logo_path — kept as fallback until re-uploaded via /profile.
         return PublicStorageUrl::make($this->logo_path, $this->updated_at);
+    }
+
+    public function bannerUrl(): ?string
+    {
+        if (! $this->banner_path) {
+            return null;
+        }
+
+        return PublicStorageUrl::make($this->banner_path, $this->updated_at);
     }
 
     public function representativePhotoUrl(): ?string

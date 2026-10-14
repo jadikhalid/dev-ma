@@ -8,12 +8,14 @@
     $onPublicJobShow = request()->routeIs('jobs.public.show');
     $onCompanyOffer = request()->routeIs('company.offer');
     $onBlog = request()->routeIs('blog.*');
+    $onCompanyShow = request()->routeIs('companies.public.show');
     $showCompanyOfferCta = Auth::guest()
         && ! $onCompanyOffer
         && ! $onBlog;
-    $showAnnoncesNav = ! $onBlog && ! $onCompanyOffer;
+    $showAnnoncesNav = ! $onBlog && ! $onCompanyOffer && ! $onCompanyShow;
     $showBlogNav = ! $onCompanyOffer;
-    $showAppsLauncher = ! $onCompanyOffer;
+    $showAppsLauncher = ! $onCompanyOffer && ! $onCompanyShow;
+    $showExploreCompanies = $onCompanyShow;
     $onBlogIndex = request()->routeIs('blog.index');
     $annoncesNavDisabled = $onPublicJobShow;
     $blogNavDisabled = $onBlogIndex || $onPublicJobShow;
@@ -84,6 +86,20 @@
                 'ml-auto flex shrink-0 items-center gap-2.5 sm:gap-3',
                 'sm:ml-0' => $showCompanyOfferCta,
             ])>
+                @if ($showExploreCompanies)
+                    <a
+                        href="{{ route('companies.public.index') }}"
+                        class="inline-flex h-11 w-11 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/15 text-sm font-semibold text-white transition hover:bg-white/25 sm:mr-2 sm:h-auto sm:w-auto sm:rounded-lg sm:border-0 sm:bg-gray-900 sm:px-4 sm:py-2 sm:shadow-sm sm:hover:bg-gray-700"
+                        aria-label="{{ __('talenma.nav.explore_companies') }}"
+                        data-header-explore-companies
+                    >
+                        <svg class="h-5 w-5 shrink-0 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
+                        </svg>
+                        <span class="hidden sm:inline">{{ __('talenma.nav.explore_companies') }}</span>
+                    </a>
+                @endif
+
                 {{-- Desktop / tablette : liens directs --}}
                 @if ($showAnnoncesNav || $showBlogNav)
                 <div class="contents sm:mr-1 sm:flex sm:items-center sm:gap-0.5 sm:rounded-xl sm:border sm:border-indigo-100 sm:bg-indigo-50/60 sm:p-1" data-header-nav-group>

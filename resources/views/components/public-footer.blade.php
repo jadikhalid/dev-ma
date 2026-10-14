@@ -1,6 +1,5 @@
 @props([
     'newsletter' => true,
-    'agencyCreditOnly' => false,
 ])
 
 <footer class="bg-gray-900 text-gray-300">
@@ -45,22 +44,10 @@
                 <a href="{{ route('privacy') }}" class="text-gray-400 underline hover:text-white transition">{{ __('talenma.footer.privacy') }}</a>
             </div>
             <div class="sm:text-right rounded-lg border border-gray-700/80 bg-gray-800/50 px-3.5 py-2 text-sm leading-relaxed">
-                @if ($agencyCreditOnly)
                 <p>
                     <span class="text-gray-500">{{ __('talenma.footer.developed_by') }}</span>
                     <a href="https://www.jadi-digital.com/" target="_blank" rel="noopener noreferrer" class="font-semibold text-indigo-300 hover:text-indigo-200 transition">{{ __('talenma.footer.jadi_digital') }}</a>
                 </p>
-                @else
-                <p>
-                    <span class="text-gray-500">{{ __('talenma.footer.developed_by') }}</span>
-                    <a href="https://www.linkedin.com/in/khalid-j-a73662254/" target="_blank" rel="noopener noreferrer" class="font-semibold text-white hover:text-amber-200 transition">{{ __('talenma.footer.developer_name') }}</a>
-                </p>
-                <hr class="my-2 border-0 border-t border-gray-700/90">
-                <p>
-                    <span class="text-gray-500">{{ __('talenma.footer.developed_for') }}</span>
-                    <a href="https://www.jadi-digital.com/" target="_blank" rel="noopener noreferrer" class="font-semibold text-indigo-300 hover:text-indigo-200 transition">{{ __('talenma.footer.jadi_digital') }}</a>
-                </p>
-                @endif
             </div>
         </div>
     </div>

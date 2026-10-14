@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CompanyBannerService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -11,10 +12,11 @@ use Illuminate\Validation\Rule;
 
 class CompanyProfileController extends Controller
 {
-    private const SECTIONS = ['identity', 'presentation', 'hiring'];
+    private const SECTIONS = ['banner', 'identity', 'presentation', 'hiring'];
 
     public function __construct(
         private ProfessionCatalogService $professionCatalog,
+        private CompanyBannerService $banners,
     ) {}
 
     public function edit(): RedirectResponse
@@ -47,15 +49,26 @@ class CompanyProfileController extends Controller
             'section' => ['required', 'string', Rule::in(self::SECTIONS)],
         ])['section'];
 
-        $data = $request->validate($this->rulesForSection($section));
-        $payload = $this->payloadForSection($section, $data);
+        $data = $request->validate($this->rulesForSection($section), [
+            'banner.image' => __('talenma.company.banner_invalid_type'),
+            'banner.mimes' => __('talenma.company.banner_invalid_type'),
+            'banner.max' => __('talenma.company.banner_too_large'),
+        ]);
 
-        $profile->update($payload);
+        if ($section === 'banner') {
+            if ($request->hasFile('banner')) {
+                $this->banners->store($profile, $request->file('banner'));
+            } elseif ($request->boolean('remove_banner')) {
+                $this->banners->delete($profile);
+            }
+        } else {
+            $profile->update($this->payloadForSection($section, $data));
+        }
 
         $message = __('talenma.company.section_updated.'.$section);
 
         if ($request->wantsJson()) {
-            $extra = [];
+            $extra = $section === 'banner' ? ['reload' => true] : [];
 
             if ($section === 'identity') {
                 $profile->refresh();
@@ -115,6 +128,10 @@ class CompanyProfileController extends Controller
     private function rulesForSection(string $section): array
     {
         return match ($section) {
+            'banner' => [
+                'banner' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:'.(CompanyBannerService::MAX_BYTES / 1024)],
+                'remove_banner' => ['nullable', 'boolean'],
+            ],
             'identity' => [
                 'sector' => [
                     'required',

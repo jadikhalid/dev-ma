@@ -8,6 +8,85 @@
     </div>
 @endif
 
+{{-- Bannière de la page publique --}}
+<form
+    id="company-banner-card"
+    method="POST"
+    action="{{ $companyProfileUpdateUrl }}"
+    enctype="multipart/form-data"
+    class="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8 space-y-5"
+    data-ajax
+    data-loading-target="company-banner-card"
+    data-error-message="{{ __('talenma.company.save_error') }}"
+    novalidate
+    x-data="{
+        previewUrl: @js($profile->bannerUrl()),
+        removing: false,
+        onFileChange(event) {
+            const file = event.target.files?.[0];
+            if (file) {
+                this.previewUrl = URL.createObjectURL(file);
+                this.removing = false;
+            }
+        },
+    }"
+    data-company-banner-form
+>
+    @csrf
+    <input type="hidden" name="section" value="banner">
+
+    <div>
+        <h3 class="text-lg font-bold text-gray-900">{{ __('talenma.company.section_banner') }}</h3>
+        <p class="mt-1 text-sm text-gray-500">{{ __('talenma.company.section_banner_desc') }}</p>
+    </div>
+
+    <div class="relative aspect-[1440/450] overflow-hidden rounded-xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-500 ring-1 ring-gray-200">
+        <img
+            x-show="previewUrl && !removing"
+            x-cloak
+            :src="previewUrl"
+            alt=""
+            class="absolute inset-0 h-full w-full object-cover object-center"
+        >
+        <p
+            x-show="!previewUrl || removing"
+            class="absolute inset-0 flex items-center justify-center px-4 text-center text-sm font-medium text-white/90"
+        >{{ __('talenma.company.banner_empty') }}</p>
+    </div>
+
+    <div>
+        <x-input-label for="banner" :value="__('talenma.company.banner')" />
+        <input
+            id="banner"
+            name="banner"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            @change="onFileChange($event)"
+            class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+        >
+        <p class="mt-1 text-xs text-gray-500">{{ __('talenma.company.banner_hint') }}</p>
+        <x-input-error :messages="$errors->get('banner')" class="mt-2" />
+    </div>
+
+    @if ($profile->banner_path)
+        <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+            <input
+                type="checkbox"
+                name="remove_banner"
+                value="1"
+                x-model="removing"
+                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            >
+            {{ __('talenma.company.banner_remove') }}
+        </label>
+    @endif
+
+    <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
+        <button type="button" data-reset class="inline-flex justify-center items-center px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 hover:bg-gray-50">{{ __('talenma.company.cancel') }}</button>
+        <x-primary-button class="justify-center">{{ __('talenma.company.save_section') }}</x-primary-button>
+    </div>
+</form>
+
 {{-- Section A : Identité --}}
 <form
     id="company-identity-card"

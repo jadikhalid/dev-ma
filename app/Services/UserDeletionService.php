@@ -99,6 +99,10 @@ class UserDeletionService
             Storage::disk('public')->delete($company->representative_photo_path);
         }
 
+        if (is_string($company->banner_path) && $company->banner_path !== '') {
+            Storage::disk('public')->delete($company->banner_path);
+        }
+
         foreach ($company->documents as $document) {
             if (is_string($document->path) && $document->path !== '') {
                 Storage::disk('public')->delete($document->path);
