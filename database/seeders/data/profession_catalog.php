@@ -250,6 +250,19 @@ return [
                 ],
             ],
             [
+                'slug' => 'embedded-systems-engineer',
+                'name_fr' => 'Ingénieur Systèmes Embarqués',
+                'name_en' => 'Embedded Systems Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'Logiciel embarqué C / C++', 'label_en' => 'Embedded software C / C++', 'keywords' => 'c c++ firmware embarque'],
+                    ['label_fr' => 'Microcontrôleurs', 'label_en' => 'Microcontrollers', 'keywords' => 'stm32 arm cortex arduino esp32'],
+                    ['label_fr' => 'Systèmes temps réel / RTOS', 'label_en' => 'Real-time systems / RTOS', 'keywords' => 'rtos freertos zephyr temps reel'],
+                    ['label_fr' => 'Linux embarqué', 'label_en' => 'Embedded Linux', 'keywords' => 'yocto buildroot drivers kernel'],
+                    ['label_fr' => 'IoT / objets connectés', 'label_en' => 'IoT / connected devices', 'keywords' => 'iot capteurs mqtt bluetooth'],
+                    ['label_fr' => 'Automobile / AUTOSAR', 'label_en' => 'Automotive / AUTOSAR', 'keywords' => 'autosar can iso26262 automobile'],
+                ],
+            ],
+            [
                 'slug' => 'sysadmin-network',
                 'name_fr' => 'Administrateur Systèmes et Réseaux',
                 'name_en' => 'Systems & Network Administrator',
