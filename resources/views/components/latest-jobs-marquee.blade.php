@@ -190,7 +190,7 @@
                                 <a
                                     href="{{ $job['url'] }}"
                                     @class([
-                                        'group mx-2 flex w-[20rem] shrink-0 items-center gap-4 rounded-xl border px-5 py-4 shadow-sm transition duration-300 sm:mx-2.5 sm:w-[24rem] sm:gap-5 sm:px-6 sm:py-5 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md',
+                                        'group mx-2 flex w-[19.2rem] shrink-0 items-center gap-4 rounded-xl border px-5 py-4 shadow-sm transition duration-300 sm:mx-2.5 md:w-[25.6rem] lg:w-[32rem] xl:w-[38.4rem] sm:gap-5 sm:px-6 sm:py-5 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md',
                                         'border-amber-200/90 bg-amber-50/80 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-amber-50' => $isLeadJob,
                                         'border-gray-100 bg-white [@media(hover:hover)_and_(pointer:fine)]:hover:border-indigo-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-indigo-50/50' => ! $isLeadJob,
                                     ])
