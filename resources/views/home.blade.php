@@ -36,9 +36,9 @@
     </div>
 
     <div class="home-shell relative z-10 pt-6 pb-8 sm:pt-12 lg:pt-16 lg:pb-10">
-        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 2xl:gap-14 items-center">
+        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
             {{-- Colonne texte --}}
-            <div class="max-w-xl 2xl:max-w-2xl">
+            <div class="max-w-xl">
                 <div class="hidden sm:block">
                     <p class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-100 text-indigo-800 text-sm font-semibold mb-4 ring-1 ring-indigo-200/70">
                         {{ __('talenma.home.badge') }}
@@ -154,7 +154,7 @@
     <div class="home-shell">
         <h2 class="text-3xl font-bold text-center">{{ __('talenma.home.modes_title') }}</h2>
         <p class="text-center text-gray-600 mt-3 max-w-2xl mx-auto">{{ __('talenma.home.modes_subtitle') }}</p>
-        <div class="mt-14 grid md:grid-cols-3 gap-8 2xl:gap-10">
+        <div class="mt-14 grid md:grid-cols-3 gap-8">
             <div class="p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
                 <span class="text-3xl">🎯</span>
                 <h3 class="mt-4 text-xl font-bold">{{ __('talenma.home.mode_direct_title') }}</h3>
@@ -175,7 +175,7 @@
 </section>
 
 <section class="py-20 bg-gray-50">
-    <div class="home-shell grid md:grid-cols-2 gap-8 2xl:gap-10">
+    <div class="home-shell grid md:grid-cols-2 gap-8">
         <div class="bg-white p-8 rounded-2xl border shadow-sm">
             <h3 class="text-xl font-bold">{{ __('talenma.home.talent_card_title') }}</h3>
             <p class="mt-3 text-gray-600">{{ __('talenma.home.talent_card_desc') }}</p>

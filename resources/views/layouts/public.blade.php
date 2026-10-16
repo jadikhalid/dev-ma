@@ -18,13 +18,16 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body
-    class="flex min-h-screen flex-col font-sans text-gray-900 antialiased bg-white"
+    @class([
+        'flex min-h-screen flex-col font-sans text-gray-900 antialiased bg-white',
+        'page-home' => request()->routeIs('home'),
+    ])
     @if (request()->routeIs('home')) data-mobile-locale-auto="1" data-locale-suggest-url="{{ route('locale.suggest') }}" @endif
 >
     @if (\App\Support\PortalHost::isCompanyHost())
         <x-company-public-nav />
     @else
-        <x-public-nav :full-width="request()->routeIs('home')" />
+        <x-public-nav />
     @endif
     <x-toast-stack persistent />
     <main class="flex-1 @yield('main_class')">@yield('content')</main>

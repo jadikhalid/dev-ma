@@ -54,30 +54,30 @@
 }
 
 /*
- * Home content shell: same as max-w-7xl up to desktop,
- * modestly wider from 2xl (1536px+) only — avoids empty side gutters
- * on large monitors without stretching laptop/standard layouts.
+ * Home content shell: same frame as the other public pages (max-w-7xl).
+ * Company pages still widen modestly from 2xl.
  */
 .home-shell {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
 }
 
-/*
- * Align home header / news ticker with .home-shell on very wide screens only.
- * Below 2xl they stay full-bleed (existing padding).
- */
+.home-align-wide {
+    @apply mx-auto w-full max-w-7xl;
+}
+
 @media (min-width: 1536px) {
     .home-shell,
     .home-align-wide {
-        max-width: 96rem; /* 1536px */
+        max-width: 96rem;
         padding-left: 2.5rem;
         padding-right: 2.5rem;
     }
 
-    .home-align-wide {
-        width: 100%;
-        margin-left: auto;
-        margin-right: auto;
+    .page-home .home-shell,
+    .page-home .home-align-wide {
+        max-width: 80rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
     }
 }
 
@@ -116,12 +116,6 @@
     .home-hero-wide-atmosphere::after {
         right: -4rem;
         background: radial-gradient(circle at center, rgba(167, 243, 208, 0.75) 0%, transparent 70%);
-    }
-}
-
-@media (min-width: 1536px) {
-    .hero-visual {
-        max-width: 36rem;
     }
 }
 
@@ -188,6 +182,16 @@
 
 .news-ticker-badge--recent {
     @apply bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100;
+}
+
+.news-ticker-subtitle {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    min-height: 2.5rem;
+    max-height: 2.5rem;
 }
 
 .social-posts-slider-track {

@@ -22,7 +22,7 @@
         @mouseenter="onBannerEnter()"
         @mouseleave="onBannerLeave()"
     >
-        <div class="home-align-wide">
+        <div class="home-align-wide mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
             <div>
             <div class="flex items-center justify-center gap-3 sm:gap-4 py-1 px-4 2xl:px-0">
                 <span class="h-px w-10 sm:w-14 bg-gradient-to-r from-transparent to-amber-400/90"></span>
@@ -129,7 +129,7 @@
                                         {{ $item->title }}
                                     </span>
                                     <span @class([
-                                        'mt-1 block h-10 text-sm leading-snug line-clamp-2',
+                                        'news-ticker-subtitle mt-1 text-sm leading-snug',
                                         'text-gray-600' => $isLatestDay,
                                         'text-slate-500' => ! $isLatestDay,
                                     ])>
