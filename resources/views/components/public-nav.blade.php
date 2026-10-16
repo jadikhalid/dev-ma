@@ -36,9 +36,9 @@
         ],
     ];
 
-    $navLinkClass = 'relative inline-flex items-center px-3 py-1.5 text-sm font-medium tracking-tight text-slate-600 transition duration-200 after:absolute after:inset-x-3 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-indigo-500 after:transition after:duration-200 hover:text-indigo-700 hover:after:scale-x-100';
-    $navLinkActiveClass = 'relative inline-flex items-center px-3 py-1.5 text-sm font-semibold tracking-tight text-indigo-700 after:absolute after:inset-x-3 after:bottom-0 after:h-px after:bg-indigo-500';
-    $navHiringClass = 'inline-flex items-center rounded-[5px] bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700';
+    $navLinkClass = 'inline-flex items-center rounded-[5px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium leading-5 text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700';
+    $navLinkActiveClass = 'inline-flex items-center rounded-[5px] border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold leading-5 text-indigo-700 shadow-sm';
+    $navHiringClass = 'inline-flex items-center rounded-[5px] border border-transparent bg-gray-900 px-4 py-2 text-sm font-semibold leading-5 text-white shadow-sm transition hover:bg-indigo-700';
     $menuLinkClass = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-700 sm:shadow-none sm:hover:bg-slate-50 sm:hover:text-indigo-700';
     $menuLinkActiveClass = 'flex w-full items-center gap-2.5 rounded-xl bg-white/10 px-3 py-2.5 text-sm font-semibold text-white sm:rounded-xl sm:border-0 sm:bg-indigo-50 sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-semibold sm:text-indigo-700 sm:shadow-none';
     $menuHiringClass = 'flex w-full items-center gap-2.5 rounded-xl bg-white/15 px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/25 sm:mt-1 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-semibold sm:text-indigo-700 sm:shadow-none sm:hover:bg-indigo-50';
@@ -71,7 +71,7 @@
                 </div>
             </div>
 
-            <nav class="ml-4 hidden items-center gap-1 xl:ml-8 xl:flex" data-header-nav-group aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
+            <nav class="ml-4 hidden items-center gap-2 xl:ml-8 xl:flex" data-header-nav-group aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
                 @foreach ($navLinks as $link)
                     @if (! empty($link['hiring']))
                         <span class="mx-3 h-5 w-px shrink-0 bg-gray-200" aria-hidden="true"></span>
@@ -162,7 +162,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM3 20a6 6 0 0 1 12 0v1H3v-1z"/>
                         </svg>
                     </a>
-                    <a href="{{ route('register') }}" class="hidden items-center rounded-[5px] bg-gradient-to-r from-indigo-600 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-600 sm:inline-flex">{{ __('talenma.nav.register') }}</a>
+                    <a href="{{ route('register') }}" class="hidden items-center rounded-[5px] border border-transparent bg-gradient-to-r from-indigo-600 to-violet-500 px-4 py-2 text-sm font-semibold leading-5 text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-600 sm:inline-flex">{{ __('talenma.nav.register') }}</a>
                 @endauth
 
                 <div class="hidden sm:block">
