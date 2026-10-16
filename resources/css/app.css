@@ -82,8 +82,9 @@
         padding-right: 2rem;
     }
 
+    /* Same 65% relationship as a normal desktop, taken against the page frame. */
     .page-company-home [data-company-header-band] {
-        width: 80rem;
+        width: calc(80rem * 0.65);
     }
 }
 
