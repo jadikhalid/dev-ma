@@ -35,12 +35,12 @@
         </div>
     </div>
 
-    <div class="home-shell relative z-10 pt-6 pb-8 sm:pt-12 lg:pt-16 lg:pb-10">
-        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+    <div class="home-shell relative z-10 pt-6 pb-8 sm:pt-12 lg:pt-4 lg:pb-10">
+        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center lg:items-start">
             {{-- Colonne texte --}}
             <div class="max-w-xl">
                 <div class="hidden sm:block">
-                    <p class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-100 text-indigo-800 text-sm font-semibold mb-4 ring-1 ring-indigo-200/70">
+                    <p data-home-hero-badge class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-100 text-indigo-800 text-sm font-semibold mb-4 ring-1 ring-indigo-200/70">
                         {{ __('talenma.home.badge') }}
                     </p>
 

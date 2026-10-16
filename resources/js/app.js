@@ -117,6 +117,10 @@ Alpine.data('magazineTicker', (config = {}) => ({
             }
 
             this.setupMarquee(true);
+
+            if (! this.inline) {
+                this.update();
+            }
         }, 200);
     },
 
@@ -595,6 +599,33 @@ Alpine.data('magazineTicker', (config = {}) => ({
         }
 
         const scrollY = window.scrollY;
+        const badge = document.querySelector('[data-home-hero-badge]');
+        const badgeRect = badge?.getBoundingClientRect();
+        const badgeVisible = Boolean(badgeRect && badgeRect.width > 0 && badgeRect.height > 0);
+
+        // Slide the band up from the top edge of the hero badge, and fade it
+        // out across that same travel so it disappears gradually.
+        if (badgeVisible) {
+            const bannerTop = Number.parseFloat(getComputedStyle(banner).top) || 0;
+            const bannerHeight = banner.offsetHeight;
+            const overlap = bannerTop + bannerHeight - badgeRect.top;
+
+            if (overlap <= 0) {
+                this.opacity = 1;
+                this.translateY = 0;
+                this.pointerEvents = 'auto';
+
+                return;
+            }
+
+            const progress = Math.min(1, overlap / bannerHeight);
+            this.translateY = -overlap;
+            this.opacity = 1 - progress;
+            this.pointerEvents = progress < 0.99 ? 'auto' : 'none';
+
+            return;
+        }
+
         const threshold = window.innerHeight * 0.3;
         const fadeRange = banner.offsetHeight;
 

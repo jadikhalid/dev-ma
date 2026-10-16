@@ -18,7 +18,7 @@
         x-ref="banner"
         x-bind:style="bannerStyle()"
         x-bind:class="{ 'invisible': opacity < 0.01 }"
-        class="group/marquee fixed top-16 inset-x-0 z-40 w-full pt-[2.1875rem] bg-white/95 backdrop-blur-sm will-change-[opacity,transform]"
+        class="group/marquee fixed top-16 inset-x-0 z-40 w-full pt-[2.1875rem] bg-white will-change-[opacity,transform]"
         @mouseenter="onBannerEnter()"
         @mouseleave="onBannerLeave()"
     >

@@ -67,7 +67,7 @@
     data-company-offer-hero
 >
     <div class="home-shell relative">
-    <div class="grid items-center pb-12 pt-8 sm:gap-12 sm:pt-[4.5rem] lg:grid-cols-2 lg:gap-16 lg:px-10 lg:pb-16 lg:pt-[6.25rem] xl:px-16 xl:pt-[6.75rem] 2xl:px-24 2xl:pt-[7.25rem]">
+    <div class="grid items-center pb-12 pt-8 sm:gap-12 sm:pt-[4.5rem] lg:grid-cols-2 lg:gap-16 lg:px-10 lg:pb-16 lg:pt-[6.25rem] xl:px-16 xl:pt-[6.75rem] 2xl:pt-[7.25rem]">
         {{-- Colonne gauche (sur téléphone, ses enfants sont réordonnés autour de l'image) --}}
         <div class="contents sm:block">
             <p class="mb-5 inline-flex items-center order-1 justify-self-start sm:order-none sm:justify-self-auto gap-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-500 px-5 py-2.5 text-base font-bold tracking-wide text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-700/20">

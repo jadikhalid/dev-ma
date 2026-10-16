@@ -74,7 +74,9 @@
     }
 
     .page-home .home-shell,
-    .page-home .home-align-wide {
+    .page-home .home-align-wide,
+    .page-company-home .home-shell,
+    .page-company-home .home-align-wide {
         max-width: 80rem;
         padding-left: 2rem;
         padding-right: 2rem;

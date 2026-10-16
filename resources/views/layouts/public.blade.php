@@ -21,6 +21,7 @@
     @class([
         'flex min-h-screen flex-col font-sans text-gray-900 antialiased bg-white',
         'page-home' => request()->routeIs('home'),
+        'page-company-home' => request()->routeIs('company.offer'),
     ])
     @if (request()->routeIs('home')) data-mobile-locale-auto="1" data-locale-suggest-url="{{ route('locale.suggest') }}" @endif
 >

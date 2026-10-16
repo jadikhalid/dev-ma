@@ -30,7 +30,7 @@
         data-company-platform-service="{{ $service['key'] }}"
     >
         <div class="home-shell">
-            <div class="grid items-center gap-7 sm:gap-10 lg:grid-cols-2 lg:gap-16 lg:px-10 xl:px-16 2xl:px-24">
+            <div class="grid items-center gap-7 sm:gap-10 lg:grid-cols-2 lg:gap-16 lg:px-10 xl:px-16">
                 {{-- Texte (sur téléphone : titre, puis visuel, puis détails) --}}
                 <div @class(['contents sm:block', 'lg:order-2' => $reverse])>
                     <div class="order-1 sm:order-none" data-company-platform-service-heading>
@@ -212,7 +212,7 @@
 @if ($showOfferForms)
 <section class="bg-white py-14 sm:py-20" data-company-platform-final>
     <div class="home-shell">
-        <div class="relative overflow-hidden rounded-3xl bg-indigo-600 px-6 py-12 text-center text-white sm:px-12 sm:py-16 lg:mx-10 xl:mx-16 2xl:mx-24">
+        <div class="relative overflow-hidden rounded-3xl bg-indigo-600 px-6 py-12 text-center text-white sm:px-12 sm:py-16 lg:mx-10 xl:mx-16">
             <div class="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-indigo-500/60" aria-hidden="true"></div>
             <div class="pointer-events-none absolute -bottom-20 -right-10 h-64 w-64 rounded-full bg-indigo-700/60" aria-hidden="true"></div>
             <div class="relative mx-auto max-w-2xl">
