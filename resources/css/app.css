@@ -81,6 +81,10 @@
         padding-left: 2rem;
         padding-right: 2rem;
     }
+
+    .page-company-home [data-company-header-band] {
+        width: 80rem;
+    }
 }
 
 /* Soft side atmosphere for the home hero on very wide screens only */

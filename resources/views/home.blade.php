@@ -35,8 +35,8 @@
         </div>
     </div>
 
-    <div class="home-shell relative z-10 pt-6 pb-8 sm:pt-12 lg:pt-4 lg:pb-10">
-        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center lg:items-start">
+    <div class="home-shell relative z-10 pt-6 pb-8 sm:pt-12 lg:pt-16 lg:pb-10">
+        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
             {{-- Colonne texte --}}
             <div class="max-w-xl">
                 <div class="hidden sm:block">
