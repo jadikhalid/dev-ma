@@ -39,10 +39,7 @@
             <button
                 type="button"
                 class="magazine-marquee-nav magazine-marquee-nav--left"
-                :class="{ 'magazine-marquee-nav--active': arrowHoldDirection === -1 }"
-                @pointerdown.prevent.stop="onArrowPointerDown(-1, $event)"
-                @pointerup.stop="stopArrowScroll()"
-                @pointercancel.stop="stopArrowScroll()"
+                @click.stop="stepDot(-1)"
                 :aria-label="@js(__('talenma.home.news_ticker_scroll_prev'))"
             >
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -53,10 +50,7 @@
             <button
                 type="button"
                 class="magazine-marquee-nav magazine-marquee-nav--right"
-                :class="{ 'magazine-marquee-nav--active': arrowHoldDirection === 1 }"
-                @pointerdown.prevent.stop="onArrowPointerDown(1, $event)"
-                @pointerup.stop="stopArrowScroll()"
-                @pointercancel.stop="stopArrowScroll()"
+                @click.stop="stepDot(1)"
                 :aria-label="@js(__('talenma.home.news_ticker_scroll_next'))"
             >
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

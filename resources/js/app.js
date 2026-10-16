@@ -295,6 +295,14 @@ Alpine.data('magazineTicker', (config = {}) => ({
                 return;
             }
 
+            const itemPitch = (node) => {
+                const style = getComputedStyle(node);
+
+                return node.offsetWidth
+                    + (Number.parseFloat(style.marginLeft) || 0)
+                    + (Number.parseFloat(style.marginRight) || 0);
+            };
+
             let cycleWidth = 0;
             let cycleNode = newest;
 
@@ -303,7 +311,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
                     break;
                 }
 
-                cycleWidth += cycleNode.offsetWidth;
+                cycleWidth += itemPitch(cycleNode);
                 cycleNode = cycleNode.nextElementSibling;
             }
 
@@ -432,6 +440,22 @@ Alpine.data('magazineTicker', (config = {}) => ({
             to: this.marqueeScrollPx + delta,
             start: performance.now(),
             duration: Math.min(1100, 420 + Math.abs(delta) * 0.45),
+        };
+    },
+
+    stepDot(direction) {
+        if (! this.dotCount || ! this.marqueeDistance) {
+            return;
+        }
+
+        const itemWidth = this.marqueeDistance / this.dotCount;
+        const origin = this.dotAnim ? this.dotAnim.to : this.marqueeScrollPx;
+
+        this.dotAnim = {
+            from: this.marqueeScrollPx,
+            to: origin + (direction * itemWidth),
+            start: performance.now(),
+            duration: Math.min(1100, 420 + Math.abs(origin + (direction * itemWidth) - this.marqueeScrollPx) * 0.45),
         };
     },
 
@@ -720,6 +744,14 @@ Alpine.data('socialPostsSlider', (config) => ({
     next() {
         if (this.canNext) {
             this.startIndex++;
+        }
+    },
+
+    goTo(index) {
+        const next = Math.min(this.maxIndex, Math.max(0, index));
+
+        if (next !== this.startIndex) {
+            this.startIndex = next;
         }
     },
 

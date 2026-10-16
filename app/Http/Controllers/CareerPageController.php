@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobPosting;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class CareerPageController extends Controller
 {
-    public function offers(): View
+    public function offers(Request $request): View
     {
         $user = auth()->user();
         $canBrowseTalentJobs = $user && $user->isTalent() && $user->isApproved();
@@ -16,13 +17,22 @@ class CareerPageController extends Controller
         $viewerCompanyProfileId = $canManageCompanyJobs
             ? $user->companyOrganization()?->id
             : null;
+        $search = trim((string) $request->query('q', ''));
 
         $jobs = JobPosting::query()
             ->with(['companyProfile.user', 'professionSector'])
             ->where('status', JobPosting::STATUS_PUBLISHED)
+            ->when($search !== '', function ($query) use ($search) {
+                $like = '%'.addcslashes($search, '%_\\').'%';
+                $query->where(function ($inner) use ($like) {
+                    $inner->where('title', 'like', $like)
+                        ->orWhere('description', 'like', $like);
+                });
+            })
             ->orderByDesc('published_at')
             ->orderByDesc('id')
             ->paginate(12)
+            ->withQueryString()
             ->through(function (JobPosting $job) use ($canBrowseTalentJobs, $canManageCompanyJobs, $viewerCompanyProfileId) {
                 $url = match (true) {
                     $canBrowseTalentJobs => route('talent.jobs.show', $job),

@@ -39,42 +39,49 @@
         <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
             {{-- Colonne texte --}}
             <div class="max-w-xl">
-                <div class="hidden sm:block">
-                    <p data-home-hero-badge class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-100 text-indigo-800 text-sm font-semibold mb-4 ring-1 ring-indigo-200/70">
-                        {{ __('talenma.home.badge') }}
-                    </p>
+                <p data-home-hero-badge class="mb-4 hidden items-center gap-2 rounded-full bg-indigo-100 px-3.5 py-1.5 text-sm font-semibold text-indigo-800 ring-1 ring-indigo-200/70 sm:inline-flex">
+                    {{ __('talenma.home.badge') }}
+                </p>
 
-                    <h1 class="text-4xl lg:text-[2.75rem] font-extrabold tracking-tight leading-[1.1] text-gray-950">
-                        {!! __('talenma.home.hero_title', [
-                            'talents' => '<span class="text-amber-700">'.__('talenma.home.hero_talents').'</span>',
-                            'emphasis' => '<strong class="font-extrabold text-indigo-700">'.__('talenma.home.hero_emphasis').'</strong>',
-                        ]) !!}
-                    </h1>
-                </div>
+                <h1 class="hidden text-[2.65rem] font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:block lg:text-6xl">
+                    {{ __('talenma.home.hero_career_line') }}<br>
+                    <span class="bg-gradient-to-r from-blue-600 to-violet-500 bg-clip-text text-transparent">{{ __('talenma.home.hero_career_accent') }}</span>
+                </h1>
 
-                <p class="hidden lg:block mt-4 text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl">
+                <p class="mt-4 hidden max-w-xl text-base leading-relaxed text-gray-600 sm:text-lg lg:block">
                     {!! __('talenma.home.hero_subtitle', [
                         'modes' => '<strong class="font-semibold text-gray-900">'.__('talenma.home.hero_subtitle_modes').'</strong>',
                     ]) !!}
                 </p>
 
+                <div class="mt-6 sm:mt-8">
+                    <p class="mb-2 text-xs font-medium tracking-wide text-slate-400">{{ __('talenma.home.hero_search_caption') }}</p>
+                    <form action="{{ route('career.offers') }}" method="GET" class="flex items-center gap-2 rounded-[1.35rem] bg-white p-2 shadow-[0_16px_40px_rgba(79,70,229,0.12)] ring-1 ring-slate-200/80">
+                        <label for="hero-career-search" class="sr-only">{{ __('talenma.home.hero_search_label') }}</label>
+                        <svg class="ml-2 h-5 w-5 shrink-0 text-indigo-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
+                            <circle cx="9" cy="9" r="5.25" stroke-width="1.75"/>
+                            <path d="M13.2 13.2 17 17" stroke-width="1.75" stroke-linecap="round"/>
+                        </svg>
+                        <input
+                            id="hero-career-search"
+                            type="search"
+                            name="q"
+                            value="{{ request('q') }}"
+                            placeholder="{{ __('talenma.home.hero_search_placeholder') }}"
+                            class="min-w-0 flex-1 border-0 bg-transparent py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-0"
+                        >
+                        <button type="submit" class="inline-flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition hover:from-blue-700 hover:to-violet-600">
+                            {{ __('talenma.home.search_submit') }}
+                        </button>
+                    </form>
+                </div>
+
                 @guest
-                    <div class="mt-2 sm:mt-6 rounded-xl border border-gray-100 bg-gray-50/70 p-4 sm:p-5">
-                        <p class="text-base sm:text-base font-semibold text-gray-900">{{ __('talenma.home.cta_new_visitor_question') }}</p>
-                        <p class="mt-1.5 text-base text-gray-600 leading-relaxed">{{ __('talenma.home.cta_new_visitor_hint') }}</p>
-                        <div class="mt-4 flex flex-col sm:flex-row gap-2.5">
-                            <a href="{{ route('register', ['role' => 'dev']) }}" class="inline-flex justify-center px-5 py-2.5 bg-white border border-gray-200 text-gray-800 text-sm font-semibold rounded-xl hover:border-indigo-300 hover:text-indigo-700 transition">
-                                {{ __('talenma.home.cta_talent') }}
-                            </a>
-                            <a href="{{ route('company.offer') }}" target="_blank" rel="noopener noreferrer" class="inline-flex justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
-                                {{ __('talenma.home.cta_company') }}
-                            </a>
-                        </div>
-                    </div>
-                @else
-                    <div class="mt-2 sm:mt-5">
-                        <a href="{{ route('dashboard') }}" class="inline-flex justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
-                            {{ __('talenma.nav.my_space') }} →
+                    <div class="mt-5 flex flex-wrap items-center gap-3 sm:mt-6">
+                        <p class="text-sm text-slate-500">{{ __('talenma.home.cta_new_visitor_question') }}</p>
+                        <a href="{{ route('register') }}" class="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50">
+                            {{ __('talenma.home.hero_create_account') }}
+                            <span aria-hidden="true">→</span>
                         </a>
                     </div>
                 @endguest
@@ -86,60 +93,7 @@
             </div>
         </div>
 
-        {{-- Panneau recherche : même largeur que le reste du shell (dont Opportunités) --}}
-        <div class="mt-8 lg:mt-10 w-full hero-search-panel rounded-xl border border-gray-100 bg-white overflow-visible">
-            <div class="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 bg-gray-50/80">
-                <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <span class="text-base sm:text-sm font-semibold text-gray-800">
-                    {{ ($showCompanySearch ?? false) ? __('talenma.home.company_search_tab') : __('talenma.home.search_tab') }}
-                </span>
-            </div>
-
-            @if ($showCompanySearch ?? false)
-                <x-hero-company-search
-                    :sectors="$professionSectors"
-                    :countries="$companyCountries ?? []"
-                />
-            @else
-                <x-hero-progressive-search
-                    :sectors="$professionSectors"
-                    :keyword="request('keyword', '')"
-                    :sector="request('sector', '')"
-                    :profession="request('profession', '')"
-                    :can-view-profiles="$canViewProfiles ?? false"
-                />
-            @endif
-        </div>
-
-        @if ($talentsCount > 0)
-            <p class="mt-3 text-sm sm:text-sm text-gray-500">{{ __('talenma.home.talent_count', ['count' => $talentsCount]) }}</p>
-        @endif
-
-        {{-- Bandeau réassurance style Malt --}}
-        <div class="mt-8 lg:mt-10 pt-6 border-t border-gray-100">
-            <div class="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-8 lg:gap-12 text-sm sm:text-sm font-medium text-gray-700">
-                <div class="flex items-center gap-2">
-                    <svg class="w-6 h-6 shrink-0 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
-                    </svg>
-                    {{ __('talenma.home.reinsurance_remote') }}
-                </div>
-                <div class="flex items-center gap-2">
-                    <svg class="w-6 h-6 shrink-0 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                    </svg>
-                    {{ __('talenma.home.reinsurance_verified') }}
-                </div>
-                <div class="flex items-center gap-2">
-                    <svg class="w-6 h-6 shrink-0 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                    {{ __('talenma.home.reinsurance_free') }}
-                </div>
-            </div>
-        </div>
+        <x-home-steps />
 
         <div id="opportunites" class="scroll-mt-24">
             <x-latest-jobs-marquee
