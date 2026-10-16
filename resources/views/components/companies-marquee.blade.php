@@ -24,6 +24,17 @@
         </div>
 
         <div class="mt-10 w-full rounded-2xl border border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-teal-50/40 p-5 shadow-sm ring-1 ring-indigo-100/60 sm:p-6 lg:p-7">
+            <div class="mb-5 flex justify-end sm:mb-6">
+                <a
+                    href="{{ route('companies.public.index') }}"
+                    class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3.5 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 sm:text-xs"
+                >
+                    {{ __('talenma.home.companies_marquee_view_all') }}
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
             <div
                 class="relative sm:hidden"
                 x-data="socialPostsSlider({
