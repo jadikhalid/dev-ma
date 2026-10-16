@@ -20,29 +20,21 @@
 @endphp
 
 @if ($jobs->isNotEmpty())
-    <section
-        class="mt-14 w-full rounded-2xl border border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-teal-50/40 p-5 shadow-sm ring-1 ring-indigo-100/60 sm:p-6 lg:mt-16 lg:p-7"
-        aria-label="{{ __('talenma.home.latest_jobs_title') }}"
-    >
-        <div class="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
-            <div class="min-w-0">
-                <p class="text-[12px] sm:text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-600">
-                    {{ __('talenma.home.latest_jobs_eyebrow') }}
-                </p>
-                <div class="mt-1.5 flex items-center gap-2.5">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/25">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
-                    </span>
-                    <h2 class="truncate text-lg font-bold tracking-tight text-gray-900 sm:text-xl">
-                        {{ __('talenma.home.latest_jobs_title') }}
-                    </h2>
-                </div>
-            </div>
+    <section class="mt-14 w-full lg:mt-16" aria-labelledby="home-offers-title">
+        <div class="text-center">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                {{ __('talenma.home.latest_jobs_eyebrow') }}
+            </p>
+            <h2 id="home-offers-title" class="mx-auto mt-3 max-w-3xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.7rem] lg:leading-[1.15]">
+                {{ __('talenma.home.latest_jobs_title') }}
+            </h2>
+        </div>
+
+        <div class="mt-10 w-full rounded-2xl border border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-teal-50/40 p-5 shadow-sm ring-1 ring-indigo-100/60 sm:p-6 lg:p-7">
+        <div class="mb-5 flex justify-end sm:mb-6">
             <a
                 href="{{ $indexUrl }}"
-                class="inline-flex shrink-0 items-center justify-center gap-1.5 self-start rounded-xl border border-indigo-200 bg-white px-3.5 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 sm:text-xs sm:self-auto"
+                class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3.5 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 sm:text-xs"
             >
                 {{ __('talenma.home.latest_jobs_view_all') }}
                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -85,7 +77,7 @@
                 </svg>
             </button>
 
-            <div x-ref="viewport" class="overflow-hidden px-1">
+                <div x-ref="viewport" class="social-posts-slider-viewport overflow-hidden px-1">
                 <div
                     x-ref="track"
                     class="social-posts-slider-track flex gap-5"
@@ -267,6 +259,7 @@
                     ></button>
                 </template>
             </div>
+        </div>
         </div>
     </section>
 @endif

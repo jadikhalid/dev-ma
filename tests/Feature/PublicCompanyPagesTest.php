@@ -20,10 +20,11 @@ class PublicCompanyPagesTest extends TestCase
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('data-companies-view-all', false)
+            ->assertSee(__('talenma.home.companies_marquee_lead'))
+            ->assertSee(__('talenma.home.companies_marquee_accent'))
+            ->assertSee(__('talenma.home.companies_marquee_offers'))
             ->assertSee(route('companies.public.index'), false)
-            ->assertSee(route('companies.public.show', $company), false)
-            ->assertSee(__('talenma.home.companies_marquee_view_all'));
+            ->assertSee(route('companies.public.show', $company), false);
     }
 
     #[Test]

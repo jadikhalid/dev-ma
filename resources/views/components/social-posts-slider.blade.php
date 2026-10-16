@@ -57,7 +57,7 @@
                     </svg>
                 </button>
 
-                <div x-ref="viewport" class="overflow-hidden px-1">
+                <div x-ref="viewport" class="social-posts-slider-viewport overflow-hidden px-1">
                     <div
                         x-ref="track"
                         class="social-posts-slider-track flex gap-5"

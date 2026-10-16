@@ -101,53 +101,8 @@
                 :index-url="$latestJobsIndexUrl ?? route('jobs.gate')"
             />
         </div>
-    </div>
-</section>
 
-<section class="py-20 bg-white">
-    <div class="home-shell">
-        <h2 class="text-3xl font-bold text-center">{{ __('talenma.home.modes_title') }}</h2>
-        <p class="text-center text-gray-600 mt-3 max-w-2xl mx-auto">{{ __('talenma.home.modes_subtitle') }}</p>
-        <div class="mt-14 grid md:grid-cols-3 gap-8">
-            <div class="p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
-                <span class="text-3xl">🎯</span>
-                <h3 class="mt-4 text-xl font-bold">{{ __('talenma.home.mode_direct_title') }}</h3>
-                <p class="mt-3 text-gray-600 text-base sm:text-sm leading-relaxed">{{ __('talenma.home.mode_direct_desc') }}</p>
-            </div>
-            <div class="p-8 rounded-2xl border-2 border-indigo-200 bg-indigo-50/50 shadow-sm">
-                <span class="text-3xl">🤝</span>
-                <h3 class="mt-4 text-xl font-bold">{{ __('talenma.home.mode_intermediary_title') }}</h3>
-                <p class="mt-3 text-gray-600 text-base sm:text-sm leading-relaxed">{{ __('talenma.home.mode_intermediary_desc') }}</p>
-            </div>
-            <div class="p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
-                <span class="text-3xl">🏢</span>
-                <h3 class="mt-4 text-xl font-bold">{{ __('talenma.home.mode_morocco_title') }}</h3>
-                <p class="mt-3 text-gray-600 text-base sm:text-sm leading-relaxed">{{ __('talenma.home.mode_morocco_desc') }}</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="py-20 bg-gray-50">
-    <div class="home-shell grid md:grid-cols-2 gap-8">
-        <div class="bg-white p-8 rounded-2xl border shadow-sm">
-            <h3 class="text-xl font-bold">{{ __('talenma.home.talent_card_title') }}</h3>
-            <p class="mt-3 text-gray-600">{{ __('talenma.home.talent_card_desc') }}</p>
-            <ul class="mt-4 space-y-2 text-sm text-gray-700">
-                <li>✓ {{ __('talenma.home.talent_card_1') }}</li>
-                <li>✓ {{ __('talenma.home.talent_card_2') }}</li>
-                <li>✓ {{ __('talenma.home.talent_card_3') }}</li>
-            </ul>
-        </div>
-        <div class="bg-white p-8 rounded-2xl border shadow-sm">
-            <h3 class="text-xl font-bold">{{ __('talenma.home.company_card_title') }}</h3>
-            <p class="mt-3 text-gray-600">{{ __('talenma.home.company_card_desc') }}</p>
-            <ul class="mt-4 space-y-2 text-sm text-gray-700">
-                <li>✓ {{ __('talenma.home.company_card_1') }}</li>
-                <li>✓ {{ __('talenma.home.company_card_2') }}</li>
-                <li>✓ {{ __('talenma.home.company_card_3') }}</li>
-            </ul>
-        </div>
+        <x-home-work-ways />
     </div>
 </section>
 

@@ -193,6 +193,7 @@ class CompanyCatalogSearchService
     private function presentForMarquee(User $company): array
     {
         $profile = $company->companyProfile;
+        $about = trim(strip_tags((string) ($profile?->description ?: $profile?->hiring_needs ?: '')));
 
         return [
             'id' => $company->id,
@@ -204,6 +205,7 @@ class CompanyCatalogSearchService
                 ? $profile->professionSector->localizedName()
                 : ($profile?->sector ?: null),
             'country' => $profile?->countryLabel(),
+            'excerpt' => $about !== '' ? Str::limit($about, 140) : null,
         ];
     }
 
