@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\LibraryCategoryController as AdminLibraryCategory
 use App\Http\Controllers\AtsScoreGateController;
 use App\Http\Controllers\LibraryGateController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\CareerPageController;
 use App\Http\Controllers\Company\DirectHireController as CompanyDirectHireController;
 use App\Http\Controllers\CompanyOfferController;
 use App\Http\Controllers\CompanyPortalLegacyRedirectController;
@@ -73,6 +74,9 @@ Route::post('/newsletter/subscribe', [NewsletterPreferenceController::class, 'su
     ->middleware('throttle:10,1')
     ->name('newsletter.subscribe');
 
+Route::get('/offres', [CareerPageController::class, 'offers'])->name('career.offers');
+Route::view('/outils-carriere', 'career.tools')->name('career.tools');
+Route::view('/comment-ca-marche', 'career.how')->name('career.how');
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])
     ->where('slug', '[A-Za-z0-9\-]+')

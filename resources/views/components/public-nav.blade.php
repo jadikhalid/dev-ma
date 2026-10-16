@@ -3,423 +3,218 @@
 ])
 
 @php
-    use App\Models\JobPosting;
-
-    $onPublicJobShow = request()->routeIs('jobs.public.show');
-    $onCompanyOffer = request()->routeIs('company.offer');
-    $onBlog = request()->routeIs('blog.*');
     $onCompanyShow = request()->routeIs('companies.public.show');
-    $showCompanyOfferCta = Auth::guest()
-        && ! $onCompanyOffer
-        && ! $onBlog;
-    $showAnnoncesNav = ! $onBlog && ! $onCompanyOffer && ! $onCompanyShow;
-    $showBlogNav = ! $onCompanyOffer;
-    $showAppsLauncher = ! $onCompanyOffer && ! $onCompanyShow;
     $showExploreCompanies = $onCompanyShow;
-    $onBlogIndex = request()->routeIs('blog.index');
-    $annoncesNavDisabled = $onPublicJobShow;
-    $blogNavDisabled = $onBlogIndex || $onPublicJobShow;
 
-    $freshJobTimestamps = $showAnnoncesNav && ! $annoncesNavDisabled
-        ? JobPosting::query()
-            ->where('status', JobPosting::STATUS_PUBLISHED)
-            ->whereNotNull('published_at')
-            ->where('published_at', '>=', now()->subDay())
-            ->orderByDesc('published_at')
-            ->pluck('published_at')
-            ->map(fn ($publishedAt) => $publishedAt->getTimestamp())
-            ->values()
-            ->all()
-        : [];
+    $navLinks = [
+        [
+            'href' => route('career.offers'),
+            'label' => __('talenma.nav.offers_link'),
+            'active' => request()->routeIs('career.offers'),
+        ],
+        [
+            'href' => route('career.tools'),
+            'label' => __('talenma.nav.career_tools'),
+            'active' => request()->routeIs('career.tools'),
+        ],
+        [
+            'href' => route('career.how'),
+            'label' => __('talenma.nav.how_it_works'),
+            'active' => request()->routeIs('career.how'),
+        ],
+        [
+            'href' => route('blog.index'),
+            'label' => __('talenma.nav.career_advice'),
+            'active' => request()->routeIs('blog.*'),
+        ],
+        [
+            'href' => route('company.offer'),
+            'label' => __('talenma.nav.hiring'),
+            'active' => request()->routeIs('company.offer'),
+            'hiring' => true,
+            'blank' => true,
+        ],
+    ];
 
-    $navDisabledClass = 'mr-0.5 sm:mr-0 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-white/45 sm:text-gray-400 cursor-default select-none pointer-events-none';
-    $navLinkClass = 'relative mr-0.5 sm:mr-0 hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-white sm:hover:shadow-sm sm:hover:ring-1 sm:hover:ring-indigo-100';
+    $navLinkClass = 'relative inline-flex items-center px-3 py-1.5 text-sm font-medium tracking-tight text-slate-600 transition duration-200 after:absolute after:inset-x-3 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-indigo-500 after:transition after:duration-200 hover:text-indigo-700 hover:after:scale-x-100';
+    $navLinkActiveClass = 'relative inline-flex items-center px-3 py-1.5 text-sm font-semibold tracking-tight text-indigo-700 after:absolute after:inset-x-3 after:bottom-0 after:h-px after:bg-indigo-500';
+    $navHiringClass = 'inline-flex items-center rounded-[5px] bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700';
+    $menuLinkClass = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-700 sm:shadow-none sm:hover:bg-slate-50 sm:hover:text-indigo-700';
+    $menuLinkActiveClass = 'flex w-full items-center gap-2.5 rounded-xl bg-white/10 px-3 py-2.5 text-sm font-semibold text-white sm:rounded-xl sm:border-0 sm:bg-indigo-50 sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-semibold sm:text-indigo-700 sm:shadow-none';
+    $menuHiringClass = 'flex w-full items-center gap-2.5 rounded-xl bg-white/15 px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/25 sm:mt-1 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-semibold sm:text-indigo-700 sm:shadow-none sm:hover:bg-indigo-50';
 @endphp
 
 <header
-    @class([
-        'sticky top-0 z-50 w-full backdrop-blur-md bg-indigo-600/90 sm:bg-white/90',
-        'border-b border-white/10 sm:border-gray-100' => ! $fullWidth,
-        'border-b border-white/10 sm:border-gray-100 2xl:border-b-0' => $fullWidth,
-    ])
+    class="sticky top-0 z-50 w-full border-b border-white/10 bg-indigo-600/90 backdrop-blur-md sm:border-gray-100 sm:bg-white/95"
+    x-data="{ menuOpen: false }"
+    @keydown.escape.window="menuOpen = false"
+    @click.outside="menuOpen = false"
+    @locale-menu-open.window="menuOpen = false"
+    data-public-header
 >
     <div @class([
-        'w-full mx-auto',
-        'home-align-wide px-4 sm:px-6 lg:px-10 xl:px-12 2xl:px-10' => $fullWidth,
-        'max-w-7xl px-4 sm:px-6 lg:px-8' => ! $fullWidth,
+        'mx-auto w-full',
+        'home-align-wide pl-4 pr-3 sm:px-6 lg:px-10 xl:px-12 2xl:px-10' => $fullWidth,
+        'max-w-7xl pl-4 pr-3 sm:px-6 lg:px-8' => ! $fullWidth,
     ])>
-        <div @class([
-            'flex items-center h-20 sm:h-16',
-            '2xl:border-b 2xl:border-gray-100' => $fullWidth,
-        ])>
+        <div class="flex h-20 items-center gap-2 sm:h-[4.25rem] sm:gap-3">
             <div class="flex shrink-0 items-center">
-                <div class="brand-logo-phone">
-                    <x-brand-logo href="{{ route('home') }}" size="md" phone />
+                <div class="flex items-center gap-4 sm:hidden">
+                    <div class="flex items-center" data-phone-logo>
+                        <x-brand-logo href="{{ route('home') }}" size="md" phone />
+                    </div>
+                    <span class="h-8 w-px shrink-0 bg-white" data-phone-locale-rule aria-hidden="true"></span>
+                    <x-header-locale-menu align="left" tone="light" />
                 </div>
-                <div class="brand-logo-desktop">
+                <div class="hidden sm:block">
                     <x-brand-logo href="{{ route('home') }}" size="sm" />
                 </div>
-                <div class="hidden lg:flex items-center" data-header-locale-switcher>
-                    <span class="mx-5 h-9 w-0.5 rounded-full bg-gradient-to-b from-indigo-600 via-violet-400 to-amber-400 opacity-80" aria-hidden="true" data-header-locale-divider></span>
-                    <x-locale-switcher />
-                </div>
             </div>
 
-            @if ($showCompanyOfferCta)
-            <div class="hidden min-w-0 flex-1 items-center justify-center px-4 sm:flex">
-                <a
-                    href="{{ route('company.offer') }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="{{ __('talenma.nav.company_offer') }}"
-                    class="inline-flex max-w-full shrink items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold tracking-wide transition bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/80 shadow-none hover:bg-indigo-100 hover:ring-indigo-300"
+            <nav class="ml-4 hidden items-center gap-1 xl:ml-8 xl:flex" data-header-nav-group aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
+                @foreach ($navLinks as $link)
+                    @if (! empty($link['hiring']))
+                        <span class="mx-3 h-5 w-px shrink-0 bg-gray-200" aria-hidden="true"></span>
+                    @endif
+                    <a
+                        href="{{ $link['href'] }}"
+                        @class([
+                            $navHiringClass => ! empty($link['hiring']),
+                            $navLinkActiveClass => empty($link['hiring']) && $link['active'],
+                            $navLinkClass => empty($link['hiring']) && ! $link['active'],
+                        ])
+                        @if (! empty($link['hiring'])) data-header-hiring @endif
+                        @if (! empty($link['blank'])) target="_blank" rel="noopener noreferrer" @endif
+                        @if ($link['active']) aria-current="page" @endif
+                    >{{ $link['label'] }}</a>
+                @endforeach
+            </nav>
+
+            <div class="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
+                <button
+                    type="button"
+                    class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/95 transition hover:bg-white/15 sm:hidden"
+                    data-phone-menu
+                    @click="menuOpen = ! menuOpen; if (menuOpen) $dispatch('header-menu-open')"
+                    :aria-expanded="menuOpen.toString()"
+                    aria-controls="public-header-menu"
+                    :aria-label="menuOpen ? @js(__('talenma.nav.mobile_menu_close')) : @js(__('talenma.nav.mobile_menu_open'))"
                 >
-                    <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008V7.5Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"/>
+                    <svg x-show="!menuOpen" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
                     </svg>
-                    <span class="hidden truncate xl:inline">{{ __('talenma.nav.company_offer') }}</span>
-                </a>
-            </div>
-            @endif
-
-            <div @class([
-                'ml-auto flex shrink-0 items-center gap-2.5 sm:gap-3',
-                'sm:ml-0' => $showCompanyOfferCta,
-            ])>
+                    <svg x-show="menuOpen" x-cloak class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                    </svg>
+                </button>
                 @if ($showExploreCompanies)
                     <a
                         href="{{ route('companies.public.index') }}"
-                        class="inline-flex h-11 w-11 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/15 text-sm font-semibold text-white transition hover:bg-white/25 sm:mr-2 sm:h-auto sm:w-auto sm:rounded-lg sm:border-0 sm:bg-gray-900 sm:px-4 sm:py-2 sm:shadow-sm sm:hover:bg-gray-700"
-                        aria-label="{{ __('talenma.nav.explore_companies') }}"
+                        class="hidden items-center rounded-[5px] bg-gray-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 lg:inline-flex"
                         data-header-explore-companies
-                    >
-                        <svg class="h-5 w-5 shrink-0 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
-                        </svg>
-                        <span class="hidden sm:inline">{{ __('talenma.nav.explore_companies') }}</span>
-                    </a>
-                @endif
-
-                {{-- Desktop / tablette : liens directs --}}
-                @if ($showAnnoncesNav || $showBlogNav)
-                <div class="contents sm:mr-1 sm:flex sm:items-center sm:gap-0.5 sm:rounded-xl sm:border sm:border-indigo-100 sm:bg-indigo-50/60 sm:p-1" data-header-nav-group>
-                @if ($showAnnoncesNav)
-                    @if ($annoncesNavDisabled)
-                        <span
-                            aria-disabled="true"
-                            class="{{ $navDisabledClass }}"
-                        >
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.875 1.975-1.95 1.975H5.7c-1.075 0-1.95-.881-1.95-1.975v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.875-1.954-1.95-1.954h-3.15V4.875C14.25 3.839 13.41 3 12.375 3h-0.75C10.59 3 9.75 3.839 9.75 4.875V6.752H6.6c-1.075 0-1.95.873-1.95 1.954v3.783c0 .655.287 1.252.75 1.661m16.5 0H3.75"/>
-                            </svg>
-                            <span>{{ __('talenma.nav.jobs') }}</span>
-                        </span>
-                    @else
-                        <a
-                            href="{{ route('home') }}#opportunites"
-                            class="{{ $navLinkClass }}"
-                            x-data="homeAnnoncesNav({
-                                timestamps: @js($freshJobTimestamps),
-                                homeUrl: @js(route('home')),
-                                sectionId: 'opportunites',
-                                storageKey: 'tdm.home.annonces.seen_at',
-                            })"
-                            @click="onClick($event)"
-                            :aria-label="badgeCount > 0 ? @js(__('talenma.nav.annonces_with_new')).replace(':count', String(badgeCount)) : @js(__('talenma.nav.jobs'))"
-                        >
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.875 1.975-1.95 1.975H5.7c-1.075 0-1.95-.881-1.95-1.975v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.875-1.954-1.95-1.954h-3.15V4.875C14.25 3.839 13.41 3 12.375 3h-0.75C10.59 3 9.75 3.839 9.75 4.875V6.752H6.6c-1.075 0-1.95.873-1.95 1.954v3.783c0 .655.287 1.252.75 1.661m16.5 0H3.75"/>
-                            </svg>
-                            <span class="relative inline-block leading-none">
-                                <span
-                                    x-show="badgeCount > 0"
-                                    x-cloak
-                                    x-text="badgeCount > 99 ? '99+' : badgeCount"
-                                    class="pointer-events-none absolute -top-2 -right-2.5 z-20 inline-flex h-4 min-w-4 items-center justify-center rounded-[50%] bg-rose-500 px-1 text-center text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white"
-                                ></span>
-                                <span>{{ __('talenma.nav.jobs') }}</span>
-                            </span>
-                        </a>
-                    @endif
-                    @if ($annoncesNavDisabled)
-                        <span aria-disabled="true" class="{{ $navDisabledClass }}">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
-                            </svg>
-                            <span>{{ __('talenma.nav.partner_companies') }}</span>
-                        </span>
-                    @else
-                        <a
-                            href="{{ route('home') }}#entreprises"
-                            class="{{ $navLinkClass }}"
-                            x-data="homeSectionLink({ sectionId: 'entreprises' })"
-                            @click="onClick($event)"
-                            data-header-partner-companies-link
-                        >
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
-                            </svg>
-                            <span>{{ __('talenma.nav.partner_companies') }}</span>
-                        </a>
-                    @endif
-                @endif
-                @if ($showBlogNav)
-                @if ($blogNavDisabled)
-                    <span
-                        @if ($onBlogIndex) aria-current="page" @endif
-                        aria-disabled="true"
-                        @class([
-                            'mr-1 sm:mr-0 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold cursor-default select-none pointer-events-none',
-                            'text-white/45 sm:text-gray-400' => ! $onBlogIndex,
-                            'text-white sm:bg-white sm:text-indigo-700 sm:shadow-sm sm:ring-1 sm:ring-indigo-100' => $onBlogIndex,
-                            'hidden sm:inline-flex' => $showAnnoncesNav,
-                        ])
-                    >
-                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5"/>
-                        </svg>
-                        <span>{{ __('talenma.nav.blog') }}</span>
-                    </span>
-                @else
-                    <a
-                        href="{{ route('blog.index') }}"
-                        @class([
-                            'mr-1 sm:mr-0 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition text-white/95 hover:bg-white/15 sm:text-indigo-700 sm:hover:bg-white sm:hover:shadow-sm sm:hover:ring-1 sm:hover:ring-indigo-100',
-                            'hidden sm:inline-flex' => $showAnnoncesNav,
-                        ])
-                    >
-                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5"/>
-                        </svg>
-                        <span>{{ __('talenma.nav.blog') }}</span>
-                    </a>
-                @endif
-                @endif
-                </div>
-                @endif
-
-                {{-- Mobile : menu Annonces + Blog (badge visible sur le bouton) — masqué sur le blog / offre entreprise --}}
-                @if ($showAnnoncesNav)
-                <div
-                    class="relative sm:hidden"
-                    @if (! $annoncesNavDisabled)
-                    x-data="homeAnnoncesNav({
-                        timestamps: @js($freshJobTimestamps),
-                        homeUrl: @js(route('home')),
-                        sectionId: 'opportunites',
-                        storageKey: 'tdm.home.annonces.seen_at',
-                    })"
-                    @keydown.escape.window="closeMenu()"
-                    @endif
-                >
-                    @if ($annoncesNavDisabled)
-                        <span
-                            aria-disabled="true"
-                            class="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/40 cursor-default select-none pointer-events-none"
-                            aria-label="{{ __('talenma.nav.mobile_explore') }}"
-                        >
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
-                            </svg>
-                        </span>
-                    @else
-                    <button
-                        type="button"
-                        class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/95 hover:bg-white/15 transition"
-                        @click="toggleMenu()"
-                        :aria-expanded="menuOpen.toString()"
-                        aria-haspopup="menu"
-                        :aria-label="badgeCount > 0 ? @js(__('talenma.nav.mobile_explore_with_new')).replace(':count', String(badgeCount)) : @js(__('talenma.nav.mobile_explore'))"
-                    >
-                        <span
-                            x-show="badgeCount > 0"
-                            x-cloak
-                            x-text="badgeCount > 99 ? '99+' : badgeCount"
-                            class="pointer-events-none absolute -top-0.5 -right-0.5 z-20 inline-flex h-4 min-w-4 items-center justify-center rounded-[50%] bg-rose-500 px-1 text-center text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-indigo-600"
-                        ></span>
-                        <svg x-show="!menuOpen" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
-                        </svg>
-                        <svg x-show="menuOpen" x-cloak class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-
-                    <div
-                        x-show="menuOpen"
-                        x-cloak
-                        x-transition:enter="transition ease-out duration-150"
-                        x-transition:enter-start="opacity-0"
-                        x-transition:enter-end="opacity-100"
-                        x-transition:leave="transition ease-in duration-100"
-                        x-transition:leave-start="opacity-100"
-                        x-transition:leave-end="opacity-0"
-                        @click.outside="closeMenu()"
-                        class="fixed left-1/2 top-20 z-[60] w-[min(14rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/15 bg-indigo-700 p-1.5 shadow-2xl"
-                        role="menu"
-                        aria-label="{{ __('talenma.nav.mobile_explore') }}"
-                    >
-                        <a
-                            href="{{ route('home') }}#opportunites"
-                            role="menuitem"
-                            class="relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
-                            @click="onClick($event)"
-                        >
-                            <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.875 1.975-1.95 1.975H5.7c-1.075 0-1.95-.881-1.95-1.975v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.875-1.954-1.95-1.954h-3.15V4.875C14.25 3.839 13.41 3 12.375 3h-0.75C10.59 3 9.75 3.839 9.75 4.875V6.752H6.6c-1.075 0-1.95.873-1.95 1.954v3.783c0 .655.287 1.252.75 1.661m16.5 0H3.75"/>
-                            </svg>
-                            <span class="relative inline-block leading-none">
-                                <span
-                                    x-show="badgeCount > 0"
-                                    x-cloak
-                                    x-text="badgeCount > 99 ? '99+' : badgeCount"
-                                    class="pointer-events-none absolute -top-2 -right-2.5 z-20 inline-flex h-4 min-w-4 items-center justify-center rounded-[50%] bg-rose-500 px-1 text-center text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-indigo-700"
-                                ></span>
-                                <span>{{ __('talenma.nav.jobs') }}</span>
-                            </span>
-                        </a>
-                        <a
-                            href="{{ route('home') }}#entreprises"
-                            role="menuitem"
-                            class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
-                            @click="goToSection($event, 'entreprises')"
-                        >
-                            <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
-                            </svg>
-                            <span>{{ __('talenma.nav.partner_companies') }}</span>
-                        </a>
-                        <a
-                            href="{{ route('blog.index') }}"
-                            role="menuitem"
-                            class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
-                            @click="closeMenu()"
-                        >
-                            <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5"/>
-                            </svg>
-                            <span>{{ __('talenma.nav.blog') }}</span>
-                        </a>
-                        @if ($showCompanyOfferCta)
-                        <a
-                            href="{{ route('company.offer') }}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            role="menuitem"
-                            class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
-                            @click="closeMenu()"
-                        >
-                            <svg class="h-4 w-4 shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008V7.5Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"/>
-                            </svg>
-                            <span>{{ __('talenma.nav.company_offer') }}</span>
-                        </a>
-                        @endif
-                    </div>
-                    @endif
-                </div>
+                    >{{ __('talenma.nav.explore_companies') }}</a>
                 @endif
 
                 @auth
                     @php $authUser = Auth::user(); @endphp
-                    <span class="hidden sm:inline-flex text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap {{ $authUser->roleBadgeClasses() }}">
+                    <span class="hidden rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap lg:inline-flex {{ $authUser->roleBadgeClasses() }}">
                         {{ $authUser->roleLabel() }}
                     </span>
-                    @if ($showAppsLauncher && $authUser->canAccessWorkspaceApps())
-                        <x-talent-apps-launcher />
-                    @endif
-                    @if ($authUser->isTalent())
-                        <x-dropdown align="right" width="48" :open-on-hover="true">
-                            <x-slot name="trigger">
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 text-sm text-white/95 hover:bg-white/15 sm:text-gray-600 sm:hover:bg-gray-50 rounded-lg"
-                                    aria-label="{{ $authUser->headerDisplayName() }}"
-                                    aria-haspopup="menu"
-                                    data-header-display-aria
-                                >
-                                    <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-white/40 sm:ring-gray-200" />
-                                    <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
-                                    <svg class="h-4 w-4 shrink-0 text-white/90 transition-transform duration-300 ease-in-out sm:text-gray-400" :class="open ? 'rotate-180' : 'rotate-0'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" data-header-account-chevron><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
-                                </button>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link :href="route('dashboard')">{{ $authUser->dashboardNavLabel() }}</x-dropdown-link>
-                                <form method="POST" action="{{ route('logout') }}">@csrf
-                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
-                                </form>
-                            </x-slot>
-                        </x-dropdown>
-                    @elseif ($authUser->isStaff() || ($authUser->isCompany() && $authUser->isPendingApproval()))
-                        <x-dropdown align="right" width="48" :open-on-hover="true">
-                            <x-slot name="trigger">
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 text-sm text-white/95 hover:bg-white/15 sm:text-gray-600 sm:hover:bg-gray-50 rounded-lg"
-                                    aria-label="{{ $authUser->headerDisplayName() }}"
-                                    aria-haspopup="menu"
-                                    data-header-display-aria
-                                >
-                                    <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-white/40 sm:ring-gray-200" />
-                                    <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
-                                    <svg class="h-4 w-4 shrink-0 text-white/90 transition-transform duration-300 ease-in-out sm:text-gray-400" :class="open ? 'rotate-180' : 'rotate-0'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" data-header-account-chevron><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
-                                </button>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link :href="route('dashboard')">{{ $authUser->dashboardNavLabel() }}</x-dropdown-link>
-                                <form method="POST" action="{{ route('logout') }}">@csrf
-                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
-                                </form>
-                            </x-slot>
-                        </x-dropdown>
-                    @elseif ($authUser->isCompany())
-                        <x-dropdown align="right" width="48" :open-on-hover="true">
-                            <x-slot name="trigger">
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 text-sm text-white/95 hover:bg-white/15 sm:text-gray-600 sm:hover:bg-gray-50 rounded-lg"
-                                    aria-label="{{ $authUser->headerDisplayName() }}"
-                                    aria-haspopup="menu"
-                                    data-header-display-aria
-                                >
+                    <x-dropdown align="right" width="48" :open-on-hover="true">
+                        <x-slot name="trigger">
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 rounded-[5px] px-2 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                aria-label="{{ $authUser->headerDisplayName() }}"
+                                aria-haspopup="menu"
+                                data-header-display-aria
+                            >
+                                @if ($authUser->isCompany() && ! $authUser->isPendingApproval())
                                     <x-company-logo
                                         :profile="$authUser->companyOrganization() ?? $authUser->companyProfile"
                                         size="xs"
-                                        class="ring-1 ring-white/40 sm:ring-gray-200"
+                                        class="ring-1 ring-gray-200"
                                     />
-                                    <span class="hidden xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
-                                    <svg class="h-4 w-4 shrink-0 text-white/90 transition-transform duration-300 ease-in-out sm:text-gray-400" :class="open ? 'rotate-180' : 'rotate-0'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" data-header-account-chevron><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
-                                </button>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link :href="route('dashboard')">{{ $authUser->dashboardNavLabel() }}</x-dropdown-link>
-                                <form method="POST" action="{{ route('logout') }}">@csrf
-                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
-                                </form>
-                            </x-slot>
-                        </x-dropdown>
-                    @endif
+                                @else
+                                    <x-user-avatar :user="$authUser" size="xs" class="ring-1 ring-gray-200" />
+                                @endif
+                                <span class="hidden max-w-[10rem] truncate xl:inline" data-header-display-name>{{ $authUser->headerDisplayName() }}</span>
+                                <svg class="h-4 w-4 shrink-0 text-gray-400 transition-transform duration-300" :class="open ? 'rotate-180' : 'rotate-0'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" data-header-account-chevron><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <x-dropdown-link :href="route('dashboard')">{{ $authUser->dashboardNavLabel() }}</x-dropdown-link>
+                            <form method="POST" action="{{ route('logout') }}">@csrf
+                                <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('talenma.nav.logout') }}</x-dropdown-link>
+                            </form>
+                        </x-slot>
+                    </x-dropdown>
                 @else
-                    @if ($showAppsLauncher)
-                        <x-talent-apps-launcher :guest="true" />
-                    @endif
-                    <a
-                        href="{{ route('login') }}"
-                        class="inline-flex items-center px-4 py-2.5 sm:px-4 sm:py-2 text-base sm:text-sm font-semibold rounded-xl sm:rounded-lg transition-all duration-300 ease-in-out text-white/95 border border-white/30 bg-white/15 hover:bg-white/25 sm:text-indigo-600 sm:border-indigo-200/80 sm:bg-indigo-50/60 sm:hover:bg-indigo-100 sm:hover:border-indigo-300 sm:hover:text-indigo-700 sm:hover:shadow-sm"
-                    >{{ __('talenma.nav.login') }}</a>
+                    <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl border border-white/30 bg-white/15 px-4 py-2.5 text-base font-semibold text-white/95 transition-all duration-300 ease-in-out hover:bg-white/25 sm:hidden" data-phone-login>{{ __('talenma.nav.login') }}</a>
+                    <a href="{{ route('login') }}" class="hidden px-2 py-2 text-sm font-medium text-gray-800 hover:text-indigo-700 sm:inline-flex">{{ __('talenma.nav.login') }}</a>
                     <a
                         href="{{ route('register') }}"
-                        class="sm:hidden inline-flex items-center justify-center w-11 h-11 rounded-xl transition bg-white/95 text-indigo-700 hover:bg-white shadow-sm"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/95 text-indigo-700 shadow-sm transition hover:bg-white sm:hidden"
+                        data-phone-register
                         aria-label="{{ __('talenma.nav.register') }}"
-                        title="{{ __('talenma.nav.register') }}"
                     >
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM3 20a6 6 0 0 1 12 0v1H3v-1z"/>
                         </svg>
                     </a>
-                    <a href="{{ route('register') }}" class="hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors duration-300 ease-in-out">{{ __('talenma.nav.register') }}</a>
+                    <a href="{{ route('register') }}" class="hidden items-center rounded-[5px] bg-gradient-to-r from-indigo-600 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-600 sm:inline-flex">{{ __('talenma.nav.register') }}</a>
                 @endauth
+
+                <div class="hidden sm:block">
+                    <x-header-locale-menu />
+                </div>
+
+                <button
+                    type="button"
+                    class="hidden h-10 w-10 items-center justify-center rounded-[5px] text-gray-700 hover:bg-gray-50 sm:inline-flex xl:hidden"
+                    data-phone-menu
+                    @click="menuOpen = ! menuOpen; if (menuOpen) $dispatch('header-menu-open')"
+                    :aria-expanded="menuOpen.toString()"
+                    aria-controls="public-header-menu"
+                    :aria-label="menuOpen ? @js(__('talenma.nav.mobile_menu_close')) : @js(__('talenma.nav.mobile_menu_open'))"
+                >
+                    <svg x-show="!menuOpen" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                    </svg>
+                    <svg x-show="menuOpen" x-cloak class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
         </div>
+    </div>
+
+    <div
+        id="public-header-menu"
+        x-show="menuOpen"
+        x-cloak
+        x-transition:enter="transition ease-out duration-300 sm:duration-200"
+        x-transition:enter-start="opacity-0 translate-y-2 sm:translate-y-0"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        class="fixed left-1/2 top-20 z-[60] w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/15 bg-indigo-700 p-1.5 shadow-2xl xl:hidden sm:absolute sm:left-auto sm:right-6 sm:top-[calc(100%+0.6rem)] sm:w-72 sm:translate-x-0 sm:rounded-2xl sm:border-gray-100 sm:bg-white sm:p-2 sm:shadow-xl"
+    >
+        <nav class="flex flex-col sm:gap-0.5" aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
+            @foreach ($navLinks as $link)
+                <a
+                    href="{{ $link['href'] }}"
+                    @class([
+                        $menuHiringClass => ! empty($link['hiring']),
+                        $menuLinkActiveClass => empty($link['hiring']) && $link['active'],
+                        $menuLinkClass => empty($link['hiring']) && ! $link['active'],
+                    ])
+                    @if (! empty($link['hiring'])) data-header-hiring @endif
+                    @if (! empty($link['blank'])) target="_blank" rel="noopener noreferrer" @endif
+                    @click="menuOpen = false"
+                >{{ $link['label'] }}</a>
+            @endforeach
+            @if ($showExploreCompanies)
+                <a href="{{ route('companies.public.index') }}" class="flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-700 sm:shadow-none sm:hover:bg-slate-50 sm:hover:text-indigo-700 lg:hidden" data-header-explore-companies @click="menuOpen = false">{{ __('talenma.nav.explore_companies') }}</a>
+            @endif
+        </nav>
     </div>
 </header>

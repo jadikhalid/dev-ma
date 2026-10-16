@@ -6,7 +6,7 @@
 <section class="relative overflow-hidden bg-white hero-section" aria-label="hero">
     <div class="home-hero-wide-atmosphere" aria-hidden="true"></div>
 
-    {{-- Petit écran : header (4rem) + panneau marque = 100svh au chargement --}}
+    {{-- Petit écran : header (5rem) + panneau marque = 100svh au chargement --}}
     <div class="sm:hidden relative isolate flex h-[calc(100svh-5rem)] min-h-[calc(100svh-5rem)] flex-col justify-center overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-b from-indigo-600 via-indigo-600 to-teal-600" aria-hidden="true"></div>
         <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-indigo-500/40 to-transparent" aria-hidden="true"></div>

@@ -126,13 +126,12 @@ class PublicCompanyPagesTest extends TestCase
             ->assertOk()
             ->assertSee('data-header-explore-companies', false)
             ->assertSee(__('talenma.nav.explore_companies'))
-            ->assertDontSee('data-header-partner-companies-link', false)
             ->assertDontSee(route('home').'#opportunites', false);
 
         $this->get(route('home'))
             ->assertOk()
             ->assertDontSee('data-header-explore-companies', false)
-            ->assertSee('data-header-partner-companies-link', false);
+            ->assertSee(route('career.offers'), false);
     }
 
     /**

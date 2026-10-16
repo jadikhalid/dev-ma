@@ -96,55 +96,58 @@ class PublicAppsLauncherGateTest extends TestCase
     }
 
     #[Test]
-    public function public_home_places_locale_switcher_next_to_logo_with_divider(): void
+    public function public_home_places_locale_switchers_beside_the_logo_and_on_the_right(): void
     {
         $html = $this->get(route('home'))
             ->assertOk()
-            ->assertSee('data-header-locale-divider', false)
             ->getContent();
 
-        $switcher = strpos($html, 'data-header-locale-switcher');
-        $this->assertGreaterThan(strpos($html, 'brand-logo-desktop'), $switcher);
-        $this->assertLessThan(strpos($html, route('locale.switch', 'fr')), $switcher);
-        $this->assertSame(1, substr_count($html, route('locale.switch', 'en')));
+        $phoneSwitcher = strpos($html, 'data-header-locale-switcher');
+        $nav = strpos($html, 'data-header-nav-group');
+        $desktopSwitcher = strpos($html, 'data-header-locale-switcher', $phoneSwitcher + 1);
+
+        $this->assertNotFalse($phoneSwitcher);
+        $this->assertNotFalse($desktopSwitcher);
+        $this->assertLessThan($nav, $phoneSwitcher);
+        $this->assertGreaterThan($nav, $desktopSwitcher);
+        $this->assertLessThan(strpos($html, route('locale.switch', 'fr')), $phoneSwitcher);
+        $this->assertSame(2, substr_count($html, route('locale.switch', 'en')));
     }
 
     #[Test]
-    public function public_home_links_partner_companies_section_after_annonces(): void
+    public function public_home_links_the_career_pages(): void
     {
         $html = $this->get(route('home'))
             ->assertOk()
-            ->assertSee(route('home').'#entreprises', false)
-            ->assertSee(__('talenma.nav.partner_companies'))
+            ->assertSee(__('talenma.nav.offers_link'))
+            ->assertSee(__('talenma.nav.career_tools'))
+            ->assertSee(__('talenma.nav.how_it_works'))
+            ->assertSee(__('talenma.nav.career_advice'))
+            ->assertSee(__('talenma.nav.hiring'))
             ->getContent();
-
-        $this->assertGreaterThan(
-            strpos($html, route('home').'#opportunites'),
-            strpos($html, 'data-header-partner-companies-link')
-        );
-    }
-
-    #[Test]
-    public function public_home_groups_annonces_companies_and_blog_links(): void
-    {
-        $html = $this->get(route('home'))->assertOk()->getContent();
 
         $groupStart = strpos($html, 'data-header-nav-group');
-        $this->assertNotFalse($groupStart);
+        $group = substr($html, $groupStart, strpos($html, 'data-header-locale-switcher', $groupStart) - $groupStart);
 
-        $group = substr($html, $groupStart, strpos($html, 'Mobile : menu', $groupStart) - $groupStart);
-
-        $this->assertStringContainsString(route('home').'#opportunites', $group);
-        $this->assertStringContainsString('data-header-partner-companies-link', $group);
+        $this->assertStringContainsString(route('career.offers'), $group);
+        $this->assertStringContainsString(route('career.tools'), $group);
+        $this->assertStringContainsString(route('career.how'), $group);
         $this->assertStringContainsString(route('blog.index'), $group);
+        $this->assertStringContainsString(route('company.offer'), $group);
     }
 
     #[Test]
-    public function public_home_shows_apps_launcher_for_guests(): void
+    public function public_home_links_career_tools_page_instead_of_apps_menu(): void
     {
         $this->get(route('home'))
             ->assertOk()
+            ->assertSee(route('career.tools'), false)
+            ->assertDontSee(__('talenma.nav.apps_launcher_open'), false);
+
+        $this->get(route('career.tools'))
+            ->assertOk()
             ->assertSee(route('cv-builder.gate'), false)
-            ->assertSee(route('ats-score.gate'), false);
+            ->assertSee(route('ats-score.gate'), false)
+            ->assertSee(route('library.gate'), false);
     }
 }

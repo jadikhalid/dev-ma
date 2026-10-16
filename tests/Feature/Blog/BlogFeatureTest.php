@@ -197,9 +197,8 @@ class BlogFeatureTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee(route('blog.index'), false)
-            ->assertSee(__('talenma.nav.blog'), false)
-            ->assertSee(route('home').'#opportunites', false)
-            ->assertSee(__('talenma.nav.jobs'), false)
+            ->assertSee(__('talenma.nav.career_advice'), false)
+            ->assertSee(route('career.offers'), false)
             ->assertSee('id="opportunites"', false);
     }
 
@@ -208,7 +207,7 @@ class BlogFeatureTest extends TestCase
     {
         $this->get(route('blog.index'))
             ->assertOk()
-            ->assertSee(__('talenma.nav.blog'), false)
+            ->assertSee(__('talenma.nav.career_advice'), false)
             ->assertDontSee(route('home').'#opportunites', false);
 
         BlogPost::query()->create([
