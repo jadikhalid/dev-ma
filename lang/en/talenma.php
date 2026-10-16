@@ -953,6 +953,7 @@ An administrator or moderator is reviewing your application before your company 
         'news_ticker_scroll_next' => 'Scroll to newer news',
         'news_ticker_new_badge' => 'New',
         'news_ticker_today_badge' => 'Today',
+        'news_ticker_dot' => 'Story :n',
         'companies_marquee_eyebrow' => 'On the platform',
         'companies_marquee_title' => 'Partner companies',
         'companies_marquee_scroll_prev' => 'Scroll to previous companies',

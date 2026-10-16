@@ -10,6 +10,8 @@ Alpine.data('navOverflow', navOverflow);
 
 Alpine.data('magazineTicker', (config = {}) => ({
     inline: Boolean(config.inline),
+    manual: Boolean(config.manual),
+    dotCount: Number(config.dots) || 0,
     opacity: 1,
     translateY: 0,
     pointerEvents: 'auto',
@@ -31,6 +33,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
     marqueeCenterBase: 0,
     marqueeDistance: 0,
     marqueeSpeed: 72,
+    dotAnim: null,
 
     isBannerHovered: false,
     isDragging: false,
@@ -147,12 +150,28 @@ Alpine.data('magazineTicker', (config = {}) => ({
             this._lastAutoScrollTime = time;
 
             if (this.arrowHoldDirection !== 0) {
+                this.dotAnim = null;
                 this.marqueeScrollPx += this.arrowHoldDirection * this.arrowScrollSpeed * delta;
 
                 return;
             }
 
-            if (this.isDragging) {
+            if (this.dotAnim) {
+                const elapsed = time - this.dotAnim.start;
+                const progress = Math.min(1, elapsed / this.dotAnim.duration);
+                const eased = 1 - Math.pow(1 - progress, 3);
+
+                this.marqueeScrollPx = this.dotAnim.from + (this.dotAnim.to - this.dotAnim.from) * eased;
+
+                if (progress >= 1) {
+                    this.marqueeScrollPx = this.dotAnim.to;
+                    this.dotAnim = null;
+                }
+
+                return;
+            }
+
+            if (this.manual || this.isDragging) {
                 return;
             }
 
@@ -306,6 +325,7 @@ Alpine.data('magazineTicker', (config = {}) => ({
 
             this.marqueeDistance = cycleWidth;
             this.marqueeCenterBase = centerBase;
+            this.dotAnim = null;
 
             // Remeasure (images/resize): keep progress. Only the first layout starts at 0.
             if (! reset) {
@@ -372,6 +392,45 @@ Alpine.data('magazineTicker', (config = {}) => ({
         this.arrowHoldDirection = 0;
     },
 
+    get activeDot() {
+        if (! this.dotCount || ! this.marqueeDistance) {
+            return 0;
+        }
+
+        const itemWidth = this.marqueeDistance / this.dotCount;
+        const index = Math.round(this.marqueeScrollPx / itemWidth);
+
+        return ((index % this.dotCount) + this.dotCount) % this.dotCount;
+    },
+
+    goToDot(index) {
+        if (! this.dotCount || ! this.marqueeDistance) {
+            return;
+        }
+
+        const itemWidth = this.marqueeDistance / this.dotCount;
+        const distance = this.marqueeDistance;
+        const current = ((this.marqueeScrollPx % distance) + distance) % distance;
+        let delta = (index * itemWidth) - current;
+
+        if (delta > distance / 2) {
+            delta -= distance;
+        } else if (delta < -distance / 2) {
+            delta += distance;
+        }
+
+        if (Math.abs(delta) < 1) {
+            return;
+        }
+
+        this.dotAnim = {
+            from: this.marqueeScrollPx,
+            to: this.marqueeScrollPx + delta,
+            start: performance.now(),
+            duration: Math.min(1100, 420 + Math.abs(delta) * 0.45),
+        };
+    },
+
     canHoverPause() {
         return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     },
@@ -386,6 +445,10 @@ Alpine.data('magazineTicker', (config = {}) => ({
     },
 
     onPointerDown(event) {
+        if (this.manual) {
+            return;
+        }
+
         // Touch / phone: never capture — first tap must open the job link (iOS Safari).
         if (this.isPhoneMarquee() || this.isTouchUi() || event.pointerType === 'touch') {
             // Pause while the finger is on a job card (do not clear the pause flag).
