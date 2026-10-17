@@ -6,8 +6,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Données de référence idempotentes (catalogue, services).
- * Les contenus sociaux ne sont seedés que si les tables sont vides
- * (ne jamais écraser les publications admin en production).
+ * Le bandeau d'actualités n'est seedé que si la table est vide.
  */
 class ReferenceDataSeeder extends Seeder
 {
@@ -18,7 +17,6 @@ class ReferenceDataSeeder extends Seeder
             ProfessionSeeder::class,
             LibraryCategorySeeder::class,
             SocialFeedSeeder::class,
-            SocialPostSeeder::class,
         ]);
     }
 }

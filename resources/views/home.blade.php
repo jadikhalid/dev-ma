@@ -108,16 +108,27 @@
 
 <x-companies-marquee :companies="$featuredCompanies" />
 
+<x-home-career-tools />
+
 <x-social-posts-slider :items="$socialPosts" />
 
 @guest
-<section class="py-20 bg-indigo-600 text-white">
-    <div class="max-w-3xl mx-auto px-4 text-center">
-        <h2 class="text-3xl font-bold">{{ __('talenma.home.cta_title') }}</h2>
-        <p class="mt-4 text-indigo-100">{{ __('talenma.home.cta_subtitle') }}</p>
-        <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ route('register', ['role' => 'dev']) }}" class="px-8 py-3.5 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50">{{ __('talenma.home.cta_talent') }}</a>
-            <a href="{{ route('company.offer') }}" target="_blank" rel="noopener noreferrer" class="px-8 py-3.5 border border-white/30 font-semibold rounded-xl hover:bg-white/10">{{ __('talenma.home.cta_company') }}</a>
+<section class="pb-16 lg:pb-20">
+    <div class="home-shell">
+        <div class="home-cta-banner flex flex-col items-start justify-between gap-8 rounded-[1.75rem] px-6 py-8 sm:px-10 sm:py-10 lg:flex-row lg:items-center lg:px-12 lg:py-11">
+            <h2 id="home-cta-title" class="max-w-xl text-3xl font-extrabold leading-[1.15] tracking-tight text-white sm:text-4xl lg:text-[2.65rem]">
+                {{ __('talenma.home.cta_title') }}<br>
+                {{ __('talenma.home.cta_title_rest') }}
+                <span class="text-amber-300">{{ __('talenma.home.cta_title_accent') }}</span>
+            </h2>
+            <div class="flex w-full flex-col gap-3 sm:w-60">
+                <a href="{{ route('register') }}" class="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-indigo-50">
+                    {{ __('talenma.home.hero_create_account') }}
+                </a>
+                <a href="{{ route('career.offers') }}" class="inline-flex items-center justify-center rounded-full border border-white/80 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/20">
+                    {{ __('talenma.home.cta_offers') }}
+                </a>
+            </div>
         </div>
     </div>
 </section>

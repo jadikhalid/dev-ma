@@ -8,7 +8,6 @@ use App\Models\CompanyProfile;
 use App\Models\JobPosting;
 use App\Models\LibraryBook;
 use App\Models\Newsletter;
-use App\Models\SocialPost;
 use App\Models\User;
 use App\Services\NewsletterDeliveryService;
 use App\Services\NewsletterRenderer;
@@ -367,7 +366,7 @@ class NewsletterController extends Controller
     }
 
     /**
-     * @return array{jobs: list<array{id:int,label:string}>, blog: list<array{id:int,label:string}>, social: list<array{id:int,label:string}>, talents: list<array{id:int,label:string}>, companies: list<array{id:int,label:string}>, library: list<array{id:int,label:string}>, cv_templates: list<array{id:string,label:string}>}
+     * @return array{jobs: list<array{id:int,label:string}>, blog: list<array{id:int,label:string}>, talents: list<array{id:int,label:string}>, companies: list<array{id:int,label:string}>, library: list<array{id:int,label:string}>, cv_templates: list<array{id:string,label:string}>}
      */
     private function pickerPayload(): array
     {
@@ -388,14 +387,6 @@ class NewsletterController extends Controller
                 ->limit(30)
                 ->get(['id', 'title'])
                 ->map(fn (BlogPost $post) => [
-                    'id' => $post->id,
-                    'label' => $post->title,
-                ])->values()->all(),
-            'social' => SocialPost::query()
-                ->latest('id')
-                ->limit(30)
-                ->get(['id', 'title'])
-                ->map(fn (SocialPost $post) => [
                     'id' => $post->id,
                     'label' => $post->title,
                 ])->values()->all(),

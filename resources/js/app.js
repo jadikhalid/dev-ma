@@ -5301,18 +5301,11 @@ Alpine.data('sourcingIndex', () => ({
 Alpine.data('publicationsAdmin', () => ({
     newsOpen: false,
     newsEditOpen: false,
-    socialOpen: false,
-    socialEditOpen: false,
     deleteConfirmOpen: false,
     editAction: '',
     editTitle: '',
     editSubtitle: '',
     editUrl: '',
-    socialEditAction: '',
-    socialEditTitle: '',
-    socialEditSubtitle: '',
-    socialEditUrl: '',
-    socialEditNetwork: 'linkedin',
     deleteFormId: '',
     deleteModalTitle: '',
     deleteModalBody: '',
@@ -5321,8 +5314,6 @@ Alpine.data('publicationsAdmin', () => ({
     openNews() {
         this.closeDeleteConfirm(false);
         this.closeNewsEdit(false);
-        this.closeSocialEdit(false);
-        this.socialOpen = false;
         this.newsOpen = true;
         document.documentElement.classList.add('overflow-hidden');
     },
@@ -5336,8 +5327,6 @@ Alpine.data('publicationsAdmin', () => ({
     openNewsEdit(detail = {}) {
         this.closeDeleteConfirm(false);
         this.newsOpen = false;
-        this.socialOpen = false;
-        this.closeSocialEdit(false);
         this.editAction = detail.action || '';
         this.editTitle = detail.title || '';
         this.editSubtitle = detail.subtitle || '';
@@ -5371,66 +5360,9 @@ Alpine.data('publicationsAdmin', () => ({
         }
     },
 
-    openSocial() {
-        this.closeDeleteConfirm(false);
-        this.newsOpen = false;
-        this.closeNewsEdit(false);
-        this.closeSocialEdit(false);
-        this.socialOpen = true;
-        document.documentElement.classList.add('overflow-hidden');
-    },
-
-    closeSocial() {
-        this.socialOpen = false;
-        this.unlockBody();
-        document.getElementById('publications-social-create')?.reset();
-    },
-
-    openSocialEdit(detail = {}) {
-        this.closeDeleteConfirm(false);
-        this.newsOpen = false;
-        this.closeNewsEdit(false);
-        this.socialOpen = false;
-        this.socialEditAction = detail.action || '';
-        this.socialEditTitle = detail.title || '';
-        this.socialEditSubtitle = detail.subtitle || '';
-        this.socialEditUrl = detail.url || '';
-        this.socialEditNetwork = detail.network || 'linkedin';
-
-        const thumbnail = document.getElementById('post_edit_thumbnail');
-
-        if (thumbnail) {
-            thumbnail.value = '';
-        }
-
-        this.socialEditOpen = true;
-        document.documentElement.classList.add('overflow-hidden');
-    },
-
-    closeSocialEdit(resetBody = true) {
-        this.socialEditOpen = false;
-        this.socialEditAction = '';
-        this.socialEditTitle = '';
-        this.socialEditSubtitle = '';
-        this.socialEditUrl = '';
-        this.socialEditNetwork = 'linkedin';
-
-        const thumbnail = document.getElementById('post_edit_thumbnail');
-
-        if (thumbnail) {
-            thumbnail.value = '';
-        }
-
-        if (resetBody) {
-            this.unlockBody();
-        }
-    },
-
     openDeleteConfirm(detail = {}) {
         this.newsOpen = false;
         this.closeNewsEdit(false);
-        this.socialOpen = false;
-        this.closeSocialEdit(false);
         this.deleteFormId = detail.formId || '';
         this.deleteModalTitle = detail.modalTitle || '';
         this.deleteConfirmLabel = detail.confirmLabel || '';
@@ -5472,21 +5404,13 @@ Alpine.data('publicationsAdmin', () => ({
             this.closeNewsEdit();
         }
 
-        if (this.socialOpen) {
-            this.closeSocial();
-        }
-
-        if (this.socialEditOpen) {
-            this.closeSocialEdit();
-        }
-
         if (this.deleteConfirmOpen) {
             this.closeDeleteConfirm();
         }
     },
 
     unlockBody() {
-        if (! this.newsOpen && ! this.newsEditOpen && ! this.socialOpen && ! this.socialEditOpen && ! this.deleteConfirmOpen) {
+        if (! this.newsOpen && ! this.newsEditOpen && ! this.deleteConfirmOpen) {
             document.documentElement.classList.remove('overflow-hidden');
         }
     },
@@ -5501,14 +5425,6 @@ Alpine.data('publicationsAdmin', () => ({
         if (formId === 'publications-news-edit') {
             this.closeNewsEdit();
         }
-
-        if (formId === 'publications-social-create') {
-            this.closeSocial();
-        }
-
-        if (formId === 'publications-social-edit') {
-            this.closeSocialEdit();
-        }
     },
 }));
 
@@ -5516,12 +5432,14 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
     blocks: [],
     picker: config.picker || {},
     labels: config.labels || {},
-    blockTypes: ['header', 'hero', 'jobs', 'blog', 'social', 'talents', 'companies', 'stats', 'text', 'cta', 'feature', 'register', 'library', 'cv_templates'],
+    blockTypes: ['header', 'hero', 'jobs', 'blog', 'talents', 'companies', 'stats', 'text', 'cta', 'feature', 'register', 'library', 'cv_templates'],
     _uidSeq: 0,
 
     init() {
         const incoming = Array.isArray(config.blocks) ? config.blocks : [];
-        this.blocks = incoming.map((block) => this.withUid(block));
+        this.blocks = incoming
+            .filter((block) => block?.type !== 'social')
+            .map((block) => this.withUid(block));
     },
 
     nextUid() {
@@ -5544,7 +5462,6 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
         return ({
             jobs: 'job_ids',
             blog: 'post_ids',
-            social: 'social_ids',
             talents: 'user_ids',
             companies: 'company_profile_ids',
             library: 'book_ids',
@@ -5562,8 +5479,6 @@ Alpine.data('newsletterBuilder', (config = {}) => ({
                 return { type, heading: '', job_ids: [] };
             case 'blog':
                 return { type, heading: '', post_ids: [] };
-            case 'social':
-                return { type, heading: '', social_ids: [] };
             case 'talents':
                 return { type, heading: '', user_ids: [] };
             case 'companies':

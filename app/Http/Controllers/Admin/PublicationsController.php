@@ -4,13 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SocialFeedItem;
-use App\Models\SocialPost;
 use App\Support\SocialFeedStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PublicationsController extends Controller
@@ -18,14 +15,10 @@ class PublicationsController extends Controller
     public function index(): View
     {
         SocialFeedItem::pruneExcess();
-        SocialPost::pruneExcess();
 
         return view('admin.publications', [
             'newsItems' => SocialFeedItem::forNewsTicker(),
             'newsMaxItems' => SocialFeedItem::MAX_ITEMS,
-            'socialPosts' => SocialPost::forSlider(),
-            'socialMaxItems' => SocialPost::MAX_ITEMS,
-            'networks' => SocialPost::NETWORKS,
         ]);
     }
 
@@ -111,121 +104,5 @@ class PublicationsController extends Controller
         return redirect()
             ->to(route('admin.publications.index').'#actualites')
             ->with('news_deleted', true);
-    }
-
-    public function storeSocialPost(Request $request): RedirectResponse|JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'post_title' => ['required', 'string', 'max:255'],
-                'post_subtitle' => ['required', 'string', 'max:255'],
-                'post_url' => ['required', 'url', 'max:2048'],
-                'post_network' => ['required', Rule::in(SocialPost::NETWORKS)],
-                'post_thumbnail' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            ]);
-        } catch (ValidationException $exception) {
-            throw $exception;
-        }
-
-        try {
-            $thumbnailPath = null;
-
-            if ($request->hasFile('post_thumbnail')) {
-                $thumbnailPath = SocialFeedStorage::storeUpload($request->file('post_thumbnail'));
-            }
-
-            SocialPost::pushPost([
-                'title' => $validated['post_title'],
-                'subtitle' => $validated['post_subtitle'],
-                'url' => $validated['post_url'],
-                'network' => $validated['post_network'],
-                'thumbnail' => $thumbnailPath,
-                'created_by' => $request->user()->id,
-            ]);
-        } catch (ValidationException $exception) {
-            throw $exception;
-        } catch (\Throwable $exception) {
-            report($exception);
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => __('talenma.admin.publications_upload_failed'),
-                ], 500);
-            }
-
-            throw $exception;
-        }
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'message' => __('talenma.admin.social_posts.saved'),
-            ]);
-        }
-
-        return redirect()
-            ->to(route('admin.publications.index').'#reseaux')
-            ->with('post_saved', true);
-    }
-
-    public function updateSocialPost(Request $request, SocialPost $socialPost): RedirectResponse|JsonResponse
-    {
-        $validated = $request->validate([
-            'post_title' => ['required', 'string', 'max:255'],
-            'post_subtitle' => ['required', 'string', 'max:255'],
-            'post_url' => ['required', 'url', 'max:2048'],
-            'post_network' => ['required', Rule::in(SocialPost::NETWORKS)],
-            'post_thumbnail' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-        ]);
-
-        try {
-            if ($request->hasFile('post_thumbnail')) {
-                SocialFeedStorage::delete($socialPost->thumbnail);
-                $socialPost->thumbnail = SocialFeedStorage::storeUpload($request->file('post_thumbnail'));
-            }
-
-            $socialPost->fill([
-                'title' => $validated['post_title'],
-                'subtitle' => $validated['post_subtitle'],
-                'url' => $validated['post_url'],
-                'network' => $validated['post_network'],
-            ])->save();
-        } catch (ValidationException $exception) {
-            throw $exception;
-        } catch (\Throwable $exception) {
-            report($exception);
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => __('talenma.admin.publications_upload_failed'),
-                ], 500);
-            }
-
-            throw $exception;
-        }
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'message' => __('talenma.admin.social_posts.updated'),
-            ]);
-        }
-
-        return redirect()
-            ->to(route('admin.publications.index').'#reseaux')
-            ->with('post_updated', true);
-    }
-
-    public function destroySocialPost(Request $request, SocialPost $socialPost): RedirectResponse|JsonResponse
-    {
-        $socialPost->delete();
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'message' => __('talenma.admin.social_posts.deleted'),
-            ]);
-        }
-
-        return redirect()
-            ->to(route('admin.publications.index').'#reseaux')
-            ->with('post_deleted', true);
     }
 }

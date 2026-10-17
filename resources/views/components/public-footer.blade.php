@@ -2,19 +2,42 @@
     'newsletter' => true,
 ])
 
+@php
+    $onCompanyHost = \App\Support\PortalHost::isCompanyHost();
+    $footerLinks = [
+        ['href' => route('career.offers'), 'label' => __('talenma.nav.offers_link'), 'active' => request()->routeIs('career.offers')],
+        ['href' => route('career.tools'), 'label' => __('talenma.nav.career_tools'), 'active' => request()->routeIs('career.tools')],
+        ['href' => route('career.how'), 'label' => __('talenma.nav.how_it_works'), 'active' => request()->routeIs('career.how')],
+        ['href' => route('company.about'), 'label' => __('talenma.footer.about'), 'active' => request()->routeIs('company.about'), 'blank' => ! $onCompanyHost],
+        ['href' => route('faq'), 'label' => __('talenma.footer.faq'), 'active' => request()->routeIs('faq')],
+        ['href' => route('contact'), 'label' => __('talenma.footer.contact'), 'active' => request()->routeIs('contact')],
+        ['href' => route('company.offer'), 'label' => __('talenma.footer.company_space'), 'active' => request()->routeIs('company.offer'), 'blank' => ! $onCompanyHost],
+    ];
+@endphp
+
 <footer class="bg-gray-900 text-gray-300">
     <div class="home-shell py-12">
-        <div class="flex flex-col gap-6">
-            <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div class="flex flex-col gap-8">
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                 <x-brand-logo white size="sm" :linked="false" />
-                <div class="flex flex-col items-start gap-3 sm:shrink-0 sm:items-end">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">{{ __('talenma.footer.follow_us') }}</p>
-                    <x-social-links variant="dark" />
-                </div>
+                <x-social-links variant="dark" />
             </div>
-            <p class="text-sm text-gray-400 max-w-md">{{ __('talenma.footer.tagline') }}</p>
+            <nav aria-label="{{ __('talenma.footer.nav_label') }}" class="grid grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
+                @foreach ($footerLinks as $link)
+                    <a
+                        href="{{ $link['href'] }}"
+                        @class([
+                            'text-sm font-medium leading-snug transition hover:text-white',
+                            'text-white' => $link['active'],
+                            'text-gray-300' => ! $link['active'],
+                        ])
+                        @if (! empty($link['blank'])) target="_blank" rel="noopener noreferrer" @endif
+                        @if ($link['active']) aria-current="page" @endif
+                    >{{ $link['label'] }}</a>
+                @endforeach
+            </nav>
             @if ($newsletter)
-            <div class="mt-6 max-w-md">
+            <div class="max-w-md">
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">{{ __('talenma.newsletter.public_subscribe_title') }}</p>
                 <p class="mt-1 text-sm text-gray-400">{{ __('talenma.newsletter.public_subscribe_help') }}</p>
                 <form method="POST" action="{{ route('newsletter.subscribe') }}" class="mt-3 flex flex-col sm:flex-row gap-2">

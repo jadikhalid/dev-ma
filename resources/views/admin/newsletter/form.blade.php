@@ -37,7 +37,6 @@
                     'hero' => __('talenma.newsletter.block_type_hero'),
                     'jobs' => __('talenma.newsletter.block_type_jobs'),
                     'blog' => __('talenma.newsletter.block_type_blog'),
-                    'social' => __('talenma.newsletter.block_type_social'),
                     'talents' => __('talenma.newsletter.block_type_talents'),
                     'companies' => __('talenma.newsletter.block_type_companies'),
                     'stats' => __('talenma.newsletter.block_type_stats'),
@@ -179,7 +178,7 @@
                             </div>
                         </template>
 
-                        <template x-if="['jobs','blog','social','talents','companies','library'].includes(block.type)">
+                        <template x-if="['jobs','blog','talents','companies','library'].includes(block.type)">
                             <div class="space-y-2">
                                 <input type="text" class="w-full rounded-lg border-gray-300 text-sm" :placeholder="labels.heading" x-model="block.heading">
                                 <p class="text-xs text-slate-500" x-text="block.type === 'library' ? labels.pick_library : labels.pick_items"></p>

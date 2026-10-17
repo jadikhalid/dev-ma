@@ -3,20 +3,24 @@
 @php
     $postCards = $items->map(fn ($item) => [
         'title' => $item->title,
-        'subtitle' => $item->subtitle,
-        'url' => $item->url,
-        'thumbnail' => $item->thumbnailUrl(),
-        'network' => $item->localizedNetworkLabel(),
-        'date' => $item->created_at->translatedFormat('d M Y'),
+        'subtitle' => $item->excerpt,
+        'url' => route('blog.show', $item->slug),
+        'thumbnail' => $item->coverUrl(),
+        'network' => __('talenma.home.social_feed_badge'),
+        'date' => ($item->published_at ?? $item->created_at)?->translatedFormat('d M Y'),
         'readLabel' => __('talenma.home.social_feed_read_external'),
     ])->values();
 @endphp
 
-<section id="publications" class="py-20 scroll-mt-28">
+<section id="publications" class="scroll-mt-28 pb-20" aria-labelledby="home-publications-title">
     <div class="home-shell">
-        <div class="max-w-2xl">
-            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">{{ __('talenma.home.social_feed_eyebrow') }}</p>
-            <h2 class="mt-3 text-3xl font-bold text-gray-900">{{ __('talenma.home.social_feed_title') }}</h2>
+        <div class="text-center">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                {{ __('talenma.home.social_feed_eyebrow') }}
+            </p>
+            <h2 id="home-publications-title" class="mx-auto mt-3 max-w-3xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.7rem] lg:leading-[1.15]">
+                {{ __('talenma.home.social_feed_title') }}
+            </h2>
         </div>
 
         @if ($postCards->isEmpty())
@@ -57,7 +61,7 @@
                     </svg>
                 </button>
 
-                <div x-ref="viewport" class="social-posts-slider-viewport overflow-hidden px-1">
+                <div x-ref="viewport" class="social-posts-slider-viewport home-publications-viewport overflow-hidden px-1">
                     <div
                         x-ref="track"
                         class="social-posts-slider-track flex gap-5"
@@ -65,9 +69,7 @@
                     >
                         <template x-for="(item, index) in items" :key="index">
                             <a :href="item.url"
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               data-social-post-card
+                               data-home-blog-card
                                class="group flex shrink-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:border-indigo-200 hover:shadow-lg"
                                :style="cardStyle()">
                                 <div class="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-indigo-400 to-indigo-600">

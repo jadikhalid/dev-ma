@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BlogPost;
 use App\Models\JobPosting;
-use App\Models\SocialPost;
 use App\Models\User;
 use App\Services\CompanyCatalogSearchService;
 use App\Services\HeroTalentMosaicService;
@@ -52,7 +52,12 @@ class HomeController extends Controller
                 ->where('approval_status', User::APPROVAL_APPROVED)
                 ->count(),
             'heroTiles' => $this->heroTalentMosaic->tiles(),
-            'socialPosts' => SocialPost::forHomeSlider(),
+            'socialPosts' => BlogPost::query()
+                ->published()
+                ->forLocale(app()->getLocale())
+                ->latest('published_at')
+                ->limit(7)
+                ->get(),
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'canViewProfiles' => $canViewProfiles,
             'showCompanySearch' => $showCompanySearch,

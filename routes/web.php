@@ -77,6 +77,8 @@ Route::post('/newsletter/subscribe', [NewsletterPreferenceController::class, 'su
 Route::get('/offres', [CareerPageController::class, 'offers'])->name('career.offers');
 Route::view('/outils-carriere', 'career.tools')->name('career.tools');
 Route::view('/comment-ca-marche', 'career.how')->name('career.how');
+Route::view('/faq', 'pages.faq')->name('faq');
+Route::view('/contact', 'pages.contact')->name('contact');
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])
     ->where('slug', '[A-Za-z0-9\-]+')
@@ -294,9 +296,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/publications/news', [PublicationsController::class, 'storeNews'])->name('publications.news.store');
             Route::put('/publications/news/{newsItem}', [PublicationsController::class, 'updateNews'])->name('publications.news.update');
             Route::delete('/publications/news/{newsItem}', [PublicationsController::class, 'destroyNews'])->name('publications.news.destroy');
-            Route::post('/publications/social-posts', [PublicationsController::class, 'storeSocialPost'])->name('publications.social-posts.store');
-            Route::put('/publications/social-posts/{socialPost}', [PublicationsController::class, 'updateSocialPost'])->name('publications.social-posts.update');
-            Route::delete('/publications/social-posts/{socialPost}', [PublicationsController::class, 'destroySocialPost'])->name('publications.social-posts.destroy');
 
             Route::get('/blog', [BlogPostController::class, 'index'])->name('blog.index');
             Route::get('/blog/create', [BlogPostController::class, 'create'])->name('blog.create');
@@ -307,7 +306,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::redirect('/magazine-banner', '/admin/publications');
             Route::redirect('/news', '/admin/publications');
-            Route::redirect('/social-posts', '/admin/publications');
             Route::redirect('/social-feed', '/admin/publications');
         });
 

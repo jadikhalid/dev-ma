@@ -64,8 +64,6 @@ class Newsletter extends Model
 
     public const BLOCK_BLOG = 'blog';
 
-    public const BLOCK_SOCIAL = 'social';
-
     public const BLOCK_TALENTS = 'talents';
 
     public const BLOCK_COMPANIES = 'companies';
@@ -91,7 +89,6 @@ class Newsletter extends Model
         self::BLOCK_HERO,
         self::BLOCK_JOBS,
         self::BLOCK_BLOG,
-        self::BLOCK_SOCIAL,
         self::BLOCK_TALENTS,
         self::BLOCK_COMPANIES,
         self::BLOCK_STATS,

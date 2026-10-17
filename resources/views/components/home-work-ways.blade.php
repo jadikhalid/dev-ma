@@ -4,19 +4,19 @@
             'key' => 'remote',
             'label' => __('talenma.home.ways_remote'),
             'desc' => __('talenma.home.ways_remote_desc'),
-            'image' => 'images/home/way-remote.jpg',
+            'image' => 'images/home/way-remote.jpg', // Pexels 21852646, Eunjin Baek
         ],
         [
             'key' => 'visa',
             'label' => __('talenma.home.ways_visa'),
             'desc' => __('talenma.home.ways_visa_desc'),
-            'image' => 'images/home/way-visa.jpg',
+            'image' => 'images/home/way-visa.jpg', // Unsplash photo-1436491865332
         ],
         [
             'key' => 'local',
             'label' => __('talenma.home.ways_local'),
             'desc' => __('talenma.home.ways_local_desc'),
-            'image' => 'images/home/way-local.jpg',
+            'image' => 'images/home/way-local.jpg', // Pexels 31709064, Misbaa eri
         ],
     ];
 @endphp
@@ -38,7 +38,7 @@
                     <img
                         src="{{ asset($card['image']) }}"
                         alt=""
-                        class="h-full w-full object-cover {{ $card['key'] === 'remote' ? 'origin-center scale-[1.72]' : '' }}"
+                        class="h-full w-full object-cover"
                     >
                 </div>
                 <div class="px-4 py-3.5 sm:px-5 sm:py-4">

@@ -8,7 +8,6 @@ use App\Models\JobPosting;
 use App\Models\LibraryBook;
 use App\Models\Newsletter;
 use App\Models\NewsletterSubscriber;
-use App\Models\SocialPost;
 use App\Models\User;
 use App\Support\BlogCoverStorage;
 use App\Support\TalentCv\TalentCvMarketingPreview;
@@ -109,7 +108,6 @@ class NewsletterRenderer
             Newsletter::BLOCK_HERO => $this->renderHero($block),
             Newsletter::BLOCK_JOBS => $this->renderJobs($block),
             Newsletter::BLOCK_BLOG => $this->renderBlog($block, $locale),
-            Newsletter::BLOCK_SOCIAL => $this->renderSocial($block),
             Newsletter::BLOCK_TALENTS => $this->renderTalents($block, $locale),
             Newsletter::BLOCK_COMPANIES => $this->renderCompanies($block),
             Newsletter::BLOCK_STATS => $this->renderStats($block),
@@ -259,43 +257,6 @@ class NewsletterRenderer
                 .'<a href="'.e($url).'" style="font-size:13px;font-weight:600;color:#4f46e5;text-decoration:none;">'
                 .e(__('talenma.newsletter.read_article'))
                 .'</a></div>';
-        }
-
-        return $html;
-    }
-
-    /**
-     * @param  array<string, mixed>  $block
-     */
-    private function renderSocial(array $block): string
-    {
-        $ids = $this->idList($block['social_ids'] ?? []);
-        if ($ids === []) {
-            return '';
-        }
-
-        $posts = SocialPost::query()->whereIn('id', $ids)->get()
-            ->sortBy(fn (SocialPost $post) => array_search($post->id, $ids, true));
-
-        if ($posts->isEmpty()) {
-            return '';
-        }
-
-        $heading = trim((string) ($block['heading'] ?? __('talenma.newsletter.block_social_heading')));
-        $html = '<h2 style="margin:24px 0 12px;font-size:16px;font-weight:700;color:#111827;">'.e($heading).'</h2>';
-
-        foreach ($posts as $post) {
-            $html .= '<div style="margin:0 0 10px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;">'
-                .'<p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#111827;">'.e($post->title).'</p>';
-            if (filled($post->subtitle)) {
-                $html .= '<p style="margin:0 0 6px;font-size:13px;color:#6b7280;">'.e($post->subtitle).'</p>';
-            }
-            if (filled($post->url)) {
-                $html .= '<a href="'.e($post->url).'" style="font-size:13px;font-weight:600;color:#4f46e5;text-decoration:none;">'
-                    .e(__('talenma.newsletter.view_external'))
-                    .'</a>';
-            }
-            $html .= '</div>';
         }
 
         return $html;
