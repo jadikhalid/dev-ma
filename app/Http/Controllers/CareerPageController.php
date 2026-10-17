@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobPosting;
+use App\Models\Profile;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class CareerPageController extends Controller
 {
-    public function offers(Request $request): View
+    public function offers(Request $request): View|Response
     {
         $user = auth()->user();
         $canBrowseTalentJobs = $user && $user->isTalent() && $user->isApproved();
@@ -26,12 +28,17 @@ class CareerPageController extends Controller
                 $like = '%'.addcslashes($search, '%_\\').'%';
                 $query->where(function ($inner) use ($like) {
                     $inner->where('title', 'like', $like)
-                        ->orWhere('description', 'like', $like);
+                        ->orWhere('description', 'like', $like)
+                        ->orWhere('external_company_name', 'like', $like)
+                        ->orWhere('location_city', 'like', $like)
+                        ->orWhereHas('companyProfile.user', function ($user) use ($like) {
+                            $user->where('name', 'like', $like);
+                        });
                 });
             })
             ->orderByDesc('published_at')
             ->orderByDesc('id')
-            ->paginate(12)
+            ->paginate(10)
             ->withQueryString()
             ->through(function (JobPosting $job) use ($canBrowseTalentJobs, $canManageCompanyJobs, $viewerCompanyProfileId) {
                 $url = match (true) {
@@ -43,17 +50,58 @@ class CareerPageController extends Controller
                 };
 
                 $publishedAt = $job->published_at ?? $job->created_at;
+                $location = $job->locationLabel();
 
                 return [
                     'title' => $job->title,
-                    'excerpt' => Str::of(strip_tags((string) $job->description))->squish()->limit(160)->toString(),
+                    'excerpt' => Str::of(strip_tags((string) $job->description))->squish()->limit(140)->toString(),
                     'company' => $job->advertiserName(),
+                    'company_initials' => $job->advertiserInitials(),
+                    'logo_url' => $job->advertiserLogoUrl(),
                     'sector' => $job->professionSector?->localizedName() ?: null,
+                    'location' => $location !== '' ? $location : null,
+                    'work_modes' => $this->offerWorkModeLabels($job),
+                    'experience' => $job->experienceLabel() ?: null,
                     'date' => $publishedAt?->translatedFormat('d M Y') ?? '',
                     'url' => $url,
                 ];
             });
 
-        return view('career.offers', ['jobs' => $jobs]);
+        $payload = [
+            'jobs' => $jobs,
+            'search' => $search,
+        ];
+
+        if ($request->ajax()) {
+            return response()->view('career._offers-results', $payload);
+        }
+
+        return view('career.offers', $payload);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function offerWorkModeLabels(JobPosting $job): array
+    {
+        $labels = [
+            'remote' => __('talenma.home.ways_remote'),
+            'full_remote' => __('talenma.home.ways_remote'),
+            'visa_sponsorship' => __('talenma.home.ways_visa'),
+            'visa' => __('talenma.home.ways_visa'),
+            'local' => __('talenma.home.ways_local'),
+            'hybrid' => __('talenma.talent.work_mode_hybrid'),
+        ];
+
+        return collect($job->work_modes ?? [])
+            ->map(function ($mode) use ($labels) {
+                $key = strtolower(trim((string) $mode));
+
+                return $labels[$key] ?? (Profile::labelForWorkMode($key) ?: null);
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

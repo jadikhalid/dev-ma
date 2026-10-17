@@ -56,20 +56,33 @@
 
                 <div class="mt-6 sm:mt-8">
                     <p class="mb-2 text-xs font-medium tracking-wide text-slate-400">{{ __('talenma.home.hero_search_caption') }}</p>
-                    <form action="{{ route('career.offers') }}" method="GET" class="flex items-center gap-2 rounded-[1.35rem] bg-white p-2 shadow-[0_16px_40px_rgba(79,70,229,0.12)] ring-1 ring-slate-200/80">
-                        <label for="hero-career-search" class="sr-only">{{ __('talenma.home.hero_search_label') }}</label>
-                        <svg class="ml-2 h-5 w-5 shrink-0 text-indigo-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true">
-                            <circle cx="9" cy="9" r="5.25" stroke-width="1.75"/>
-                            <path d="M13.2 13.2 17 17" stroke-width="1.75" stroke-linecap="round"/>
-                        </svg>
-                        <input
-                            id="hero-career-search"
-                            type="search"
-                            name="q"
-                            value="{{ request('q') }}"
-                            placeholder="{{ __('talenma.home.hero_search_placeholder') }}"
-                            class="min-w-0 flex-1 border-0 bg-transparent py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-0"
-                        >
+                    <form
+                        action="{{ route('career.offers') }}"
+                        method="GET"
+                        class="flex flex-col gap-3 sm:flex-row sm:items-center"
+                        x-data="homeOffersSearch(@js([
+                            'empty' => __('talenma.home.search_validation_empty'),
+                            'short' => __('talenma.home.search_validation_short'),
+                            'long' => __('talenma.home.search_validation_long'),
+                            'chars' => __('talenma.home.search_validation_chars'),
+                        ]))"
+                        @submit="onSubmit($event)"
+                    >
+                        <label for="hero-career-search" class="sr-only">{{ __('talenma.career_pages.offers_search_label') }}</label>
+                        <div class="relative min-w-0 w-full flex-1">
+                            <svg class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/>
+                            </svg>
+                            <input
+                                id="hero-career-search"
+                                x-ref="query"
+                                name="q"
+                                type="search"
+                                value="{{ request('q') }}"
+                                placeholder="{{ __('talenma.career_pages.offers_search_placeholder') }}"
+                                class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                            >
+                        </div>
                         <button type="submit" class="inline-flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition hover:from-blue-700 hover:to-violet-600">
                             {{ __('talenma.home.search_submit') }}
                         </button>

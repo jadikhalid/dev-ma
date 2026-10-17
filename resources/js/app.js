@@ -10396,6 +10396,120 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
     },
 }));
 
+Alpine.data('homeOffersSearch', (messages = {}) => ({
+    onSubmit(event) {
+        const input = this.$refs.query;
+        const query = input.value.trim();
+        const message = this.validationMessage(query);
+
+        if (message) {
+            event.preventDefault();
+            this.$dispatch('toast-push', { type: 'error', message });
+            input.focus();
+
+            return;
+        }
+
+        input.value = query;
+    },
+
+    validationMessage(query) {
+        if (query === '') {
+            return messages.empty;
+        }
+
+        if (query.length < 2) {
+            return messages.short;
+        }
+
+        if (query.length > 80) {
+            return messages.long;
+        }
+
+        if (! /[\p{L}\p{N}]/u.test(query)) {
+            return messages.chars;
+        }
+
+        return null;
+    },
+}));
+
+Alpine.data('careerOffers', (config = {}) => ({
+    q: config.query || '',
+    loading: false,
+    url: config.url,
+    timer: null,
+    request: null,
+
+    onInput() {
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => this.search(1), 250);
+    },
+
+    async search(page = 1, scroll = false) {
+        const params = new URLSearchParams();
+        const query = this.q.trim();
+
+        if (query !== '') {
+            params.set('q', query);
+        }
+
+        if (page > 1) {
+            params.set('page', String(page));
+        }
+
+        const target = params.toString() === '' ? this.url : `${this.url}?${params.toString()}`;
+
+        this.request?.abort();
+        const request = new AbortController();
+        this.request = request;
+        this.loading = true;
+
+        try {
+            const response = await fetch(target, {
+                headers: {
+                    Accept: 'text/html',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                signal: request.signal,
+            });
+
+            if (! response.ok) {
+                return;
+            }
+
+            this.$refs.results.innerHTML = await response.text();
+            window.history.replaceState(null, '', target);
+
+            if (scroll) {
+                this.$root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } catch (error) {
+            if (error?.name !== 'AbortError') {
+                window.location.assign(target);
+            }
+        } finally {
+            if (this.request === request) {
+                this.loading = false;
+                this.request = null;
+            }
+        }
+    },
+
+    onPageClick(event) {
+        const link = event.target.closest('a[data-offers-page]');
+
+        if (! link || ! this.$refs.results.contains(link)) {
+            return;
+        }
+
+        event.preventDefault();
+        const page = Number(link.dataset.offersPage);
+        this.search(Number.isFinite(page) && page > 0 ? page : 1, true);
+    },
+}));
+
 Alpine.start();
 
 // Revalidate auth pages restored from the browser back-forward cache
