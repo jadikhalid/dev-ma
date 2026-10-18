@@ -39,7 +39,7 @@
                     @foreach (__('talenma.library_intro.steps') as $step)
                         <article class="box-border flex w-full shrink-0 snap-center flex-col overflow-hidden px-5 py-6 sm:px-8 sm:py-8" id="library-step-{{ $loop->iteration }}">
                             <img
-                                src="{{ asset($libraryIntroShots[$loop->index]) }}"
+                                src="{{ asset($libraryIntroShots[$loop->index]) }}?v={{ filemtime(public_path($libraryIntroShots[$loop->index])) }}"
                                 alt="{{ $step['title'] }}"
                                 class="w-full rounded-xl border border-slate-100 bg-slate-50"
                             >
