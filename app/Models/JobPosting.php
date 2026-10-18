@@ -286,6 +286,36 @@ class JobPosting extends Model
     }
 
     /**
+     * Short collaboration labels used on public offer cards and the public job page.
+     *
+     * @return list<string>
+     */
+    public function collaborationModeLabels(): array
+    {
+        $labels = [
+            'remote' => __('talenma.home.ways_remote'),
+            'full_remote' => __('talenma.home.ways_remote'),
+            'visa_sponsorship' => __('talenma.home.ways_visa'),
+            'visa' => __('talenma.home.ways_visa'),
+            'local' => __('talenma.home.ways_local'),
+            'onsite' => __('talenma.home.ways_local'),
+            'on_site' => __('talenma.home.ways_local'),
+            'hybrid' => __('talenma.talent.work_mode_hybrid'),
+        ];
+
+        return collect($this->work_modes ?? [])
+            ->map(function ($mode) use ($labels) {
+                $key = strtolower(trim((string) $mode));
+
+                return $labels[$key] ?? (Profile::labelForWorkMode($key) ?: null);
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * Exact profile match: sector, profession, experience range and compatible collaboration modes.
      */
     public function matchesTalentProfile(?User $talent): bool

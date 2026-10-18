@@ -24,6 +24,14 @@ class PublicJobShowTest extends TestCase
             ->assertSee(__('talenma.jobs.public_login_cta'), false)
             ->assertSee(__('talenma.jobs.public_register_cta'), false)
             ->assertSee(route('jobs.gate', $job), false)
+            ->assertSee(route('career.offers'), false)
+            ->assertSee(__('talenma.jobs.public_back_offers'), false)
+            ->assertSee('ACME Maroc', false)
+            ->assertSee(__('talenma.home.ways_remote'), false)
+            ->assertSee('Rabat', false)
+            ->assertSee(__('talenma.jobs.card_published_on', ['date' => $job->published_at->translatedFormat('d M Y')]), false)
+            ->assertDontSee('Entreprise', false)
+            ->assertDontSee('Mode de collaboration', false)
             ->assertDontSee(__('talenma.jobs.apply_external_cta'), false);
     }
 

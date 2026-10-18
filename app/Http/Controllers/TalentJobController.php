@@ -35,6 +35,13 @@ class TalentJobController extends Controller
             ? trim($request->string('sector')->toString())
             : '';
         $professionSlug = trim($request->string('profession')->toString());
+        $keyword = trim($request->string('q')->toString());
+        $activeKeyword = $this->usableJobKeyword($keyword);
+
+        if ($activeKeyword !== null) {
+            $sectorSlug = '';
+            $professionSlug = '';
+        }
 
         $applySearchFilters = $scope === 'all';
         $activeSectorSlug = $applySearchFilters ? $sectorSlug : '';
@@ -83,6 +90,22 @@ class TalentJobController extends Controller
                     fn ($profession) => $profession->where('slug', $activeProfessionSlug)
                 );
             })
+            ->when($activeKeyword !== null, function ($query) use ($activeKeyword) {
+                $like = '%'.addcslashes($activeKeyword, '%_\\').'%';
+                $query->where(function ($inner) use ($like) {
+                    $inner->where('title', 'like', $like)
+                        ->orWhere('description', 'like', $like)
+                        ->orWhere('external_company_name', 'like', $like)
+                        ->orWhere('location_city', 'like', $like)
+                        ->orWhereHas('companyProfile.user', fn ($user) => $user->where('name', 'like', $like))
+                        ->orWhereHas('profession', function ($profession) use ($like) {
+                            $profession->where('name_fr', 'like', $like)->orWhere('name_en', 'like', $like);
+                        })
+                        ->orWhereHas('professionSector', function ($sector) use ($like) {
+                            $sector->where('name_fr', 'like', $like)->orWhere('name_en', 'like', $like);
+                        });
+                });
+            })
             ->with(['companyProfile.user', 'professionSector', 'profession'])
             ->when(
                 in_array($scope, ['applied', 'closed'], true),
@@ -126,6 +149,7 @@ class TalentJobController extends Controller
                 'scope' => $scope,
                 'sector' => $applySearchFilters ? $sectorSlug : '',
                 'profession' => $applySearchFilters ? $professionSlug : '',
+                'q' => $keyword,
                 'total' => $jobs->total(),
                 'pagination' => $pagination,
                 'counts' => $counts,
@@ -140,8 +164,22 @@ class TalentJobController extends Controller
             'counts' => $counts,
             'sectorSlug' => $applySearchFilters ? $sectorSlug : '',
             'professionSlug' => $applySearchFilters ? $professionSlug : '',
+            'keyword' => $keyword,
             'professionSectors' => $this->professions->sectorsForLocale(),
         ]);
+    }
+
+    private function usableJobKeyword(string $keyword): ?string
+    {
+        if ($keyword === '' || mb_strlen($keyword) < 2 || mb_strlen($keyword) > 80) {
+            return null;
+        }
+
+        if (! preg_match('/[\p{L}\p{N}]/u', $keyword)) {
+            return null;
+        }
+
+        return $keyword;
     }
 
     public function show(Request $request, JobPosting $job): View

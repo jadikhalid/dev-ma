@@ -34,6 +34,10 @@ class VerifyPendingRegistrationController extends Controller
                 __('talenma.auth.registration_welcome_complete_profile')
             );
 
+            if ($user->canAccessWorkspaceApps() && in_array(request()->session()->get('url.intended'), [route('cv-builder.gate'), route('ats-score.gate'), route('library.gate')], true)) {
+                return redirect()->intended(route('profile.edit', ['panel' => 'talent']));
+            }
+
             return redirect()->route('profile.edit', ['panel' => 'talent']);
         }
 

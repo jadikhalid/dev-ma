@@ -1,8 +1,8 @@
 @php
     $user = auth()->user();
     $guest = auth()->guest();
-    $cvUrl = $guest ? route('cv-builder.gate') : route('talent.cv-builder.index');
-    $atsUrl = $guest ? route('ats-score.gate') : route('talent.ats-score.index');
+    $cvUrl = $guest ? route('cv-builder.intro') : route('talent.cv-builder.index');
+    $atsUrl = $guest ? route('ats-score.intro') : route('talent.ats-score.index');
 
     if ($user) {
         $accountUrl = ($user->isTalent() && $user->isApproved())

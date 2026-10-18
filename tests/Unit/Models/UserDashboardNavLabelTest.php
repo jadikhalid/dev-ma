@@ -17,7 +17,7 @@ class UserDashboardNavLabelTest extends TestCase
         $company = User::factory()->companyOwner()->make();
         $admin = User::factory()->make(['role' => 'admin']);
 
-        $this->assertSame('Tableau de bord', $talent->dashboardNavLabel());
+        $this->assertSame('Mon espace', $talent->dashboardNavLabel());
         $this->assertSame('Tableau de bord', $company->dashboardNavLabel());
         $this->assertSame('TDB', $admin->dashboardNavLabel());
     }

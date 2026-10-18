@@ -137,6 +137,77 @@ class PublicAppsLauncherGateTest extends TestCase
     }
 
     #[Test]
+    public function talent_home_keeps_only_career_advice_in_the_header_and_drops_career_footer_links(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $html = $this->actingAs($talent)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee(__('talenma.nav.my_space'), false)
+            ->assertDontSee(__('talenma.nav.dashboard'), false)
+            ->getContent();
+
+        $groupStart = strpos($html, 'data-header-nav-group');
+        $navTagStart = strrpos(substr($html, 0, $groupStart), '<nav');
+        $nav = substr($html, $navTagStart, strpos($html, '</nav>', $navTagStart) - $navTagStart);
+
+        $this->assertStringContainsString('xl:justify-end', $nav);
+        $this->assertStringContainsString('xl:ml-11', $html);
+        $this->assertStringContainsString(route('blog.index'), $nav);
+        $this->assertStringContainsString(__('talenma.nav.career_advice'), $nav);
+        $this->assertLessThan(
+            strpos($nav, 'data-header-my-space-rule'),
+            strpos($nav, route('blog.index'))
+        );
+        $this->assertLessThan(
+            strpos($nav, 'bg-gray-900'),
+            strpos($nav, 'data-header-my-space-rule')
+        );
+        $this->assertStringContainsString(route('dashboard'), $nav);
+        $this->assertStringContainsString(__('talenma.nav.my_space'), $nav);
+        $this->assertStringNotContainsString(route('career.offers'), $nav);
+        $this->assertStringNotContainsString(route('career.tools'), $nav);
+        $this->assertStringNotContainsString(route('career.how'), $nav);
+        $this->assertStringNotContainsString(route('company.offer'), $nav);
+
+        $footer = substr($html, strpos($html, '<footer'));
+        $this->assertStringNotContainsString(route('career.offers'), $footer);
+        $this->assertStringNotContainsString(route('career.tools'), $footer);
+        $this->assertStringNotContainsString(route('career.how'), $footer);
+        $this->assertStringContainsString(route('faq'), $footer);
+        $this->assertStringContainsString(route('contact'), $footer);
+        $this->assertStringContainsString(route('company.about'), $footer);
+        $this->assertStringContainsString(route('company.offer'), $footer);
+    }
+
+    #[Test]
+    public function talent_blog_index_disables_the_career_advice_button(): void
+    {
+        $guestHtml = $this->get(route('blog.index'))->assertOk()->getContent();
+        $guestStart = strpos($guestHtml, 'data-header-nav-group');
+        $guestNavStart = strrpos(substr($guestHtml, 0, $guestStart), '<nav');
+        $guestNav = substr($guestHtml, $guestNavStart, strpos($guestHtml, '</nav>', $guestNavStart) - $guestNavStart);
+        $this->assertStringContainsString('href="'.route('blog.index').'"', $guestNav);
+
+        $talent = User::factory()->talent()->create();
+        $html = $this->actingAs($talent)
+            ->get(route('blog.index'))
+            ->assertOk()
+            ->getContent();
+
+        $groupStart = strpos($html, 'data-header-nav-group');
+        $navTagStart = strrpos(substr($html, 0, $groupStart), '<nav');
+        $nav = substr($html, $navTagStart, strpos($html, '</nav>', $navTagStart) - $navTagStart);
+
+        $this->assertStringContainsString('aria-disabled="true"', $nav);
+        $this->assertStringContainsString('bg-slate-100', $nav);
+        $this->assertStringContainsString('text-slate-400', $nav);
+        $this->assertStringContainsString(__('talenma.nav.career_advice'), $nav);
+        $this->assertStringNotContainsString('href="'.route('blog.index').'"', $nav);
+    }
+
+    #[Test]
     public function public_home_links_career_tools_page_instead_of_apps_menu(): void
     {
         $this->get(route('home'))
@@ -146,8 +217,12 @@ class PublicAppsLauncherGateTest extends TestCase
 
         $this->get(route('career.tools'))
             ->assertOk()
-            ->assertSee(route('cv-builder.gate'), false)
-            ->assertSee(route('ats-score.gate'), false)
-            ->assertSee(route('library.gate'), false);
+            ->assertSee(__('talenma.career_pages.tools_cv_title'), false)
+            ->assertSee(route('cv-builder.intro'), false)
+            ->assertSee(route('ats-score.intro'), false)
+            ->assertSee(route('library.intro'), false)
+            ->assertDontSee(route('cv-builder.gate'), false)
+            ->assertDontSee(route('ats-score.gate'), false)
+            ->assertDontSee(route('library.gate'), false);
     }
 }

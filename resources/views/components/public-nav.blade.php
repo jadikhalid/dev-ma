@@ -6,6 +6,8 @@
     $onCompanyShow = request()->routeIs('companies.public.show');
     $showExploreCompanies = $onCompanyShow;
 
+    $talentHeader = auth()->check() && auth()->user()->isTalent();
+
     $navLinks = [
         [
             'href' => route('career.offers'),
@@ -26,6 +28,7 @@
             'href' => route('blog.index'),
             'label' => __('talenma.nav.career_advice'),
             'active' => request()->routeIs('blog.*'),
+            'disabled' => $talentHeader && request()->routeIs('blog.index'),
         ],
         [
             'href' => route('company.offer'),
@@ -36,10 +39,19 @@
         ],
     ];
 
+    if ($talentHeader) {
+        $navLinks = array_values(array_filter(
+            $navLinks,
+            fn (array $link): bool => ($link['href'] ?? null) === route('blog.index'),
+        ));
+    }
+
     $navLinkClass = 'inline-flex items-center rounded-[5px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium leading-5 text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700';
+    $navLinkDisabledClass = 'inline-flex cursor-not-allowed items-center rounded-[5px] border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium leading-5 text-slate-400 shadow-sm';
     $navLinkActiveClass = 'inline-flex items-center rounded-[5px] border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold leading-5 text-indigo-700 shadow-sm';
     $navHiringClass = 'inline-flex items-center rounded-[5px] border border-transparent bg-gray-900 px-4 py-2 text-sm font-semibold leading-5 text-white shadow-sm transition hover:bg-indigo-700';
     $menuLinkClass = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-700 sm:shadow-none sm:hover:bg-slate-50 sm:hover:text-indigo-700';
+    $menuLinkDisabledClass = 'flex w-full cursor-not-allowed items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/40 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-slate-100 sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-400 sm:shadow-none';
     $menuLinkActiveClass = 'flex w-full items-center gap-2.5 rounded-xl bg-white/10 px-3 py-2.5 text-sm font-semibold text-white sm:rounded-xl sm:border-0 sm:bg-indigo-50 sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-semibold sm:text-indigo-700 sm:shadow-none';
     $menuHiringClass = 'flex w-full items-center gap-2.5 rounded-xl bg-white/15 px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/25 sm:mt-1 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-semibold sm:text-indigo-700 sm:shadow-none sm:hover:bg-indigo-50';
 @endphp
@@ -71,26 +83,42 @@
                 </div>
             </div>
 
-            <nav class="ml-4 hidden items-center gap-2 xl:ml-8 xl:flex" data-header-nav-group aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
+            <nav @class([
+                'hidden items-center gap-2 xl:flex',
+                'ml-4 xl:ml-8' => ! $talentHeader,
+                'min-w-0 xl:flex-1 xl:justify-end' => $talentHeader,
+            ]) data-header-nav-group aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
                 @foreach ($navLinks as $link)
                     @if (! empty($link['hiring']))
                         <span class="mx-3 h-5 w-px shrink-0 bg-gray-200" aria-hidden="true"></span>
                     @endif
-                    <a
-                        href="{{ $link['href'] }}"
-                        @class([
-                            $navHiringClass => ! empty($link['hiring']),
-                            $navLinkActiveClass => empty($link['hiring']) && $link['active'],
-                            $navLinkClass => empty($link['hiring']) && ! $link['active'],
-                        ])
-                        @if (! empty($link['hiring'])) data-header-hiring @endif
-                        @if (! empty($link['blank'])) target="_blank" rel="noopener noreferrer" @endif
-                        @if ($link['active']) aria-current="page" @endif
-                    >{{ $link['label'] }}</a>
+                    @if (! empty($link['disabled']))
+                        <span class="{{ $navLinkDisabledClass }}" aria-disabled="true" data-header-nav-disabled>{{ $link['label'] }}</span>
+                    @else
+                        <a
+                            href="{{ $link['href'] }}"
+                            @class([
+                                $navHiringClass => ! empty($link['hiring']),
+                                $navLinkActiveClass => empty($link['hiring']) && $link['active'],
+                                $navLinkClass => empty($link['hiring']) && ! $link['active'],
+                            ])
+                            @if (! empty($link['hiring'])) data-header-hiring @endif
+                            @if (! empty($link['blank'])) target="_blank" rel="noopener noreferrer" @endif
+                            @if ($link['active']) aria-current="page" @endif
+                        >{{ $link['label'] }}</a>
+                    @endif
                 @endforeach
+                @if ($talentHeader)
+                    <span class="mx-3 h-5 w-px shrink-0 bg-gray-200" data-header-my-space-rule aria-hidden="true"></span>
+                    <a href="{{ route('dashboard') }}" class="{{ $navHiringClass }}" data-header-my-space>{{ __('talenma.nav.my_space') }}</a>
+                @endif
             </nav>
 
-            <div class="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <div @class([
+                'flex shrink-0 items-center gap-1.5 sm:gap-3',
+                'ml-auto',
+                'xl:ml-11' => $talentHeader,
+            ])>
                 <button
                     type="button"
                     class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/95 transition hover:bg-white/15 sm:hidden"
@@ -200,18 +228,25 @@
     >
         <nav class="flex flex-col sm:gap-0.5" aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
             @foreach ($navLinks as $link)
-                <a
-                    href="{{ $link['href'] }}"
-                    @class([
-                        $menuHiringClass => ! empty($link['hiring']),
-                        $menuLinkActiveClass => empty($link['hiring']) && $link['active'],
-                        $menuLinkClass => empty($link['hiring']) && ! $link['active'],
-                    ])
-                    @if (! empty($link['hiring'])) data-header-hiring @endif
-                    @if (! empty($link['blank'])) target="_blank" rel="noopener noreferrer" @endif
-                    @click="menuOpen = false"
-                >{{ $link['label'] }}</a>
+                @if (! empty($link['disabled']))
+                    <span class="{{ $menuLinkDisabledClass }}" aria-disabled="true">{{ $link['label'] }}</span>
+                @else
+                    <a
+                        href="{{ $link['href'] }}"
+                        @class([
+                            $menuHiringClass => ! empty($link['hiring']),
+                            $menuLinkActiveClass => empty($link['hiring']) && $link['active'],
+                            $menuLinkClass => empty($link['hiring']) && ! $link['active'],
+                        ])
+                        @if (! empty($link['hiring'])) data-header-hiring @endif
+                        @if (! empty($link['blank'])) target="_blank" rel="noopener noreferrer" @endif
+                        @click="menuOpen = false"
+                    >{{ $link['label'] }}</a>
+                @endif
             @endforeach
+            @if ($talentHeader)
+                <a href="{{ route('dashboard') }}" class="{{ $menuHiringClass }}" data-header-my-space @click="menuOpen = false">{{ __('talenma.nav.my_space') }}</a>
+            @endif
             @if ($showExploreCompanies)
                 <a href="{{ route('companies.public.index') }}" class="flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-700 sm:shadow-none sm:hover:bg-slate-50 sm:hover:text-indigo-700 lg:hidden" data-header-explore-companies @click="menuOpen = false">{{ __('talenma.nav.explore_companies') }}</a>
             @endif

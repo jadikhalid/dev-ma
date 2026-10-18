@@ -10,26 +10,16 @@
 <x-app-layout>
     <x-slot name="header">
         <div>
-            <h2 class="text-xl font-bold text-gray-900">{{ $job->title }}</h2>
-            <div class="mt-1 flex items-center gap-2 text-sm text-gray-500">
-                @if ($job->advertiserLogoUrl())
-                    <img src="{{ $job->advertiserLogoUrl() }}" alt="" class="h-6 w-6 shrink-0 rounded object-cover ring-1 ring-slate-200">
-                @endif
-                <p class="min-w-0 truncate">{{ $job->advertiserName() }}</p>
-            </div>
-            @php
-                $headerDetails = array_filter([
-                    (string) \App\Models\CompanyProfile::countryLabelFor($job->location_country),
-                    $job->workModesSummary(),
-                ], fn ($part) => $part !== '');
-            @endphp
-            @if ($headerDetails !== [])
-                <p class="mt-1 text-sm text-gray-500">{{ implode(' · ', $headerDetails) }}</p>
-            @endif
-            <a
-                href="{{ route('talent.jobs.index') }}"
-                class="mt-2 inline-flex text-sm font-medium text-indigo-700 hover:text-indigo-900"
-            >← {{ __('talenma.jobs.back') }}</a>
+            <a href="{{ route('talent.jobs.index') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+                </svg>
+                {{ __('talenma.jobs.back') }}
+            </a>
+            <header class="mt-6">
+                <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 leading-tight">{{ $job->title }}</h2>
+                @include('jobs._offer-facts')
+            </header>
         </div>
     </x-slot>
 

@@ -19,7 +19,9 @@ use App\Http\Controllers\Admin\CvTemplatePromoController as AdminCvTemplatePromo
 use App\Http\Controllers\Admin\LibraryBookController as AdminLibraryBookController;
 use App\Http\Controllers\Admin\LibraryCategoryController as AdminLibraryCategoryController;
 use App\Http\Controllers\AtsScoreGateController;
+use App\Http\Controllers\AtsScoreIntroController;
 use App\Http\Controllers\LibraryGateController;
+use App\Http\Controllers\LibraryIntroController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CareerPageController;
 use App\Http\Controllers\Company\DirectHireController as CompanyDirectHireController;
@@ -32,6 +34,7 @@ use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanySearchController;
 use App\Http\Controllers\CompanyUserController;
 use App\Http\Controllers\CvBuilderGateController;
+use App\Http\Controllers\CvBuilderIntroController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
@@ -115,6 +118,9 @@ Route::get('/nouveautes/acces/modeles-cv/{template}', [PromoController::class, '
     ->middleware('auth')
     ->whereIn('template', TalentCvTemplateCatalog::templateKeys())
     ->name('promo.cv-template.gate');
+Route::get('/outils/creer-mon-cv', CvBuilderIntroController::class)->name('cv-builder.intro');
+Route::get('/outils/analyser-mon-cv', AtsScoreIntroController::class)->name('ats-score.intro');
+Route::get('/outils/bibliotheque', LibraryIntroController::class)->name('library.intro');
 Route::get('/cv-builder/acces', CvBuilderGateController::class)
     ->middleware('auth')
     ->name('cv-builder.gate');

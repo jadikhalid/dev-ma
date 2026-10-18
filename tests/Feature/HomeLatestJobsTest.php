@@ -27,7 +27,7 @@ class HomeLatestJobsTest extends TestCase
             ->assertSee('ACME Maroc', false)
             ->assertSee('Technologie', false)
             ->assertSee(route('jobs.public.show', $job), false)
-            ->assertSee(route('jobs.gate'), false);
+            ->assertSee(route('career.offers'), false);
     }
 
     public function test_home_footer_credits_only_the_agency(): void
@@ -107,7 +107,42 @@ class HomeLatestJobsTest extends TestCase
             ->get(route('home'))
             ->assertOk()
             ->assertSee(route('talent.jobs.show', $job), false)
-            ->assertSee(route('talent.jobs.index'), false);
+            ->assertSee('href="'.route('talent.jobs.index').'"', false)
+            ->assertSee('action="'.route('talent.jobs.index').'"', false)
+            ->assertDontSee('action="'.route('career.offers').'"', false);
+    }
+
+    public function test_guest_home_search_still_submits_to_public_offers(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('action="'.route('career.offers').'"', false)
+            ->assertDontSee('action="'.route('talent.jobs.index').'"', false);
+    }
+
+    public function test_talent_public_offers_search_redirects_to_talent_jobs(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $this->actingAs($talent)
+            ->get(route('career.offers', ['q' => 'berlin']))
+            ->assertRedirect(route('talent.jobs.index', ['q' => 'berlin']));
+
+        $this->actingAs($talent)
+            ->get(route('career.offers'))
+            ->assertOk();
+    }
+
+    public function test_guest_and_company_public_offers_search_stays_on_offers(): void
+    {
+        $this->get(route('career.offers', ['q' => 'berlin']))
+            ->assertOk();
+
+        [$owner] = $this->makeCompanyOwner();
+
+        $this->actingAs($owner)
+            ->get(route('career.offers', ['q' => 'berlin']))
+            ->assertOk();
     }
 
     public function test_approved_company_sees_links_to_company_job_pages(): void
@@ -129,7 +164,7 @@ class HomeLatestJobsTest extends TestCase
             ->get(route('home'))
             ->assertOk()
             ->assertSee(route('company.jobs.show', $job), false)
-            ->assertSee(route('company.jobs.index'), false);
+            ->assertSee(route('career.offers'), false);
     }
 
     public function test_home_latest_jobs_shows_at_most_ten_published_jobs(): void

@@ -4,15 +4,23 @@
 
 @php
     $onCompanyHost = \App\Support\PortalHost::isCompanyHost();
+    $talentFooter = auth()->check() && auth()->user()->isTalent();
     $footerLinks = [
-        ['href' => route('career.offers'), 'label' => __('talenma.nav.offers_link'), 'active' => request()->routeIs('career.offers')],
-        ['href' => route('career.tools'), 'label' => __('talenma.nav.career_tools'), 'active' => request()->routeIs('career.tools')],
-        ['href' => route('career.how'), 'label' => __('talenma.nav.how_it_works'), 'active' => request()->routeIs('career.how')],
+        ['href' => route('career.offers'), 'label' => __('talenma.nav.offers_link'), 'active' => request()->routeIs('career.offers'), 'talent_hidden' => true],
+        ['href' => route('career.tools'), 'label' => __('talenma.nav.career_tools'), 'active' => request()->routeIs('career.tools'), 'talent_hidden' => true],
+        ['href' => route('career.how'), 'label' => __('talenma.nav.how_it_works'), 'active' => request()->routeIs('career.how'), 'talent_hidden' => true],
         ['href' => route('company.about'), 'label' => __('talenma.footer.about'), 'active' => request()->routeIs('company.about'), 'blank' => ! $onCompanyHost],
         ['href' => route('faq'), 'label' => __('talenma.footer.faq'), 'active' => request()->routeIs('faq')],
         ['href' => route('contact'), 'label' => __('talenma.footer.contact'), 'active' => request()->routeIs('contact')],
         ['href' => route('company.offer'), 'label' => __('talenma.footer.company_space'), 'active' => request()->routeIs('company.offer'), 'blank' => ! $onCompanyHost],
     ];
+
+    if ($talentFooter) {
+        $footerLinks = array_values(array_filter(
+            $footerLinks,
+            fn (array $link): bool => empty($link['talent_hidden']),
+        ));
+    }
 @endphp
 
 <footer class="bg-gray-900 text-gray-300">

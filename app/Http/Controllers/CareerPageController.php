@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobPosting;
-use App\Models\Profile;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
@@ -11,15 +11,20 @@ use Illuminate\View\View;
 
 class CareerPageController extends Controller
 {
-    public function offers(Request $request): View|Response
+    public function offers(Request $request): View|Response|RedirectResponse
     {
         $user = auth()->user();
+        $search = trim((string) $request->query('q', ''));
+
+        if ($user?->isTalent() && $search !== '') {
+            return redirect()->route('talent.jobs.index', ['q' => $search]);
+        }
+
         $canBrowseTalentJobs = $user && $user->isTalent() && $user->isApproved();
         $canManageCompanyJobs = $user && $user->canManageJobs();
         $viewerCompanyProfileId = $canManageCompanyJobs
             ? $user->companyOrganization()?->id
             : null;
-        $search = trim((string) $request->query('q', ''));
 
         $jobs = JobPosting::query()
             ->with(['companyProfile.user', 'professionSector'])
@@ -60,7 +65,7 @@ class CareerPageController extends Controller
                     'logo_url' => $job->advertiserLogoUrl(),
                     'sector' => $job->professionSector?->localizedName() ?: null,
                     'location' => $location !== '' ? $location : null,
-                    'work_modes' => $this->offerWorkModeLabels($job),
+                    'work_modes' => $job->collaborationModeLabels(),
                     'experience' => $job->experienceLabel() ?: null,
                     'date' => $publishedAt?->translatedFormat('d M Y') ?? '',
                     'url' => $url,
@@ -77,31 +82,5 @@ class CareerPageController extends Controller
         }
 
         return view('career.offers', $payload);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function offerWorkModeLabels(JobPosting $job): array
-    {
-        $labels = [
-            'remote' => __('talenma.home.ways_remote'),
-            'full_remote' => __('talenma.home.ways_remote'),
-            'visa_sponsorship' => __('talenma.home.ways_visa'),
-            'visa' => __('talenma.home.ways_visa'),
-            'local' => __('talenma.home.ways_local'),
-            'hybrid' => __('talenma.talent.work_mode_hybrid'),
-        ];
-
-        return collect($job->work_modes ?? [])
-            ->map(function ($mode) use ($labels) {
-                $key = strtolower(trim((string) $mode));
-
-                return $labels[$key] ?? (Profile::labelForWorkMode($key) ?: null);
-            })
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
     }
 }

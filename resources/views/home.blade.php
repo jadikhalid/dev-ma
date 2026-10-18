@@ -57,7 +57,7 @@
                 <div class="mt-6 sm:mt-8">
                     <p class="mb-2 text-xs font-medium tracking-wide text-slate-400">{{ __('talenma.home.hero_search_caption') }}</p>
                     <form
-                        action="{{ route('career.offers') }}"
+                        action="{{ $offersSearchAction ?? route('career.offers') }}"
                         method="GET"
                         class="flex flex-col gap-3 sm:flex-row sm:items-center"
                         x-data="homeOffersSearch(@js([
@@ -111,7 +111,7 @@
         <div id="opportunites" class="scroll-mt-24">
             <x-latest-jobs-marquee
                 :jobs="$latestJobs ?? collect()"
-                :index-url="$latestJobsIndexUrl ?? route('jobs.gate')"
+                :index-url="$latestJobsIndexUrl ?? route('career.offers')"
             />
         </div>
 

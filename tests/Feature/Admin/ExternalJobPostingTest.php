@@ -120,7 +120,14 @@ class ExternalJobPostingTest extends TestCase
         $this->actingAs($talent)
             ->get(route('talent.jobs.show', $job))
             ->assertOk()
-            ->assertSee('Partner Co', false)
+            ->assertSeeInOrder([
+                __('talenma.jobs.back'),
+                'External role',
+                'Partner Co',
+            ], false)
+            ->assertSee('text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 leading-tight', false)
+            ->assertSee('mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600', false)
+            ->assertSee(__('talenma.jobs.card_published_on', ['date' => $job->published_at->translatedFormat('d M Y')]), false)
             ->assertSee(__('talenma.jobs.apply_external_cta'), false)
             ->assertDontSee(route('talent.jobs.apply', $job), false);
 

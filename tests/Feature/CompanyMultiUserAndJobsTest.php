@@ -349,6 +349,64 @@ class CompanyMultiUserAndJobsTest extends TestCase
             ->assertSee('Annonces', false);
     }
 
+    public function test_talent_jobs_keyword_filters_results_and_keeps_scope_counts(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner();
+        $talent = User::factory()->talent()->create();
+
+        foreach (['Berlin role', 'Casablanca role'] as $title) {
+            JobPosting::create([
+                'company_profile_id' => $profile->id,
+                'created_by' => $owner->id,
+                'title' => $title,
+                'description' => str_repeat('Looking for experienced backend talent. ', 3),
+                'status' => JobPosting::STATUS_PUBLISHED,
+                'published_at' => now(),
+                'location_city' => str_contains($title, 'Berlin') ? 'Berlin' : 'Casablanca',
+            ]);
+        }
+
+        $filtered = $this->actingAs($talent)
+            ->getJson(route('talent.jobs.index', ['q' => 'Berlin']))
+            ->assertOk();
+
+        $this->assertSame(['Berlin role'], collect($filtered->json('jobs'))->pluck('title')->all());
+        $this->assertSame('Berlin', $filtered->json('q'));
+        $this->assertSame(1, $filtered->json('pagination.total'));
+        $this->assertSame(2, $filtered->json('counts.all'));
+
+        $this->actingAs($talent)
+            ->getJson(route('talent.jobs.index', ['q' => 'JADI']))
+            ->assertOk()
+            ->assertJsonPath('pagination.total', 2);
+
+        $this->actingAs($talent)
+            ->getJson(route('talent.jobs.index', ['q' => 'a']))
+            ->assertOk()
+            ->assertJsonPath('pagination.total', 2)
+            ->assertJsonPath('q', 'a');
+
+        $this->actingAs($talent)
+            ->getJson(route('talent.jobs.index', ['q' => 'Berlin', 'sector' => 'it', 'profession' => 'dev']))
+            ->assertOk()
+            ->assertJsonPath('q', 'Berlin')
+            ->assertJsonPath('sector', '')
+            ->assertJsonPath('profession', '')
+            ->assertJsonPath('pagination.total', 1);
+
+        $this->actingAs($talent)
+            ->get(route('talent.jobs.index', ['q' => 'Berlin']))
+            ->assertOk()
+            ->assertSee('id="talent-jobs-query"', false)
+            ->assertSee(__('talenma.jobs.search_free'), false)
+            ->assertSee(__('talenma.jobs.search_manual'), false)
+            ->assertSee(__('talenma.career_pages.offers_search_placeholder'), false)
+            ->assertSee('value="Berlin"', false)
+            ->assertSee('Berlin role', false)
+            ->assertDontSee('Casablanca role', false)
+            ->assertDontSee(__('talenma.home.search_submit').'</button>', false);
+    }
+
     public function test_member_cannot_apply_to_jobs_as_talent_route(): void
     {
         [$owner, $profile] = $this->makeCompanyOwner();

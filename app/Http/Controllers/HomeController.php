@@ -39,12 +39,6 @@ class HomeController extends Controller
             ? $user->companyOrganization()?->id
             : null;
 
-        $latestJobsIndexUrl = match (true) {
-            $canBrowseTalentJobs => route('talent.jobs.index'),
-            $canManageCompanyJobs => route('company.jobs.index'),
-            default => route('jobs.gate'),
-        };
-
         $latestJobs = $this->latestPublishedJobs($canBrowseTalentJobs, $canManageCompanyJobs, $viewerCompanyProfileId);
 
         return view('home', [
@@ -66,7 +60,12 @@ class HomeController extends Controller
                 : [],
             'featuredCompanies' => $this->companyCatalogSearch->featuredForHome(),
             'latestJobs' => $latestJobs,
-            'latestJobsIndexUrl' => $latestJobsIndexUrl,
+            'latestJobsIndexUrl' => ($user && $user->isTalent())
+                ? route('talent.jobs.index')
+                : route('career.offers'),
+            'offersSearchAction' => ($user && $user->isTalent())
+                ? route('talent.jobs.index')
+                : route('career.offers'),
         ]);
     }
 

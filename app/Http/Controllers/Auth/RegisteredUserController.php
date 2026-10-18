@@ -51,6 +51,17 @@ class RegisteredUserController extends Controller
             session(['url.intended' => $promoGateUrl]);
         }
 
+        $toolGate = match (request()->query('from_tool')) {
+            'cv-builder' => route('cv-builder.gate'),
+            'ats-score' => route('ats-score.gate'),
+            'library' => route('library.gate'),
+            default => null,
+        };
+
+        if ($toolGate) {
+            session(['url.intended' => $toolGate]);
+        }
+
         return view('auth.register');
     }
 
@@ -126,6 +137,10 @@ class RegisteredUserController extends Controller
                 'toast_sticky_success',
                 __('talenma.auth.registration_welcome_complete_profile')
             );
+
+            if ($user->canAccessWorkspaceApps() && in_array($request->session()->get('url.intended'), [route('cv-builder.gate'), route('ats-score.gate'), route('library.gate')], true)) {
+                return redirect()->intended(route('profile.edit', ['panel' => 'talent']));
+            }
 
             return redirect()->route('profile.edit', ['panel' => 'talent']);
         }

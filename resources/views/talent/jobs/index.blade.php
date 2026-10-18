@@ -15,6 +15,7 @@
             initialScope: @js($scope),
             initialSector: @js($sectorSlug),
             initialProfession: @js($professionSlug),
+            initialQuery: @js($keyword),
             sectors: @js($professionSectors),
             initialCounts: @js($counts),
             initialJobs: @js($jobs),
@@ -28,6 +29,11 @@
                 emptyApplied: @js(__('talenma.jobs.talent_empty_applied_open')),
                 emptyClosed: @js(__('talenma.jobs.talent_empty_applied_closed')),
                 emptyFiltered: @js(__('talenma.jobs.empty_filtered')),
+                emptySearch: @js(__('talenma.career_pages.offers_search_empty')),
+                queryEmpty: @js(__('talenma.home.search_validation_empty')),
+                queryShort: @js(__('talenma.home.search_validation_short')),
+                queryLong: @js(__('talenma.home.search_validation_long')),
+                queryChars: @js(__('talenma.home.search_validation_chars')),
                 navNew: @js(__('talenma.jobs.nav_new')),
                 networkError: @js(__('talenma.jobs.network_error')),
             },
@@ -97,47 +103,77 @@
                 </div>
             </aside>
 
-            <section class="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-4 min-w-0">
-                <div x-show="scope === 'all'" x-cloak class="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="min-w-0">
-                        <label for="talent-jobs-sector" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                            {{ __('talenma.jobs.field_sector') }}
+            <section class="rounded-xl border border-slate-200 bg-white p-3 sm:p-3.5 min-w-0">
+                <div class="space-y-2">
+                    <div role="search">
+                        <label for="talent-jobs-query" class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                            {{ __('talenma.jobs.search_free') }}
                         </label>
-                        <select
-                            id="talent-jobs-sector"
-                            x-model="sectorSlug"
-                            @change="onSectorChange()"
-                            class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                            <option value="">{{ __('talenma.jobs.filter_sector_all') }}</option>
-                            @foreach ($professionSectors as $sectorOption)
-                                <option
-                                    value="{{ $sectorOption['slug'] }}"
-                                    @selected($sectorSlug === ($sectorOption['slug'] ?? null))
-                                >{{ $sectorOption['name'] }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative min-w-0">
+                            <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/>
+                            </svg>
+                            <input
+                                id="talent-jobs-query"
+                                x-ref="query"
+                                x-model="query"
+                                name="q"
+                                type="search"
+                                value="{{ $keyword }}"
+                                placeholder="{{ __('talenma.career_pages.offers_search_placeholder') }}"
+                                @input="onQueryInput()"
+                                @keydown.enter.prevent="commitQuery()"
+                                class="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                            >
+                        </div>
                     </div>
-                    <div class="min-w-0">
-                        <label for="talent-jobs-profession" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                            {{ __('talenma.jobs.field_profession') }}
-                        </label>
-                        <select
-                            id="talent-jobs-profession"
-                            x-model="professionSlug"
-                            @change="onProfessionChange()"
-                            class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-50"
-                            :disabled="!filteredProfessions.length"
-                        >
-                            <option value="">{{ __('talenma.jobs.filter_profession_all') }}</option>
-                            <template x-for="profession in filteredProfessions" :key="profession.slug">
-                                <option :value="profession.slug" x-text="profession.name"></option>
-                            </template>
-                        </select>
+                    <div x-show="scope === 'all'" x-cloak class="space-y-2">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('talenma.jobs.search_or') }}</p>
+                        <div>
+                            <p class="mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">{{ __('talenma.jobs.search_manual') }}</p>
+                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <div class="min-w-0">
+                                    <label for="talent-jobs-sector" class="sr-only">
+                                        {{ __('talenma.jobs.field_sector') }}
+                                    </label>
+                                    <select
+                                        id="talent-jobs-sector"
+                                        x-model="sectorSlug"
+                                        @change="onSectorChange()"
+                                        class="block w-full rounded-lg border-slate-200 py-2 text-sm shadow-sm focus:border-indigo-300 focus:ring-indigo-100"
+                                    >
+                                        <option value="">{{ __('talenma.jobs.filter_sector_all') }}</option>
+                                        @foreach ($professionSectors as $sectorOption)
+                                            <option
+                                                value="{{ $sectorOption['slug'] }}"
+                                                @selected($sectorSlug === ($sectorOption['slug'] ?? null))
+                                            >{{ $sectorOption['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="min-w-0">
+                                    <label for="talent-jobs-profession" class="sr-only">
+                                        {{ __('talenma.jobs.field_profession') }}
+                                    </label>
+                                    <select
+                                        id="talent-jobs-profession"
+                                        x-model="professionSlug"
+                                        @change="onProfessionChange()"
+                                        class="block w-full rounded-lg border-slate-200 py-2 text-sm shadow-sm focus:border-indigo-300 focus:ring-indigo-100 disabled:bg-slate-50"
+                                        :disabled="!filteredProfessions.length"
+                                    >
+                                        <option value="">{{ __('talenma.jobs.filter_profession_all') }}</option>
+                                        <template x-for="profession in filteredProfessions" :key="profession.slug">
+                                            <option :value="profession.slug" x-text="profession.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div x-ref="jobsList" class="mb-3 flex scroll-mt-24 items-baseline justify-between gap-2">
+                <div x-ref="jobsList" class="mb-2.5 mt-3 flex scroll-mt-24 items-baseline justify-between gap-2 border-t border-slate-100 pt-2.5">
                     <h3 class="text-sm font-bold text-slate-900">
                         <span x-text="scopeHeading"></span>
                         <span class="ml-1.5 text-xs font-semibold text-indigo-700" x-text="total"></span>

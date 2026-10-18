@@ -18,50 +18,32 @@
 
 @section('content')
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-        <a href="{{ route('home') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800">
+        <a href="{{ route('career.offers') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
             </svg>
-            {{ __('talenma.jobs.public_back_home') }}
+            {{ __('talenma.jobs.public_back_offers') }}
         </a>
 
         <header class="mt-6">
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 leading-tight">
                 {{ $job->title }}
             </h1>
-            <p class="mt-2 text-sm sm:text-base text-gray-600">
-                <span class="inline-flex items-center gap-2">
-                    @if ($job->advertiserLogoUrl())
-                        <img src="{{ $job->advertiserLogoUrl() }}" alt="" class="h-7 w-7 rounded object-cover ring-1 ring-slate-200">
-                    @endif
-                    <span class="font-medium text-gray-800">{{ $job->advertiserName() }}</span>
-                </span>
-                @if ($job->professionSummary() !== '')
-                    · {{ $job->professionSummary() }}
-                @endif
-                @if ($job->locationLabel() !== '')
-                    · {{ $job->locationLabel() }}
-                @endif
-                @if ($job->workModesSummary() !== '')
-                    · {{ $job->workModesSummary() }}
-                @endif
-            </p>
+            @include('jobs._offer-facts')
         </header>
 
         <div class="mt-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-4 lg:gap-5 lg:items-start">
             <article class="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-3 min-w-0">
-                <p class="text-sm text-gray-500">
-                    {{ $job->contractTypeLabel() }}
-                    @if ($job->professionSummary() !== '')
-                        · {{ $job->professionSummary() }}
-                    @endif
-                    @if ($job->experienceLabel() !== '')
-                        · {{ $job->experienceLabel() }}
-                    @endif
-                    @if ($job->workModesSummary() !== '')
-                        · {{ $job->workModesSummary() }}
-                    @endif
-                </p>
+                @php
+                    $articleFacts = array_values(array_filter([
+                        filled($job->contract_type) ? $job->contractTypeLabel() : null,
+                        $job->professionSummary() !== '' ? $job->professionSummary() : null,
+                        $job->experienceLabel() !== '' ? $job->experienceLabel() : null,
+                    ]));
+                @endphp
+                @if ($articleFacts !== [])
+                    <p class="text-sm text-gray-500">{{ implode(' · ', $articleFacts) }}</p>
+                @endif
                 <div class="prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">{{ $job->description }}</div>
             </article>
 

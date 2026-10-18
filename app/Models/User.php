@@ -296,9 +296,15 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function dashboardNavLabel(): string
     {
-        return $this->isAdmin()
-            ? __('talenma.nav.dashboard_admin')
-            : __('talenma.nav.dashboard');
+        if ($this->isAdmin()) {
+            return __('talenma.nav.dashboard_admin');
+        }
+
+        if ($this->isTalent()) {
+            return __('talenma.nav.my_space');
+        }
+
+        return __('talenma.nav.dashboard');
     }
 
     /**

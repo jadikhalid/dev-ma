@@ -3946,6 +3946,8 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
     scope: config.initialScope ?? 'all',
     sectorSlug: config.initialSector ?? '',
     professionSlug: config.initialProfession ?? '',
+    query: config.initialQuery ?? '',
+    queryTimer: null,
     sectors: Array.isArray(config.sectors) ? config.sectors : [],
     counts: config.initialCounts ?? { all: 0, applied: 0, closed: 0 },
     jobs: Array.isArray(config.initialJobs) ? config.initialJobs : [],
@@ -4018,6 +4020,10 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
     },
 
     get emptyMessage() {
+        if (this.query.trim() !== '') {
+            return this.labels.emptySearch ?? this.labels.emptyFiltered ?? this.labels.empty ?? '';
+        }
+
         if (this.scope === 'applied') {
             return this.labels.emptyApplied ?? this.labels.empty ?? '';
         }
@@ -4061,6 +4067,7 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             this.professionSlug = '';
         }
 
+        this.clearKeyword();
         this.page = 1;
         this.refresh();
     },
@@ -4070,8 +4077,98 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             return;
         }
 
+        this.clearKeyword();
         this.page = 1;
         this.refresh();
+    },
+
+    init() {
+        const query = this.query.trim();
+
+        if (query === '') {
+            return;
+        }
+
+        const message = this.queryValidationMessage(query);
+
+        if (message && query.length >= 2) {
+            this.$nextTick(() => this.$dispatch('toast-push', { type: 'error', message }));
+        }
+    },
+
+    onQueryInput() {
+        clearTimeout(this.queryTimer);
+        this.queryTimer = setTimeout(() => this.commitQuery(), 250);
+    },
+
+    commitQuery() {
+        clearTimeout(this.queryTimer);
+        const query = this.query.trim();
+        const hadManual = this.sectorSlug !== '' || this.professionSlug !== '';
+
+        if (query === '') {
+            this.page = 1;
+            this.refresh();
+
+            return;
+        }
+
+        const message = this.queryValidationMessage(query);
+
+        if (message) {
+            if (query.length >= 2) {
+                this.$dispatch('toast-push', { type: 'error', message });
+            }
+
+            if (hadManual) {
+                this.sectorSlug = '';
+                this.professionSlug = '';
+                this.page = 1;
+                this.refresh();
+            }
+
+            return;
+        }
+
+        if (hadManual) {
+            this.sectorSlug = '';
+            this.professionSlug = '';
+        }
+
+        this.query = query;
+        this.page = 1;
+        this.refresh();
+    },
+
+    clearKeyword() {
+        clearTimeout(this.queryTimer);
+        this.query = '';
+    },
+
+    activeKeyword() {
+        const query = this.query.trim();
+
+        return this.queryValidationMessage(query) ? '' : query;
+    },
+
+    queryValidationMessage(query) {
+        if (query === '') {
+            return this.labels.queryEmpty ?? '';
+        }
+
+        if (query.length < 2) {
+            return this.labels.queryShort ?? '';
+        }
+
+        if (query.length > 80) {
+            return this.labels.queryLong ?? '';
+        }
+
+        if (! /[\p{L}\p{N}]/u.test(query)) {
+            return this.labels.queryChars ?? '';
+        }
+
+        return null;
     },
 
     syncUrl() {
@@ -4085,12 +4182,18 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             params.set('scope', this.scope);
         }
 
-        if (this.scope === 'all') {
+        const keyword = this.activeKeyword();
+
+        if (this.scope === 'all' && keyword === '') {
             params.set('sector', this.sectorSlug ?? '');
 
             if (this.professionSlug) {
                 params.set('profession', this.professionSlug);
             }
+        }
+
+        if (keyword !== '') {
+            params.set('q', keyword);
         }
 
         if (this.page > 1) {
@@ -4112,12 +4215,18 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
         const params = new URLSearchParams();
         params.set('scope', this.scope || 'all');
 
-        if (this.scope === 'all') {
+        const keyword = this.activeKeyword();
+
+        if (this.scope === 'all' && keyword === '') {
             params.set('sector', this.sectorSlug ?? '');
 
             if (this.professionSlug) {
                 params.set('profession', this.professionSlug);
             }
+        }
+
+        if (keyword !== '') {
+            params.set('q', keyword);
         }
 
         if (this.page > 1) {
@@ -4157,6 +4266,10 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             if (this.scope === 'all') {
                 this.sectorSlug = payload.sector ?? this.sectorSlug;
                 this.professionSlug = payload.profession ?? this.professionSlug;
+            }
+
+            if (typeof payload.q === 'string' && (this.query.trim() === '' || payload.q === this.query.trim())) {
+                this.query = payload.q;
             }
         } catch (error) {
             if (token !== this.requestToken) {
@@ -10393,6 +10506,97 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
             this.submitting = false;
             this.setLoading(false);
         }
+    },
+}));
+
+Alpine.data('cvBuilderIntro', () => ({
+    index: 0,
+    count: 0,
+
+    init() {
+        this.count = this.$refs.track?.children.length ?? 0;
+        this.sync();
+        this.fit();
+        this.$refs.track?.querySelectorAll('img').forEach((img) => {
+            if (! img.complete) {
+                img.addEventListener('load', () => this.fit(), { once: true });
+            }
+        });
+        this._onResize = () => this.fit();
+        window.addEventListener('resize', this._onResize);
+    },
+
+    sync() {
+        const track = this.$refs.track;
+
+        if (! track || ! track.clientWidth) {
+            return;
+        }
+
+        this.index = Math.max(0, Math.min(this.count - 1, Math.round(track.scrollLeft / track.clientWidth)));
+    },
+
+    fit() {
+        const track = this.$refs.track;
+        const slides = track ? [...track.children] : [];
+        const first = slides[0];
+        const firstImg = first?.querySelector('img');
+
+        if (! track || ! first || ! firstImg || firstImg.naturalWidth === 0) {
+            return;
+        }
+
+        slides.forEach((slide) => {
+            slide.style.height = 'auto';
+            const img = slide.querySelector('img');
+
+            if (img && img !== firstImg) {
+                img.style.maxHeight = 'none';
+            }
+        });
+        track.style.height = 'auto';
+
+        const height = first.offsetHeight;
+        const imageHeight = Math.round(firstImg.getBoundingClientRect().height);
+
+        slides.forEach((slide) => {
+            const img = slide.querySelector('img');
+
+            if (img && img !== firstImg) {
+                img.style.maxHeight = `${imageHeight}px`;
+                img.style.objectFit = 'contain';
+                img.style.objectPosition = 'left top';
+            }
+
+            slide.style.height = `${height}px`;
+        });
+        track.style.height = `${height}px`;
+
+        slides.forEach((slide) => {
+            const img = slide.querySelector('img');
+            const overflow = slide.scrollHeight - slide.clientHeight;
+
+            if (overflow > 1 && img && img !== firstImg) {
+                const current = img.getBoundingClientRect().height;
+                img.style.maxHeight = `${Math.max(120, Math.round(current - overflow))}px`;
+            }
+        });
+    },
+
+    go(direction) {
+        this.goTo(this.index + direction);
+    },
+
+    goTo(next) {
+        const track = this.$refs.track;
+
+        if (! track) {
+            return;
+        }
+
+        const target = Math.max(0, Math.min(this.count - 1, next));
+        track.scrollTo({ left: target * track.clientWidth, behavior: 'smooth' });
+        this.index = target;
     },
 }));
 
