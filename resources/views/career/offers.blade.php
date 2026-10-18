@@ -5,12 +5,15 @@
 
 @section('content')
 <section
-    class="bg-white py-16 sm:py-20"
+    class="bg-white pb-16 pt-10 sm:pb-20 sm:pt-12"
     data-career-offers
     x-data="careerOffers({ url: @js(route('career.offers')), query: @js($search) })"
 >
     <div class="home-shell">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{{ __('talenma.career_pages.offers_title') }}</h1>
+        <div class="rounded-[1.75rem] bg-gradient-to-br from-indigo-50 via-white to-violet-50 px-6 py-7 ring-1 ring-indigo-100 sm:px-8 sm:py-8">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600">{{ __('talenma.nav.offers_link') }}</p>
+            <h1 class="mt-2 max-w-2xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{{ __('talenma.career_pages.offers_title') }}</h1>
+            <p class="mt-3 max-w-xl text-base leading-relaxed text-slate-600">{{ __('talenma.career_pages.offers_intro') }}</p>
 
         <form method="GET" action="{{ route('career.offers') }}" class="mt-6" role="search" @submit.prevent="search(1)">
             <label for="offers-search" class="sr-only">{{ __('talenma.career_pages.offers_search_label') }}</label>
@@ -29,6 +32,7 @@
                 >
             </div>
         </form>
+        </div>
 
         <div class="mt-8" x-ref="results" @click="onPageClick($event)" :class="loading ? 'opacity-60' : ''">
             @include('career._offers-results')

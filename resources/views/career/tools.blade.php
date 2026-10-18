@@ -53,15 +53,17 @@
 <section class="relative overflow-hidden bg-slate-50 pb-16 pt-12 sm:pb-20 sm:pt-14" data-career-tools>
     <div class="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-indigo-50 to-transparent" aria-hidden="true"></div>
     <div class="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
-            {{ __('talenma.nav.career_tools') }}
-        </p>
-        <h1 class="mt-3 max-w-2xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            {{ __('talenma.career_pages.tools_title') }}
-        </h1>
-        <p class="mt-3 max-w-xl text-base leading-relaxed text-slate-600">
-            {{ __('talenma.career_pages.tools_intro') }}
-        </p>
+        <div class="rounded-[1.75rem] bg-white px-6 py-7 shadow-[0_10px_30px_rgba(15,23,42,0.04)] ring-1 ring-slate-200/80 sm:px-8 sm:py-8">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600">
+                {{ __('talenma.nav.career_tools') }}
+            </p>
+            <h1 class="mt-2 max-w-2xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                {{ __('talenma.career_pages.tools_title') }}
+            </h1>
+            <p class="mt-3 max-w-xl text-base leading-relaxed text-slate-600">
+                {{ __('talenma.career_pages.tools_intro') }}
+            </p>
+        </div>
 
         <ul class="mt-10 grid gap-5 md:grid-cols-3">
             @foreach ($tools as $tool)
