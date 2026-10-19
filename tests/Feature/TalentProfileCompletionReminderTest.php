@@ -6,6 +6,7 @@ use App\Mail\TalentProfileCompletionReminderMail;
 use App\Models\Profession;
 use App\Models\ProfessionSector;
 use App\Models\Profile;
+use App\Models\ProfileDocument;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -15,7 +16,7 @@ class TalentProfileCompletionReminderTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_reminder_is_sent_when_profile_is_incomplete_after_delay(): void
+    public function test_reminder_is_sent_when_cv_is_missing_after_delay(): void
     {
         Mail::fake();
 
@@ -31,7 +32,21 @@ class TalentProfileCompletionReminderTest extends TestCase
         $this->assertNotNull($talent->fresh()->profile_completion_reminder_sent_at);
     }
 
-    public function test_reminder_is_not_sent_when_profile_is_catalog_ready(): void
+    public function test_reminder_is_not_sent_when_cv_is_present(): void
+    {
+        Mail::fake();
+
+        $talent = $this->createIncompleteTalentApprovedDaysAgo(3);
+        $this->attachCv($talent);
+
+        $this->artisan('talents:send-profile-completion-reminders')
+            ->assertSuccessful();
+
+        Mail::assertNothingSent();
+        $this->assertNull($talent->fresh()->profile_completion_reminder_sent_at);
+    }
+
+    public function test_reminder_is_sent_when_only_the_cv_is_missing(): void
     {
         Mail::fake();
 
@@ -40,8 +55,9 @@ class TalentProfileCompletionReminderTest extends TestCase
         $this->artisan('talents:send-profile-completion-reminders')
             ->assertSuccessful();
 
-        Mail::assertNothingSent();
-        $this->assertNull($talent->fresh()->profile_completion_reminder_sent_at);
+        Mail::assertSent(TalentProfileCompletionReminderMail::class, function (TalentProfileCompletionReminderMail $mail) use ($talent) {
+            return $mail->hasTo($talent->email);
+        });
     }
 
     public function test_reminder_is_not_sent_before_delay(): void
@@ -90,8 +106,22 @@ class TalentProfileCompletionReminderTest extends TestCase
         $html = $mail->render();
 
         $this->assertStringContainsString(route('profile.edit', ['panel' => 'talent']), $html);
-        $this->assertStringContainsString('Talents du Maroc', $html);
+        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.cta')), $html);
+        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.rest')), $html);
+        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.steps')[2]), $html);
         $this->assertStringNotContainsString('Laravel', $html);
+    }
+
+    private function attachCv(User $talent): void
+    {
+        $talent->profile->documents()->create([
+            'document_type' => ProfileDocument::TYPE_CV,
+            'path' => 'profile-documents/'.$talent->id.'/cv.pdf',
+            'original_name' => 'cv.pdf',
+            'mime_type' => 'application/pdf',
+            'size' => 1000,
+            'sort_order' => 1,
+        ]);
     }
 
     private function createIncompleteTalentApprovedDaysAgo(int $days): User

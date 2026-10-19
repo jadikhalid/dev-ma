@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Jobs\PurgePendingRegistrationJob;
+use App\Mail\TalentWelcomeMail;
 use App\Mail\VerifyRegistrationMail;
 use App\Models\CompanyProfileDocument;
 use App\Models\PendingRegistration;
@@ -175,6 +176,17 @@ class PendingRegistrationService
             ->sendNow(new VerifyRegistrationMail($pending, $verificationUrl, $cancellationUrl));
     }
 
+    public function sendWelcomeMail(User $user, ?string $locale = null): void
+    {
+        try {
+            Mail::to($user->email)
+                ->locale($locale ?: app()->getLocale())
+                ->sendNow(new TalentWelcomeMail($user));
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+    }
+
     public function complete(string $token): User
     {
         $pending = PendingRegistration::query()->where('token', $token)->first();
@@ -239,7 +251,7 @@ class PendingRegistrationService
             ]);
         }
 
-        return DB::transaction(function () use ($pending) {
+        $user = DB::transaction(function () use ($pending) {
             $payload = $pending->payload;
             $isTalent = ($payload['role'] ?? null) === 'dev';
             $autoApproveTalent = $isTalent && ! PlatformSetting::requiresTalentAdminValidation();
@@ -309,6 +321,12 @@ class PendingRegistrationService
 
             return $user;
         });
+
+        if ($user->isTalent() && $user->isApproved()) {
+            $this->sendWelcomeMail($user, $pending->locale);
+        }
+
+        return $user;
     }
 
     public function purge(PendingRegistration $pending): void

@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Mail\TalentApprovedMail;
 use App\Mail\TalentRejectedMail;
+use App\Mail\TalentWelcomeMail;
 use App\Models\PendingRegistration;
 use App\Models\Profession;
 use App\Models\ProfessionSector;
@@ -53,6 +54,7 @@ class UserManagementTest extends TestCase
         Mail::assertSent(TalentApprovedMail::class, function (TalentApprovedMail $mail) use ($talent) {
             return $mail->hasTo($talent->email) && $mail->user->is($talent->fresh());
         });
+        Mail::assertSent(TalentWelcomeMail::class, fn (TalentWelcomeMail $mail) => $mail->hasTo($talent->email));
     }
 
     public function test_admin_rejection_sends_email_to_talent_with_optional_reason(): void
@@ -94,6 +96,7 @@ class UserManagementTest extends TestCase
             ->post(route('admin.users.approve', $talent));
 
         Mail::assertSent(TalentApprovedMail::class, fn (TalentApprovedMail $mail) => $mail->hasTo($talent->email));
+        Mail::assertSent(TalentWelcomeMail::class, fn (TalentWelcomeMail $mail) => $mail->hasTo($talent->email));
     }
 
     public function test_only_admin_can_grant_moderator_role(): void

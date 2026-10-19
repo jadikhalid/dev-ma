@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Mail\TalentWelcomeMail;
+use App\Mail\VerifyRegistrationMail;
 use App\Models\PendingRegistration;
 use App\Models\PlatformSetting;
 use App\Models\User;
@@ -55,6 +57,7 @@ class TalentAdminValidationSettingTest extends TestCase
         $user = User::query()->where('email', 'auto-talent@example.com')->firstOrFail();
         $this->assertSame(User::APPROVAL_APPROVED, $user->approval_status);
         $this->assertNotNull($user->approved_at);
+        Mail::assertSent(TalentWelcomeMail::class, fn (TalentWelcomeMail $mail) => $mail->hasTo('auto-talent@example.com'));
     }
 
     public function test_company_stays_pending_when_talent_validation_is_disabled(): void
@@ -226,7 +229,8 @@ class TalentAdminValidationSettingTest extends TestCase
             ->assertOk()
             ->assertSee(__('talenma.auth.registration_welcome_complete_profile'), false);
 
-        Mail::assertNothingSent();
+        Mail::assertSent(TalentWelcomeMail::class, fn (TalentWelcomeMail $mail) => $mail->hasTo('direct-talent@example.com'));
+        Mail::assertNotSent(VerifyRegistrationMail::class);
     }
 
     public function test_company_still_requires_email_when_talent_email_verification_is_disabled(): void

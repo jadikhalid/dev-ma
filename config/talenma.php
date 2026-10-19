@@ -65,7 +65,7 @@ return [
 
     /*
     | Relance profil talent : délai après validation (heures) avant envoi
-    | si le profil minimum (catalogue) n'est pas complet.
+    | si aucun CV n'est déposé.
     */
     'profile_completion_reminder' => [
         'delay_hours' => (int) env('TALENMA_PROFILE_REMINDER_DELAY_HOURS', 48),

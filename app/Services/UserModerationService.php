@@ -20,6 +20,7 @@ class UserModerationService
     public function __construct(
         private UserDeletionService $userDeletion,
         private ModeratorAssignmentService $moderatorAssignments,
+        private PendingRegistrationService $pendingRegistrations,
     ) {}
 
     public function submit(User $actor, string $action, ?User $target = null, array $payload = []): void
@@ -118,7 +119,10 @@ class UserModerationService
             ]);
         }
 
-        Mail::to($user->email)->send(new TalentApprovedMail($user->fresh()));
+        $user = $user->fresh();
+
+        Mail::to($user->email)->send(new TalentApprovedMail($user));
+        $this->pendingRegistrations->sendWelcomeMail($user);
     }
 
     public function rejectTalent(User $user, ?string $reason, User $reviewer): void

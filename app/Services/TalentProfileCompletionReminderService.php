@@ -3,22 +3,19 @@
 namespace App\Services;
 
 use App\Mail\TalentProfileCompletionReminderMail;
+use App\Models\ProfileDocument;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
 class TalentProfileCompletionReminderService
 {
-    public function __construct(
-        private TalentProfileCompletionService $profileCompletion,
-    ) {}
-
     public function delayHours(): int
     {
         return max(1, (int) config('talenma.profile_completion_reminder.delay_hours', 48));
     }
 
     /**
-     * @return array{sent: int, skipped_complete: int, eligible: int}
+     * @return array{sent: int, eligible: int}
      */
     public function sendDueReminders(): array
     {
@@ -31,21 +28,14 @@ class TalentProfileCompletionReminderService
             ->where('approved_at', '<=', $cutoff)
             ->whereNull('profile_completion_reminder_sent_at')
             ->whereNull('disabled_at')
-            ->with(['profile.documents', 'profile.profession', 'profile.professionSector'])
+            ->whereDoesntHave('profile.documents', function ($documents) {
+                $documents->where('document_type', ProfileDocument::TYPE_CV);
+            })
             ->get();
 
         $sent = 0;
-        $skippedComplete = 0;
 
         foreach ($users as $user) {
-            $assessment = $this->profileCompletion->assess($user->profile);
-
-            if ($assessment['is_catalog_ready']) {
-                $skippedComplete++;
-
-                continue;
-            }
-
             Mail::to($user->email)->send(new TalentProfileCompletionReminderMail($user->fresh()));
 
             $user->forceFill([
@@ -57,7 +47,6 @@ class TalentProfileCompletionReminderService
 
         return [
             'sent' => $sent,
-            'skipped_complete' => $skippedComplete,
             'eligible' => $users->count(),
         ];
     }

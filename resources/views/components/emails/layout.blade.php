@@ -16,6 +16,13 @@
         <tr>
             <td align="center">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:{{ $contentMaxWidth }};background-color:#ffffff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;">
+                    @if (isset($hero) && ! $hero->isEmpty())
+                        <tr>
+                            <td style="padding:0;line-height:0;font-size:0;">
+                                {{ $hero }}
+                            </td>
+                        </tr>
+                    @endif
                     <tr>
                         <td style="padding:32px 32px 8px;">
                             @if ($showBrand)

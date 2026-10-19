@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Mail\TalentWelcomeMail;
 use App\Mail\VerifyRegistrationMail;
 use App\Models\PendingRegistration;
 use App\Models\User;
@@ -136,6 +137,7 @@ class RegistrationTest extends TestCase
                 && str_contains($mail->verificationUrl, '/register/verify/')
                 && str_contains($mail->cancellationUrl, '/register/cancel/');
         });
+        Mail::assertNotSent(TalentWelcomeMail::class);
 
         $this->withSession([
             'pending_registration_email' => 'test@example.com',
@@ -185,6 +187,7 @@ class RegistrationTest extends TestCase
         $this->assertNotNull($user->data_processing_consent_at);
         $this->assertSame(config('talenma.data_processing_consent_version'), $user->data_processing_consent_version);
         $this->assertDatabaseMissing('pending_registrations', ['email' => 'test@example.com']);
+        Mail::assertNotSent(TalentWelcomeMail::class);
     }
 
     public function test_talent_registration_requires_data_processing_consent(): void
