@@ -16,7 +16,7 @@ class CareerPageController extends Controller
         $user = auth()->user();
         $search = trim((string) $request->query('q', ''));
 
-        if ($user?->isTalent() && $search !== '') {
+        if ($user?->isTalent() && $user->isApproved() && $search !== '') {
             return redirect()->route('talent.jobs.index', ['q' => $search]);
         }
 

@@ -23,7 +23,6 @@ class HomeLatestJobsTest extends TestCase
             ->assertSee('id="opportunites"', false)
             ->assertSee(route('home').'#opportunites', false)
             ->assertSee('Fullstack Maroc', false)
-            ->assertSee('Description annonce publique.', false)
             ->assertSee('ACME Maroc', false)
             ->assertSee('Technologie', false)
             ->assertSee(route('jobs.public.show', $job), false)
@@ -167,7 +166,7 @@ class HomeLatestJobsTest extends TestCase
             ->assertSee(route('career.offers'), false);
     }
 
-    public function test_home_latest_jobs_shows_at_most_ten_published_jobs(): void
+    public function test_home_latest_jobs_shows_the_four_most_recent_published_jobs(): void
     {
         [$owner, $profile] = $this->makeCompanyOwner();
 
@@ -187,9 +186,10 @@ class HomeLatestJobsTest extends TestCase
         $response = $this->get(route('home'))->assertOk();
 
         $response
-            ->assertSee('data-initial-count="10"', false)
+            ->assertSee('data-initial-count="4"', false)
             ->assertSee('Annonce limite #11', false)
-            ->assertSee('Annonce limite #02', false)
+            ->assertSee('Annonce limite #08', false)
+            ->assertDontSee('Annonce limite #07', false)
             ->assertDontSee('Annonce limite #01', false);
     }
 

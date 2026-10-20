@@ -12,15 +12,16 @@
     ])->values();
 @endphp
 
-<section id="publications" class="scroll-mt-28 pb-20" aria-labelledby="home-publications-title">
+<section id="publications" class="mt-8 scroll-mt-28 pb-20 lg:mt-10" aria-labelledby="home-publications-title">
     <div class="home-shell">
-        <div class="text-center">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
-                {{ __('talenma.home.social_feed_eyebrow') }}
-            </p>
-            <h2 id="home-publications-title" class="mx-auto mt-3 max-w-3xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.7rem] lg:leading-[1.15]">
+        <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <h2 id="home-publications-title" class="text-[2rem] font-bold tracking-[-0.03em] text-slate-900 sm:text-4xl lg:text-[2.75rem]">
                 {{ __('talenma.home.social_feed_title') }}
             </h2>
+            <a href="{{ route('blog.index') }}" class="inline-flex items-center gap-2 rounded-full bg-[#F3F4F6] px-[1.125rem] py-3 text-[15px] font-semibold text-slate-900 transition hover:bg-gray-200">
+                {{ __('talenma.home.social_feed_blog') }}
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
         </div>
 
         @if ($postCards->isEmpty())

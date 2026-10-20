@@ -1,51 +1,59 @@
 @php
+    $user = auth()->user();
+    $offersUrl = ($user && $user->isTalent() && $user->isApproved())
+        ? route('talent.jobs.index')
+        : route('career.offers');
+
     $cards = [
         [
-            'key' => 'remote',
             'label' => __('talenma.home.ways_remote'),
-            'desc' => __('talenma.home.ways_remote_desc'),
-            'image' => 'images/home/way-remote.jpg', // Pexels 21852646, Eunjin Baek
+            'image' => 'images/home/way-remote.jpg',
+            'alt' => __('talenma.home.ways_remote_alt'),
+            'position' => 'center 38%',
+            'arrow' => '#5546F0',
         ],
         [
-            'key' => 'visa',
             'label' => __('talenma.home.ways_visa'),
-            'desc' => __('talenma.home.ways_visa_desc'),
-            'image' => 'images/home/way-visa.jpg', // Unsplash photo-1436491865332
+            'image' => 'images/home/way-visa.jpg',
+            'alt' => __('talenma.home.ways_visa_alt'),
+            'position' => 'center 12%',
+            'arrow' => '#7C3AED',
         ],
         [
-            'key' => 'local',
             'label' => __('talenma.home.ways_local'),
-            'desc' => __('talenma.home.ways_local_desc'),
-            'image' => 'images/home/way-local.jpg', // Pexels 31709064, Misbaa eri
+            'image' => 'images/home/way-local.jpg',
+            'alt' => __('talenma.home.ways_local_alt'),
+            'position' => 'center 30%',
+            'arrow' => '#2563EB',
         ],
     ];
 @endphp
 
 <section class="mt-16 lg:mt-20" aria-labelledby="home-ways-title">
-    <div class="text-center">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
-            {{ __('talenma.home.ways_eyebrow') }}
-        </p>
-        <h2 id="home-ways-title" class="mx-auto mt-3 max-w-3xl text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.7rem] lg:leading-[1.15]">
-            {{ __('talenma.home.ways_title') }} {{ __('talenma.home.ways_title_accent') }}
-        </h2>
-    </div>
+    <h2 id="home-ways-title" class="text-[2rem] font-bold tracking-[-0.03em] text-slate-900 sm:text-4xl lg:text-[2.75rem]">
+        {{ __('talenma.home.ways_title') }}
+        <span class="text-[#5546F0]">{{ __('talenma.home.ways_title_accent') }}</span>
+    </h2>
 
-    <div class="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-3 sm:gap-5">
+    <div class="mt-8 grid gap-6 lg:grid-cols-3">
         @foreach ($cards as $card)
-            <article class="flex flex-col overflow-hidden rounded-[1.35rem] bg-white shadow-[0_16px_40px_rgba(79,70,229,0.10)] ring-1 ring-slate-200/70">
-                <div class="h-40 overflow-hidden sm:h-[11.5rem]">
+            <a href="{{ $offersUrl }}" class="flex flex-col overflow-hidden rounded-[28px] border border-[#EEF0F4] bg-white text-slate-900 shadow-[0_1px_2px_rgba(17,24,39,0.06),0_12px_32px_-12px_rgba(49,46,129,0.22)] transition hover:-translate-y-0.5">
+                <div class="relative h-52 overflow-hidden sm:h-[15.5rem]">
                     <img
-                        src="{{ asset($card['image']) }}"
-                        alt=""
+                        src="{{ asset($card['image']) }}?v=2"
+                        alt="{{ $card['alt'] }}"
                         class="h-full w-full object-cover"
+                        style="object-position: {{ $card['position'] }}"
                     >
+                    <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,rgba(85,70,240,0.10),rgba(124,58,237,0.18))]" aria-hidden="true"></div>
                 </div>
-                <div class="px-4 py-3.5 sm:px-5 sm:py-4">
-                    <p class="text-base font-bold tracking-tight text-slate-900 sm:text-[1.05rem]">{{ $card['label'] }}</p>
-                    <p class="mt-1 text-sm leading-relaxed text-slate-500">{{ $card['desc'] }}</p>
+                <div class="flex items-center justify-between gap-3 px-5 py-5 sm:px-6 sm:py-[1.35rem]">
+                    <span class="text-lg font-bold tracking-tight sm:text-[1.3rem]">{{ $card['label'] }}</span>
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white" style="background: {{ $card['arrow'] }}; box-shadow: 0 10px 20px -8px {{ $card['arrow'] }}">
+                        <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </span>
                 </div>
-            </article>
+            </a>
         @endforeach
     </div>
 </section>

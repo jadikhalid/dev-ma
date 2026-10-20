@@ -32,22 +32,6 @@
     }
 }
 
-@media (max-width: 420px) {
-    .max-w-420-hidden {
-        display: none !important;
-    }
-
-    .max-w-420-block {
-        display: block !important;
-    }
-}
-
-@media (min-width: 480px) {
-    .min-w-480-hero-title {
-        max-width: 22rem;
-        font-size: 2.55rem;
-    }
-}
 
 [x-cloak] {
     display: none !important;
@@ -90,41 +74,84 @@
     }
 }
 
-/* Soft side atmosphere for the home hero on very wide screens only */
-.home-hero-wide-atmosphere {
-    display: none;
+/* Hero wash stays inside the home frame (80rem), same edges as the content. */
+.home-hero-canvas {
+    position: relative;
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    background: transparent;
 }
 
-@media (min-width: 1536px) {
-    .home-hero-wide-atmosphere {
-        display: block;
-        pointer-events: none;
-        position: absolute;
-        inset: 0;
-        z-index: 0;
-        overflow: hidden;
+.home-hero-wash {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.home-hero-wash::before,
+.home-hero-wash::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+}
+
+.home-hero-wash::before {
+    left: -260px;
+    top: calc(4.25rem - 320px);
+    width: 820px;
+    height: 820px;
+    background: radial-gradient(circle, rgba(165, 180, 252, 1) 0%, rgba(255, 255, 255, 0) 68%);
+    opacity: 0.55;
+}
+
+.home-hero-wash::after {
+    left: 760px;
+    top: calc(4.25rem - 120px);
+    width: 760px;
+    height: 760px;
+    background: radial-gradient(circle, rgba(56, 189, 248, 1) 0%, rgba(255, 255, 255, 0) 68%);
+    opacity: 0.35;
+}
+
+/* Phone only: same wash as tablet, pulled under the header. Desktop rules stay in the block below. */
+@media (max-width: 639px), (max-height: 499px) and (max-width: 1023px) {
+    .page-home [data-public-header] {
+        border-color: transparent;
+        background-color: transparent;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
     }
 
-    .home-hero-wide-atmosphere::before,
-    .home-hero-wide-atmosphere::after {
-        content: '';
-        position: absolute;
-        top: 10%;
-        width: min(22vw, 22rem);
-        height: 70%;
-        border-radius: 9999px;
-        filter: blur(64px);
-        opacity: 0.45;
+    .page-home [data-public-header][data-scrolled="true"] {
+        border-color: rgb(243 244 246);
+        background-color: rgb(255 255 255 / 0.95);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
     }
 
-    .home-hero-wide-atmosphere::before {
-        left: -4rem;
-        background: radial-gradient(circle at center, rgba(199, 210, 254, 0.9) 0%, transparent 70%);
+    .page-home .hero-section {
+        overflow: visible;
     }
 
-    .home-hero-wide-atmosphere::after {
-        right: -4rem;
-        background: radial-gradient(circle at center, rgba(167, 243, 208, 0.75) 0%, transparent 70%);
+    .page-home .home-hero-canvas {
+        margin-top: -5rem;
+    }
+
+    .page-home .home-hero-canvas > .home-shell {
+        padding-top: 8rem;
+    }
+}
+
+@media (min-width: 640px) {
+    .page-home .hero-section {
+        overflow: visible;
+    }
+
+    .page-home .home-hero-canvas {
+        margin-top: -4.25rem;
     }
 }
 
@@ -149,12 +176,38 @@
     mask-image: none;
 }
 
-.home-tools-card {
-    background-color: #f8f7ff;
+.home-tools-panel {
+    position: relative;
+    overflow: hidden;
+    background-color: #0d0b2b;
     background-image:
-        radial-gradient(circle at 1px 1px, rgba(99, 102, 241, 0.22) 1px, transparent 0),
-        linear-gradient(145deg, #eef2ff 0%, #ffffff 52%, #f0fdfa 100%);
-    background-size: 16px 16px, 100% 100%;
+        linear-gradient(rgba(255, 255, 255, 0.036) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.036) 1px, transparent 1px);
+    background-size: 64px 64px, 64px 64px;
+}
+
+.home-tools-panel::before,
+.home-tools-panel::after {
+    content: "";
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    border-radius: 9999px;
+    pointer-events: none;
+}
+
+.home-tools-panel::before {
+    left: -200px;
+    top: -200px;
+    background: radial-gradient(circle, rgba(124, 58, 237, 1) 0%, rgba(255, 255, 255, 0) 68%);
+    opacity: 0.7;
+}
+
+.home-tools-panel::after {
+    right: -220px;
+    bottom: -260px;
+    background: radial-gradient(circle, rgba(79, 70, 229, 1) 0%, rgba(255, 255, 255, 0) 68%);
+    opacity: 0.45;
 }
 
 .home-cta-banner {
@@ -280,6 +333,20 @@
         margin-left: auto;
         margin-right: 0;
     }
+}
+
+.hero-visual.hero-visual--map {
+    max-width: 34rem;
+    overflow: visible;
+    padding-top: 0;
+}
+
+.hero-talent-map {
+    display: block;
+    width: 100%;
+    height: auto;
+    transform: rotate(5deg);
+    filter: drop-shadow(0 22px 40px rgba(79, 70, 229, 0.16));
 }
 
 .hero-visual__bg {

@@ -277,6 +277,7 @@ class JobPostingService
     {
         $jobId = (int) $job->id;
         $logoPath = $job->external_company_logo_path;
+        $bannerPath = $job->external_company_banner_path;
 
         JobApplication::query()
             ->where('job_posting_id', $jobId)
@@ -289,5 +290,6 @@ class JobPostingService
         $job->delete();
 
         \App\Support\JobExternalLogoStorage::delete($logoPath);
+        \App\Support\JobExternalBannerStorage::deleteIfUnused($bannerPath);
     }
 }

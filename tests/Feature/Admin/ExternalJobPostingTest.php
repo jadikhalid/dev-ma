@@ -9,6 +9,8 @@ use App\Models\ProfessionSector;
 use App\Models\User;
 use App\Services\ModeratorAssignmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -55,7 +57,49 @@ class ExternalJobPostingTest extends TestCase
             ->get(route('admin.jobs.create'))
             ->assertOk()
             ->assertSee('name="location_country"', false)
-            ->assertSee('name="work_modes[]"', false);
+            ->assertSee('name="work_modes[]"', false)
+            ->assertSee('name="external_company_banner"', false);
+    }
+
+    #[Test]
+    public function admin_can_attach_and_remove_an_external_company_banner(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $sector = $this->makeSector();
+        $job = JobPosting::query()->create([
+            'company_profile_id' => null,
+            'created_by' => $admin->id,
+            'profession_sector_id' => $sector->id,
+            'title' => 'External Backend Role',
+            'description' => str_repeat('We are hiring experienced backend engineers now. ', 3),
+            'status' => JobPosting::STATUS_DRAFT,
+            'application_mode' => JobPosting::APPLICATION_EXTERNAL,
+            'external_company_name' => 'Acme Partners',
+            'external_apply_url' => 'https://acme.example/jobs/apply',
+            'location_country' => 'fr',
+            'work_modes' => ['remote'],
+            'remote_ok' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.jobs.update', $job), array_merge($this->externalPayload($sector->slug), [
+                'external_company_banner' => UploadedFile::fake()->image('banner.jpg', 1200, 400),
+            ]))
+            ->assertRedirect();
+
+        $path = $job->fresh()->external_company_banner_path;
+        $this->assertNotNull($path);
+        Storage::disk('public')->assertExists($path);
+
+        $this->actingAs($admin)
+            ->put(route('admin.jobs.update', $job), array_merge($this->externalPayload($sector->slug), [
+                'remove_external_company_banner' => '1',
+            ]))
+            ->assertRedirect();
+
+        $this->assertNull($job->fresh()->external_company_banner_path);
+        Storage::disk('public')->assertMissing($path);
     }
 
     #[Test]

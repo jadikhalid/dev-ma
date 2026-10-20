@@ -83,6 +83,27 @@
                         <p class="mt-1 text-xs text-gray-500">{{ __('talenma.jobs.external_logo_hint') }}</p>
                         <x-input-error :messages="$errors->get('external_company_logo')" class="mt-2" />
                     </div>
+                    <div class="sm:col-span-2">
+                        <x-input-label for="external_company_banner" :value="__('talenma.jobs.field_external_banner')" />
+                        @if ($job->advertiserBannerUrl())
+                            <div class="mt-2 mb-3">
+                                <img src="{{ $job->advertiserBannerUrl() }}" alt="" class="h-28 w-full rounded-xl object-cover ring-1 ring-slate-200">
+                                <label class="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
+                                    <input type="checkbox" name="remove_external_company_banner" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    {{ __('talenma.jobs.remove_external_banner') }}
+                                </label>
+                            </div>
+                        @endif
+                        <input
+                            id="external_company_banner"
+                            name="external_company_banner"
+                            type="file"
+                            accept="image/*"
+                            class="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
+                        >
+                        <p class="mt-1 text-xs text-gray-500">{{ __('talenma.jobs.external_banner_hint') }}</p>
+                        <x-input-error :messages="$errors->get('external_company_banner')" class="mt-2" />
+                    </div>
                 </div>
 
                 <div>

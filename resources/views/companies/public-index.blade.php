@@ -6,7 +6,7 @@
 @section('content')
     <section class="border-b border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-teal-50/40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-            <a href="{{ route('home') }}#entreprises" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800">
+            <a href="{{ route('home') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
                 </svg>

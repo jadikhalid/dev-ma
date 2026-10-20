@@ -14,17 +14,15 @@ class PublicCompanyPagesTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
-    public function home_companies_section_links_view_all_and_each_company_page(): void
+    public function home_does_not_show_the_partner_companies_block(): void
     {
         $company = $this->makeCompany('ACME Maroc');
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee(__('talenma.home.companies_marquee_lead'))
-            ->assertSee(__('talenma.home.companies_marquee_accent'))
-            ->assertSee(__('talenma.home.companies_marquee_offers'))
-            ->assertSee(route('companies.public.index'), false)
-            ->assertSee(route('companies.public.show', $company), false);
+            ->assertDontSee(__('talenma.home.companies_marquee_accent'), false)
+            ->assertDontSee('id="home-companies-title"', false)
+            ->assertDontSee(route('companies.public.show', $company), false);
     }
 
     #[Test]

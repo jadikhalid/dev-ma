@@ -11,6 +11,7 @@ use App\Models\ProfessionSector;
 use App\Models\Profile;
 use App\Services\JobPostingService;
 use App\Services\ProfessionCatalogService;
+use App\Support\JobExternalBannerStorage;
 use App\Support\JobExternalLogoStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -101,6 +102,12 @@ class JobPostingController extends Controller
             );
         }
 
+        if ($request->hasFile('external_company_banner')) {
+            $data['external_company_banner_path'] = JobExternalBannerStorage::storeUpload(
+                $request->file('external_company_banner')
+            );
+        }
+
         $job = JobPosting::query()->create($data);
 
         return redirect()
@@ -148,6 +155,7 @@ class JobPostingController extends Controller
         if ($job->isExternalApplication()) {
             $data = $this->validatedExternal($request);
             $previousLogo = $job->external_company_logo_path;
+            $previousBanner = $job->external_company_banner_path;
 
             if ($request->boolean('remove_external_company_logo') && ! $request->hasFile('external_company_logo')) {
                 $data['external_company_logo_path'] = null;
@@ -161,7 +169,22 @@ class JobPostingController extends Controller
                 JobExternalLogoStorage::delete($previousLogo);
             }
 
+            if ($request->boolean('remove_external_company_banner') && ! $request->hasFile('external_company_banner')) {
+                $data['external_company_banner_path'] = null;
+            }
+
+            if ($request->hasFile('external_company_banner')) {
+                $data['external_company_banner_path'] = JobExternalBannerStorage::storeUpload(
+                    $request->file('external_company_banner')
+                );
+            }
+
             $job->update($data);
+
+            if ($previousBanner && $previousBanner !== $job->external_company_banner_path) {
+                JobExternalBannerStorage::deleteIfUnused($previousBanner);
+            }
+
             $this->jobs->flagUnseenForCompanyFromStaff($job);
 
             return redirect()
@@ -362,6 +385,8 @@ class JobPostingController extends Controller
             'external_apply_url' => ['required', 'url', 'max:2048'],
             'external_company_logo' => ['nullable', 'image', 'max:2048'],
             'remove_external_company_logo' => ['nullable', 'boolean'],
+            'external_company_banner' => ['nullable', 'image', 'max:4096'],
+            'remove_external_company_banner' => ['nullable', 'boolean'],
             'location_country' => ['nullable', 'string', Rule::in(CompanyProfile::COUNTRY_CODES)],
             'work_modes' => ['required', 'array', 'min:1'],
             'work_modes.*' => ['string', Rule::in(array_keys(Profile::workModeOptions()))],
@@ -378,7 +403,13 @@ class JobPostingController extends Controller
             ]);
         }
 
-        unset($data['sector'], $data['external_company_logo'], $data['remove_external_company_logo']);
+        unset(
+            $data['sector'],
+            $data['external_company_logo'],
+            $data['remove_external_company_logo'],
+            $data['external_company_banner'],
+            $data['remove_external_company_banner'],
+        );
 
         $data['profession_sector_id'] = $sector->id;
         $data['profession_id'] = null;

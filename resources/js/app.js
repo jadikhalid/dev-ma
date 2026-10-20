@@ -684,7 +684,7 @@ Alpine.data('socialPostsSlider', (config) => ({
     visibleCount: 3,
     cardWidthPx: 0,
     stepPx: 0,
-    gapPx: 20,
+    gapPx: config.gapPx ?? 20,
     _resizeTimer: null,
 
     init() {

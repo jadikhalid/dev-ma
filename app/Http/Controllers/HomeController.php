@@ -7,6 +7,7 @@ use App\Models\JobPosting;
 use App\Models\User;
 use App\Services\CompanyCatalogSearchService;
 use App\Services\HeroTalentMosaicService;
+use App\Services\HomeRecruitingCompanyService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -17,6 +18,7 @@ class HomeController extends Controller
         private ProfessionCatalogService $professionCatalog,
         private CompanyCatalogSearchService $companyCatalogSearch,
         private HeroTalentMosaicService $heroTalentMosaic,
+        private HomeRecruitingCompanyService $recruitingCompanies,
     ) {}
 
     public function index()
@@ -58,8 +60,8 @@ class HomeController extends Controller
             'companyCountries' => $showCompanySearch
                 ? $this->companyCatalogSearch->availableCountries()
                 : [],
-            'featuredCompanies' => $this->companyCatalogSearch->featuredForHome(),
             'latestJobs' => $latestJobs,
+            'recruitingCompanies' => $this->recruitingCompanies->forHome($canBrowseTalentJobs),
             'latestJobsIndexUrl' => ($user && $user->isTalent())
                 ? route('talent.jobs.index')
                 : route('career.offers'),
@@ -77,6 +79,7 @@ class HomeController extends Controller
      *     company_initials: string,
      *     logo_url: ?string,
      *     sector: ?string,
+     *     badge: ?string,
      *     date: string,
      *     url: string
      * }>
@@ -91,7 +94,7 @@ class HomeController extends Controller
             ->where('status', JobPosting::STATUS_PUBLISHED)
             ->orderByDesc('published_at')
             ->orderByDesc('id')
-            ->limit(10)
+            ->limit(4)
             ->get()
             ->map(function (JobPosting $job) use ($canBrowseTalentJobs, $canManageCompanyJobs, $viewerCompanyProfileId) {
                 $url = match (true) {
@@ -114,6 +117,8 @@ class HomeController extends Controller
                     'company_initials' => $job->advertiserInitials(),
                     'logo_url' => $job->advertiserLogoUrl(),
                     'sector' => $job->professionSector?->localizedName() ?: null,
+                    'badge' => $job->professionSector?->localizedName()
+                        ?: ($job->collaborationModeLabels()[0] ?? null),
                     'date' => $publishedAt?->translatedFormat('d M Y') ?? '',
                     'url' => $url,
                 ];

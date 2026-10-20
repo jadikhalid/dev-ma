@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'application_mode',
     'external_company_name',
     'external_company_logo_path',
+    'external_company_banner_path',
     'external_apply_url',
     'published_at',
     'closed_at',
@@ -94,6 +95,7 @@ class JobPosting extends Model
         'work_modes',
         'external_company_name',
         'external_company_logo_path',
+        'external_company_banner_path',
         'external_apply_url',
     ];
 
@@ -213,6 +215,17 @@ class JobPosting extends Model
         $this->loadMissing('companyProfile.user');
 
         return $this->companyProfile?->logoUrl();
+    }
+
+    public function advertiserBannerUrl(): ?string
+    {
+        if ($this->isExternalApplication()) {
+            return \App\Support\JobExternalBannerStorage::url($this->external_company_banner_path);
+        }
+
+        $this->loadMissing('companyProfile');
+
+        return $this->companyProfile?->bannerUrl();
     }
 
     public function advertiserInitials(): string

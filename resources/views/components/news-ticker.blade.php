@@ -7,7 +7,7 @@
 
 @if ($newsItems->isNotEmpty())
 <div
-    class="hidden sm:block"
+    class="hidden"
     x-data="magazineTicker({ manual: true, dots: {{ $newsItems->count() }} })"
     @scroll.window.passive="update()"
     @resize.window.passive="onResize()"

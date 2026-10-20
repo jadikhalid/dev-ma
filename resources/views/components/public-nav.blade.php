@@ -7,6 +7,7 @@
     $showExploreCompanies = $onCompanyShow;
 
     $talentHeader = auth()->check() && auth()->user()->isTalent();
+    $homeHeader = request()->routeIs('home');
 
     $navLinks = [
         [
@@ -46,10 +47,10 @@
         ));
     }
 
-    $navLinkClass = 'inline-flex items-center rounded-[5px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium leading-5 text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700';
-    $navLinkDisabledClass = 'inline-flex cursor-not-allowed items-center rounded-[5px] border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium leading-5 text-slate-400 shadow-sm';
-    $navLinkActiveClass = 'inline-flex items-center rounded-[5px] border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold leading-5 text-indigo-700 shadow-sm';
-    $navHiringClass = 'inline-flex items-center rounded-[5px] border border-transparent bg-gray-900 px-4 py-2 text-sm font-semibold leading-5 text-white shadow-sm transition hover:bg-indigo-700';
+    $navLinkClass = 'inline-flex items-center px-2.5 py-2 text-sm font-medium leading-5 text-slate-700 transition hover:text-indigo-700';
+    $navLinkDisabledClass = 'inline-flex cursor-not-allowed items-center px-2.5 py-2 text-sm font-medium leading-5 text-slate-400';
+    $navLinkActiveClass = 'inline-flex items-center px-2.5 py-2 text-sm font-semibold leading-5 text-indigo-700';
+    $navHiringClass = 'inline-flex items-center rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold leading-5 text-white shadow-sm transition hover:bg-slate-800';
     $menuLinkClass = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-700 sm:shadow-none sm:hover:bg-slate-50 sm:hover:text-indigo-700';
     $menuLinkDisabledClass = 'flex w-full cursor-not-allowed items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/40 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-slate-100 sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-400 sm:shadow-none';
     $menuLinkActiveClass = 'flex w-full items-center gap-2.5 rounded-xl bg-white/10 px-3 py-2.5 text-sm font-semibold text-white sm:rounded-xl sm:border-0 sm:bg-indigo-50 sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-semibold sm:text-indigo-700 sm:shadow-none';
@@ -57,8 +58,15 @@
 @endphp
 
 <header
-    class="sticky top-0 z-50 w-full border-b border-white/10 bg-indigo-600/90 backdrop-blur-md sm:border-gray-100 sm:bg-white/95"
-    x-data="{ menuOpen: false }"
+    @class([
+        'sticky top-0 z-50 w-full border-b border-white/10 bg-indigo-600/90 backdrop-blur-md',
+        'sm:border-transparent sm:bg-transparent sm:backdrop-blur-none' => $homeHeader,
+        'sm:border-gray-100 sm:bg-white/95' => ! $homeHeader,
+    ])
+    x-data="{ menuOpen: false, scrolled: false }"
+    @scroll.window="scrolled = window.scrollY > 12"
+    :data-scrolled="scrolled.toString()"
+    :class="scrolled ? 'sm:!border-gray-100 sm:!bg-white/95 sm:!backdrop-blur-md' : ''"
     @keydown.escape.window="menuOpen = false"
     @click.outside="menuOpen = false"
     @locale-menu-open.window="menuOpen = false"
@@ -75,8 +83,8 @@
                     <div class="flex items-center" data-phone-logo>
                         <x-brand-logo href="{{ route('home') }}" size="md" phone />
                     </div>
-                    <span class="h-8 w-px shrink-0 bg-white" data-phone-locale-rule aria-hidden="true"></span>
-                    <x-header-locale-menu align="left" tone="light" />
+                    <span @class(['h-8 w-px shrink-0', 'bg-slate-300' => $homeHeader, 'bg-white' => ! $homeHeader]) data-phone-locale-rule aria-hidden="true"></span>
+                    <x-header-locale-menu align="left" :tone="$homeHeader ? 'dark' : 'light'" />
                 </div>
                 <div class="hidden sm:block">
                     <x-brand-logo href="{{ route('home') }}" size="sm" />
@@ -89,9 +97,6 @@
                 'min-w-0 xl:flex-1 xl:justify-end' => $talentHeader,
             ]) data-header-nav-group aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
                 @foreach ($navLinks as $link)
-                    @if (! empty($link['hiring']))
-                        <span class="mx-3 h-5 w-px shrink-0 bg-gray-200" aria-hidden="true"></span>
-                    @endif
                     @if (! empty($link['disabled']))
                         <span class="{{ $navLinkDisabledClass }}" aria-disabled="true" data-header-nav-disabled>{{ $link['label'] }}</span>
                     @else
@@ -121,7 +126,11 @@
             ])>
                 <button
                     type="button"
-                    class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/95 transition hover:bg-white/15 sm:hidden"
+                    @class([
+                        'relative inline-flex h-11 w-11 items-center justify-center rounded-xl transition sm:hidden',
+                        'text-slate-900 hover:bg-slate-100' => $homeHeader,
+                        'text-white/95 hover:bg-white/15' => ! $homeHeader,
+                    ])
                     data-phone-menu
                     @click="menuOpen = ! menuOpen; if (menuOpen) $dispatch('header-menu-open')"
                     :aria-expanded="menuOpen.toString()"
@@ -178,7 +187,11 @@
                         </x-slot>
                     </x-dropdown>
                 @else
-                    <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl border border-white/30 bg-white/15 px-4 py-2.5 text-base font-semibold text-white/95 transition-all duration-300 ease-in-out hover:bg-white/25 sm:hidden" data-phone-login>{{ __('talenma.nav.login') }}</a>
+                    <a href="{{ route('login') }}" @class([
+                        'inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold transition sm:hidden',
+                        'text-slate-900 hover:text-indigo-700' => $homeHeader,
+                        'border border-white/30 bg-white/15 text-white/95 hover:bg-white/25' => ! $homeHeader,
+                    ]) data-phone-login>{{ __('talenma.nav.login') }}</a>
                     <a href="{{ route('login') }}" class="hidden px-2 py-2 text-sm font-medium text-gray-800 hover:text-indigo-700 sm:inline-flex">{{ __('talenma.nav.login') }}</a>
                     <a
                         href="{{ route('register') }}"
@@ -190,7 +203,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM3 20a6 6 0 0 1 12 0v1H3v-1z"/>
                         </svg>
                     </a>
-                    <a href="{{ route('register') }}" class="hidden items-center rounded-[5px] border border-transparent bg-gradient-to-r from-indigo-600 to-violet-500 px-4 py-2 text-sm font-semibold leading-5 text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-600 sm:inline-flex">{{ __('talenma.nav.register') }}</a>
+                    <a href="{{ route('register') }}" class="hidden items-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-500 px-4 py-2 text-sm font-semibold leading-5 text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-600 sm:inline-flex">{{ __('talenma.nav.register') }}</a>
                 @endauth
 
                 <div class="hidden sm:block">
