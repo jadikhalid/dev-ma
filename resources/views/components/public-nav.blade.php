@@ -51,10 +51,10 @@
     $navLinkDisabledClass = 'inline-flex cursor-not-allowed items-center px-2.5 py-2 text-sm font-medium leading-5 text-slate-400';
     $navLinkActiveClass = 'inline-flex items-center px-2.5 py-2 text-sm font-semibold leading-5 text-indigo-700';
     $navHiringClass = 'inline-flex items-center rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold leading-5 text-white shadow-sm transition hover:bg-slate-800';
-    $menuLinkClass = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-700 sm:shadow-none sm:hover:bg-slate-50 sm:hover:text-indigo-700';
-    $menuLinkDisabledClass = 'flex w-full cursor-not-allowed items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/40 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-slate-100 sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-400 sm:shadow-none';
-    $menuLinkActiveClass = 'flex w-full items-center gap-2.5 rounded-xl bg-white/10 px-3 py-2.5 text-sm font-semibold text-white sm:rounded-xl sm:border-0 sm:bg-indigo-50 sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-semibold sm:text-indigo-700 sm:shadow-none';
-    $menuHiringClass = 'flex w-full items-center gap-2.5 rounded-xl bg-white/15 px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/25 sm:mt-1 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-semibold sm:text-indigo-700 sm:shadow-none sm:hover:bg-indigo-50';
+    $menuLinkClass = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-indigo-700 sm:px-3.5 sm:py-3 sm:text-[0.95rem]';
+    $menuLinkDisabledClass = 'flex w-full cursor-not-allowed items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 sm:px-3.5 sm:py-3 sm:text-[0.95rem]';
+    $menuLinkActiveClass = 'flex w-full items-center gap-2.5 rounded-xl bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700 sm:px-3.5 sm:py-3 sm:text-[0.95rem]';
+    $menuHiringClass = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 sm:mt-1 sm:px-3.5 sm:py-3 sm:text-[0.95rem]';
 @endphp
 
 <header
@@ -74,8 +74,8 @@
 >
     <div @class([
         'mx-auto w-full',
-        'home-align-wide pl-4 pr-3 sm:px-6 lg:px-10 xl:px-12 2xl:px-10' => $fullWidth,
-        'max-w-7xl pl-4 pr-3 sm:px-6 lg:px-8' => ! $fullWidth,
+        'home-align-wide px-4 sm:px-6 lg:px-10 xl:px-12 2xl:px-10' => $fullWidth,
+        'max-w-7xl px-4 sm:px-6 lg:px-8' => ! $fullWidth,
     ])>
         <div class="flex h-20 items-center gap-2 sm:h-[4.25rem] sm:gap-3">
             <div class="flex shrink-0 items-center">
@@ -188,7 +188,7 @@
                     </x-dropdown>
                 @else
                     <a href="{{ route('login') }}" @class([
-                        'inline-flex items-center rounded-xl px-4 py-2.5 text-base font-semibold transition sm:hidden',
+                        'inline-flex items-center rounded-xl px-2.5 py-2.5 text-base font-semibold transition sm:hidden',
                         'text-slate-900 hover:text-indigo-700' => $homeHeader,
                         'border border-white/30 bg-white/15 text-white/95 hover:bg-white/25' => ! $homeHeader,
                     ]) data-phone-login>{{ __('talenma.nav.login') }}</a>
@@ -237,7 +237,7 @@
         x-transition:enter="transition ease-out duration-300 sm:duration-200"
         x-transition:enter-start="opacity-0 translate-y-2 sm:translate-y-0"
         x-transition:enter-end="opacity-100 translate-y-0"
-        class="fixed left-1/2 top-20 z-[60] w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/15 bg-indigo-700 p-1.5 shadow-2xl xl:hidden sm:absolute sm:left-auto sm:right-6 sm:top-[calc(100%+0.6rem)] sm:w-72 sm:translate-x-0 sm:rounded-2xl sm:border-gray-100 sm:bg-white sm:p-2 sm:shadow-xl"
+        class="fixed left-1/2 top-20 z-[60] w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-gray-100 bg-white p-1.5 shadow-xl xl:hidden sm:absolute sm:left-auto sm:right-6 sm:top-[calc(100%+0.6rem)] sm:w-72 sm:translate-x-0 sm:p-2"
     >
         <nav class="flex flex-col sm:gap-0.5" aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
             @foreach ($navLinks as $link)
@@ -261,7 +261,7 @@
                 <a href="{{ route('dashboard') }}" class="{{ $menuHiringClass }}" data-header-my-space @click="menuOpen = false">{{ __('talenma.nav.my_space') }}</a>
             @endif
             @if ($showExploreCompanies)
-                <a href="{{ route('companies.public.index') }}" class="flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:rounded-xl sm:border-0 sm:bg-transparent sm:px-3.5 sm:py-3 sm:text-[0.95rem] sm:font-medium sm:text-slate-700 sm:shadow-none sm:hover:bg-slate-50 sm:hover:text-indigo-700 lg:hidden" data-header-explore-companies @click="menuOpen = false">{{ __('talenma.nav.explore_companies') }}</a>
+                <a href="{{ route('companies.public.index') }}" class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-indigo-700 sm:px-3.5 sm:py-3 sm:text-[0.95rem] lg:hidden" data-header-explore-companies @click="menuOpen = false">{{ __('talenma.nav.explore_companies') }}</a>
             @endif
         </nav>
     </div>
