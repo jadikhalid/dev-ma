@@ -1,12 +1,8 @@
 @php
-    $user = auth()->user();
-    $offersUrl = ($user && $user->isTalent() && $user->isApproved())
-        ? route('talent.jobs.index')
-        : route('career.offers');
-
     $cards = [
         [
             'label' => __('talenma.home.ways_remote'),
+            'href' => route('career.ways.show', 'full-remote'),
             'image' => 'images/home/way-remote.jpg',
             'alt' => __('talenma.home.ways_remote_alt'),
             'position' => 'center 38%',
@@ -14,6 +10,7 @@
         ],
         [
             'label' => __('talenma.home.ways_visa'),
+            'href' => route('career.ways.show', 'sponsorship-visa'),
             'image' => 'images/home/way-visa.jpg',
             'alt' => __('talenma.home.ways_visa_alt'),
             'position' => 'center 12%',
@@ -21,6 +18,7 @@
         ],
         [
             'label' => __('talenma.home.ways_local'),
+            'href' => route('career.ways.show', 'placement-local'),
             'image' => 'images/home/way-local.jpg',
             'alt' => __('talenma.home.ways_local_alt'),
             'position' => 'center 30%',
@@ -29,7 +27,7 @@
     ];
 @endphp
 
-<section class="mt-16 lg:mt-20" aria-labelledby="home-ways-title">
+<section id="facon-de-travailler" class="mt-16 scroll-mt-28 lg:mt-20" aria-labelledby="home-ways-title">
     <h2 id="home-ways-title" class="text-[2rem] font-bold tracking-[-0.03em] text-slate-900 sm:text-4xl lg:text-[2.75rem]">
         {{ __('talenma.home.ways_title') }}
         <span class="text-[#5546F0]">{{ __('talenma.home.ways_title_accent') }}</span>
@@ -37,7 +35,7 @@
 
     <div class="mt-8 grid gap-6 lg:grid-cols-3">
         @foreach ($cards as $card)
-            <a href="{{ $offersUrl }}" class="flex flex-col overflow-hidden rounded-[28px] border border-[#EEF0F4] bg-white text-slate-900 shadow-[0_1px_2px_rgba(17,24,39,0.06),0_12px_32px_-12px_rgba(49,46,129,0.22)] transition hover:-translate-y-0.5">
+            <a href="{{ $card['href'] }}" class="flex flex-col overflow-hidden rounded-[28px] border border-[#EEF0F4] bg-white text-slate-900 shadow-[0_1px_2px_rgba(17,24,39,0.06),0_12px_32px_-12px_rgba(49,46,129,0.22)] transition hover:-translate-y-0.5">
                 <div class="relative h-52 overflow-hidden sm:h-[15.5rem]">
                     <img
                         src="{{ asset($card['image']) }}?v=3"

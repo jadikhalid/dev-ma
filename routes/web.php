@@ -80,6 +80,9 @@ Route::post('/newsletter/subscribe', [NewsletterPreferenceController::class, 'su
 Route::get('/offres', [CareerPageController::class, 'offers'])->name('career.offers');
 Route::view('/outils-carriere', 'career.tools')->name('career.tools');
 Route::view('/comment-ca-marche', 'career.how')->name('career.how');
+Route::get('/travailler/{mode}', [CareerPageController::class, 'way'])
+    ->whereIn('mode', ['full-remote', 'sponsorship-visa', 'placement-local'])
+    ->name('career.ways.show');
 Route::view('/faq', 'pages.faq')->name('faq');
 Route::view('/contact', 'pages.contact')->name('contact');
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');

@@ -83,4 +83,25 @@ class CareerPageController extends Controller
 
         return view('career.offers', $payload);
     }
+
+    public function way(string $mode): View
+    {
+        $keys = [
+            'full-remote' => 'remote',
+            'sponsorship-visa' => 'visa',
+            'placement-local' => 'local',
+        ];
+
+        abort_unless(isset($keys[$mode]), 404);
+
+        $user = auth()->user();
+
+        return view('career.way', [
+            'mode' => $mode,
+            'key' => $keys[$mode],
+            'offersUrl' => ($user && $user->isTalent() && $user->isApproved())
+                ? route('talent.jobs.index')
+                : route('career.offers'),
+        ]);
+    }
 }
