@@ -55,15 +55,13 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertOk()
             ->assertSee(__('talenma.company_offer.cta_demo'), false)
             ->assertSee(__('talenma.company_offer.hero_cta_trial'), false)
-            ->assertSee(__('talenma.company_offer.trial_submit'), false)
+            ->assertSee('href="'.route('company.trial').'"', false)
+            ->assertDontSee(__('talenma.company_offer.trial_submit'), false)
             ->assertDontSee(__('talenma.nav.jobs'), false)
             ->assertDontSee(__('talenma.nav.blog'), false)
             ->assertDontSee(__('talenma.nav.apps_launcher_title'), false)
-            ->assertSee('name="first_name"', false)
-            ->assertSee('name="phone"', false)
-            ->assertSee('data-trial-wizard', false)
-            ->assertDontSee('name="role"', false)
-            ->assertSee(route('company.trial.store'), false);
+            ->assertDontSee('data-trial-wizard', false)
+            ->assertDontSee('name="role"', false);
 
         $this->assertSame(1, substr_count($response->getContent(), 'name="password"'));
         $response->assertSee('id="company-login-password"', false);
@@ -84,7 +82,8 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSeeText(__('talenma.company_offer.hero_title'))
             ->assertSee('drawer: null', false)
             ->assertSee('data-company-offer-drawer="demo"', false)
-            ->assertSee('data-company-offer-drawer="trial"', false)
+            ->assertDontSee('data-company-offer-drawer="trial"', false)
+            ->assertSee('href="'.route('company.trial').'"', false)
             ->assertSee('<p class="text-xl font-extrabold text-gray-950 sm:text-3xl" data-company-offer-talent-count>2+</p>', false);
     }
 
@@ -144,6 +143,24 @@ class CompanyOfferAndTrialTest extends TestCase
         }
     }
 
+    public function test_offers_page_shows_trial_then_paid_plans_in_euros(): void
+    {
+        $this->get(route('company.offers'))
+            ->assertOk()
+            ->assertSee('data-company-offers', false)
+            ->assertSee(__('talenma.company_plans.plans.trial.name'), false)
+            ->assertSee(__('talenma.company_plans.plans.essential.name'), false)
+            ->assertSee(__('talenma.company_plans.plans.pro.name'), false)
+            ->assertSee(__('talenma.company_plans.price_essential_label'), false)
+            ->assertSee(__('talenma.company_plans.price_pro_label'), false)
+            ->assertDontSee('Produit d’appel', false)
+            ->assertDontSee('pour toujours', false)
+            ->assertSee(__('talenma.company_plans.custom.title'), false)
+            ->assertSee(route('company.offer').'#demo', false)
+            ->assertSee(route('company.trial'), false)
+            ->assertDontSee(route('company.offer').'#trial', false);
+    }
+
     public function test_mobile_nav_drawer_lists_band_links_and_offer_ctas(): void
     {
         $this->get(route('company.offer'))
@@ -194,6 +211,10 @@ class CompanyOfferAndTrialTest extends TestCase
         $this->actingAs($company)
             ->get(route('company.offer', ['tab' => 'trial']))
             ->assertRedirect(route('dashboard'));
+
+        $this->actingAs($company)
+            ->get(route('company.trial'))
+            ->assertRedirect(route('dashboard'));
     }
 
     public function test_logged_in_company_header_has_no_home_link_and_logo_targets_dashboard(): void
@@ -208,17 +229,30 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertDontSee('href="'.route('company.offer').'"', false);
     }
 
-    public function test_company_offer_trial_tab_opens_trial_drawer(): void
+    public function test_company_offer_trial_tab_opens_trial_page(): void
     {
         $this->get(route('company.offer', ['tab' => 'trial']))
-            ->assertOk()
-            ->assertSee('drawer: \'trial\'', false);
+            ->assertRedirect(route('company.trial'));
     }
 
-    public function test_register_company_query_redirects_to_offer(): void
+    public function test_trial_request_page_shows_the_form(): void
+    {
+        $this->get(route('company.trial'))
+            ->assertOk()
+            ->assertSee('data-company-trial', false)
+            ->assertSee(__('talenma.company_offer.trial_title'), false)
+            ->assertSee(__('talenma.company_offer.trial_submit'), false)
+            ->assertSee('name="first_name"', false)
+            ->assertSee('name="phone"', false)
+            ->assertSee('data-trial-wizard', false)
+            ->assertSee(route('company.trial.store'), false)
+            ->assertDontSee('data-company-offer-drawer="trial"', false);
+    }
+
+    public function test_register_company_query_redirects_to_trial_page(): void
     {
         $this->get(route('register', ['role' => 'company']))
-            ->assertRedirect(route('company.offer', ['tab' => 'trial']));
+            ->assertRedirect(route('company.trial'));
     }
 
     public function test_register_page_is_talent_only(): void
@@ -234,7 +268,7 @@ class CompanyOfferAndTrialTest extends TestCase
     {
         Mail::fake();
 
-        $this->from(route('company.offer', ['tab' => 'trial']))
+        $this->from(route('company.trial'))
             ->post('/register', [
                 'name' => 'Acme SAS',
                 'email' => 'company@example.com',
@@ -246,7 +280,7 @@ class CompanyOfferAndTrialTest extends TestCase
                 'company_country' => 'fr',
                 'data_processing_consent' => '1',
             ])
-            ->assertRedirect(route('company.offer', ['tab' => 'trial']))
+            ->assertRedirect(route('company.trial'))
             ->assertSessionHasErrors(['role']);
 
         $this->assertDatabaseMissing('users', ['email' => 'company@example.com']);
@@ -466,7 +500,7 @@ class CompanyOfferAndTrialTest extends TestCase
 
     public function test_company_offer_renders_trial_wizard_steps(): void
     {
-        $this->get(route('company.offer'))
+        $this->get(route('company.trial'))
             ->assertOk()
             ->assertSee('data-trial-wizard', false)
             ->assertSee('data-trial-step="1"', false)
@@ -585,7 +619,7 @@ class CompanyOfferAndTrialTest extends TestCase
             'data_processing_consent' => '1',
         ]);
 
-        $response->assertRedirect();
+        $response->assertRedirect(route('company.trial'));
         $response->assertSessionHas('toast_success', __('talenma.company_offer.trial_sent'));
 
         $this->assertDatabaseHas('company_trial_requests', [

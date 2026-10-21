@@ -45,7 +45,7 @@
                     {{ __('talenma.company_offer.banner_trial_body', [
                         'days' => $trialDays,
                         'date' => $orgPlan->trial_ends_at->timezone(config('app.timezone'))->format('d/m/Y'),
-                        'price' => '$'.\App\Models\CompanyProfile::PLAN_PRICE_FROM_USD,
+                        'price' => __('talenma.company_plans.price_essential_label'),
                     ]) }}
                 </p>
             </div>

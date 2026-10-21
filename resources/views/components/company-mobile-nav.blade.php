@@ -131,8 +131,7 @@
                     data-company-mobile-demo
                 >{{ __('talenma.nav.request_demo') }}</a>
                 <a
-                    href="{{ route('company.offer', ['tab' => 'trial']) }}"
-                    @if ($onOfferPage) @click.prevent="mobileNav = false; setTimeout(() => $dispatch('company-offer-drawer', 'trial'), 60)" @endif
+                    href="{{ route('company.trial') }}"
                     class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 px-6 py-3 text-sm font-semibold text-gray-950 transition hover:bg-gray-950 hover:text-white"
                     data-company-mobile-trial
                 >{{ __('talenma.company_offer.hero_cta_trial') }}</a>

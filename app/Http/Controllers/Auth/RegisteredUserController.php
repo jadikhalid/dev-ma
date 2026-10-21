@@ -29,13 +29,13 @@ class RegisteredUserController extends Controller
     public function create(): View|RedirectResponse
     {
         if (PortalHost::isCompanyHost()) {
-            return redirect()->route('company.offer', ['tab' => 'trial']);
+            return redirect()->route('company.trial');
         }
 
         $role = request('role');
 
         if ($role === 'company') {
-            return redirect()->route('company.offer', ['tab' => 'trial']);
+            return redirect()->route('company.trial');
         }
 
         $fromJobId = (int) request()->integer('from_job');

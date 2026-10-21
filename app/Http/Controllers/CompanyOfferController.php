@@ -32,9 +32,13 @@ class CompanyOfferController extends Controller
             return redirect()->route('dashboard');
         }
 
+        if ($request->query('tab') === 'trial') {
+            return redirect()->route('company.trial');
+        }
+
         return view('company.offer', [
             'trialMonths' => CompanyProfile::TRIAL_MONTHS,
-            'priceFromUsd' => CompanyProfile::PLAN_PRICE_FROM_USD,
+            'priceFromEur' => CompanyProfile::PLAN_PRICE_FROM_EUR,
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'companyCountryOptions' => CompanyProfile::countryOptions(),
             'talentCount' => User::query()
@@ -46,6 +50,18 @@ class CompanyOfferController extends Controller
                     ->where('role', 'company')
                     ->where('approval_status', User::APPROVAL_APPROVED))
                 ->count(),
+        ]);
+    }
+
+    public function trial(Request $request): View|RedirectResponse
+    {
+        if ($request->user()?->isCompany()) {
+            return redirect()->route('dashboard');
+        }
+
+        return view('company.trial', [
+            'professionSectors' => $this->professionCatalog->sectorsForLocale(),
+            'companyCountryOptions' => CompanyProfile::countryOptions(),
         ]);
     }
 
@@ -181,7 +197,7 @@ class CompanyOfferController extends Controller
         }
 
         return redirect()
-            ->to(route('company.offer', ['tab' => 'trial']).'#trial')
+            ->route('company.trial')
             ->with('toast_success', $message);
     }
 }

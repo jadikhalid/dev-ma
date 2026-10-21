@@ -137,7 +137,8 @@ class CompanyPortalHostTest extends TestCase
             ->assertDontSee('href="'.PortalHost::companyUrl('/login').'"', false)
             ->assertSee('data-company-login-trial-link', false)
             ->assertSee(__('talenma.auth.no_company_account'))
-            ->assertSee("\$dispatch('company-offer-drawer', 'trial')", false);
+            ->assertSee('href="'.route('company.trial').'"', false)
+            ->assertDontSee("\$dispatch('company-offer-drawer', 'trial')", false);
     }
 
     public function test_company_can_login_from_portal_login_panel(): void

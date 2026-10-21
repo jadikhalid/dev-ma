@@ -9,7 +9,6 @@
     $demoOld = old('offer_form') === 'demo';
     $initialDrawer = match (true) {
         ! $showOfferForms => null,
-        old('offer_form') === 'trial', request('tab') === 'trial' => 'trial',
         $demoOld, request('tab') === 'demo' => 'demo',
         default => null,
     };
@@ -32,7 +31,13 @@
     x-data="{
         drawer: @js($initialDrawer),
         init() {
-            if (window.location.hash === '#trial') this.drawer = 'trial';
+            const leaveForTrial = () => {
+                if (window.location.hash !== '#trial') return false;
+                window.location.replace(@js(route('company.trial')));
+                return true;
+            };
+            if (leaveForTrial()) return;
+            window.addEventListener('hashchange', leaveForTrial);
             if (window.location.hash === '#demo') this.drawer = 'demo';
             this.lockScroll(this.drawer);
             this.$watch('drawer', (value, previous) => {
@@ -94,11 +99,10 @@
                     @click="open('demo')"
                     class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 bg-gray-950 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-gray-800 hover:bg-gray-800"
                 >{{ __('talenma.company_offer.hero_cta_demo') }}</button>
-                <button
-                    type="button"
-                    @click="open('trial')"
+                <a
+                    href="{{ route('company.trial') }}"
                     class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 px-6 py-2.5 text-sm font-semibold text-gray-950 transition hover:bg-gray-950 hover:text-white"
-                >{{ __('talenma.company_offer.hero_cta_trial') }}</button>
+                >{{ __('talenma.company_offer.hero_cta_trial') }}</a>
             </div>
             @else
             <a
@@ -185,40 +189,6 @@
         </div>
     </aside>
 
-    {{-- Panneau : essai gratuit --}}
-    <aside
-        id="trial"
-        x-show="drawer === 'trial'"
-        x-cloak
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="translate-x-full"
-        x-transition:enter-end="translate-x-0"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="translate-x-0"
-        x-transition:leave-end="translate-x-full"
-        class="fixed inset-y-0 right-0 z-[70] flex h-screen w-full flex-col bg-white shadow-2xl md:w-[min(34rem,80vw)] lg:w-[min(36rem,52vw)] xl:w-[min(38rem,42vw)] 2xl:w-[min(40rem,34vw)]"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="company-trial-drawer-title"
-        data-company-offer-drawer="trial"
-    >
-        <div class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
-            <div>
-                <h2 id="company-trial-drawer-title" class="text-xl font-bold text-gray-900">{{ __('talenma.company_offer.trial_title') }}</h2>
-                <p class="mt-1 text-sm text-gray-600">{{ __('talenma.company_offer.trial_subtitle') }}</p>
-            </div>
-            <button type="button" @click="close()" class="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700" aria-label="{{ __('talenma.company_offer.drawer_close') }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-
-        <div class="flex-1 overflow-y-auto px-6 py-6">
-            @include('company.partials.trial-request-form', [
-                'professionSectors' => $professionSectors,
-                'companyCountryOptions' => $companyCountryOptions,
-            ])
-        </div>
-    </aside>
     @endif
 </section>
 

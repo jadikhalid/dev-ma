@@ -68,6 +68,7 @@ class HomeRecruitingCompanyService
             });
 
         return collect($groups)
+            ->filter(fn (array $company): bool => filled($company['banner_url']))
             ->sortByDesc(fn (array $company) => $company['published_at']?->getTimestamp() ?? 0)
             ->values();
     }

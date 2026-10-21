@@ -33,8 +33,9 @@ class HomeRecruitingCompaniesTest extends TestCase
 
     public function test_guest_card_links_to_public_offers_filtered_by_company(): void
     {
-        $this->seedExternalJob('Partner Co', now());
-        $this->seedExternalJob('Old Co', now()->subYear());
+        $this->seedExternalJob('Partner Co', now())->update(['external_company_banner_path' => 'job-external-banners/partner.jpg']);
+        $this->seedExternalJob('Old Co', now()->subYear())->update(['external_company_banner_path' => 'job-external-banners/old.jpg']);
+        $this->seedExternalJob('Plain Co', now()->subDay());
         JobPosting::query()->create([
             'company_profile_id' => null,
             'created_by' => User::factory()->create(['role' => 'admin', 'approval_status' => null])->id,
@@ -50,11 +51,12 @@ class HomeRecruitingCompaniesTest extends TestCase
         $this->assertSeeUrl($response->getContent(), route('career.offers', ['q' => 'Partner Co']));
         $this->assertSeeUrl($response->getContent(), route('career.offers', ['q' => 'Old Co']));
         $response->assertDontSee('Draft Co', false);
+        $response->assertDontSee(route('career.offers', ['q' => 'Plain Co'], false), false);
     }
 
     public function test_same_company_is_shown_once_even_with_several_jobs(): void
     {
-        $this->seedExternalJob('Partner Co', now()->subDay());
+        $this->seedExternalJob('Partner Co', now()->subDay())->update(['external_company_banner_path' => 'job-external-banners/partner.jpg']);
         $this->seedExternalJob('Partner Co', now());
 
         $response = $this->get(route('home'))->assertOk();
@@ -94,11 +96,16 @@ class HomeRecruitingCompaniesTest extends TestCase
         $this->assertStringContainsString('job-external-banners/bmw.jpg', (string) $cards['BMW']['banner_url']);
         $this->assertStringContainsString('job-external-banners/kaust.jpg', (string) $cards['KAUST']['banner_url']);
         $this->assertNull($newerWithoutBanner->external_company_banner_path);
+
+        $this->seedExternalJob('Sans bannière', now());
+        $cards = app(HomeRecruitingCompanyService::class)->forHome(false)->keyBy('name');
+
+        $this->assertArrayNotHasKey('Sans bannière', $cards->all());
     }
 
     public function test_approved_talent_card_links_to_talent_jobs_with_the_same_filter(): void
     {
-        $this->seedExternalJob('Partner Co', now());
+        $this->seedExternalJob('Partner Co', now())->update(['external_company_banner_path' => 'job-external-banners/partner.jpg']);
         $talent = User::factory()->talent()->create();
 
         $content = $this->actingAs($talent)->get(route('home'))->assertOk()->getContent();

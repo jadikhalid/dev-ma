@@ -44,7 +44,7 @@
                 <p class="mt-5 sm:mt-4 text-center text-base sm:text-sm text-gray-600">
                     @if (! empty($companyPortal))
                         {{ __('talenma.auth.no_company_account') }}
-                        <a href="{{ route('company.offer', ['tab' => 'trial']) }}" class="text-indigo-600 font-medium">{{ __('talenma.company_offer.cta_trial') }}</a>
+                        <a href="{{ route('company.trial') }}" class="text-indigo-600 font-medium">{{ __('talenma.company_offer.cta_trial') }}</a>
                     @else
                         {{ __('talenma.auth.no_account') }} <a href="{{ route('register') }}" class="text-indigo-600 font-medium">{{ __('talenma.nav.register') }}</a>
                     @endif

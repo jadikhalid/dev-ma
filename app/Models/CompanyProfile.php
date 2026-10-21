@@ -34,7 +34,11 @@ class CompanyProfile extends Model
 
     public const TRIAL_MONTHS = 3;
 
-    public const PLAN_PRICE_FROM_USD = 500;
+    /** Entry paid plan (Essentiel), euros HT per year. */
+    public const PLAN_PRICE_FROM_EUR = 1490;
+
+    /** Pro plan, euros HT per year. */
+    public const PLAN_PRO_PRICE_EUR = 2990;
 
     /**
      * Accès actif par défaut (tests, seeders, entreprises déjà en place).

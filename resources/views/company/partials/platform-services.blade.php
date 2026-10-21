@@ -224,11 +224,10 @@
                         @click="$dispatch('company-offer-drawer', 'demo')"
                         class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 bg-gray-950 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-gray-800 hover:bg-gray-800"
                     >{{ __('talenma.company_offer.hero_cta_demo') }}</button>
-                    <button
-                        type="button"
-                        @click="$dispatch('company-offer-drawer', 'trial')"
+                    <a
+                        href="{{ route('company.trial') }}"
                         class="inline-flex w-full items-center justify-center rounded-md border-2 border-white px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-white hover:text-indigo-700"
-                    >{{ __('talenma.company_offer.hero_cta_trial') }}</button>
+                    >{{ __('talenma.company_offer.hero_cta_trial') }}</a>
                 </div>
             </div>
         </div>
