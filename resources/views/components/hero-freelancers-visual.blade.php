@@ -49,10 +49,10 @@
     </div>
 
     <img
-        src="{{ asset('images/home/hero-talent-map.png') }}"
+        src="{{ asset('images/home/hero-talent-map.webp') }}?v=4"
         alt="{{ __('talenma.home.badge') }}"
         class="hero-talent-map"
-        width="1024"
-        height="1024"
+        width="1280"
+        height="1280"
     >
 </div>

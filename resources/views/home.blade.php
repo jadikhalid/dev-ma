@@ -8,10 +8,28 @@
     <div class="home-hero-canvas">
     <div class="home-hero-wash" aria-hidden="true"></div>
     <div class="home-shell relative z-10 pt-6 pb-8 sm:pt-[7.25rem] lg:pt-[8.25rem] lg:pb-10">
-        <div class="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+        <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-10">
             <div class="max-w-xl">
                 <p data-home-hero-badge class="hidden">
                     {{ __('talenma.home.badge') }}
+                </p>
+
+                <p class="hero-kicker">
+                    <span class="hero-kicker-line">
+                        <span class="hero-kicker-plain">{{ __('talenma.home.hero_kicker_plain') }}</span>
+                        <span class="hero-kicker-focus">{{ __('talenma.home.hero_kicker_focus') }}
+                            <svg class="hero-kicker-sweep" viewBox="0 0 180 12" aria-hidden="true">
+                                <defs>
+                                    <linearGradient id="heroKickerSweep" x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="0%" stop-color="#2563eb"/>
+                                        <stop offset="78%" stop-color="#7c3aed"/>
+                                        <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M1 7.4C36 7.2 90 5.4 150 5.8C166 6 176 6.2 179 6.4" fill="none" stroke="url(#heroKickerSweep)" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                    </span>
                 </p>
 
                 <h1 class="text-[2.15rem] font-extrabold leading-[1.05] tracking-tight text-slate-950 sm:text-[2.65rem] lg:text-[3.35rem] xl:text-6xl">

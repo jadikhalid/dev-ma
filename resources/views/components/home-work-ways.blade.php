@@ -40,12 +40,11 @@
             <a href="{{ $offersUrl }}" class="flex flex-col overflow-hidden rounded-[28px] border border-[#EEF0F4] bg-white text-slate-900 shadow-[0_1px_2px_rgba(17,24,39,0.06),0_12px_32px_-12px_rgba(49,46,129,0.22)] transition hover:-translate-y-0.5">
                 <div class="relative h-52 overflow-hidden sm:h-[15.5rem]">
                     <img
-                        src="{{ asset($card['image']) }}?v=2"
+                        src="{{ asset($card['image']) }}?v=3"
                         alt="{{ $card['alt'] }}"
                         class="h-full w-full object-cover"
                         style="object-position: {{ $card['position'] }}"
                     >
-                    <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,rgba(85,70,240,0.10),rgba(124,58,237,0.18))]" aria-hidden="true"></div>
                 </div>
                 <div class="flex items-center justify-between gap-3 px-5 py-5 sm:px-6 sm:py-[1.35rem]">
                     <span class="text-lg font-bold tracking-tight sm:text-[1.3rem]">{{ $card['label'] }}</span>
