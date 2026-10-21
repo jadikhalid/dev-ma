@@ -43,23 +43,21 @@
             <template x-for="item in items" :key="item.name">
                 <a
                     :href="item.url"
-                    class="group flex shrink-0 flex-col overflow-hidden rounded-[20px] border border-[#E8E9F0] bg-white text-slate-950 shadow-[0_1px_2px_rgba(17,24,39,0.06),0_12px_32px_-12px_rgba(49,46,129,0.22)]"
+                    class="relative flex shrink-0 flex-col overflow-hidden rounded-[20px] border border-[#E8E9F0] bg-white text-slate-950 shadow-[0_1px_2px_rgba(17,24,39,0.06),0_12px_32px_-12px_rgba(49,46,129,0.22)] transition-transform duration-300 ease-out hover:z-10 hover:scale-[1.04]"
                     :style="cardStyle()"
                 >
                     <div class="relative h-[150px] overflow-hidden">
                         <img :src="item.banner_url" alt="" class="h-full w-full object-cover" loading="lazy" decoding="async">
-                        <span class="absolute bottom-0 left-5 flex h-10 w-24 items-center justify-center rounded-t-[10px] bg-white">
-                            <img x-show="item.logo_url" :src="item.logo_url" alt="" class="max-h-[30px] max-w-[4.5rem] object-contain">
-                            <span x-show="!item.logo_url" class="text-sm font-extrabold text-indigo-700" x-text="item.initials"></span>
-                        </span>
                     </div>
-                    <div class="flex items-center justify-between gap-3 px-5 pb-5 pt-[18px]">
-                        <span class="min-w-0">
-                            <span class="block truncate text-[19px] font-semibold leading-tight" x-text="item.name"></span>
-                            <span class="mt-1.5 block text-sm text-[#6B7280]">{{ __('talenma.home.recruiting_companies_cta') }}</span>
-                        </span>
-                        <span class="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-[#0D0B2B] text-white" aria-hidden="true">
-                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <span class="absolute left-5 top-[90px] z-10 flex h-[7.5rem] w-[7.5rem] items-center justify-center rounded-2xl border-4 border-white bg-white p-[7px] shadow-sm">
+                        <img x-show="item.logo_url" :src="item.logo_url" alt="" class="max-h-full max-w-full object-contain">
+                        <span x-show="!item.logo_url" class="text-2xl font-extrabold text-indigo-700" x-text="item.initials"></span>
+                    </span>
+                    <div class="flex items-center justify-between gap-3 px-5 pb-5 pt-[4.75rem]">
+                        <span class="min-w-0 truncate text-[19px] font-semibold leading-tight" x-text="item.name"></span>
+                        <span class="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-slate-500">
+                            {{ __('talenma.home.recruiting_companies_cta') }}
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M5 12h14M13 6l6 6-6 6"/>
                             </svg>
                         </span>
