@@ -6,6 +6,8 @@ use App\Mail\CompanyApprovedMail;
 use App\Mail\CompanyDemoConfirmationMail;
 use App\Mail\CompanyDemoRequestMail;
 use App\Mail\CompanyTrialRequestMail;
+use App\Mail\VerifyRegistrationMail;
+use App\Models\PendingRegistration;
 use App\Models\CompanyDemoRequest;
 use App\Models\CompanyProfile;
 use App\Models\CompanyTrialRequest;
@@ -32,7 +34,7 @@ class CompanyOfferAndTrialTest extends TestCase
     {
         $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-28 10:00:00'));
 
-        $response = $this->get(route('company.offer'))->assertOk();
+        $response = $this->get(route('company.demo'))->assertOk();
         $html = $response->getContent();
 
         $response
@@ -53,7 +55,7 @@ class CompanyOfferAndTrialTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee(__('talenma.company_offer.cta_demo'), false)
+            ->assertSee(__('talenma.company_offer.hero_cta_demo'), false)
             ->assertSee(__('talenma.company_offer.hero_cta_trial'), false)
             ->assertSee('href="'.route('company.trial').'"', false)
             ->assertDontSee(__('talenma.company_offer.trial_submit'), false)
@@ -80,9 +82,8 @@ class CompanyOfferAndTrialTest extends TestCase
         $this->get(route('company.offer'))
             ->assertOk()
             ->assertSeeText(__('talenma.company_offer.hero_title'))
-            ->assertSee('drawer: null', false)
-            ->assertSee('data-company-offer-drawer="demo"', false)
-            ->assertDontSee('data-company-offer-drawer="trial"', false)
+            ->assertDontSee('data-company-offer-drawer', false)
+            ->assertSee('href="'.route('company.demo').'"', false)
             ->assertSee('href="'.route('company.trial').'"', false)
             ->assertSee('<p class="text-xl font-extrabold text-gray-950 sm:text-3xl" data-company-offer-talent-count>2+</p>', false);
     }
@@ -110,37 +111,23 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertDontSee(__('talenma.footer.developer_name'), false);
     }
 
-    public function test_case_studies_page_renders_company_header_band_and_footer(): void
+    public function test_company_header_drops_case_studies_and_about_and_offers_a_trial(): void
     {
         $this->get(route('company.offer'))
-            ->assertSee(route('company.case-studies'), false)
-            ->assertSee(__('talenma.nav.case_studies'));
+            ->assertOk()
+            ->assertSee('data-company-header-demo', false)
+            ->assertSee('data-company-header-trial', false)
+            ->assertSee('href="'.route('company.trial').'"', false)
+            ->assertSee(__('talenma.company_offer.hero_cta_trial'), false)
+            ->assertSee(route('company.offers'), false)
+            ->assertDontSee(__('talenma.nav.case_studies'), false)
+            ->assertDontSee(__('talenma.nav.about'), false);
 
-        $this->get(route('company.case-studies'))
+        $this->get(route('company.offers'))
             ->assertOk()
             ->assertSee('data-company-header-band', false)
-            ->assertSee('data-company-case-studies', false)
-            ->assertSee('aria-current="page"', false)
-            ->assertSee('data-footer-jadi-link', false)
-            ->assertDontSee(route('newsletter.subscribe'), false);
-    }
-
-    public function test_offers_and_about_pages_render_with_band_links(): void
-    {
-        $this->get(route('company.offer'))
-            ->assertSee(route('company.offers'), false)
-            ->assertSee(route('company.about'), false)
-            ->assertSee(__('talenma.nav.offers'))
-            ->assertSee(__('talenma.nav.about'), false);
-
-        foreach (['company.offers' => 'data-company-offers', 'company.about' => 'data-company-about'] as $route => $marker) {
-            $this->get(route($route))
-                ->assertOk()
-                ->assertSee('data-company-header-band', false)
-                ->assertSee($marker, false)
-                ->assertSee('aria-current="page"', false)
-                ->assertSee('data-footer-jadi-link', false);
-        }
+            ->assertSee('data-company-offers', false)
+            ->assertSee('aria-current="page"', false);
     }
 
     public function test_offers_page_shows_trial_then_paid_plans_in_euros(): void
@@ -156,7 +143,7 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertDontSee('Produit d’appel', false)
             ->assertDontSee('pour toujours', false)
             ->assertSee(__('talenma.company_plans.custom.title'), false)
-            ->assertSee(route('company.offer').'#demo', false)
+            ->assertSee(route('company.demo'), false)
             ->assertSee(route('company.trial'), false)
             ->assertDontSee(route('company.offer').'#trial', false);
     }
@@ -246,6 +233,11 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSee('name="phone"', false)
             ->assertSee('data-trial-wizard', false)
             ->assertSee(route('company.trial.store'), false)
+            ->assertSee('name="trial_terms"', false)
+            ->assertSee(route('company.trial.terms'), false)
+            ->assertSee('data-company-header-trial', false)
+            ->assertSee('border-gray-300 bg-gray-100', false)
+            ->assertSee('data-company-mobile-trial', false)
             ->assertDontSee('data-company-offer-drawer="trial"', false);
     }
 
@@ -299,7 +291,7 @@ class CompanyOfferAndTrialTest extends TestCase
 
         $response = $this->post(route('company.demo.store'), $this->demoPayload());
 
-        $response->assertRedirect();
+        $response->assertRedirect(route('company.demo'));
         $response->assertSessionHas('toast_success');
 
         $this->assertDatabaseHas('company_demo_requests', [
@@ -479,10 +471,14 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertJsonValidationErrors(['preferred_date', 'preferred_slots.0', 'meeting_platform']);
     }
 
-    public function test_company_offer_renders_demo_wizard_steps(): void
+    public function test_demo_page_renders_the_wizard_and_disables_the_header_button(): void
     {
-        $this->get(route('company.offer'))
+        $this->get(route('company.demo'))
             ->assertOk()
+            ->assertSee('data-company-demo', false)
+            ->assertSee('data-company-header-demo', false)
+            ->assertSee('border-gray-300 bg-gray-100', false)
+            ->assertSee('data-company-mobile-demo', false)
             ->assertSee('data-demo-wizard', false)
             ->assertSee('data-demo-step="1"', false)
             ->assertSee('data-demo-step="2"', false)
@@ -597,81 +593,112 @@ class CompanyOfferAndTrialTest extends TestCase
         Mail::assertSent(CompanyDemoRequestMail::class);
     }
 
-    public function test_trial_request_is_stored_and_emailed_without_creating_user(): void
+    public function test_trial_request_sends_a_confirmation_link_before_opening_the_account(): void
     {
         Mail::fake();
 
-        $admin = User::factory()->create([
-            'role' => 'admin',
-            'email' => 'admin@example.com',
-        ]);
+        $response = $this->post(route('company.trial.store'), $this->trialPayload());
 
-        $response = $this->post(route('company.trial.store'), [
-            'first_name' => 'Jean',
-            'last_name' => 'Dupont',
-            'company_name' => 'Acme SAS',
-            'email' => 'trial@acme.test',
-            'phone_country' => 'fr',
-            'phone' => '+33123456789',
-            'sector' => 'it-digital',
-            'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile.',
-            'company_country' => 'fr',
-            'data_processing_consent' => '1',
-        ]);
+        $response->assertRedirect(route('company.offer'));
+        $response->assertSessionHas('toast_sticky_success', __('talenma.company_offer.trial_sent'));
+        $response->assertSessionHas('pending_registration_email', 'trial@acme.test');
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['email' => 'trial@acme.test']);
 
-        $response->assertRedirect(route('company.trial'));
-        $response->assertSessionHas('toast_success', __('talenma.company_offer.trial_sent'));
+        $pending = PendingRegistration::query()->where('email', 'trial@acme.test')->first();
+        $this->assertNotNull($pending);
+        $this->assertTrue($pending->payload['company_trial']);
+
+        Mail::assertSent(VerifyRegistrationMail::class, function (VerifyRegistrationMail $mail) {
+            return $mail->hasTo('trial@acme.test');
+        });
+        Mail::assertNotSent(CompanyApprovedMail::class);
+        Mail::assertNotSent(CompanyTrialRequestMail::class);
+
+        $this->get(route('register.verify', ['token' => $pending->token]))
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticated();
+        $user = User::query()->where('email', 'trial@acme.test')->first();
+        $this->assertNotNull($user);
+        $this->assertTrue($user->isApproved());
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertTrue(Hash::check('Secret123', $user->password));
+        $this->assertNull($user->companyProfile?->description);
+        $this->assertTrue($user->companyProfile?->isOnTrial());
 
         $this->assertDatabaseHas('company_trial_requests', [
             'company_name' => 'Acme SAS',
             'email' => 'trial@acme.test',
             'contact_name' => 'Jean Dupont',
-            'status' => CompanyTrialRequest::STATUS_PENDING,
+            'status' => CompanyTrialRequest::STATUS_PROVISIONED,
+            'user_id' => $user->id,
+            'trial_terms_version' => config('talenma.trial_terms_version'),
         ]);
-        $this->assertDatabaseMissing('users', ['email' => 'trial@acme.test']);
-
-        Mail::assertSent(CompanyTrialRequestMail::class, function (CompanyTrialRequestMail $mail) use ($admin) {
-            return $mail->hasTo($admin->email)
-                && $mail->trialRequest->company_name === 'Acme SAS';
-        });
     }
 
     public function test_trial_request_can_be_submitted_via_ajax(): void
     {
         Mail::fake();
 
-        User::factory()->create([
-            'role' => 'admin',
-            'email' => 'admin@example.com',
-        ]);
-
-        $response = $this->postJson(route('company.trial.store'), [
-            'first_name' => 'Jean',
-            'last_name' => 'Dupont',
-            'company_name' => 'Acme SAS',
+        $response = $this->postJson(route('company.trial.store'), $this->trialPayload([
             'email' => 'ajax-trial@acme.test',
             'phone_country' => 'ma',
             'phone' => '0612345678',
-            'sector' => 'it-digital',
-            'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile.',
-            'company_country' => 'fr',
-            'data_processing_consent' => '1',
-        ]);
+            'company_description' => 'Courte description.',
+        ]));
 
         $response
             ->assertOk()
             ->assertJson([
                 'message' => __('talenma.company_offer.trial_sent'),
-            ]);
+                'redirect' => route('company.offer'),
+            ])
+            ->assertSessionHas('toast_sticky_success', __('talenma.company_offer.trial_sent'));
 
-        $this->assertDatabaseHas('company_trial_requests', [
-            'email' => 'ajax-trial@acme.test',
-            'contact_name' => 'Jean Dupont',
-            'phone' => '+212 612345678',
-            'status' => CompanyTrialRequest::STATUS_PENDING,
-        ]);
+        $this->assertGuest();
         $this->assertDatabaseMissing('users', ['email' => 'ajax-trial@acme.test']);
-        Mail::assertSent(CompanyTrialRequestMail::class);
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'ajax-trial@acme.test']);
+        Mail::assertSent(VerifyRegistrationMail::class);
+    }
+
+    public function test_trial_request_rejects_a_personal_email(): void
+    {
+        $this->post(route('company.trial.store'), $this->trialPayload([
+            'email' => 'jean@gmail.com',
+        ]))->assertSessionHasErrors('email');
+
+        $this->assertDatabaseMissing('pending_registrations', ['email' => 'jean@gmail.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'jean@gmail.com']);
+    }
+
+    public function test_trial_request_requires_accepted_terms(): void
+    {
+        $this->post(route('company.trial.store'), [
+            'first_name' => 'Jean',
+            'last_name' => 'Dupont',
+            'company_name' => 'Acme SAS',
+            'email' => 'no-terms@acme.test',
+            'phone_country' => 'fr',
+            'phone' => '+33123456789',
+            'sector' => 'it-digital',
+            'company_description' => 'Nous sommes une entreprise spécialisée dans le développement web et mobile.',
+            'company_country' => 'fr',
+            'data_processing_consent' => '1',
+        ])->assertSessionHasErrors('trial_terms');
+
+        $this->assertDatabaseMissing('company_trial_requests', ['email' => 'no-terms@acme.test']);
+    }
+
+    public function test_trial_terms_page_is_public(): void
+    {
+        $this->get(route('company.trial.terms'))
+            ->assertOk()
+            ->assertSee(__('talenma.company_offer.trial_terms.title'), false)
+            ->assertSee(__('talenma.company_offer.trial_terms.sections.0.title'), false)
+            ->assertSee('912 345 678', false)
+            ->assertSee('Paris', false)
+            ->assertSee('SASU', false);
     }
 
     public function test_admin_can_list_trial_requests(): void
@@ -788,5 +815,27 @@ class CompanyOfferAndTrialTest extends TestCase
         $this->actingAs($company)
             ->get(route('company.search'))
             ->assertOk();
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function trialPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'first_name' => 'Jean',
+            'last_name' => 'Dupont',
+            'company_name' => 'Acme SAS',
+            'email' => 'trial@acme.test',
+            'password' => 'Secret123',
+            'password_confirmation' => 'Secret123',
+            'phone_country' => 'fr',
+            'phone' => '+33123456789',
+            'sector' => 'it-digital',
+            'company_country' => 'fr',
+            'data_processing_consent' => '1',
+            'trial_terms' => '1',
+        ], $overrides);
     }
 }

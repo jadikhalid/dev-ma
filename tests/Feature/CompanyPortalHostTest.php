@@ -74,7 +74,7 @@ class CompanyPortalHostTest extends TestCase
             ->assertRedirect(route('dashboard'));
 
         $this->actingAs($companyUser)
-            ->get('http://'.$company.'/a-propos')
+            ->get('http://'.$company.'/nos-offres')
             ->assertOk()
             ->assertSee('data-company-portal-identity', false)
             ->assertSee($companyUser->roleLabel(), false)

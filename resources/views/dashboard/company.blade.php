@@ -34,7 +34,7 @@
             <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 sm:px-5 sm:py-4">
                 <p class="text-sm font-semibold text-amber-950">{{ __('talenma.company_offer.banner_expired_title') }}</p>
                 <p class="mt-1 text-sm text-amber-900/80">{{ __('talenma.company_offer.banner_expired_body') }}</p>
-                <a href="{{ route('company.offer') }}#demo" class="mt-3 inline-flex text-sm font-semibold text-amber-950 underline decoration-amber-400 underline-offset-2 hover:text-amber-800">
+                <a href="{{ route('company.demo') }}" class="mt-3 inline-flex text-sm font-semibold text-amber-950 underline decoration-amber-400 underline-offset-2 hover:text-amber-800">
                     {{ __('talenma.company_offer.banner_expired_cta') }} →
                 </a>
             </div>

@@ -124,17 +124,34 @@
 
         @if ($showOfferCtas)
             <div class="grid shrink-0 gap-2.5 border-t border-gray-100 p-4">
-                <a
-                    href="{{ route('company.offer', ['tab' => 'demo']) }}"
-                    @if ($onOfferPage) @click.prevent="mobileNav = false; setTimeout(() => $dispatch('company-offer-drawer', 'demo'), 60)" @endif
-                    class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 bg-gray-950 px-6 py-3 text-sm font-semibold text-white transition hover:border-gray-800 hover:bg-gray-800"
-                    data-company-mobile-demo
-                >{{ __('talenma.nav.request_demo') }}</a>
-                <a
-                    href="{{ route('company.trial') }}"
-                    class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 px-6 py-3 text-sm font-semibold text-gray-950 transition hover:bg-gray-950 hover:text-white"
-                    data-company-mobile-trial
-                >{{ __('talenma.company_offer.hero_cta_trial') }}</a>
+                @if (request()->routeIs('company.demo'))
+                    <button
+                        type="button"
+                        disabled
+                        class="inline-flex w-full cursor-not-allowed items-center justify-center rounded-md border-2 border-gray-300 bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-400"
+                        data-company-mobile-demo
+                    >{{ __('talenma.nav.request_demo') }}</button>
+                @else
+                    <a
+                        href="{{ route('company.demo') }}"
+                        class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 bg-gray-950 px-6 py-3 text-sm font-semibold text-white transition hover:border-gray-800 hover:bg-gray-800"
+                        data-company-mobile-demo
+                    >{{ __('talenma.nav.request_demo') }}</a>
+                @endif
+                @if (request()->routeIs('company.trial'))
+                    <button
+                        type="button"
+                        disabled
+                        class="inline-flex w-full cursor-not-allowed items-center justify-center rounded-md border-2 border-gray-300 bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-400"
+                        data-company-mobile-trial
+                    >{{ __('talenma.company_offer.hero_cta_trial') }}</button>
+                @else
+                    <a
+                        href="{{ route('company.trial') }}"
+                        class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 px-6 py-3 text-sm font-semibold text-gray-950 transition hover:bg-gray-950 hover:text-white"
+                        data-company-mobile-trial
+                    >{{ __('talenma.company_offer.hero_cta_trial') }}</a>
+                @endif
             </div>
         @endif
     </aside>

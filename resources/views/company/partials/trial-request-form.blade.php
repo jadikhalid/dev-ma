@@ -1,5 +1,6 @@
 @php
     use App\Models\CompanyDemoRequest;
+    use App\Support\ConsumerEmail;
 
     $trialOld = old('offer_form') === 'trial';
     $inputClass = 'mt-1.5 w-full rounded-lg border-gray-300 text-sm focus:border-emerald-500 focus:ring-emerald-500';
@@ -7,9 +8,12 @@
 @endphp
 
 <div
+    class="scroll-mt-20 sm:scroll-mt-32"
     x-data="companyOfferAjaxForm({
         mode: 'trial',
         loadingTargetId: 'company-trial-request-form',
+        consumerEmailDomains: @js(ConsumerEmail::domains()),
+        consumerEmailRoots: @js(ConsumerEmail::roots()),
         messages: {
             step_contact: @js(__('talenma.company_offer.trial_form.step_contact')),
             step_company: @js(__('talenma.company_offer.trial_form.step_company')),
@@ -18,14 +22,20 @@
             company_required: @js(__('talenma.company_offer.demo_company_required')),
             email_required: @js(__('talenma.company_offer.demo_email_required')),
             email_invalid: @js(__('talenma.company_offer.demo_email_invalid')),
+            email_professional: @js(__('talenma.company_offer.trial_email_professional')),
+            password_required: @js(__('talenma.auth.validation.password_required')),
+            password_confirmed: @js(__('talenma.auth.validation.password_confirmed')),
+            password_min: @js(__('talenma.auth.validation.password_min')),
+            password_max: @js(__('talenma.auth.validation.password_max')),
+            password_letters: @js(__('talenma.auth.validation.password_letters')),
+            password_numbers: @js(__('talenma.auth.validation.password_numbers')),
             phone_required: @js(__('talenma.company_offer.trial_phone_required')),
             phone_invalid: @js(__('talenma.company.phone_invalid')),
             sector_required: @js(__('talenma.auth.validation.sector_required')),
             country_required: @js(__('talenma.auth.validation.company_country_required')),
-            description_required: @js(__('talenma.auth.validation.company_description_required')),
-            description_min: @js(__('talenma.auth.validation.company_description_min')),
             website_invalid: @js(__('talenma.auth.validation.company_website_invalid')),
             consent_required: @js(__('talenma.auth.validation.data_processing_consent_required')),
+            terms_required: @js(__('talenma.company_offer.trial_terms.required')),
             incomplete: @js(__('talenma.auth.register_incomplete_toast')),
             network_error: @js(__('talenma.common.network_error')),
             sent: @js(__('talenma.company_offer.trial_sent')),
@@ -82,8 +92,24 @@
                 <input id="trial_email" name="email" type="email" required maxlength="255" autocomplete="email"
                     value="{{ $trialOld ? old('email') : '' }}"
                     @input="clearFieldError('email')" :class="fieldInvalidClass('email')" class="{{ $inputClass }}">
-                <p x-show="fieldMessage('email')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('email')"></p>
-            </div>
+                    <p class="mt-1 text-xs text-gray-500">{{ __('talenma.company_offer.trial_email_hint') }}</p>
+                    <p x-show="fieldMessage('email')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('email')"></p>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="trial_password" class="block text-sm font-semibold text-gray-700">{{ __('talenma.auth.password') }}<span class="text-rose-500">*</span></label>
+                        <input id="trial_password" name="password" type="password" required minlength="8" maxlength="128" autocomplete="new-password"
+                            @input="clearFieldError('password')" :class="fieldInvalidClass('password')" class="{{ $inputClass }}">
+                        <p x-show="fieldMessage('password')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('password')"></p>
+                    </div>
+                    <div>
+                        <label for="trial_password_confirmation" class="block text-sm font-semibold text-gray-700">{{ __('talenma.auth.confirm_password') }}<span class="text-rose-500">*</span></label>
+                        <input id="trial_password_confirmation" name="password_confirmation" type="password" required minlength="8" maxlength="128" autocomplete="new-password"
+                            @input="clearFieldError('password_confirmation')" :class="fieldInvalidClass('password_confirmation')" class="{{ $inputClass }}">
+                        <p x-show="fieldMessage('password_confirmation')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('password_confirmation')"></p>
+                    </div>
+                </div>
 
             <div>
                 <label for="trial_phone" class="block text-sm font-semibold text-gray-700">{{ __('talenma.company_offer.demo_form.phone') }}<span class="text-rose-500">*</span></label>
@@ -149,12 +175,11 @@
             </div>
 
             <div>
-                <label for="trial_description" class="block text-sm font-semibold text-gray-700">{{ __('talenma.company.description') }}<span class="text-rose-500">*</span></label>
-                <textarea id="trial_description" name="company_description" rows="4" required maxlength="5000"
+                <label for="trial_description" class="block text-sm font-semibold text-gray-700">{{ __('talenma.company.description') }}</label>
+                <textarea id="trial_description" name="company_description" rows="4" maxlength="5000"
                     @input="clearFieldError('company_description')" :class="fieldInvalidClass('company_description')"
                     class="{{ $inputClass }} resize-none"
                     placeholder="{{ __('talenma.company.description_placeholder') }}">{{ $trialOld ? old('company_description') : '' }}</textarea>
-                <p class="mt-1 text-xs text-gray-500">{{ __('talenma.company_offer.trial_description_hint') }}</p>
                 <p x-show="fieldMessage('company_description')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('company_description')"></p>
             </div>
 
@@ -189,6 +214,30 @@
                     </span>
                 </label>
                 <p x-show="fieldMessage('data_processing_consent')" x-cloak class="mt-2 text-xs text-rose-600" x-text="fieldMessage('data_processing_consent')"></p>
+            </div>
+
+            <div
+                class="rounded-lg border bg-gray-50 px-3 py-3"
+                :class="fieldErrors.trial_terms ? 'border-rose-400' : 'border-gray-200'"
+            >
+                <label class="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                        id="trial_terms"
+                        name="trial_terms"
+                        type="checkbox"
+                        value="1"
+                        @checked($trialOld && old('trial_terms'))
+                        @change="clearFieldError('trial_terms')"
+                        class="mt-0.5 size-4 rounded border-gray-300 text-emerald-600 shadow-sm focus:ring-emerald-500"
+                        required
+                    >
+                    <span class="text-sm text-gray-700 leading-snug">
+                        {!! __('talenma.company_offer.trial_terms.accept', [
+                            'terms' => '<a href="'.e(route('company.trial.terms')).'" target="_blank" rel="noopener noreferrer" class="font-semibold text-emerald-700 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-900">'.e(__('talenma.company_offer.trial_terms.link')).'</a>',
+                        ]) !!}
+                    </span>
+                </label>
+                <p x-show="fieldMessage('trial_terms')" x-cloak class="mt-2 text-xs text-rose-600" x-text="fieldMessage('trial_terms')"></p>
             </div>
 
             <div class="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:flex-wrap">

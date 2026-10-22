@@ -51,7 +51,7 @@ class PendingRegistration extends Model
         $role = $this->payload['role'] ?? null;
 
         if ($role === 'company') {
-            return true;
+            return empty($this->payload['company_trial']);
         }
 
         if ($role === 'dev') {

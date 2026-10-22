@@ -177,7 +177,6 @@ class PublicAppsLauncherGateTest extends TestCase
         $this->assertStringNotContainsString(route('career.how'), $footer);
         $this->assertStringContainsString(route('faq'), $footer);
         $this->assertStringContainsString(route('contact'), $footer);
-        $this->assertStringContainsString(route('company.about'), $footer);
         $this->assertStringContainsString(route('company.offer'), $footer);
     }
 

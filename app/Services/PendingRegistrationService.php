@@ -7,6 +7,7 @@ use App\Jobs\PurgePendingRegistrationJob;
 use App\Mail\TalentWelcomeMail;
 use App\Mail\VerifyRegistrationMail;
 use App\Models\CompanyProfileDocument;
+use App\Models\CompanyTrialRequest;
 use App\Models\PendingRegistration;
 use App\Models\PlatformSetting;
 use App\Models\ProfessionSector;
@@ -69,6 +70,58 @@ class PendingRegistrationService
             $this->sendVerificationMail($pending);
         } catch (\Throwable $exception) {
             $this->purge($pending);
+            throw $exception;
+        }
+
+        PurgePendingRegistrationJob::dispatch($pending->id)
+            ->delay(now()->addMinutes(self::EXPIRY_MINUTES));
+
+        return $pending;
+    }
+
+    /**
+     * Demande d'essai entreprise : le compte n'est créé qu'après confirmation de l'e-mail.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws \Throwable
+     */
+    public function createCompanyTrial(array $data, ?string $ip): PendingRegistration
+    {
+        $this->purgeExistingForEmail($data['email']);
+
+        $pending = PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => $data['email'],
+            'locale' => app()->getLocale(),
+            'payload' => [
+                'role' => 'company',
+                'company_trial' => true,
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'name' => $data['company_name'],
+                'representative_name' => $data['contact_name'],
+                'password' => Hash::make($data['password']),
+                'phone' => $data['phone'],
+                'sector' => $data['sector'],
+                'company_description' => filled($data['company_description'] ?? null) ? $data['company_description'] : null,
+                'company_website' => filled($data['company_website'] ?? null) ? $data['company_website'] : null,
+                'company_country' => $data['company_country'],
+                'ip_address' => $ip,
+                'trial_terms_accepted_at' => now()->toIso8601String(),
+                'trial_terms_version' => (string) config('talenma.trial_terms_version'),
+                'data_processing_consent_at' => now()->toIso8601String(),
+                'data_processing_consent_version' => (string) config('talenma.data_processing_consent_version'),
+            ],
+            'document_paths' => [],
+            'expires_at' => now()->addMinutes(self::EXPIRY_MINUTES),
+        ]);
+
+        try {
+            $this->sendVerificationMail($pending);
+        } catch (\Throwable $exception) {
+            $this->purge($pending);
+
             throw $exception;
         }
 
@@ -254,7 +307,8 @@ class PendingRegistrationService
         $user = DB::transaction(function () use ($pending) {
             $payload = $pending->payload;
             $isTalent = ($payload['role'] ?? null) === 'dev';
-            $autoApproveTalent = $isTalent && ! PlatformSetting::requiresTalentAdminValidation();
+            $isCompanyTrial = ($payload['role'] ?? null) === 'company' && ! empty($payload['company_trial']);
+            $autoApprove = $isCompanyTrial || ($isTalent && ! PlatformSetting::requiresTalentAdminValidation());
 
             $user = User::create([
                 'name' => $payload['name'],
@@ -269,8 +323,8 @@ class PendingRegistrationService
                     ? \Illuminate\Support\Carbon::parse($payload['data_processing_consent_at'])
                     : null,
                 'data_processing_consent_version' => $payload['data_processing_consent_version'] ?? null,
-                'approval_status' => $autoApproveTalent ? User::APPROVAL_APPROVED : User::APPROVAL_PENDING,
-                'approved_at' => $autoApproveTalent ? now() : null,
+                'approval_status' => $autoApprove ? User::APPROVAL_APPROVED : User::APPROVAL_PENDING,
+                'approved_at' => $autoApprove ? now() : null,
             ]);
 
             if ($user->role === 'company') {
@@ -286,7 +340,7 @@ class PendingRegistrationService
                     'phone' => $payload['phone'] ?? null,
                     'sector' => $sectorLabel,
                     'profession_sector_id' => $sector->id,
-                    'description' => $payload['company_description'],
+                    'description' => $payload['company_description'] ?? null,
                     'website' => $payload['company_website'] ?? null,
                     'country' => $payload['company_country'] ?? \App\Models\CompanyProfile::DEFAULT_COUNTRY,
                     'is_subscribed' => false,
@@ -295,6 +349,28 @@ class PendingRegistrationService
                 ]);
 
                 $this->attachCompanyDocuments($companyProfile, $pending);
+
+                if ($isCompanyTrial) {
+                    $companyProfile->startFreeTrial();
+
+                    CompanyTrialRequest::query()->create([
+                        'company_name' => $payload['name'],
+                        'contact_name' => $payload['representative_name'] ?? $payload['name'],
+                        'email' => $pending->email,
+                        'phone' => $payload['phone'] ?? '',
+                        'sector' => $payload['sector'],
+                        'company_description' => filled($payload['company_description'] ?? null) ? $payload['company_description'] : '',
+                        'company_website' => $payload['company_website'] ?? null,
+                        'company_country' => $payload['company_country'],
+                        'status' => CompanyTrialRequest::STATUS_PROVISIONED,
+                        'reviewed_at' => now(),
+                        'user_id' => $user->id,
+                        'locale' => $pending->locale,
+                        'ip_address' => $payload['ip_address'] ?? null,
+                        'trial_terms_accepted_at' => $payload['trial_terms_accepted_at'] ?? now(),
+                        'trial_terms_version' => $payload['trial_terms_version'] ?? null,
+                    ]);
+                }
             }
 
             if ($user->role === 'dev') {

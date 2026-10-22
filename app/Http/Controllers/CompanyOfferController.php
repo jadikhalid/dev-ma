@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Company\StoreCompanyTrialRequest;
 use App\Mail\CompanyDemoConfirmationMail;
 use App\Mail\CompanyDemoRequestMail;
-use App\Mail\CompanyTrialRequestMail;
 use App\Models\CompanyDemoRequest;
 use App\Models\CompanyProfile;
-use App\Models\CompanyTrialRequest;
 use App\Models\User;
 use App\Services\MessagingService;
+use App\Services\PendingRegistrationService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +23,7 @@ class CompanyOfferController extends Controller
     public function __construct(
         private MessagingService $messaging,
         private ProfessionCatalogService $professionCatalog,
+        private PendingRegistrationService $pendingRegistrations,
     ) {}
 
     public function show(Request $request): View|RedirectResponse
@@ -34,6 +34,10 @@ class CompanyOfferController extends Controller
 
         if ($request->query('tab') === 'trial') {
             return redirect()->route('company.trial');
+        }
+
+        if ($request->query('tab') === 'demo') {
+            return redirect()->route('company.demo');
         }
 
         return view('company.offer', [
@@ -63,6 +67,16 @@ class CompanyOfferController extends Controller
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'companyCountryOptions' => CompanyProfile::countryOptions(),
         ]);
+    }
+
+    public function demo(): View
+    {
+        return view('company.demo');
+    }
+
+    public function trialTerms(): View
+    {
+        return view('company.trial-terms');
     }
 
     public function storeDemo(Request $request): RedirectResponse|JsonResponse
@@ -161,43 +175,47 @@ class CompanyOfferController extends Controller
         }
 
         return redirect()
-            ->to(route('company.offer', ['tab' => 'demo']).'#demo')
+            ->route('company.demo')
             ->with('toast_success', $message);
     }
 
     public function storeTrial(StoreCompanyTrialRequest $request): RedirectResponse|JsonResponse
     {
-        $data = $request->validated();
-
-        $trial = CompanyTrialRequest::query()->create([
-            'company_name' => $data['company_name'],
-            'contact_name' => $data['contact_name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'sector' => $data['sector'],
-            'company_description' => $data['company_description'],
-            'company_website' => filled($data['company_website'] ?? null) ? $data['company_website'] : null,
-            'company_country' => $data['company_country'],
-            'status' => CompanyTrialRequest::STATUS_PENDING,
-            'locale' => app()->getLocale(),
-            'ip_address' => $request->ip(),
-        ]);
-
         try {
-            $admin = $this->messaging->resolveAdminRecipient();
-            Mail::to($admin->email)->send(new CompanyTrialRequestMail($trial));
-        } catch (\Throwable) {
-            // Demande conservée en base même sans boîte admin disponible.
+            $this->pendingRegistrations->createCompanyTrial(
+                $request->validated(),
+                $request->ip(),
+            );
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            $message = __('talenma.auth.verification_email_failed');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 500);
+            }
+
+            return redirect()
+                ->route('company.trial')
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->with('toast_error', $message);
         }
+
+        $request->session()->put('pending_registration_email', $request->validated('email'));
 
         $message = __('talenma.company_offer.trial_sent');
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => $message]);
+            $request->session()->flash('toast_sticky_success', $message);
+
+            return response()->json([
+                'message' => $message,
+                'redirect' => route('company.offer'),
+            ]);
         }
 
         return redirect()
-            ->route('company.trial')
-            ->with('toast_success', $message);
+            ->route('company.offer')
+            ->with('toast_sticky_success', $message);
     }
 }

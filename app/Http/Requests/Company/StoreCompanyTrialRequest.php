@@ -5,9 +5,12 @@ namespace App\Http\Requests\Company;
 use App\Models\CompanyDemoRequest;
 use App\Models\CompanyProfile;
 use App\Models\CompanyTrialRequest;
+use App\Models\PendingRegistration;
 use App\Models\User;
+use App\Rules\ProfessionalEmail;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class StoreCompanyTrialRequest extends FormRequest
 {
@@ -94,11 +97,14 @@ class StoreCompanyTrialRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
+                new ProfessionalEmail,
                 Rule::unique(User::class, 'email'),
+                Rule::unique(PendingRegistration::class, 'email'),
                 Rule::unique(CompanyTrialRequest::class, 'email')->where(
                     fn ($query) => $query->where('status', CompanyTrialRequest::STATUS_PENDING)
                 ),
             ],
+            'password' => ['required', 'confirmed', Password::defaults()],
             'phone_country' => ['nullable', Rule::in(array_keys(CompanyDemoRequest::PHONE_COUNTRIES))],
             'phone' => ['required', 'string', 'max:50', 'regex:/^\+?[0-9\s\-\.\(\)]{8,20}$/'],
             'sector' => [
@@ -107,10 +113,11 @@ class StoreCompanyTrialRequest extends FormRequest
                 'max:64',
                 Rule::exists('profession_sectors', 'slug')->where(fn ($query) => $query->where('is_active', true)),
             ],
-            'company_description' => ['required', 'string', 'min:20', 'max:5000'],
+            'company_description' => ['nullable', 'string', 'max:5000'],
             'company_website' => ['nullable', 'url', 'max:255'],
             'company_country' => ['required', 'string', Rule::in(CompanyProfile::COUNTRY_CODES)],
             'data_processing_consent' => ['accepted'],
+            'trial_terms' => ['accepted'],
         ];
     }
 
@@ -127,14 +134,19 @@ class StoreCompanyTrialRequest extends FormRequest
             'email.required' => __('talenma.company_offer.demo_email_required'),
             'email.email' => __('talenma.company_offer.demo_email_invalid'),
             'email.unique' => __('talenma.auth.validation.email_taken'),
+            'password.required' => __('talenma.auth.validation.password_required'),
+            'password.confirmed' => __('talenma.auth.validation.password_confirmed'),
+            'password.min' => __('talenma.auth.validation.password_min'),
+            'password.letters' => __('talenma.auth.validation.password_letters'),
+            'password.numbers' => __('talenma.auth.validation.password_numbers'),
             'phone.required' => __('talenma.company_offer.trial_phone_required'),
             'phone.regex' => __('talenma.company.phone_invalid'),
             'sector.required' => __('talenma.auth.validation.sector_required'),
             'sector.exists' => __('talenma.auth.validation.sector_invalid'),
-            'company_description.required' => __('talenma.auth.validation.company_description_required'),
-            'company_description.min' => __('talenma.auth.validation.company_description_min'),
+            'company_description.max' => __('talenma.auth.validation.company_description_max'),
             'company_country.required' => __('talenma.auth.validation.company_country_required'),
             'data_processing_consent.accepted' => __('talenma.auth.validation.data_processing_consent_required'),
+            'trial_terms.accepted' => __('talenma.company_offer.trial_terms.required'),
         ];
     }
 }

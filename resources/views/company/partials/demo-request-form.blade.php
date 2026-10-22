@@ -24,6 +24,7 @@
 @endphp
 
 <div
+    class="scroll-mt-20 sm:scroll-mt-32"
     x-data="companyOfferAjaxForm({
         mode: 'demo',
         loadingTargetId: 'company-demo-request-form',

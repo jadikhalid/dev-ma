@@ -52,6 +52,12 @@ return [
     'data_processing_consent_version' => '2026-08-12',
 
     /*
+    | Version des conditions d’essai entreprise acceptées sur le formulaire.
+    | Incrémenter si le texte affiché change de façon matérielle.
+    */
+    'trial_terms_version' => '2026-10-22-5',
+
+    /*
     | Hôtes publics (une seule app Laravel, routage par hostname).
     | Prod : HOST_WWW=www.talentsdumaroc.com (ou talentsdumaroc.com),
     |        HOST_COMPANY=entreprises.talentsdumaroc.com

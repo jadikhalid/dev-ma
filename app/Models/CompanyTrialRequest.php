@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'user_id',
     'locale',
     'ip_address',
+    'trial_terms_accepted_at',
+    'trial_terms_version',
 ])]
 class CompanyTrialRequest extends Model
 {
@@ -35,6 +37,7 @@ class CompanyTrialRequest extends Model
     {
         return [
             'reviewed_at' => 'datetime',
+            'trial_terms_accepted_at' => 'datetime',
         ];
     }
 

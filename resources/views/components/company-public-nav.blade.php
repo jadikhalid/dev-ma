@@ -12,8 +12,6 @@
 
     $bandLinks = collect([
         ['route' => 'company.offers', 'label' => __('talenma.nav.offers')],
-        ['route' => 'company.case-studies', 'label' => __('talenma.nav.case_studies')],
-        ['route' => 'company.about', 'label' => __('talenma.nav.about')],
     ])->map(fn (array $link) => $link + ['active' => request()->routeIs($link['route'])]);
     $bandLinkActive = $bandLinks->contains('active', true);
 @endphp
@@ -353,17 +351,42 @@
         </div>
 
         @unless (auth()->user()?->isCompany())
-            <a
-                href="{{ route('company.offer', ['tab' => 'demo']) }}"
-                @if (request()->routeIs('company.offer'))
-                    @click.prevent="$dispatch('company-offer-drawer', 'demo')"
+            <div class="flex shrink-0 items-center gap-2">
+                @if (request()->routeIs('company.demo'))
+                    <button
+                        type="button"
+                        disabled
+                        class="inline-flex shrink-0 cursor-not-allowed items-center justify-center whitespace-nowrap rounded-md border-2 border-gray-300 bg-gray-100 px-2.5 py-2 text-xs font-semibold text-gray-400 sm:px-5 sm:py-2.5 sm:text-sm"
+                        data-company-header-demo
+                    >
+                        <span class="xl:hidden">{{ __('talenma.nav.request_demo_short') }}</span>
+                        <span class="hidden xl:inline">{{ __('talenma.nav.request_demo') }}</span>
+                    </button>
+                @else
+                    <a
+                        href="{{ route('company.demo') }}"
+                        class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md border-2 border-gray-950 bg-gray-950 px-2.5 py-2 text-xs font-semibold text-white transition hover:border-gray-800 hover:bg-gray-800 sm:px-5 sm:py-2.5 sm:text-sm"
+                        data-company-header-demo
+                    >
+                        <span class="xl:hidden">{{ __('talenma.nav.request_demo_short') }}</span>
+                        <span class="hidden xl:inline">{{ __('talenma.nav.request_demo') }}</span>
+                    </a>
                 @endif
-                class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md border-2 border-gray-950 bg-gray-950 px-2.5 py-2 text-xs font-semibold text-white transition hover:border-gray-800 hover:bg-gray-800 sm:px-5 sm:py-2.5 sm:text-sm"
-                data-company-header-demo
-            >
-                <span class="xl:hidden">{{ __('talenma.nav.request_demo_short') }}</span>
-                <span class="hidden xl:inline">{{ __('talenma.nav.request_demo') }}</span>
-            </a>
+                @if (request()->routeIs('company.trial'))
+                    <button
+                        type="button"
+                        disabled
+                        class="inline-flex shrink-0 cursor-not-allowed items-center justify-center whitespace-nowrap rounded-md border-2 border-gray-300 bg-gray-100 px-2.5 py-2 text-xs font-semibold text-gray-400 sm:px-5 sm:py-2.5 sm:text-sm"
+                        data-company-header-trial
+                    >{{ __('talenma.company_offer.hero_cta_trial') }}</button>
+                @else
+                    <a
+                        href="{{ route('company.trial') }}"
+                        class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md border-2 border-gray-950 bg-white px-2.5 py-2 text-xs font-semibold text-gray-950 transition hover:bg-gray-950 hover:text-white sm:px-5 sm:py-2.5 sm:text-sm"
+                        data-company-header-trial
+                    >{{ __('talenma.company_offer.hero_cta_trial') }}</a>
+                @endif
+            </div>
         @endunless
     </div>
 </header>

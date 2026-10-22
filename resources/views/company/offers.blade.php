@@ -4,7 +4,7 @@
 @section('meta_description', __('talenma.company_plans.meta_description'))
 
 @php
-    $demoUrl = route('company.offer').'#demo';
+    $demoUrl = route('company.demo');
     $trialUrl = route('company.trial');
 
     $plans = [
