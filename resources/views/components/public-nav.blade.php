@@ -7,7 +7,7 @@
     $showExploreCompanies = $onCompanyShow;
 
     $talentHeader = auth()->check() && auth()->user()->isTalent();
-    $homeHeader = request()->routeIs('home');
+    $homeHeader = request()->routeIs('home', 'career.how');
 
     $navLinks = [
         [

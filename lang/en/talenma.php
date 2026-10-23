@@ -112,6 +112,8 @@ return [
         'how_meta_title' => 'How it works — Talents du Maroc',
         'how_meta_description' => 'Four steps to find your next role.',
         'how_title' => 'How it works',
+        'how_title_lead' => 'How it',
+        'how_title_accent' => 'works',
         'how_intro' => 'Four steps to find your next role.',
         'how_phases' => [
             ['n' => '1', 'label' => 'Account'],
@@ -162,6 +164,8 @@ return [
         'how_job_meta' => 'Local placement · Morocco',
         'how_job_cta' => 'View the offer',
         'how_reflexes_title' => '3 habits to stay visible',
+        'how_reflexes_lead' => '3 habits to',
+        'how_reflexes_accent' => 'stay visible',
         'how_reflexes' => [
             ['title' => 'Keep your CV current', 'text' => 'A recent CV reflects your latest experience.'],
             ['title' => 'Show your availability', 'text' => 'Turn on the “Open to opportunities” badge.'],

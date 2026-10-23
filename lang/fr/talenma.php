@@ -112,6 +112,8 @@ return [
         'how_meta_title' => 'Comment ça marche — Talents du Maroc',
         'how_meta_description' => 'Quatre étapes pour trouver votre prochain poste.',
         'how_title' => 'Comment ça marche ?',
+        'how_title_lead' => 'Comment ça',
+        'how_title_accent' => 'marche ?',
         'how_intro' => 'Quatre étapes pour trouver votre prochain poste.',
         'how_phases' => [
             ['n' => '1', 'label' => 'Compte'],
@@ -162,6 +164,8 @@ return [
         'how_job_meta' => 'Placement local · Maroc',
         'how_job_cta' => 'Voir l’offre',
         'how_reflexes_title' => '3 réflexes pour rester visible',
+        'how_reflexes_lead' => '3 réflexes pour',
+        'how_reflexes_accent' => 'rester visible',
         'how_reflexes' => [
             ['title' => 'Mettez votre CV à jour', 'text' => 'Un CV récent reflète vos dernières expériences.'],
             ['title' => 'Affichez votre disponibilité', 'text' => 'Activez le badge « Ouvert aux opportunités ».'],
