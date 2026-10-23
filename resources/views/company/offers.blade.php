@@ -52,8 +52,9 @@
 @section('content')
 <section class="relative overflow-hidden bg-gradient-to-br from-white via-sky-50 to-sky-100" data-company-offers>
     <div class="home-shell pb-16 pt-8 sm:pt-[4.5rem] lg:pb-20 lg:pt-[5.5rem]">
+        <div class="company-offers-frame">
         <div class="max-w-3xl">
-            <p class="inline-flex items-center rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-sm shadow-indigo-500/25">
+            <p class="company-plans-badge inline-flex items-center rounded-full bg-indigo-600 px-4 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-sm shadow-indigo-500/25">
                 {{ __('talenma.company_plans.badge') }}
             </p>
             <h1 class="mt-5 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl lg:text-[2.6rem] lg:leading-[1.15]">
@@ -61,9 +62,6 @@
             </h1>
             <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
                 {{ __('talenma.company_plans.intro') }}
-            </p>
-            <p class="mt-3 text-sm font-medium text-slate-500">
-                {{ __('talenma.company_plans.billing_note') }}
             </p>
         </div>
 
@@ -192,6 +190,7 @@
                     {{ __('talenma.company_plans.cta_demo') }}
                 </a>
             </div>
+        </div>
         </div>
     </div>
 </section>

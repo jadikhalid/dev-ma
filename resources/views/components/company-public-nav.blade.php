@@ -14,6 +14,7 @@
         ['route' => 'company.offers', 'label' => __('talenma.nav.offers')],
     ])->map(fn (array $link) => $link + ['active' => request()->routeIs($link['route'])]);
     $bandLinkActive = $bandLinks->contains('active', true);
+    $platformAnchors = array_column($platformMenuItems, 'anchor');
 @endphp
 
 <header
@@ -22,6 +23,7 @@
         scrolled: false,
         mobileNav: false,
         mobilePlatform: false,
+        platformAnchors: @js($platformAnchors),
         sync() {
             if (window.matchMedia('(max-width: 639px)').matches) {
                 this.scrolled = false;
@@ -32,8 +34,39 @@
             if (! this.scrolled && y > 110) this.scrolled = true;
             else if (this.scrolled && y < 90) this.scrolled = false;
         },
+        goToPlatform(anchor) {
+            if (! this.platformAnchors.includes(anchor)) {
+                return;
+            }
+            const target = document.getElementById(anchor);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (window.location.hash) {
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                }
+                return;
+            }
+            sessionStorage.setItem('companyPlatformSection', anchor);
+            window.location.assign(@js(route('company.offer')));
+        },
+        openStoredPlatformSection() {
+            const stored = sessionStorage.getItem('companyPlatformSection');
+            if (stored) {
+                sessionStorage.removeItem('companyPlatformSection');
+            }
+            const hashed = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+            if (this.platformAnchors.includes(hashed)) {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+            const anchor = this.platformAnchors.includes(stored) ? stored : (this.platformAnchors.includes(hashed) ? hashed : '');
+            const target = anchor ? document.getElementById(anchor) : null;
+            if (target) {
+                requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+            }
+        },
     }"
-    x-init="sync(); $watch('mobileNav', (value) => document.documentElement.classList.toggle('overflow-hidden', value))"
+    x-init="sync(); openStoredPlatformSection(); window.addEventListener('hashchange', () => openStoredPlatformSection()); $watch('mobileNav', (value) => document.documentElement.classList.toggle('overflow-hidden', value))"
+    @company-platform-section="goToPlatform($event.detail)"
     @scroll.window.passive="sync()"
     @resize.window.debounce.150ms="sync()"
     @keydown.escape.window="mobileNav = false"
@@ -303,8 +336,8 @@
             data-company-platform-menu
         >
             <div class="grid max-h-[calc(100vh-10rem)] gap-4 overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50 p-3 shadow-2xl shadow-indigo-950/10 sm:p-4 md:grid-cols-2">
-                <div class="flex flex-col rounded-xl bg-indigo-600 p-5 text-white sm:p-6">
-                    <div class="relative mx-auto hidden h-32 w-60 md:block" aria-hidden="true">
+                <div class="flex flex-col justify-center gap-6 rounded-xl bg-indigo-600 p-5 text-white sm:p-6">
+                    <div class="relative mx-auto hidden h-32 w-60 shrink-0 md:block" aria-hidden="true">
                         @foreach ($platformMenuItems as $index => $item)
                             <div class="absolute w-36 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5" style="left: {{ $index * 28 }}px; top: {{ $index * 18 }}px;">
                                 <div class="{{ $item['tone'] }} px-2 py-0.5 text-center text-[9px] font-semibold text-gray-900">{{ __('talenma.nav.platform_menu_short_'.($index + 1)) }}</div>
@@ -316,12 +349,10 @@
                             </div>
                         @endforeach
                     </div>
-                    <p class="text-xl font-extrabold tracking-tight md:mt-6">{{ __('talenma.nav.platform_menu_title') }}</p>
-                    <p class="mt-2 text-sm leading-relaxed text-indigo-100">{{ __('talenma.nav.platform_menu_text') }}</p>
-                    <a
-                        href="{{ PortalHost::wwwRootUrl() }}"
-                        class="mt-5 inline-flex self-start rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
-                    >{{ __('talenma.nav.platform_menu_cta') }}</a>
+                    <div>
+                        <p class="text-xl font-extrabold tracking-tight">{{ __('talenma.nav.platform_menu_title') }}</p>
+                        <p class="mt-3 text-sm leading-relaxed text-indigo-100">{{ __('talenma.nav.platform_menu_text') }}</p>
+                    </div>
                 </div>
 
                 <div class="flex flex-col">
@@ -329,8 +360,8 @@
                         @foreach ($platformMenuItems as $index => $item)
                             <li>
                                 <a
-                                    href="{{ route('company.offer') }}#{{ $item['anchor'] }}"
-                                    @click="menu = false"
+                                    href="{{ route('company.offer') }}"
+                                    @click.prevent="menu = false; $dispatch('company-platform-section', @js($item['anchor']))"
                                     class="flex items-center gap-3.5 rounded-lg border border-gray-200 bg-white px-4 py-3.5 text-sm font-bold text-gray-950 transition hover:border-indigo-300 hover:text-indigo-700"
                                     data-company-platform-link="{{ $item['anchor'] }}"
                                 >
@@ -344,7 +375,7 @@
                     </ul>
                     <div class="mt-auto px-1 pt-4">
                         <p class="text-sm font-medium text-gray-700">{{ __('talenma.nav.platform_menu_footer') }}</p>
-                        <a href="{{ PortalHost::wwwRootUrl() }}" class="mt-1 inline-flex text-sm italic text-gray-500 underline underline-offset-2 hover:text-indigo-700">{{ __('talenma.nav.platform_menu_footer_link') }} &rarr;</a>
+                        <a href="{{ PortalHost::wwwRootUrl() }}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex text-sm italic text-gray-500 underline underline-offset-2 hover:text-indigo-700">{{ __('talenma.nav.platform_menu_footer_link') }} &rarr;</a>
                     </div>
                 </div>
             </div>

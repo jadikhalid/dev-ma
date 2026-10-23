@@ -62,16 +62,40 @@
     .page-offers .home-shell,
     .page-offers .home-align-wide,
     .page-company-home .home-shell,
-    .page-company-home .home-align-wide {
+    .page-company-home .home-align-wide,
+    .page-company-offers .home-shell,
+    .page-company-offers .home-align-wide {
         max-width: 80rem;
         padding-left: 2rem;
         padding-right: 2rem;
     }
 
     /* Same 65% relationship as a normal desktop, taken against the page frame. */
-    .page-company-home [data-company-header-band] {
+    .page-company-home [data-company-header-band],
+    .page-company-offers [data-company-header-band] {
         width: calc(80rem * 0.65);
     }
+}
+
+/* Trial and demo body: 1.3 times the old 42rem column. */
+.company-request-frame {
+    max-width: calc(42rem * 1.3);
+}
+
+/* Offers body sits slightly inside the header, plus 15px each side. */
+.company-offers-frame {
+    width: 100%;
+    margin-inline: auto;
+}
+
+@media (min-width: 1024px) {
+    .company-offers-frame {
+        width: calc(92% - 30px);
+    }
+}
+
+.company-plans-badge {
+    height: calc(1.3 * (0.75rem + 1rem));
 }
 
 /* Hero wash stays inside the home frame (80rem), same edges as the content. */

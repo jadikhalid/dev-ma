@@ -23,6 +23,7 @@
         'page-home' => request()->routeIs('home'),
         'page-offers' => request()->routeIs('career.offers'),
         'page-company-home' => request()->routeIs('company.offer'),
+        'page-company-offers' => request()->routeIs('company.offers'),
     ])
     @if (request()->routeIs('home')) data-mobile-locale-auto="1" data-locale-suggest-url="{{ route('locale.suggest') }}" @endif
 >

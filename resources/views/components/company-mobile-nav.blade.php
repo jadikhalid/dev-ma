@@ -80,8 +80,8 @@
                         @foreach ($platformMenuItems as $index => $item)
                             <li>
                                 <a
-                                    href="{{ route('company.offer') }}#{{ $item['anchor'] }}"
-                                    @click="mobileNav = false"
+                                    href="{{ route('company.offer') }}"
+                                    @click.prevent="mobileNav = false; $dispatch('company-platform-section', @js($item['anchor']))"
                                     class="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-indigo-50 hover:text-indigo-700"
                                     data-company-mobile-platform-link="{{ $item['anchor'] }}"
                                 >
@@ -93,7 +93,7 @@
                             </li>
                         @endforeach
                     </ul>
-                    <a href="{{ PortalHost::wwwRootUrl() }}" class="mt-3 inline-flex px-1 text-sm font-medium text-indigo-700 underline underline-offset-2">{{ __('talenma.nav.platform_menu_footer_link') }} &rarr;</a>
+                    <a href="{{ PortalHost::wwwRootUrl() }}" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex px-1 text-sm font-medium text-indigo-700 underline underline-offset-2">{{ __('talenma.nav.platform_menu_footer_link') }} &rarr;</a>
                 </div>
             </div>
 
