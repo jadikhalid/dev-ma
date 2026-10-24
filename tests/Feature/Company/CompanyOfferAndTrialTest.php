@@ -130,7 +130,7 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSee('aria-current="page"', false);
     }
 
-    public function test_offers_page_shows_trial_then_paid_plans_in_euros(): void
+    public function test_offers_page_shows_trial_and_paid_plans_on_quote(): void
     {
         $this->get(route('company.offers'))
             ->assertOk()
@@ -138,8 +138,13 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSee(__('talenma.company_plans.plans.trial.name'), false)
             ->assertSee(__('talenma.company_plans.plans.essential.name'), false)
             ->assertSee(__('talenma.company_plans.plans.pro.name'), false)
+            ->assertSee(__('talenma.company_plans.price_trial_label'), false)
             ->assertSee(__('talenma.company_plans.price_essential_label'), false)
             ->assertSee(__('talenma.company_plans.price_pro_label'), false)
+            ->assertDontSee('1 490', false)
+            ->assertDontSee('2 990', false)
+            ->assertDontSee('€1,490', false)
+            ->assertDontSee('€2,990', false)
             ->assertDontSee('Produit d’appel', false)
             ->assertDontSee('pour toujours', false)
             ->assertSee(__('talenma.company_plans.custom.title'), false)

@@ -11,7 +11,7 @@
         [
             'key' => 'trial',
             'price' => __('talenma.company_plans.price_trial_label'),
-            'period' => __('talenma.company_plans.for_months'),
+            'period' => '',
             'cta' => __('talenma.company_plans.cta_trial'),
             'href' => $trialUrl,
             'featured' => false,
@@ -20,7 +20,7 @@
         [
             'key' => 'essential',
             'price' => __('talenma.company_plans.price_essential_label'),
-            'period' => __('talenma.company_plans.per_year'),
+            'period' => '',
             'cta' => __('talenma.company_plans.cta_demo'),
             'href' => $demoUrl,
             'featured' => false,
@@ -29,7 +29,7 @@
         [
             'key' => 'pro',
             'price' => __('talenma.company_plans.price_pro_label'),
-            'period' => __('talenma.company_plans.per_year'),
+            'period' => '',
             'cta' => __('talenma.company_plans.cta_demo'),
             'href' => $demoUrl,
             'featured' => true,
@@ -73,17 +73,19 @@
                         ? 'relative flex flex-col rounded-[1.75rem] border-2 border-indigo-600 bg-white p-6 shadow-[0_20px_50px_-24px_rgba(79,70,229,0.45)] sm:p-7'
                         : 'relative flex flex-col rounded-[1.75rem] border border-slate-200/90 bg-white/95 p-6 shadow-[0_12px_36px_-20px_rgba(15,23,42,0.18)] sm:p-7';
                 @endphp
-                <article @class([$cardClass, 'lg:-translate-y-1' => $plan['featured']])>
+                <article @class([$cardClass])>
                     @if ($plan['featured'])
                         <span class="absolute -top-3 left-6 inline-flex rounded-full bg-indigo-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
                             {{ __('talenma.company_plans.recommended') }}
                         </span>
                     @endif
                     <h2 class="text-xl font-bold tracking-tight text-slate-950">{{ $copy['name'] }}</h2>
-                    <p class="mt-1.5 text-sm leading-relaxed text-slate-500">{{ $copy['tagline'] }}</p>
-                    <p class="mt-5 flex items-baseline gap-2">
-                        <span class="text-4xl font-extrabold tracking-tight text-slate-950">{{ $plan['price'] }}</span>
-                        <span class="text-sm font-medium text-slate-500">{{ $plan['period'] }}</span>
+                    <p class="mt-1.5 min-h-[2.875rem] text-sm leading-relaxed text-slate-500">{{ $copy['tagline'] }}</p>
+                    <p class="mt-5 flex min-h-[2.5rem] items-center">
+                        <span class="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">{{ $plan['price'] }}</span>
+                        @if ($plan['period'] !== '')
+                            <span class="ml-2 text-sm font-medium text-slate-500">{{ $plan['period'] }}</span>
+                        @endif
                     </p>
                     <ul class="mt-6 flex-1 space-y-2.5">
                         @foreach ($copy['features'] as $feature)
