@@ -1,7 +1,7 @@
 @props(['companies'])
 
 @if ($companies->isNotEmpty())
-<section class="mt-16 lg:mt-[4.5rem]" aria-labelledby="home-recruiting-companies-title" x-data="socialPostsSlider({
+<section class="mt-8 lg:mt-[2.25rem]" aria-labelledby="home-recruiting-companies-title" x-data="socialPostsSlider({
     items: @js($companies->values()),
     prevLabel: @js(__('talenma.home.recruiting_companies_prev')),
     nextLabel: @js(__('talenma.home.recruiting_companies_next')),
