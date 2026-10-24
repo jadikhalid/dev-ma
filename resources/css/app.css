@@ -202,6 +202,14 @@
         opacity: 0.38;
     }
 
+    .page-home .home-hero-canvas > .home-shell {
+        padding-bottom: 0;
+    }
+
+    .page-home .home-recruiting-companies {
+        margin-top: 0;
+    }
+
     .page-how .how-hero-frame {
         right: auto;
         left: 50%;
