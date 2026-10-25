@@ -3,6 +3,7 @@
 namespace Tests\Feature\Company;
 
 use App\Models\CompanyProfile;
+use App\Models\JobPostingActivityEvent;
 use App\Models\JobPosting;
 use App\Models\Profession;
 use App\Models\ProfessionSector;
@@ -187,6 +188,45 @@ class CompanyPlanLimitsTest extends TestCase
             ->assertSee('data-plan="pro"', false)
             ->assertSee(__('talenma.dashboard.company.plan_usage.page_enriched'), false)
             ->assertSee('5 / 5', false);
+    }
+
+    public function test_company_activity_feed_returns_the_next_page(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner(CompanyProfile::PLAN_TRIAL);
+
+        foreach (range(1, 12) as $index) {
+            JobPostingActivityEvent::query()->create([
+                'company_profile_id' => $profile->id,
+                'job_title' => sprintf('Annonce %02d', $index),
+                'event' => JobPostingActivityEvent::EVENT_PUBLISHED,
+                'actor_label' => 'Owner',
+                'actor_user_id' => $owner->id,
+                'is_self' => true,
+                'created_at' => now()->subMinutes(13 - $index),
+            ]);
+        }
+
+        $first = $this->actingAs($owner)
+            ->getJson(route('dashboard.company-activity', ['offset' => 0]))
+            ->assertOk()
+            ->assertJsonPath('has_more', true)
+            ->assertJsonPath('next_offset', 10);
+
+        $this->assertSame(10, substr_count($first->json('html'), '<li'));
+        $this->assertStringContainsString('Annonce 12', $first->json('html'));
+        $this->assertStringNotContainsString('Annonce 01', $first->json('html'));
+
+        $this->actingAs($owner)
+            ->getJson(route('dashboard.company-activity', ['offset' => 10]))
+            ->assertOk()
+            ->assertJsonPath('has_more', false)
+            ->assertJsonPath('next_offset', 12)
+            ->assertSee('Annonce 01', false)
+            ->assertSee('Annonce 02', false);
+
+        $this->actingAs(User::factory()->talent()->create([
+            'approval_status' => User::APPROVAL_APPROVED,
+        ]))->getJson(route('dashboard.company-activity'))->assertForbidden();
     }
 
     /**
