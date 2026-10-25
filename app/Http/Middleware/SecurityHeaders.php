@@ -47,7 +47,9 @@ class SecurityHeaders
 
     private function contentSecurityPolicy(string $nonce): string
     {
-        $scriptSrc = ["'self'", "'nonce-{$nonce}'"];
+        // Alpine evaluates x-data / x-show with new Function(); without 'unsafe-eval'
+        // those directives never bind and dropdowns stay visible/frozen.
+        $scriptSrc = ["'self'", "'nonce-{$nonce}'", "'unsafe-eval'"];
         $styleSrc = ["'self'", "'unsafe-inline'", 'https://fonts.bunny.net'];
         $connectSrc = ["'self'"];
         $fontSrc = ["'self'", 'https://fonts.bunny.net', 'data:'];

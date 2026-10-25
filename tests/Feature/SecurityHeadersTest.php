@@ -39,6 +39,7 @@ class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString("form-action 'self'", $csp);
         $this->assertStringContainsString('nonce-', $csp);
         $this->assertStringContainsString("script-src-attr 'unsafe-inline'", $csp);
+        $this->assertStringContainsString("'unsafe-eval'", $csp);
         $this->assertStringContainsString('https://fonts.bunny.net', $csp);
     }
 
