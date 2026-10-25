@@ -81,6 +81,7 @@ class DashboardController extends Controller
 
         if ($user->isCompany()) {
             $profile = $user->companyOrganization();
+            $profile?->loadMissing(['memberships.user', 'user']);
             $completion = $user->isCompanyMember()
                 ? $this->companyMemberAccountCompletion->assess($user)
                 : $this->companyProfileCompletion->assess($profile);

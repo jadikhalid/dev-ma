@@ -2168,6 +2168,8 @@ An administrator or moderator is reviewing your application before your company 
             'my_company' => 'My company',
             'edit_company' => 'Complete profile →',
             'section_ongoing' => 'ACTIVITIES',
+            'invite_complete' => 'Complete',
+            'invite_change' => 'Edit',
             'section_services' => 'SERVICES',
             'plan_usage' => [
                 'section_title' => 'My account',
@@ -2213,7 +2215,7 @@ An administrator or moderator is reviewing your application before your company 
             'direct_hires_empty' => 'No open direct application processes at the moment.',
             'request_sent' => 'Your request has been sent. Our team will contact you shortly.',
             'activity' => [
-                'recent_title' => 'Recent activity',
+                'recent_title' => 'My recent activities',
                 'recent_subtitle' => 'Decisions, steps, messages, job postings and closures on your dossiers',
                 'recent_empty' => 'No recent activity yet.',
                 'unknown_talent' => 'A talent',

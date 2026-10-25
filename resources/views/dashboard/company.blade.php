@@ -16,8 +16,6 @@
 @endphp
 
 <x-app-layout>
-    <x-process-help topic="dashboard" />
-
     <div class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-5">
         @if (session('recruitment_sent'))
             <div class="p-3 sm:p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm">{{ __('talenma.dashboard.company.request_sent') }}</div>
@@ -99,9 +97,15 @@
         {{-- Activités (+ usage offre à droite si applicable) --}}
         <div @class([
             'grid grid-cols-1 gap-4 lg:gap-5 items-start',
-            'lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]' => $showPlanUsage,
+            'lg:grid-cols-[minmax(0,25fr)_minmax(0,50fr)_minmax(0,25fr)]' => $showPlanUsage,
+            'lg:grid-cols-[minmax(0,25fr)_minmax(0,75fr)]' => ! $showPlanUsage,
         ])>
-            <section class="space-y-4 min-w-0">
+            @include('dashboard.partials.company-org-column', [
+                'profile' => $profile,
+                'canEditOrg' => $user->canManageCompanyProfile(),
+            ])
+
+            <section class="order-1 min-w-0 space-y-4 lg:order-none">
                 <div class="rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4 py-3.5">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
@@ -245,7 +249,7 @@
             </section>
 
             @if ($showPlanUsage)
-                <aside class="min-w-0">
+                <aside class="order-3 min-w-0 lg:order-none">
                     @include('dashboard.partials.company-plan-usage', ['orgPlan' => $orgPlan])
                 </aside>
             @endif

@@ -213,11 +213,25 @@
                                 @endif
                             </span>
                         </x-nav-link>
-                        <x-nav-link :href="route('company.search')" :active="request()->routeIs('company.search', 'company.talent.*')" :disabled="$pendingAccount">
-                            <span class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 font-semibold text-indigo-700">
+                        @if ($pendingAccount)
+                            <span class="inline-flex items-center gap-1.5 rounded-[5px] border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-sm font-semibold text-indigo-300 shadow-sm shadow-indigo-500/10 cursor-not-allowed select-none" aria-disabled="true">
                                 {{ __('talenma.nav.talents') }}
                             </span>
-                        </x-nav-link>
+                        @else
+                            <a
+                                href="{{ route('company.search') }}"
+                                @class([
+                                    'inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-sm font-semibold shadow-sm transition',
+                                    'border-indigo-600 bg-indigo-600 text-white shadow-indigo-600/20' => request()->routeIs('company.search', 'company.talent.*'),
+                                    'border-indigo-300 bg-indigo-50 text-indigo-700 shadow-indigo-500/10 hover:border-indigo-600 hover:bg-indigo-600 hover:text-white hover:shadow-indigo-600/20' => ! request()->routeIs('company.search', 'company.talent.*'),
+                                ])
+                            >
+                                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                {{ __('talenma.nav.talents') }}
+                            </a>
+                        @endif
                     @endif
                     </div>
                     <div
@@ -576,11 +590,25 @@
                                 @endif
                             </span>
                         </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('company.search')" :active="request()->routeIs('company.search', 'company.talent.*')">
-                            <span class="inline-flex items-center gap-2 rounded-md bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">
+                        @if ($pendingAccount)
+                            <span class="mx-3 my-1 inline-flex items-center gap-1.5 rounded-[5px] border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-sm font-semibold text-indigo-300 shadow-sm shadow-indigo-500/10 cursor-not-allowed" aria-disabled="true">
                                 {{ __('talenma.nav.talents') }}
                             </span>
-                        </x-responsive-nav-link>
+                        @else
+                            <a
+                                href="{{ route('company.search') }}"
+                                @class([
+                                    'mx-3 my-1 inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-sm font-semibold shadow-sm transition',
+                                    'border-indigo-600 bg-indigo-600 text-white shadow-indigo-600/20' => request()->routeIs('company.search', 'company.talent.*'),
+                                    'border-indigo-300 bg-indigo-50 text-indigo-700 shadow-indigo-500/10 hover:border-indigo-600 hover:bg-indigo-600 hover:text-white hover:shadow-indigo-600/20' => ! request()->routeIs('company.search', 'company.talent.*'),
+                                ])
+                            >
+                                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                {{ __('talenma.nav.talents') }}
+                            </a>
+                        @endif
                     @endif
                 </div>
             @endunless

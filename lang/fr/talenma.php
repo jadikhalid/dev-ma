@@ -2169,6 +2169,8 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
             'my_company' => 'Mon entreprise',
             'edit_company' => 'Compléter le profil →',
             'section_ongoing' => 'ACTIVITES',
+            'invite_complete' => 'Compléter',
+            'invite_change' => 'Modifier',
             'section_services' => 'SERVICES',
             'plan_usage' => [
                 'section_title' => 'Mon compte',
@@ -2214,7 +2216,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
             'direct_hires_empty' => 'Aucune candidature en cours pour le moment.',
             'request_sent' => 'Votre demande a été envoyée. Notre équipe vous recontactera rapidement.',
             'activity' => [
-                'recent_title' => 'Activité récente',
+                'recent_title' => 'Mes activités récentes',
                 'recent_subtitle' => 'Décisions, étapes, messages, annonces et clôtures de vos dossiers',
                 'recent_empty' => 'Aucune activité récente pour le moment.',
                 'unknown_talent' => 'Un talent',
