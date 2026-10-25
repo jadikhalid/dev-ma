@@ -99,10 +99,7 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get();
             $directHireUnseen = $this->directHires->companyHasUnseenChanges($user);
-            $activityPage = $this->companyActivity->paginatedActivity($user);
-            $recentActivity = $activityPage['items'];
-            $activityHasMore = $activityPage['has_more'];
-            $activityNextOffset = $activityPage['next_offset'];
+            $recentActivity = $this->companyActivity->recentActivity($user);
             $this->activityToasts->flashUnseen($user, $recentActivity, 'company');
 
             return view('dashboard.company', compact(
@@ -112,8 +109,6 @@ class DashboardController extends Controller
                 'completion',
                 'directHireUnseen',
                 'recentActivity',
-                'activityHasMore',
-                'activityNextOffset',
             ));
         }
 
@@ -129,22 +124,5 @@ class DashboardController extends Controller
         $jobsUnseen = $this->jobs->talentHasUnseenChanges($user);
 
         return view('dashboard.talent', compact('profile', 'completion', 'stats', 'openDirectHires', 'jobsUnseen'));
-    }
-
-    public function companyActivityFeed(Request $request)
-    {
-        $user = $request->user();
-        abort_unless($user->isCompany(), 403);
-
-        $offset = max(0, min(100000, (int) $request->query('offset', 0)));
-        $page = $this->companyActivity->paginatedActivity($user, $offset);
-
-        return response()->json([
-            'html' => view('dashboard.partials.company-activity-items', [
-                'recentActivity' => $page['items'],
-            ])->render(),
-            'has_more' => $page['has_more'],
-            'next_offset' => $page['next_offset'],
-        ]);
     }
 }

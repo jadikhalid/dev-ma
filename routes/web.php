@@ -192,9 +192,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('account.approved')
         ->name('dashboard');
-    Route::get('/dashboard/activity', [DashboardController::class, 'companyActivityFeed'])
-        ->middleware('account.approved')
-        ->name('dashboard.company-activity');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -25,46 +25,22 @@ class CompanyDashboardActivityService
     /**
      * @return list<array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
      */
-    public const PAGE_SIZE = 10;
-
-    public function recentActivity(User $company, int $limit = self::PAGE_SIZE): array
-    {
-        return $this->paginatedActivity($company, 0, $limit)['items'];
-    }
-
-    /**
-     * @return array{items: list<array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>, has_more: bool, next_offset: int}
-     */
-    public function paginatedActivity(User $company, int $offset = 0, int $limit = self::PAGE_SIZE): array
-    {
-        $items = $this->allActivity($company);
-        $offset = max(0, $offset);
-        $limit = max(1, $limit);
-        $page = array_slice($items, $offset, $limit);
-
-        return [
-            'items' => $page,
-            'has_more' => ($offset + count($page)) < count($items),
-            'next_offset' => $offset + count($page),
-        ];
-    }
-
-    /**
-     * @return list<array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
-     */
-    private function allActivity(User $company): array
+    public function recentActivity(User $company, int $limit = 10): array
     {
         if (! $company->isCompany()) {
             return [];
         }
 
-        return $this->directHireEvents($company)
-            ->concat($this->roundEvents($company))
-            ->concat($this->recruitmentEvents($company))
-            ->concat($this->talentUnlockEvents($company))
-            ->concat($this->jobPostingActivityEvents($company))
-            ->concat($this->inboxMessageEvents($company))
+        $fetch = max($limit * 2, 20);
+
+        return $this->directHireEvents($company, $fetch)
+            ->concat($this->roundEvents($company, $fetch))
+            ->concat($this->recruitmentEvents($company, $fetch))
+            ->concat($this->talentUnlockEvents($company, $fetch))
+            ->concat($this->jobPostingActivityEvents($company, $fetch))
+            ->concat($this->inboxMessageEvents($company, $fetch))
             ->sortByDesc(fn (array $item) => $item['at']?->timestamp ?? 0)
+            ->take($limit)
             ->values()
             ->all();
     }
@@ -72,7 +48,7 @@ class CompanyDashboardActivityService
     /**
      * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
      */
-    private function inboxMessageEvents(User $company): Collection
+    private function inboxMessageEvents(User $company, int $limit): Collection
     {
         $excluded = $this->messaging->directHireConversationIdsFor($company);
 
@@ -84,6 +60,7 @@ class CompanyDashboardActivityService
             })
             ->with(['conversation.talent.profile', 'sender'])
             ->latest()
+            ->limit($limit)
             ->get()
             ->map(function (Message $message) use ($company) {
                 $conversation = $message->conversation;
@@ -108,13 +85,14 @@ class CompanyDashboardActivityService
     /**
      * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
      */
-    private function directHireEvents(User $company): Collection
+    private function directHireEvents(User $company, int $limit): Collection
     {
         $events = collect();
 
         $requests = $this->directHires->queryForCompany($company)
             ->with(['talent'])
             ->latest('updated_at')
+            ->limit($limit)
             ->get();
 
         foreach ($requests as $request) {
@@ -191,6 +169,7 @@ class CompanyDashboardActivityService
             })
             ->with(['request.talent'])
             ->latest()
+            ->limit($limit)
             ->get();
 
         foreach ($messageQuery as $message) {
@@ -219,7 +198,7 @@ class CompanyDashboardActivityService
     /**
      * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
      */
-    private function roundEvents(User $company): Collection
+    private function roundEvents(User $company, int $limit): Collection
     {
         $events = collect();
 
@@ -229,6 +208,7 @@ class CompanyDashboardActivityService
             })
             ->with(['request.talent'])
             ->latest('updated_at')
+            ->limit($limit)
             ->get();
 
         foreach ($rounds as $round) {
@@ -290,7 +270,7 @@ class CompanyDashboardActivityService
     /**
      * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
      */
-    private function recruitmentEvents(User $company): Collection
+    private function recruitmentEvents(User $company, int $limit): Collection
     {
         $teamActor = __('talenma.dashboard.company.activity.team_actor');
 
@@ -298,6 +278,7 @@ class CompanyDashboardActivityService
             ->whereHas('request', fn ($query) => $query->where('company_user_id', $company->id))
             ->with(['request.talent'])
             ->latest('created_at')
+            ->limit($limit)
             ->get()
             ->map(function (RecruitmentRequestStatusEvent $event) use ($teamActor) {
                 $request = $event->request;
@@ -351,6 +332,7 @@ class CompanyDashboardActivityService
             ->whereHas('request', fn ($query) => $query->where('company_user_id', $company->id))
             ->with(['request.talent', 'sender'])
             ->latest()
+            ->limit($limit)
             ->get()
             ->map(function (RecruitmentRequestMessage $message) use ($company, $teamActor) {
                 $request = $message->request;
@@ -384,7 +366,7 @@ class CompanyDashboardActivityService
     /**
      * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
      */
-    private function talentUnlockEvents(User $company): Collection
+    private function talentUnlockEvents(User $company, int $limit): Collection
     {
         $events = collect();
 
@@ -397,6 +379,7 @@ class CompanyDashboardActivityService
             ->whereNotNull('talent_unlocked_at')
             ->with('talent')
             ->latest('talent_unlocked_at')
+            ->limit($limit)
             ->get()
             ->each(function (RecruitmentRequest $request) use ($events) {
                 $events->push($this->activityItem(
@@ -417,6 +400,7 @@ class CompanyDashboardActivityService
             ->whereNotNull('talent_unlocked_at')
             ->with('talent')
             ->latest('talent_unlocked_at')
+            ->limit($limit)
             ->get()
             ->each(function (DirectHireRequest $request) use ($events) {
                 $events->push($this->activityItem(
@@ -437,7 +421,7 @@ class CompanyDashboardActivityService
     /**
      * @return Collection<int, array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface, self?: bool}>
      */
-    private function jobPostingActivityEvents(User $company): Collection
+    private function jobPostingActivityEvents(User $company, int $limit): Collection
     {
         $org = $company->companyOrganization();
 
@@ -469,6 +453,7 @@ class CompanyDashboardActivityService
                     ->orWhere('event', JobPostingActivityEvent::EVENT_APPLICATION_STATUS);
             })
             ->latest('created_at')
+            ->limit($limit)
             ->get()
             ->map(function (JobPostingActivityEvent $event) {
                 $type = match ($event->event) {
