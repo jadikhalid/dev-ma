@@ -28,6 +28,37 @@ class ManagedProfileEditTest extends TestCase
             ->assertSee(__('talenma.admin.users.edit_profile_title'), false);
     }
 
+    public function test_admin_can_update_talent_first_and_last_name(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $talent = User::factory()->talent()->create([
+            'first_name' => 'Amina',
+            'last_name' => 'Benali',
+            'name' => 'Amina Benali',
+        ]);
+        Profile::factory()->create(['user_id' => $talent->id]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.profile.edit', $talent))
+            ->assertOk()
+            ->assertSee('name="first_name"', false)
+            ->assertSee('name="last_name"', false);
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.users.profile.update', $talent), [
+                'section' => 'identity',
+                'first_name' => 'Sara',
+                'last_name' => 'El Amrani',
+            ])
+            ->assertOk()
+            ->assertJson(['reload' => true]);
+
+        $fresh = $talent->fresh();
+        $this->assertSame('Sara', $fresh->first_name);
+        $this->assertSame('El Amrani', $fresh->last_name);
+        $this->assertSame('Sara El Amrani', $fresh->name);
+    }
+
     public function test_admin_can_update_talent_profile_section(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);

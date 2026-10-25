@@ -34,6 +34,9 @@
             @if ($profileKind === 'company')
                 @include('company.partials.fiche-content')
             @else
+                @include('admin.users._talent-identity-form', [
+                    'user' => $targetUser,
+                ])
                 @include('admin.users._talent-avatar-form', [
                     'user' => $targetUser,
                     'avatarUpdateUrl' => $avatarUpdateUrl,
