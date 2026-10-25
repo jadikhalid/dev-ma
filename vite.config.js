@@ -8,4 +8,10 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        // Prefer IPv4 so local pages on 127.0.0.1 can load Vite assets reliably.
+        host: '127.0.0.1',
+        port: 5173,
+        strictPort: true,
+    },
 });

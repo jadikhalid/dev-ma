@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureUserIsNotDisabled::class,
             \App\Http\Middleware\EnsureValidModeratorMode::class,
             \App\Http\Middleware\PreventAuthPageCache::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
         $middleware->alias([

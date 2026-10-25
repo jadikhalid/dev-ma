@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AvatarService
@@ -24,18 +25,17 @@ class AvatarService
             Storage::disk('public')->delete($user->avatar_path);
         }
 
-        $path = 'avatars/'.$user->id.'.'.$extension;
+        $path = $this->uniquePublicPath('avatars', $extension);
         Storage::disk('public')->put($path, $contents);
 
-        // Path often stays identical on replace (avatars/{id}.jpg). Force a timestamp
-        // bump so avatarUrl() ?v= cache-busts the browser.
+        // New random path on each upload; touch still busts any residual caches.
         $user->forceFill(['avatar_path' => $path])->save();
         $user->touch();
 
         return $path;
     }
 
-    public function storeAt(UploadedFile $file, string $basename, ?string $oldPath = null): string
+    public function storeAt(UploadedFile $file, string $directory, ?string $oldPath = null): string
     {
         $this->validateUpload($file);
 
@@ -45,7 +45,7 @@ class AvatarService
             Storage::disk('public')->delete($oldPath);
         }
 
-        $path = $basename.'.'.$extension;
+        $path = $this->uniquePublicPath($directory, $extension);
         Storage::disk('public')->put($path, $contents);
 
         return $path;
@@ -181,5 +181,18 @@ class AvatarService
             'image/webp' => 'webp',
             default => 'jpg',
         };
+    }
+
+    private function uniquePublicPath(string $directory, string $extension): string
+    {
+        $directory = trim($directory, '/');
+        $extension = ltrim(strtolower($extension), '.');
+        $disk = Storage::disk('public');
+
+        do {
+            $path = $directory.'/'.Str::lower(Str::random(40)).'.'.$extension;
+        } while ($disk->exists($path));
+
+        return $path;
     }
 }

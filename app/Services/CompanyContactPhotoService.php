@@ -15,7 +15,7 @@ class CompanyContactPhotoService
         try {
             $path = $this->images->storeAt(
                 $file,
-                'company-contacts/'.$profile->id,
+                'company-contacts',
                 $profile->representative_photo_path,
             );
         } catch (ValidationException $exception) {

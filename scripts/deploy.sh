@@ -90,6 +90,9 @@ fi
 echo "→ migrations"
 $PHP_BIN artisan migrate --force
 
+echo "→ obscure sequential public media paths (avatars / logos)"
+$PHP_BIN artisan media:obscure-public-paths
+
 echo "→ seed (référence prod : services, métiers — publications sociales inchangées si déjà présentes)"
 $PHP_BIN artisan db:seed --force --class=ProductionDataSeeder
 

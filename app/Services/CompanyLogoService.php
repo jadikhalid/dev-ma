@@ -15,7 +15,7 @@ class CompanyLogoService
         try {
             $path = $this->images->storeAt(
                 $file,
-                'company-logos/'.$profile->id,
+                'company-logos',
                 $profile->logo_path,
             );
         } catch (ValidationException $exception) {

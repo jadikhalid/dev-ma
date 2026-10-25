@@ -161,11 +161,11 @@ class CompanyProfileTest extends TestCase
     public function test_company_logo_url_prefers_account_avatar(): void
     {
         $user = $this->approvedCompany(['logo_path' => 'company-logos/old.jpg']);
-        $user->update(['avatar_path' => 'avatars/'.$user->id.'.jpg']);
+        $user->update(['avatar_path' => 'avatars/opaque-token-for-logo-test.jpg']);
 
         $fresh = $user->fresh();
         $this->assertSame(
-            '/storage/avatars/'.$fresh->id.'.jpg?v='.$fresh->updated_at->getTimestamp(),
+            '/storage/avatars/opaque-token-for-logo-test.jpg?v='.$fresh->updated_at->getTimestamp(),
             $fresh->companyProfile->logoUrl(),
         );
     }
@@ -190,7 +190,8 @@ class CompanyProfileTest extends TestCase
 
         $profile = $user->fresh()->companyProfile;
         $this->assertNotNull($profile->representative_photo_path);
-        $this->assertStringStartsWith('company-contacts/'.$profile->id, $profile->representative_photo_path);
+        $this->assertMatchesRegularExpression('#^company-contacts/[a-z0-9]{40}\.jpg$#', (string) $profile->representative_photo_path);
+        $this->assertStringNotContainsString('company-contacts/'.$profile->id, (string) $profile->representative_photo_path);
         Storage::disk('public')->assertExists($profile->representative_photo_path);
         $this->assertSame(
             '/storage/'.$profile->representative_photo_path.'?v='.$profile->updated_at->getTimestamp(),

@@ -129,7 +129,8 @@ class ProfileTest extends TestCase
         $secondUrl = $fresh->avatarUrl();
         $secondVersion = (int) $fresh->updated_at->getTimestamp();
 
-        $this->assertSame('avatars/'.$fresh->id.'.jpg', $fresh->avatar_path);
+        $this->assertMatchesRegularExpression('#^avatars/[a-z0-9]{40}\.jpg$#', (string) $fresh->avatar_path);
+        $this->assertStringNotContainsString('avatars/'.$fresh->id.'.', (string) $fresh->avatar_path);
         $this->assertGreaterThan($firstVersion, $secondVersion);
         $this->assertStringContainsString('?v='.$secondVersion, $secondUrl);
         $this->assertNotSame($firstUrl, $secondUrl);
