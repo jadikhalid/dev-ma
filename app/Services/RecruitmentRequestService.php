@@ -304,6 +304,10 @@ class RecruitmentRequestService
 
     public function companyCanRequestNamedForTalent(User $company, User $talent): bool
     {
+        if ($this->sourcingDeniedMessage($company) !== null) {
+            return false;
+        }
+
         if ($this->existingNamedRequestForCompanyTalent($company, $talent) !== null) {
             return false;
         }
@@ -319,6 +323,10 @@ class RecruitmentRequestService
 
     public function namedRequestDisabledHint(User $company, User $talent): ?string
     {
+        if ($message = $this->sourcingDeniedMessage($company)) {
+            return $message;
+        }
+
         $existing = $this->existingNamedRequestForCompanyTalent($company, $talent);
 
         if ($existing) {
@@ -337,6 +345,28 @@ class RecruitmentRequestService
 
         if ($directHires->companyHasOpenRequestWithTalent($company, $talent)) {
             return __('talenma.recruitment.named_blocked_open_direct_hire');
+        }
+
+        return null;
+    }
+
+    public function sourcingDeniedMessage(User $company): ?string
+    {
+        $org = $company->companyOrganization();
+
+        if (! $org) {
+            return __('talenma.company_offer.sourcing_not_included');
+        }
+
+        if (! $org->canUseSourcing()) {
+            return __('talenma.company_offer.sourcing_not_included');
+        }
+
+        if (! $org->canCreateSourcingRequest()) {
+            return __('talenma.company_offer.sourcing_credits_exhausted', [
+                'limit' => $org->sourcingCreditsPerYear(),
+                'year' => now()->year,
+            ]);
         }
 
         return null;

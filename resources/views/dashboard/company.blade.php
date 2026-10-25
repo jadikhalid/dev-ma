@@ -1,4 +1,4 @@
-@php
+﻿@php
     $user = Auth::user();
     $isOwner = $user->isCompanyOwner();
     $profileEditUrl = route('profile.edit', ['panel' => 'account']);
@@ -37,16 +37,6 @@
                 <a href="{{ route('company.demo') }}" class="mt-3 inline-flex text-sm font-semibold text-amber-950 underline decoration-amber-400 underline-offset-2 hover:text-amber-800">
                     {{ __('talenma.company_offer.banner_expired_cta') }} →
                 </a>
-            </div>
-        @elseif ($onTrial && $trialDays !== null)
-            <div class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4 sm:px-5 sm:py-4">
-                <p class="text-sm font-semibold text-indigo-950">{{ __('talenma.company_offer.banner_trial_title') }}</p>
-                <p class="mt-1 text-sm text-indigo-900/80">
-                    {{ __('talenma.company_offer.banner_trial_body', [
-                        'days' => $trialDays,
-                        'date' => $orgPlan->trial_ends_at->timezone(config('app.timezone'))->format('d/m/Y'),
-                    ]) }}
-                </p>
             </div>
         @endif
 
@@ -100,173 +90,36 @@
             </div>
         </div>
 
-        {{-- Activités (70%) + Services (30%) --}}
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] gap-4 lg:gap-5 items-start">
+        @php
+            $showPlanUsage = $orgPlan
+                && ! $planExpired
+                && ($onTrial || $orgPlan->hasPaidAccess());
+        @endphp
+
+        {{-- Activités (+ usage offre à droite si applicable) --}}
+        <div @class([
+            'grid grid-cols-1 gap-4 lg:gap-5 items-start',
+            'lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]' => $showPlanUsage,
+        ])>
             <section class="space-y-4 min-w-0">
                 <div class="rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4 py-3.5">
-                    <h2 class="text-sm font-bold uppercase tracking-[0.11em] text-indigo-900">{{ __('talenma.dashboard.company.section_ongoing') }}</h2>
-                </div>
-
-                <div class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                                </svg>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-bold tracking-tight text-slate-900">{{ __('talenma.dashboard.company.recent_requests') }}</p>
-                                <p class="text-xs text-slate-500">{{ __('talenma.dashboard.company.recent_requests_subtitle') }}</p>
-                            </div>
-                        </div>
-                        <a href="{{ route('sourcing.index') }}" class="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-                            {{ __('talenma.dashboard.company.sourcing_all') }}
-                        </a>
-                    </div>
-
-                    @if ($recentRequests->isEmpty())
-                        <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center">
-                            <p class="text-sm text-slate-500">{{ __('talenma.dashboard.company.ongoing_empty') }}</p>
-                        </div>
-                    @else
-                        <ul class="mt-4 space-y-2.5">
-                            @foreach ($recentRequests as $req)
-                                @php
-                                    $tone = match ($req->status) {
-                                        'pending' => 'bg-sky-50 text-sky-800 border-sky-200',
-                                        'in_progress' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                        'completed_successful', 'completed' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                                        'completed_unsuccessful', 'cancelled' => 'bg-rose-50 text-rose-800 border-rose-200',
-                                        default => 'bg-slate-100 text-slate-700 border-slate-200',
-                                    };
-                                @endphp
-                                <li>
-                                    <a
-                                        href="{{ route('sourcing.show', $req) }}"
-                                        class="group block rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200"
-                                    >
-                                        <div class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                                            <div class="min-w-0">
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <span class="text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $req->displayTitle() }}</span>
-                                                    <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $tone }}">
-                                                        {{ $req->statusLabel() }}
-                                                    </span>
-                                                </div>
-                                                <p class="mt-1 text-xs text-slate-500">
-                                                    {{ $req->updated_at?->translatedFormat('d M Y') }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-
-                <div class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
-                    {{-- Title dots: remain while ANY request still has unseen changes --}}
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                                </svg>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="inline-flex items-center gap-2 text-sm font-bold tracking-tight text-slate-900">
-                                    {{ __('talenma.dashboard.company.direct_hires') }}
-                                    @if ($directHireUnseen ?? false)
-                                        @foreach (range(1, 3) as $dot)
-                                            <span class="relative flex h-2.5 w-2.5" @if ($loop->first) title="{{ __('talenma.direct_hire.nav_new') }}" @endif>
-                                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                                <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                            </span>
-                                        @endforeach
-                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
-                                    @endif
-                                </p>
-                                <p class="text-xs text-slate-500">{{ __('talenma.dashboard.company.direct_hires_subtitle') }}</p>
-                            </div>
-                        </div>
-                        <a href="{{ route('company.direct-hire.index') }}" class="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-                            {{ __('talenma.dashboard.company.direct_hires_all') }}
-                        </a>
-                    </div>
-
-                    @if ($directHires->isEmpty())
-                        <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center">
-                            <p class="text-sm text-slate-500">{{ __('talenma.dashboard.company.direct_hires_empty') }}</p>
-                        </div>
-                    @else
-                        <ul class="mt-4 space-y-2.5">
-                            @foreach ($directHires as $hire)
-                                @php
-                                    $tone = match ($hire->statusTone()) {
-                                        'amber' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                        'violet' => 'bg-violet-50 text-violet-800 border-violet-200',
-                                        'sky' => 'bg-sky-50 text-sky-800 border-sky-200',
-                                        'emerald' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                                        'rose' => 'bg-rose-50 text-rose-800 border-rose-200',
-                                        default => 'bg-slate-100 text-slate-700 border-slate-200',
-                                    };
-                                    $latestRound = $hire->rounds->last();
-                                    $hireUnseen = $hire->hasUnseenChangesForCompany();
-                                @endphp
-                                <li>
-                                    <a href="{{ route('company.direct-hire.show', $hire) }}" class="group flex items-center gap-3 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-50/80 hover:shadow-md hover:ring-indigo-200">
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <span class="text-sm font-medium leading-snug text-slate-900 truncate group-hover:text-indigo-800">{{ $hire->shortSubject() }}</span>
-                                                <span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $tone }}">
-                                                    {{ $hire->statusLabel() }}
-                                                </span>
-                                            </div>
-                                            <p class="mt-1.5 text-xs font-medium text-slate-400">
-                                                {{ $hire->talentDisplayName() }}
-                                                · {{ $hire->created_at?->translatedFormat('d M Y') }}
-                                            </p>
-                                            @if ($latestRound)
-                                                <p class="mt-1 text-xs text-slate-600">
-                                                    {{ __('talenma.direct_hire.round_n', ['n' => $latestRound->position]) }} — {{ $latestRound->title }}
-                                                    ({{ $latestRound->statusLabel() }})
-                                                </p>
-                                            @endif
-                                        </div>
-                                        @if ($hireUnseen)
-                                            <span class="relative flex h-2.5 w-2.5 shrink-0 self-center" title="{{ __('talenma.direct_hire.nav_new') }}">
-                                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                                <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                            </span>
-                                            <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
-                                        @endif
-                                    </a>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-
-                <div class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-bold tracking-tight text-slate-900">{{ __('talenma.dashboard.company.activity.recent_title') }}</p>
-                        </div>
+                        <h2 class="text-sm font-bold tracking-tight text-indigo-900">{{ __('talenma.dashboard.company.activity.recent_title') }}</h2>
                     </div>
+                </div>
 
+                <div class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
                     @if (count($recentActivity) === 0)
-                        <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center">
+                        <div class="rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-center">
                             <p class="text-sm text-slate-500">{{ __('talenma.dashboard.company.activity.recent_empty') }}</p>
                         </div>
                     @else
-                        <ol class="activity-scroll relative mt-4 max-h-[calc(5*4.35rem+4*0.625rem)] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+                        <ol class="activity-scroll relative max-h-[calc(5*4.35rem+4*0.625rem)] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
                             @foreach ($recentActivity as $item)
                                 @php
                                     $label = match ($item['type']) {
@@ -391,45 +244,11 @@
                 </div>
             </section>
 
-            <aside class="space-y-3">
-                <div class="rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4 py-3.5">
-                    <h2 class="text-sm font-bold uppercase tracking-[0.11em] text-indigo-900">{{ __('talenma.dashboard.company.section_services') }}</h2>
-                </div>
-
-                <div class="bg-white rounded-2xl border p-4 flex flex-col">
-                    <h3 class="text-sm font-bold text-gray-900">{{ __('talenma.dashboard.company.recruit_title') }}</h3>
-                    <p class="mt-1.5 text-xs text-gray-600 leading-relaxed flex-1">{{ __('talenma.dashboard.company.recruit_desc') }}</p>
-                    <div class="mt-3 flex flex-col gap-2">
-                        <a
-                            href="{{ route('company.search') }}"
-                            class="group relative inline-flex items-center justify-center gap-2 overflow-hidden px-3 py-2.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-md shadow-indigo-600/30 ring-2 ring-indigo-300 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/40 transition"
-                        >
-                            <span class="absolute inset-0 animate-pulse bg-white/10" aria-hidden="true"></span>
-                            <span class="relative">{{ __('talenma.dashboard.company.browse') }}</span>
-                            <svg class="relative h-3.5 w-3.5 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-2xl border p-4 flex flex-col">
-                    <h3 class="text-sm font-bold text-gray-900">{{ __('talenma.dashboard.company.jobs_title') }}</h3>
-                    <p class="mt-1.5 text-xs text-gray-600 leading-relaxed flex-1">{{ __('talenma.dashboard.company.jobs_desc') }}</p>
-                    <div class="mt-3 flex flex-col gap-2">
-                        <a
-                            href="{{ route('company.jobs.index') }}"
-                            class="group relative inline-flex items-center justify-center gap-2 overflow-hidden px-3 py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-md shadow-emerald-600/30 ring-2 ring-emerald-300 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/40 transition"
-                        >
-                            <span class="absolute inset-0 animate-pulse bg-white/10" aria-hidden="true"></span>
-                            <span class="relative">{{ __('talenma.dashboard.company.jobs_manage') }}</span>
-                            <svg class="relative h-3.5 w-3.5 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </aside>
+            @if ($showPlanUsage)
+                <aside class="min-w-0">
+                    @include('dashboard.partials.company-plan-usage', ['orgPlan' => $orgPlan])
+                </aside>
+            @endif
         </div>
     </div>
 </x-app-layout>

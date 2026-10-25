@@ -55,7 +55,7 @@ return [
     | Version des conditions d’essai entreprise acceptées sur le formulaire.
     | Incrémenter si le texte affiché change de façon matérielle.
     */
-    'trial_terms_version' => '2026-10-22-5',
+    'trial_terms_version' => '2026-10-25-1',
 
     /*
     | Hôtes publics (une seule app Laravel, routage par hostname).

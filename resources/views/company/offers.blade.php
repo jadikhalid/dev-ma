@@ -43,9 +43,9 @@
         ['row' => 'applications', 'trial' => 'yes', 'essential' => 'yes', 'pro' => 'yes'],
         ['row' => 'catalogue', 'trial' => 'yes', 'essential' => 'yes', 'pro' => 'yes'],
         ['row' => 'direct_hire', 'trial' => 'yes', 'essential' => 'yes', 'pro' => 'yes'],
-        ['row' => 'sourcing', 'trial' => 'sourcing_pro', 'essential' => 'no', 'pro' => 'sourcing_pro'],
-        ['row' => 'brand', 'trial' => 'yes', 'essential' => 'no', 'pro' => 'yes'],
-        ['row' => 'support', 'trial' => 'support_prio', 'essential' => 'support_std', 'pro' => 'support_prio'],
+        ['row' => 'sourcing', 'trial' => 'no', 'essential' => 'no', 'pro' => 'sourcing_pro'],
+        ['row' => 'brand', 'trial' => 'no', 'essential' => 'no', 'pro' => 'yes'],
+        ['row' => 'support', 'trial' => 'support_std', 'essential' => 'support_std', 'pro' => 'support_prio'],
     ];
 @endphp
 

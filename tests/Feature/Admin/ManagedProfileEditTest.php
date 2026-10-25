@@ -8,6 +8,8 @@ use App\Models\Profile;
 use App\Models\User;
 use App\Services\ModeratorAssignmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ManagedProfileEditTest extends TestCase
@@ -67,6 +69,89 @@ class ManagedProfileEditTest extends TestCase
             ->assertRedirect(route('admin.users.profile.edit', $company));
 
         $this->assertStringContainsString('Updated company', $company->fresh()->companyProfile->description);
+    }
+
+    public function test_admin_company_editor_shows_banner_form(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $company = User::factory()->companyOwner()->create(['name' => 'Acme SAS']);
+        CompanyProfile::factory()->create(['user_id' => $company->id]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.profile.edit', $company))
+            ->assertOk()
+            ->assertSee(__('talenma.company.section_banner'), false)
+            ->assertSee('data-company-banner-form', false);
+    }
+
+    public function test_admin_can_upload_replace_and_remove_company_banner(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $company = User::factory()->companyOwner()->create(['name' => 'Acme SAS']);
+        CompanyProfile::factory()->create([
+            'user_id' => $company->id,
+            'plan' => CompanyProfile::PLAN_PRO,
+            'is_subscribed' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.users.profile.update', $company), [
+                'section' => 'banner',
+                'banner' => UploadedFile::fake()->image('banner.jpg', 2400, 600),
+            ])
+            ->assertOk()
+            ->assertJson(['reload' => true]);
+
+        $profile = $company->fresh()->companyProfile;
+        $firstPath = $profile->banner_path;
+        $this->assertNotNull($firstPath);
+        Storage::disk('public')->assertExists($firstPath);
+        [$width] = getimagesizefromstring(Storage::disk('public')->get($firstPath));
+        $this->assertSame(2000, $width);
+
+        $this->get(route('companies.public.show', $company))
+            ->assertOk()
+            ->assertSee('data-company-banner', false);
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.users.profile.update', $company), [
+                'section' => 'banner',
+                'banner' => UploadedFile::fake()->image('banner2.png', 1600, 400),
+            ])
+            ->assertOk();
+
+        $secondPath = $company->fresh()->companyProfile->banner_path;
+        $this->assertNotSame($firstPath, $secondPath);
+        Storage::disk('public')->assertMissing($firstPath);
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.users.profile.update', $company), [
+                'section' => 'banner',
+                'remove_banner' => '1',
+            ])
+            ->assertOk();
+
+        $this->assertNull($company->fresh()->companyProfile->banner_path);
+        Storage::disk('public')->assertMissing($secondPath);
+    }
+
+    public function test_admin_banner_upload_rejects_non_images(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $company = User::factory()->companyOwner()->create(['name' => 'Acme SAS']);
+        CompanyProfile::factory()->create(['user_id' => $company->id]);
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.users.profile.update', $company), [
+                'section' => 'banner',
+                'banner' => UploadedFile::fake()->create('banner.pdf', 100, 'application/pdf'),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('banner');
+
+        $this->assertNull($company->fresh()->companyProfile->banner_path);
     }
 
     public function test_moderator_with_profiles_edit_can_access_editor(): void

@@ -23,12 +23,15 @@
     <div x-data="companyPageTabs()">
     {{-- Bannière + identité --}}
     <section class="relative bg-white">
+        @php
+            $showEnrichedBanner = $profile->canUseEnrichedBrand() && $profile->bannerUrl();
+        @endphp
         <div @class([
             'relative overflow-hidden bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-500',
-            'h-48 sm:h-[300px] lg:h-[450px]' => $profile->bannerUrl(),
-            'h-40 sm:h-64' => ! $profile->bannerUrl(),
+            'h-48 sm:h-[300px] lg:h-[450px]' => $showEnrichedBanner,
+            'h-40 sm:h-64' => ! $showEnrichedBanner,
         ])>
-            @if ($profile->bannerUrl())
+            @if ($showEnrichedBanner)
                 <img src="{{ $profile->bannerUrl() }}" alt="" aria-hidden="true" class="absolute inset-0 h-full w-full object-cover object-center" data-company-banner>
             @else
                 <div class="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:22px_22px]" aria-hidden="true"></div>

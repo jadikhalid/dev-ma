@@ -38,6 +38,10 @@ class CompanyProfileController extends Controller
             return redirect()->route('dashboard');
         }
 
+        if ($request->input('section') === 'banner') {
+            return $this->bannerForbiddenResponse($request);
+        }
+
         $profile = $user->companyProfile()->firstOrCreate(['user_id' => $user->id]);
 
         return $this->updateForProfile($request, $profile);
@@ -48,6 +52,10 @@ class CompanyProfileController extends Controller
         $section = $request->validate([
             'section' => ['required', 'string', Rule::in(self::SECTIONS)],
         ])['section'];
+
+        if ($section === 'banner' && ! Auth::user()?->isStaff()) {
+            return $this->bannerForbiddenResponse($request);
+        }
 
         $data = $request->validate($this->rulesForSection($section), [
             'banner.image' => __('talenma.company.banner_invalid_type'),
@@ -201,5 +209,18 @@ class CompanyProfileController extends Controller
             '51-200' => '51-200',
             '200+' => '200+',
         ];
+    }
+
+    private function bannerForbiddenResponse(Request $request): RedirectResponse|JsonResponse
+    {
+        $message = __('talenma.company.banner_staff_only');
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message], 403);
+        }
+
+        return redirect()
+            ->back()
+            ->with('toast_error', $message);
     }
 }

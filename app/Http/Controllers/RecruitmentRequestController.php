@@ -126,6 +126,12 @@ class RecruitmentRequestController extends Controller
                 ->with('toast_error', __('talenma.company_offer.plan_required'));
         }
 
+        if ($denied = $this->recruitmentRequests->sourcingDeniedMessage($request->user())) {
+            return redirect()
+                ->route('sourcing.index')
+                ->with('toast_error', $denied);
+        }
+
         if ($talent) {
             abort_unless($talent->isTalent() && $talent->approval_status === 'approved', 404);
 
@@ -165,6 +171,16 @@ class RecruitmentRequestController extends Controller
             return redirect()
                 ->route('dashboard')
                 ->with('toast_error', __('talenma.company_offer.plan_required'));
+        }
+
+        if ($denied = $this->recruitmentRequests->sourcingDeniedMessage($request->user())) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $denied], 403);
+            }
+
+            return redirect()
+                ->route('sourcing.index')
+                ->with('toast_error', $denied);
         }
 
         $data = $request->validate([

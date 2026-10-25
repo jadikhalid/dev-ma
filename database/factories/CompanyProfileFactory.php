@@ -34,6 +34,7 @@ class CompanyProfileFactory extends Factory
             'is_subscribed' => false,
             'subscription_expires_at' => null,
             'trial_ends_at' => $endsAt ?? now()->addMonths(CompanyProfile::TRIAL_MONTHS),
+            'plan' => CompanyProfile::PLAN_TRIAL,
         ]);
     }
 
@@ -43,6 +44,7 @@ class CompanyProfileFactory extends Factory
             'is_subscribed' => false,
             'subscription_expires_at' => now()->subDay(),
             'trial_ends_at' => now()->subDay(),
+            'plan' => null,
         ]);
     }
 }

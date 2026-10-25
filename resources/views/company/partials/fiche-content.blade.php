@@ -8,7 +8,8 @@
     </div>
 @endif
 
-{{-- Bannière de la page publique --}}
+{{-- Bannière publique : réservée à l’admin / modérateur (édition fiche gérée) --}}
+@if (! empty($isAdminProfileEdit))
 <form
     id="company-banner-card"
     method="POST"
@@ -86,6 +87,7 @@
         <x-primary-button class="justify-center">{{ __('talenma.company.save_section') }}</x-primary-button>
     </div>
 </form>
+@endif
 
 {{-- Section A : Identité --}}
 <form

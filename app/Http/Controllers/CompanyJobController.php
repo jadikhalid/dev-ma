@@ -252,6 +252,24 @@ class CompanyJobController extends Controller
             return $response;
         }
 
+        if (! $job->isPublished()) {
+            $org = $request->user()->companyOrganization();
+
+            if ($org && ! $org->canPublishAnotherJob()) {
+                $message = __('talenma.jobs.active_limit_reached', [
+                    'limit' => $org->activeJobLimit(),
+                ]);
+
+                if ($request->expectsJson() || $request->wantsJson()) {
+                    return response()->json(['message' => $message], 422);
+                }
+
+                return redirect()
+                    ->route('company.jobs.show', $job)
+                    ->with('toast_error', $message);
+            }
+        }
+
         $job->update([
             'status' => JobPosting::STATUS_PUBLISHED,
             'published_at' => $job->published_at ?? now(),

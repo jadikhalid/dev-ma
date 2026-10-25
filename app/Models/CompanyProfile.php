@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'is_subscribed',
     'subscription_expires_at',
     'trial_ends_at',
+    'plan',
 ])]
 class CompanyProfile extends Model
 {
@@ -34,11 +35,21 @@ class CompanyProfile extends Model
 
     public const TRIAL_MONTHS = 3;
 
+    public const PLAN_TRIAL = 'trial';
+
+    public const PLAN_ESSENTIAL = 'essential';
+
+    public const PLAN_PRO = 'pro';
+
+    public const PLAN_CUSTOM = 'custom';
+
     /** Entry paid plan (Essentiel), euros HT per year. */
     public const PLAN_PRICE_FROM_EUR = 1490;
 
     /** Pro plan, euros HT per year. */
     public const PLAN_PRO_PRICE_EUR = 2990;
+
+    public const SOURCING_CREDITS_PER_YEAR = 5;
 
     /**
      * Accès actif par défaut (tests, seeders, entreprises déjà en place).
@@ -121,7 +132,106 @@ class CompanyProfile extends Model
             'is_subscribed' => false,
             'subscription_expires_at' => null,
             'trial_ends_at' => $start->copy()->addMonths(self::TRIAL_MONTHS),
+            'plan' => self::PLAN_TRIAL,
         ])->save();
+    }
+
+    /**
+     * Commercial offer for limit checks. Paid companies without a plan default to Pro.
+     */
+    public function commercialPlan(): string
+    {
+        if (filled($this->plan)) {
+            return (string) $this->plan;
+        }
+
+        if ($this->isOnTrial()) {
+            return self::PLAN_TRIAL;
+        }
+
+        if ($this->hasPaidAccess()) {
+            return self::PLAN_PRO;
+        }
+
+        return self::PLAN_ESSENTIAL;
+    }
+
+    public function activeJobLimit(): int
+    {
+        return match ($this->commercialPlan()) {
+            self::PLAN_ESSENTIAL => 1,
+            self::PLAN_TRIAL, self::PLAN_PRO, self::PLAN_CUSTOM => 5,
+            default => 1,
+        };
+    }
+
+    public function canUseSourcing(): bool
+    {
+        return in_array($this->commercialPlan(), [self::PLAN_PRO, self::PLAN_CUSTOM], true);
+    }
+
+    public function sourcingCreditsPerYear(): int
+    {
+        return $this->canUseSourcing() ? self::SOURCING_CREDITS_PER_YEAR : 0;
+    }
+
+    public function canUseEnrichedBrand(): bool
+    {
+        return in_array($this->commercialPlan(), [self::PLAN_PRO, self::PLAN_CUSTOM], true);
+    }
+
+    public function publishedJobsCount(): int
+    {
+        return $this->jobPostings()
+            ->where('status', JobPosting::STATUS_PUBLISHED)
+            ->count();
+    }
+
+    public function canPublishAnotherJob(): bool
+    {
+        return $this->publishedJobsCount() < $this->activeJobLimit();
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function teamUserIds(): array
+    {
+        $ids = [];
+
+        if (filled($this->user_id)) {
+            $ids[] = (int) $this->user_id;
+        }
+
+        foreach ($this->memberships()->pluck('user_id') as $memberId) {
+            $ids[] = (int) $memberId;
+        }
+
+        return array_values(array_unique(array_filter($ids)));
+    }
+
+    public function sourcingCreditsUsedThisYear(?int $year = null): int
+    {
+        $year ??= (int) now()->year;
+        $teamIds = $this->teamUserIds();
+
+        if ($teamIds === []) {
+            return 0;
+        }
+
+        return RecruitmentRequest::query()
+            ->whereIn('company_user_id', $teamIds)
+            ->whereYear('created_at', $year)
+            ->count();
+    }
+
+    public function canCreateSourcingRequest(): bool
+    {
+        if (! $this->canUseSourcing()) {
+            return false;
+        }
+
+        return $this->sourcingCreditsUsedThisYear() < $this->sourcingCreditsPerYear();
     }
 
     public function professionSector(): BelongsTo

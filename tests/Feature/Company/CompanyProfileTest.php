@@ -66,6 +66,8 @@ class CompanyProfileTest extends TestCase
         $response->assertOk();
         $response->assertSee(__('talenma.company.section_identity'), false);
         $response->assertDontSee(__('talenma.company.section_contact'), false);
+        $response->assertDontSee(__('talenma.company.section_banner'), false);
+        $response->assertDontSee('data-company-banner-form', false);
     }
 
     public function test_pending_company_cannot_access_profile(): void
@@ -103,7 +105,7 @@ class CompanyProfileTest extends TestCase
         $this->assertSame('fr', $profile->country);
     }
 
-    public function test_company_can_upload_replace_and_remove_banner(): void
+    public function test_company_cannot_upload_or_remove_banner(): void
     {
         Storage::fake('public');
         $user = $this->approvedCompany();
@@ -113,56 +115,21 @@ class CompanyProfileTest extends TestCase
                 'section' => 'banner',
                 'banner' => UploadedFile::fake()->image('banner.jpg', 2400, 600),
             ])
-            ->assertOk()
-            ->assertJson(['reload' => true]);
+            ->assertForbidden()
+            ->assertJson(['message' => __('talenma.company.banner_staff_only')]);
 
-        $profile = $user->fresh()->companyProfile;
-        $firstPath = $profile->banner_path;
-        $this->assertNotNull($firstPath);
-        Storage::disk('public')->assertExists($firstPath);
-        [$width] = getimagesizefromstring(Storage::disk('public')->get($firstPath));
-        $this->assertSame(2000, $width);
+        $this->assertNull($user->fresh()->companyProfile->banner_path);
 
-        $this->get(route('companies.public.show', $user))
-            ->assertOk()
-            ->assertSee('data-company-banner', false);
-
-        $this->actingAs($user)
-            ->postJson(route('company.profile.update'), [
-                'section' => 'banner',
-                'banner' => UploadedFile::fake()->image('banner2.png', 1600, 400),
-            ])
-            ->assertOk();
-
-        $secondPath = $user->fresh()->companyProfile->banner_path;
-        $this->assertNotSame($firstPath, $secondPath);
-        Storage::disk('public')->assertMissing($firstPath);
+        $user->companyProfile->update(['banner_path' => 'company-banners/existing.jpg']);
 
         $this->actingAs($user)
             ->postJson(route('company.profile.update'), [
                 'section' => 'banner',
                 'remove_banner' => '1',
             ])
-            ->assertOk();
+            ->assertForbidden();
 
-        $this->assertNull($user->fresh()->companyProfile->banner_path);
-        Storage::disk('public')->assertMissing($secondPath);
-    }
-
-    public function test_banner_upload_rejects_non_images(): void
-    {
-        Storage::fake('public');
-        $user = $this->approvedCompany();
-
-        $this->actingAs($user)
-            ->postJson(route('company.profile.update'), [
-                'section' => 'banner',
-                'banner' => UploadedFile::fake()->create('banner.pdf', 100, 'application/pdf'),
-            ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('banner');
-
-        $this->assertNull($user->fresh()->companyProfile->banner_path);
+        $this->assertSame('company-banners/existing.jpg', $user->fresh()->companyProfile->banner_path);
     }
 
     public function test_company_can_update_identity_section_via_ajax(): void
