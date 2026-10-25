@@ -99,7 +99,7 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get();
             $directHireUnseen = $this->directHires->companyHasUnseenChanges($user);
-            $recentActivity = $this->companyActivity->recentActivity($user);
+            $recentActivity = $this->companyActivity->recentActivity($user, 15);
             $this->activityToasts->flashUnseen($user, $recentActivity, 'company');
 
             return view('dashboard.company', compact(

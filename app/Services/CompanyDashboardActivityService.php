@@ -25,7 +25,7 @@ class CompanyDashboardActivityService
     /**
      * @return list<array{type: string, actor: string, detail: ?string, subject: ?string, result: ?string, href: ?string, at: CarbonInterface}>
      */
-    public function recentActivity(User $company, int $limit = 10): array
+    public function recentActivity(User $company, int $limit = 15): array
     {
         if (! $company->isCompany()) {
             return [];

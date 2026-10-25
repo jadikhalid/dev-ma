@@ -21,7 +21,7 @@
     ];
 @endphp
 
-<aside class="order-2 min-w-0 space-y-3 lg:order-none" data-company-org-column>
+<aside class="min-w-0 space-y-3" data-company-org-column>
     <div class="rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4 py-3.5">
         <div class="flex items-center gap-2.5 min-w-0">
             <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">

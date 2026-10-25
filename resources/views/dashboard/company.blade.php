@@ -95,15 +95,17 @@
         @endphp
 
         {{-- Activités (+ usage offre à droite si applicable) --}}
-        <div @class([
-            'grid grid-cols-1 gap-4 lg:gap-5 items-start',
-            'lg:grid-cols-[minmax(0,25fr)_minmax(0,50fr)_minmax(0,25fr)]' => $showPlanUsage,
-            'lg:grid-cols-[minmax(0,25fr)_minmax(0,75fr)]' => ! $showPlanUsage,
-        ])>
-            @include('dashboard.partials.company-org-column', [
-                'profile' => $profile,
-                'canEditOrg' => $user->canManageCompanyProfile(),
-            ])
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,25fr)_minmax(0,50fr)_minmax(0,25fr)] lg:gap-5 items-start">
+            <div class="order-2 min-w-0 space-y-4 lg:order-none">
+                @if ($showPlanUsage)
+                    @include('dashboard.partials.company-plan-usage', ['orgPlan' => $orgPlan])
+                @endif
+
+                @include('dashboard.partials.company-org-column', [
+                    'profile' => $profile,
+                    'canEditOrg' => $user->canManageCompanyProfile(),
+                ])
+            </div>
 
             <section class="order-1 min-w-0 space-y-4 lg:order-none">
                 <div class="rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4 py-3.5">
@@ -123,7 +125,7 @@
                             <p class="text-sm text-slate-500">{{ __('talenma.dashboard.company.activity.recent_empty') }}</p>
                         </div>
                     @else
-                        <ol class="activity-scroll relative max-h-[calc(5*4.35rem+4*0.625rem)] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+                        <ol class="activity-scroll relative max-h-[calc((5*4.35rem+4*0.625rem)*1.5)] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
                             @foreach ($recentActivity as $item)
                                 @php
                                     $label = match ($item['type']) {
@@ -248,11 +250,11 @@
                 </div>
             </section>
 
-            @if ($showPlanUsage)
-                <aside class="order-3 min-w-0 lg:order-none">
-                    @include('dashboard.partials.company-plan-usage', ['orgPlan' => $orgPlan])
-                </aside>
-            @endif
+            @include('dashboard.partials.company-actions-column', [
+                'recentRequests' => $recentRequests,
+                'directHires' => $directHires,
+                'directHireUnseen' => $directHireUnseen,
+            ])
         </div>
     </div>
 </x-app-layout>
