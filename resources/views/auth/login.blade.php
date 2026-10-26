@@ -13,6 +13,15 @@
         <div class="flex flex-col h-full min-h-0">
             <x-auth-session-status class="mb-4 shrink-0" :status="session('status')" />
             <form method="POST" action="{{ route('login') }}" class="flex flex-col flex-1 min-h-0">@csrf
+                @if (empty($companyPortal))
+                    <x-google-auth-button />
+                    <p class="mt-3 text-center text-xs leading-relaxed text-gray-500">
+                        {!! __('talenma.auth.google_login_notice', [
+                            'policy' => '<a href="'.e(route('privacy')).'" class="font-semibold text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800">'.e(__('talenma.auth.privacy_policy')).'</a>',
+                        ]) !!}
+                    </p>
+                    <p class="my-4 text-center text-xs font-medium uppercase tracking-wide text-gray-400">{{ __('talenma.auth.google_or') }}</p>
+                @endif
                 <div>
                     <x-input-label for="email" :value="__('talenma.auth.email')" class="!text-base sm:!text-sm" />
                     <x-text-input

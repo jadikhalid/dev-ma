@@ -19,6 +19,7 @@ use Illuminate\Notifications\Notifiable;
     'first_name',
     'last_name',
     'email',
+    'google_id',
     'pending_email',
     'pending_email_token',
     'pending_email_expires_at',

@@ -166,7 +166,7 @@
             </div>
         </div>
 
-        <div class="shrink-0 pt-3 mt-3 border-t border-gray-100 w-full">
+        <div class="shrink-0 pt-3 mt-3 border-t border-gray-100 w-full space-y-3">
             <button
                 type="submit"
                 x-show="showSubmit"
@@ -191,7 +191,9 @@
                     <span class="text-base sm:text-sm font-semibold text-white">{{ __('talenma.auth.register_submitting') }}</span>
                 </span>
             </button>
+            <p x-show="showSubmit" x-cloak class="text-center text-xs font-medium uppercase tracking-wide text-gray-400">{{ __('talenma.auth.google_or') }}</p>
+            <x-google-auth-button :label="__('talenma.auth.google_register')" x-show="showSubmit" x-cloak @click="continueWithGoogle($event)" />
         </div>
 
-        <p class="shrink-0 mt-2 text-center text-base sm:text-sm text-gray-600">{{ __('talenma.auth.has_account') }} <a href="{{ route('login') }}" class="text-indigo-600 font-medium">{{ __('talenma.auth.login_btn') }}</a></p>
+        <p class="shrink-0 mt-6 text-center text-base sm:text-sm text-gray-600">{{ __('talenma.auth.has_account') }} <a href="{{ route('login') }}" class="text-indigo-600 font-medium">{{ __('talenma.auth.login_btn') }}</a></p>
     </form>

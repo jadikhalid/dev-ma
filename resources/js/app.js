@@ -2794,6 +2794,15 @@ Alpine.data('registerWizard', (config) => ({
         }
     },
 
+    continueWithGoogle(event) {
+        const message = this.validateField('data_processing_consent');
+
+        if (message) {
+            this.fieldErrors.data_processing_consent = message;
+            event.preventDefault();
+        }
+    },
+
     talentSubmitFields() {
         return [
             'first_name',

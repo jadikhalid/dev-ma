@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\CancelPendingRegistrationController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -41,6 +42,14 @@ Route::middleware('guest')->group(function () {
     Route::post('register/restart', RestartPendingRegistrationController::class)
         ->middleware('throttle:10,1')
         ->name('register.restart');
+
+    Route::get('auth/google', [GoogleAuthController::class, 'redirect'])
+        ->middleware('throttle:10,1')
+        ->name('auth.google.redirect');
+
+    Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])
+        ->middleware('throttle:10,1')
+        ->name('auth.google.callback');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
