@@ -20,13 +20,14 @@ class GoogleAuthTest extends TestCase
     {
         $this->get('/register')
             ->assertOk()
-            ->assertSee(route('auth.google.redirect'), false)
+            ->assertSee(route('auth.google.redirect', ['intent' => 'register']), false)
             ->assertSeeText(__('talenma.auth.google_register'));
 
         $this->get('/login')
             ->assertOk()
-            ->assertSee(route('auth.google.redirect'), false)
-            ->assertSee(__('talenma.auth.google_continue'), false);
+            ->assertSee(route('auth.google.redirect', ['intent' => 'login']), false)
+            ->assertSeeText(__('talenma.auth.google_login'))
+            ->assertDontSee(__('talenma.auth.google_login_unknown'), false);
     }
 
     public function test_company_host_does_not_start_google_auth(): void
@@ -43,12 +44,11 @@ class GoogleAuthTest extends TestCase
             'services.google.redirect' => 'http://localhost/auth/google/callback',
         ]);
 
-        $response = $this->get('/auth/google');
+        $response = $this->get('/auth/google?intent=login');
         $response->assertRedirect();
-        $this->assertStringContainsString(
-            'https://accounts.google.com/o/oauth2/auth',
-            (string) $response->headers->get('Location'),
-        );
+        $location = (string) $response->headers->get('Location');
+        $this->assertStringContainsString('https://accounts.google.com/o/oauth2/auth', $location);
+        $this->assertStringContainsString('prompt=select_account', $location);
     }
 
     public function test_new_google_user_becomes_a_verified_talent(): void
@@ -63,7 +63,7 @@ class GoogleAuthTest extends TestCase
             'email_verified' => true,
         ]);
 
-        $this->get('/auth/google/callback')
+        $this->googleCallback('register')
             ->assertRedirect(route('account.pending', absolute: false));
 
         $user = User::query()->where('email', 'new.talent@gmail.com')->first();
@@ -94,7 +94,7 @@ class GoogleAuthTest extends TestCase
             'name' => 'Amina Benali',
         ]);
 
-        $this->get('/auth/google/callback')
+        $this->googleCallback('register')
             ->assertRedirect(route('dashboard', absolute: false));
 
         Mail::assertSent(TalentWelcomeMail::class);
@@ -112,11 +112,27 @@ class GoogleAuthTest extends TestCase
             'email' => 'known@gmail.com',
         ]);
 
-        $this->get('/auth/google/callback')
+        $this->googleCallback('login')
             ->assertRedirect(route('dashboard', absolute: false));
 
         $this->assertAuthenticatedAs($user);
         $this->assertSame(1, User::query()->count());
+    }
+
+    public function test_login_does_not_create_a_google_account(): void
+    {
+        $this->fakeGoogleUser([
+            'id' => 'google-stranger',
+            'email' => 'stranger@gmail.com',
+            'name' => 'Inconnu',
+        ]);
+
+        $this->googleCallback('login')
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+        $this->assertSame(0, User::query()->count());
     }
 
     public function test_existing_email_is_not_linked_automatically(): void
@@ -130,8 +146,8 @@ class GoogleAuthTest extends TestCase
             'email' => 'taken@gmail.com',
         ]);
 
-        $this->get('/auth/google/callback')
-            ->assertRedirect(route('login'))
+        $this->googleCallback('register')
+            ->assertRedirect(route('register'))
             ->assertSessionHasErrors('email');
 
         $this->assertGuest();
@@ -153,8 +169,8 @@ class GoogleAuthTest extends TestCase
             'email' => 'pending@gmail.com',
         ]);
 
-        $this->get('/auth/google/callback')
-            ->assertRedirect(route('login'))
+        $this->googleCallback('register')
+            ->assertRedirect(route('register'))
             ->assertSessionHasErrors('email');
 
         $this->assertGuest();
@@ -174,10 +190,15 @@ class GoogleAuthTest extends TestCase
             'email' => 'disabled@gmail.com',
         ]);
 
-        $this->get('/auth/google/callback')
+        $this->googleCallback('login')
             ->assertRedirect(route('login'));
 
         $this->assertGuest();
+    }
+
+    private function googleCallback(string $intent)
+    {
+        return $this->withSession(['google_auth_intent' => $intent])->get('/auth/google/callback');
     }
 
     /**

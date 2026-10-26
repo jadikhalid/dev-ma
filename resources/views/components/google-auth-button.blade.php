@@ -1,7 +1,7 @@
-@props(['label' => null])
+@props(['label' => null, 'intent' => 'register'])
 
 <a
-    href="{{ route('auth.google.redirect') }}"
+    href="{{ route('auth.google.redirect', ['intent' => $intent]) }}"
     {{ $attributes->merge(['class' => 'inline-flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 sm:py-2.5 text-base sm:text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2']) }}
 >
     <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">

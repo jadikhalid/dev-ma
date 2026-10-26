@@ -20,7 +20,7 @@ class GoogleTalentAuthService
     /**
      * @throws ValidationException
      */
-    public function authenticate(SocialiteUser $googleUser): User
+    public function authenticate(SocialiteUser $googleUser, bool $create = false): User
     {
         $googleId = trim((string) $googleUser->getId());
         $email = Str::lower(trim((string) $googleUser->getEmail()));
@@ -43,6 +43,12 @@ class GoogleTalentAuthService
             $this->assertTalentCanSignIn($linked);
 
             return $linked;
+        }
+
+        if (! $create) {
+            throw ValidationException::withMessages([
+                'email' => __('talenma.auth.google_login_unknown'),
+            ]);
         }
 
         $existing = User::query()

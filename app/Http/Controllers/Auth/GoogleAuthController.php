@@ -25,7 +25,16 @@ class GoogleAuthController extends Controller
             return redirect()->route('company.offer');
         }
 
-        return $this->google()->redirect();
+        $intent = $request->query('intent') === 'register' ? 'register' : 'login';
+        $request->session()->put('google_auth_intent', $intent);
+
+        $google = $this->google();
+
+        if ($intent === 'login') {
+            $google->with(['prompt' => 'select_account']);
+        }
+
+        return $google->redirect();
     }
 
     public function callback(Request $request): RedirectResponse
@@ -34,21 +43,24 @@ class GoogleAuthController extends Controller
             return redirect()->route('company.offer');
         }
 
+        $create = $request->session()->pull('google_auth_intent') === 'register';
+        $back = $create ? 'register' : 'login';
+
         try {
-            $user = $this->googleTalentAuth->authenticate($this->google()->user());
+            $user = $this->googleTalentAuth->authenticate($this->google()->user(), $create);
         } catch (ValidationException $exception) {
             return redirect()
-                ->route('login')
+                ->route($back)
                 ->withErrors($exception->errors());
         } catch (InvalidStateException) {
             return redirect()
-                ->route('login')
+                ->route($back)
                 ->withErrors(['email' => __('talenma.auth.google_failed')]);
         } catch (Throwable $exception) {
             report($exception);
 
             return redirect()
-                ->route('login')
+                ->route($back)
                 ->withErrors(['email' => __('talenma.auth.google_failed')]);
         }
 
