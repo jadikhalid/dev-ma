@@ -38,6 +38,7 @@ use App\Http\Controllers\CvBuilderIntroController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
+use App\Http\Controllers\JadiDigitalContactController;
 use App\Http\Controllers\JobAccessGateController;
 use App\Http\Controllers\PublicCompanyController;
 use App\Http\Controllers\PublicJobController;
@@ -94,6 +95,9 @@ Route::get('/outils/apercu-cv/{template}', [MarketingCvPreviewController::class,
     ->name('marketing.cv-preview');
 Route::get('/privacy', [PrivacyController::class, 'show'])->name('privacy');
 Route::view('/jadi-digital', 'jadi-digital')->name('jadi-digital');
+Route::post('/jadi-digital/contact', [JadiDigitalContactController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('jadi-digital.contact');
 Route::get('/annonces/{job}', [PublicJobController::class, 'show'])
     ->whereNumber('job')
     ->name('jobs.public.show');
