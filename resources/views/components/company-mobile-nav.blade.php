@@ -1,8 +1,6 @@
-@props(['platformMenuItems', 'bandLinks'])
+@props(['bandLinks', 'talentSpaceUrl'])
 
 @php
-    use App\Support\PortalHost;
-
     $onOfferPage = request()->routeIs('company.offer');
     $showOfferCtas = ! auth()->user()?->isCompany();
 @endphp
@@ -63,40 +61,6 @@
                 {{ __('talenma.nav.home') }}
             </a>
 
-            <div class="rounded-xl border border-gray-200">
-                <button
-                    type="button"
-                    @click="mobilePlatform = ! mobilePlatform"
-                    :aria-expanded="mobilePlatform.toString()"
-                    aria-controls="company-mobile-platform"
-                    class="flex w-full items-center justify-between rounded-xl px-4 py-3.5 text-left text-[0.9375rem] font-semibold text-gray-950"
-                    data-company-mobile-platform-toggle
-                >
-                    {{ __('talenma.nav.our_platform') }}
-                    <svg class="h-5 w-5 shrink-0 text-indigo-600 transition-transform duration-300 ease-in-out" :class="mobilePlatform ? 'rotate-180' : 'rotate-0'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
-                </button>
-                <div id="company-mobile-platform" x-show="mobilePlatform" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="px-3 pb-3">
-                    <ul class="space-y-1.5" role="list">
-                        @foreach ($platformMenuItems as $index => $item)
-                            <li>
-                                <a
-                                    href="{{ route('company.offer') }}"
-                                    @click.prevent="mobileNav = false; $dispatch('company-platform-section', @js($item['anchor']))"
-                                    class="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-indigo-50 hover:text-indigo-700"
-                                    data-company-mobile-platform-link="{{ $item['anchor'] }}"
-                                >
-                                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $item['icon'] }}"/></svg>
-                                    </span>
-                                    <span>{{ __('talenma.company_offer.includes_'.($index + 1)) }}</span>
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
-                    <a href="{{ PortalHost::wwwRootUrl() }}" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex px-1 text-sm font-medium text-indigo-700 underline underline-offset-2">{{ __('talenma.nav.platform_menu_footer_link') }} &rarr;</a>
-                </div>
-            </div>
-
             <ul class="mt-2 space-y-2" role="list">
                 @foreach ($bandLinks as $link)
                     <li>
@@ -114,11 +78,24 @@
                         </a>
                     </li>
                 @endforeach
+                <li>
+                    <a
+                        href="{{ $talentSpaceUrl }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3.5 text-[0.9375rem] font-semibold text-gray-950 transition-colors duration-300 hover:border-indigo-300 hover:bg-indigo-50"
+                        data-company-mobile-talent-space
+                        @click="mobileNav = false"
+                    >
+                        {{ __('talenma.nav.talent_space') }}
+                        <svg class="h-4 w-4 shrink-0 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                    </a>
+                </li>
             </ul>
 
             <div class="mt-6 flex items-center justify-between px-1">
                 <span class="text-sm font-medium text-gray-600">{{ __('talenma.nav.mobile_menu_language') }}</span>
-                <x-locale-switcher />
+                <x-header-locale-menu />
             </div>
         </nav>
 
@@ -128,13 +105,13 @@
                     <button
                         type="button"
                         disabled
-                        class="inline-flex w-full cursor-not-allowed items-center justify-center rounded-md border-2 border-gray-300 bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-400"
+                        class="inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl border-[1.5px] border-gray-300 bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-400"
                         data-company-mobile-demo
                     >{{ __('talenma.nav.request_demo') }}</button>
                 @else
                     <a
                         href="{{ route('company.demo') }}"
-                        class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 bg-gray-950 px-6 py-3 text-sm font-semibold text-white transition hover:border-gray-800 hover:bg-gray-800"
+                        class="inline-flex w-full items-center justify-center rounded-xl border-[1.5px] border-gray-900 px-6 py-3 text-sm font-semibold text-gray-900 transition hover:bg-gray-50"
                         data-company-mobile-demo
                     >{{ __('talenma.nav.request_demo') }}</a>
                 @endif
@@ -142,13 +119,13 @@
                     <button
                         type="button"
                         disabled
-                        class="inline-flex w-full cursor-not-allowed items-center justify-center rounded-md border-2 border-gray-300 bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-400"
+                        class="inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-400"
                         data-company-mobile-trial
                     >{{ __('talenma.company_offer.hero_cta_trial') }}</button>
                 @else
                     <a
                         href="{{ route('company.trial') }}"
-                        class="inline-flex w-full items-center justify-center rounded-md border-2 border-gray-950 px-6 py-3 text-sm font-semibold text-gray-950 transition hover:bg-gray-950 hover:text-white"
+                        class="inline-flex w-full items-center justify-center rounded-xl bg-[linear-gradient(120deg,#2563EB_0%,#5546F0_45%,#8B5CF6_100%)] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_-12px_rgba(79,70,229,0.8)]"
                         data-company-mobile-trial
                     >{{ __('talenma.company_offer.hero_cta_trial') }}</a>
                 @endif

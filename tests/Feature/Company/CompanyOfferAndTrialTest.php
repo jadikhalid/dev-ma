@@ -119,6 +119,11 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSee('data-company-header-trial', false)
             ->assertSee('href="'.route('company.trial').'"', false)
             ->assertSee(__('talenma.company_offer.hero_cta_trial'), false)
+            ->assertSee(__('talenma.nav.companies_badge'), false)
+            ->assertSee('data-company-header-talent-space', false)
+            ->assertSee(__('talenma.nav.talent_space'), false)
+            ->assertDontSee('data-company-platform-trigger', false)
+            ->assertDontSee('data-company-platform-menu', false)
             ->assertSee(route('company.offers'), false)
             ->assertDontSee(__('talenma.nav.case_studies'), false)
             ->assertDontSee(__('talenma.nav.about'), false);
@@ -135,9 +140,11 @@ class CompanyOfferAndTrialTest extends TestCase
         $this->get(route('company.offers'))
             ->assertOk()
             ->assertSee('data-company-offers', false)
+            ->assertSee('data-company-offers-hero', false)
             ->assertSee(__('talenma.company_plans.plans.trial.name'), false)
             ->assertSee(__('talenma.company_plans.plans.essential.name'), false)
             ->assertSee(__('talenma.company_plans.plans.pro.name'), false)
+            ->assertSee(__('talenma.company_plans.plans.custom.name'), false)
             ->assertSee(__('talenma.company_plans.price_trial_label'), false)
             ->assertSee(__('talenma.company_plans.price_essential_label'), false)
             ->assertSee(__('talenma.company_plans.price_pro_label'), false)
@@ -148,6 +155,8 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertDontSee('Produit d’appel', false)
             ->assertDontSee('pour toujours', false)
             ->assertSee(__('talenma.company_plans.custom.title'), false)
+            ->assertSee(__('talenma.company_plans.ats.badge'), false)
+            ->assertSee(__('talenma.company_plans.formulas_title'), false)
             ->assertSee(route('company.demo'), false)
             ->assertSee(route('company.trial'), false)
             ->assertDontSee(route('company.offer').'#trial', false);
@@ -160,22 +169,23 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSee('data-company-mobile-nav-toggle', false)
             ->assertSee('data-company-mobile-home', false)
             ->assertSee('data-company-mobile-nav', false)
-            ->assertSee('data-company-mobile-platform-toggle', false)
+            ->assertDontSee('data-company-mobile-platform-toggle', false)
+            ->assertSee('data-company-mobile-talent-space', false)
             ->assertSee('data-company-mobile-demo', false)
             ->assertSee('data-company-mobile-trial', false);
     }
 
-    public function test_company_offer_header_platform_menu_lists_the_four_services(): void
+    public function test_company_header_links_talent_space_to_www_portal(): void
     {
-        $response = $this->get(route('company.offer'))
+        $this->get(route('company.offer'))
             ->assertOk()
-            ->assertSee('data-company-platform-trigger', false)
-            ->assertSee('data-company-platform-menu', false)
-            ->assertSee(__('talenma.nav.platform_menu_title'));
-
-        foreach (range(1, 4) as $index) {
-            $response->assertSee(__('talenma.company_offer.includes_'.$index));
-        }
+            ->assertSee('data-company-header-talent-space', false)
+            ->assertSee('href="'.e(\App\Support\PortalHost::wwwRootUrl()).'"', false)
+            ->assertSee('target="_blank"', false)
+            ->assertSee(__('talenma.nav.talent_space'), false)
+            ->assertDontSee('data-company-platform-trigger', false)
+            ->assertDontSee('data-company-platform-menu', false)
+            ->assertDontSee('data-company-mobile-platform-toggle', false);
     }
 
     public function test_company_offer_shows_a_showcase_section_for_each_platform_service(): void
@@ -190,7 +200,6 @@ class CompanyOfferAndTrialTest extends TestCase
             $response
                 ->assertSee('data-company-platform-service="'.$key.'"', false)
                 ->assertSee('id="platform-'.$key.'"', false)
-                ->assertSee('data-company-platform-link="platform-'.$key.'"', false)
                 ->assertSee(__('talenma.company_offer.services.'.$key.'.title'));
         }
     }
@@ -241,7 +250,7 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertSee('name="trial_terms"', false)
             ->assertSee(route('company.trial.terms'), false)
             ->assertSee('data-company-header-trial', false)
-            ->assertSee('border-gray-300 bg-gray-100', false)
+            ->assertSee('bg-gray-200', false)
             ->assertSee('data-company-mobile-trial', false)
             ->assertDontSee('data-company-offer-drawer="trial"', false);
     }
