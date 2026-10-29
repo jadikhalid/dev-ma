@@ -202,7 +202,10 @@
     background-size: 64px 64px;
 }
 
-/* Hero wash stays inside the home frame (80rem), same edges as the content. */
+/*
+ * Hero wash: capped to the content frame on smaller screens.
+ * On large screens it spans the full viewport (100vw), like the company portal.
+ */
 .home-hero-canvas {
     position: relative;
     width: 100%;
@@ -242,6 +245,25 @@
     height: 760px;
     background: radial-gradient(circle, rgba(56, 189, 248, 1) 0%, rgba(255, 255, 255, 0) 68%);
     opacity: 0.35;
+}
+
+@media (min-width: 1280px) {
+    .page-home .home-hero-canvas {
+        max-width: none;
+        width: 100%;
+    }
+
+    .page-home .home-hero-wash::before {
+        left: -10rem;
+        width: min(52rem, 56vw);
+        height: min(52rem, 56vw);
+    }
+
+    .page-home .home-hero-wash::after {
+        left: 55%;
+        width: min(48rem, 50vw);
+        height: min(48rem, 50vw);
+    }
 }
 
 @media (min-width: 1440px) {
