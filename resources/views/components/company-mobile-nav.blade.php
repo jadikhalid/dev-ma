@@ -5,17 +5,22 @@
     $showOfferCtas = ! auth()->user()?->isCompany();
 @endphp
 
-<div class="sm:hidden" x-cloak>
+{{-- Teleport + full-bleed panel: covers 100vw/100dvh with no leftover edge pixels. --}}
+<template x-teleport="body">
+<div
+    class="fixed inset-0 z-[60] overflow-hidden xl:hidden"
+    x-show="mobileNav"
+    x-cloak
+    x-transition:enter="transition-opacity ease-out duration-300"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition-opacity ease-in duration-200"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+>
     <div
-        x-show="mobileNav"
-        x-transition:enter="transition-opacity ease-out duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition-opacity ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
         @click="mobileNav = false"
-        class="fixed inset-0 z-[60] bg-gray-950/40 backdrop-blur-[2px]"
+        class="absolute inset-0 bg-gray-950/40 backdrop-blur-[2px]"
         aria-hidden="true"
     ></div>
 
@@ -28,11 +33,12 @@
         x-transition:leave="transition ease-in duration-200"
         x-transition:leave-start="translate-x-0"
         x-transition:leave-end="translate-x-full"
-        class="fixed inset-y-0 right-0 z-[70] flex h-[100dvh] w-[85vw] max-w-sm flex-col bg-white shadow-2xl"
+        class="absolute inset-0 z-[70] flex w-full flex-col bg-white"
         role="dialog"
         aria-modal="true"
         aria-label="{{ __('talenma.nav.mobile_menu_title') }}"
         data-company-mobile-nav
+        @click.stop
     >
         <div class="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 px-5">
             <p class="text-base font-bold text-gray-950">{{ __('talenma.nav.mobile_menu_title') }}</p>
@@ -133,3 +139,4 @@
         @endif
     </aside>
 </div>
+</template>

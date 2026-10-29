@@ -75,23 +75,29 @@
 
 /*
  * Company portal wash (essai hero): indigo + gold radials under the sticky header.
- * Fixed to the page top so every public company page shares the same atmosphere.
+ * Clipped to the viewport so mobile never gains horizontal scroll past 100vw.
  */
 .page-company {
     position: relative;
     isolation: isolate;
 }
 
-.page-company::before,
-.page-company::after {
-    content: '';
-    pointer-events: none;
+.company-portal-wash {
     position: absolute;
-    z-index: -1; /* behind header/main without overriding their z-index */
+    inset: 0 0 auto;
+    z-index: -1; /* behind sticky header / main; clipped so it never widens past 100vw */
+    height: 40rem;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.company-portal-wash__lilac,
+.company-portal-wash__gold {
+    position: absolute;
     border-radius: 9999px;
 }
 
-.page-company::before {
+.company-portal-wash__lilac {
     left: -10rem;
     top: -10rem;
     height: 32rem;
@@ -100,7 +106,7 @@
     opacity: 0.55;
 }
 
-.page-company::after {
+.company-portal-wash__gold {
     left: 55%;
     top: -6rem;
     height: 28rem;

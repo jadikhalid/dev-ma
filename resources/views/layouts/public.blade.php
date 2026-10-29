@@ -32,6 +32,11 @@
     @if (request()->routeIs('home')) data-mobile-locale-auto="1" data-locale-suggest-url="{{ route('locale.suggest') }}" @endif
 >
     @if (\App\Support\PortalHost::isCompanyHost())
+        {{-- Clipped wash layer: keeps indigo/gold radials without widening the page past 100vw. --}}
+        <div class="company-portal-wash" aria-hidden="true">
+            <span class="company-portal-wash__lilac"></span>
+            <span class="company-portal-wash__gold"></span>
+        </div>
         <x-company-public-nav />
     @else
         <x-public-nav />

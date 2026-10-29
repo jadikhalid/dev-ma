@@ -49,7 +49,7 @@
                 </span>
             </a>
 
-            <nav class="hidden items-center gap-6 whitespace-nowrap text-[15px] font-medium lg:flex" aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
+            <nav class="hidden items-center gap-6 whitespace-nowrap text-[15px] font-medium xl:flex" aria-label="{{ __('talenma.nav.mobile_menu_title') }}">
                 @foreach ($bandLinks as $link)
                     <a
                         href="{{ route($link['route']) }}"
@@ -77,7 +77,7 @@
                 @php $authUser = Auth::user(); @endphp
                 @if ($authUser->isCompany())
                     <div class="flex min-w-0 items-center gap-2" data-company-portal-identity>
-                        <span class="hidden max-w-[12rem] truncate rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex {{ $authUser->roleBadgeClasses() }}">
+                        <span class="hidden max-w-[12rem] truncate rounded-full px-2.5 py-1 text-xs font-medium lg:inline-flex {{ $authUser->roleBadgeClasses() }}">
                             {{ $authUser->roleLabel() }}
                         </span>
                         <x-dropdown align="right" width="48" :open-on-hover="true">
@@ -114,7 +114,7 @@
                 @else
                     <a
                         href="{{ PortalHost::wwwRootUrl() }}"
-                        class="hidden items-center rounded-xl border border-gray-200 px-3.5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:inline-flex"
+                        class="hidden items-center rounded-xl border border-gray-200 px-3.5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 lg:inline-flex"
                     >{{ __('talenma.nav.public_site') }}</a>
                 @endif
             @endauth
@@ -124,13 +124,13 @@
                     <button
                         type="button"
                         disabled
-                        class="hidden cursor-not-allowed items-center justify-center whitespace-nowrap rounded-xl border-[1.5px] border-gray-300 px-4 py-3 text-[15px] font-semibold text-gray-400 sm:inline-flex"
+                        class="hidden cursor-not-allowed items-center justify-center whitespace-nowrap rounded-xl border-[1.5px] border-gray-300 px-4 py-3 text-[15px] font-semibold text-gray-400 lg:inline-flex"
                         data-company-header-demo
                     >{{ __('talenma.nav.request_demo') }}</button>
                 @else
                     <a
                         href="{{ route('company.demo') }}"
-                        class="hidden items-center justify-center whitespace-nowrap rounded-xl border-[1.5px] border-gray-900 px-4 py-3 text-[15px] font-semibold text-gray-900 transition hover:bg-gray-50 sm:inline-flex"
+                        class="hidden items-center justify-center whitespace-nowrap rounded-xl border-[1.5px] border-gray-900 px-4 py-3 text-[15px] font-semibold text-gray-900 transition hover:bg-gray-50 lg:inline-flex"
                         data-company-header-demo
                     >{{ __('talenma.nav.request_demo') }}</a>
                 @endif
@@ -139,13 +139,13 @@
                     <button
                         type="button"
                         disabled
-                        class="hidden cursor-not-allowed items-center justify-center whitespace-nowrap rounded-xl bg-gray-200 px-[18px] py-3 text-[15px] font-semibold text-gray-400 sm:inline-flex"
+                        class="hidden cursor-not-allowed items-center justify-center whitespace-nowrap rounded-xl bg-gray-200 px-[18px] py-3 text-[15px] font-semibold text-gray-400 lg:inline-flex"
                         data-company-header-trial
                     >{{ __('talenma.company_offer.hero_cta_trial') }}</button>
                 @else
                     <a
                         href="{{ route('company.trial') }}"
-                        class="hidden items-center justify-center whitespace-nowrap rounded-xl bg-[linear-gradient(120deg,#2563EB_0%,#5546F0_45%,#8B5CF6_100%)] px-[18px] py-3 text-[15px] font-semibold text-white shadow-[0_12px_24px_-12px_rgba(79,70,229,0.8)] transition hover:brightness-105 sm:inline-flex"
+                        class="hidden items-center justify-center whitespace-nowrap rounded-xl bg-[linear-gradient(120deg,#2563EB_0%,#5546F0_45%,#8B5CF6_100%)] px-[18px] py-3 text-[15px] font-semibold text-white shadow-[0_12px_24px_-12px_rgba(79,70,229,0.8)] transition hover:brightness-105 lg:inline-flex"
                         data-company-header-trial
                     >{{ __('talenma.company_offer.hero_cta_trial') }}</a>
                 @endif
@@ -172,9 +172,13 @@
                         @click="open = ! open"
                         :aria-expanded="open.toString()"
                         aria-controls="company-login-panel"
-                        class="inline-flex items-center px-2 py-3 text-[15px] font-medium text-gray-900 transition hover:text-[#5546F0]"
+                        aria-label="{{ __('talenma.nav.company_login') }}"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl text-gray-900 transition hover:bg-gray-50 hover:text-[#5546F0] lg:h-auto lg:w-auto lg:rounded-none lg:px-2 lg:py-3 lg:hover:bg-transparent"
                     >
-                        {{ __('talenma.nav.company_login') }}
+                        <svg class="h-5 w-5 lg:hidden" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+                        </svg>
+                        <span class="hidden text-[15px] font-medium lg:inline">{{ __('talenma.nav.company_login') }}</span>
                     </button>
 
                     <div
@@ -187,7 +191,7 @@
                         x-transition:leave="transition ease-in duration-200"
                         x-transition:leave-start="opacity-100 translate-y-0 scale-y-100"
                         x-transition:leave-end="opacity-0 -translate-y-3 scale-y-95"
-                        class="fixed inset-x-4 top-[72px] z-50 mt-2 origin-top rounded-2xl border border-gray-200 bg-white p-5 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-96"
+                        class="fixed inset-x-4 top-[72px] z-50 mt-2 origin-top rounded-2xl border border-gray-200 bg-white p-5 shadow-xl sm:top-[84px] lg:absolute lg:inset-x-auto lg:right-0 lg:top-full lg:w-96"
                         role="dialog"
                         aria-label="{{ __('talenma.auth.login_title') }}"
                     >
@@ -234,7 +238,7 @@
                 </div>
             @endguest
 
-            <div class="hidden sm:block">
+            <div class="hidden lg:block">
                 <x-header-locale-menu />
             </div>
 
@@ -244,7 +248,7 @@
                 :aria-expanded="mobileNav.toString()"
                 aria-controls="company-mobile-nav"
                 aria-label="{{ __('talenma.nav.mobile_menu_open') }}"
-                class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-900 transition hover:bg-gray-50 lg:hidden"
+                class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-900 transition hover:bg-gray-50 xl:hidden"
                 data-company-mobile-nav-toggle
             >
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>

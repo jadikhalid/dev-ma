@@ -31,17 +31,17 @@
     >
         <div class="home-shell">
             <div class="grid items-center gap-7 sm:gap-10 lg:grid-cols-2 lg:gap-16 lg:px-10 xl:px-16">
-                {{-- Texte (sur téléphone : titre, puis visuel, puis détails) --}}
-                <div @class(['contents sm:block', 'lg:order-2' => $reverse])>
-                    <div class="order-1 sm:order-none" data-company-platform-service-heading>
+                {{-- Texte (sous lg : titre, puis visuel, puis détails — comme mobile / iPad mini) --}}
+                <div @class(['contents lg:block', 'lg:order-2' => $reverse])>
+                    <div class="order-1 lg:order-none" data-company-platform-service-heading>
                         <p class="inline-flex items-center gap-2 rounded-full {{ $service['tag'] }} px-3.5 py-1.5 text-xs font-bold text-gray-950">
                             <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-950 text-[10px] text-white">{{ $index + 1 }}</span>
                             {{ __('talenma.nav.platform_menu_short_'.($index + 1)) }}
                         </p>
                         <h3 class="mt-4 text-2xl font-extrabold leading-tight tracking-tight text-gray-950 sm:text-[2rem]">{{ __('talenma.company_offer.services.'.$service['key'].'.title') }}</h3>
                     </div>
-                    <div class="order-3 sm:order-none" data-company-platform-service-details>
-                    <p class="text-[0.9375rem] leading-relaxed text-gray-600 sm:mt-4 sm:text-base">{{ __('talenma.company_offer.services.'.$service['key'].'.text') }}</p>
+                    <div class="order-3 lg:order-none" data-company-platform-service-details>
+                    <p class="text-[0.9375rem] leading-relaxed text-gray-600 lg:mt-4 sm:text-base">{{ __('talenma.company_offer.services.'.$service['key'].'.text') }}</p>
                     <ul class="mt-6 space-y-3" role="list">
                         @foreach (__('talenma.company_offer.services.'.$service['key'].'.points') as $point)
                             <li class="flex items-start gap-3 text-[0.9375rem] font-medium text-gray-800">
@@ -63,7 +63,7 @@
                 </div>
 
                 {{-- Visuel --}}
-                <div @class(['relative order-2 rounded-3xl p-5 sm:order-none sm:p-8 lg:p-10', $service['panel'], 'lg:order-1' => $reverse]) aria-hidden="true">
+                <div @class(['relative order-2 rounded-3xl p-5 sm:p-8 lg:p-10', $service['panel'], 'lg:order-none' => ! $reverse, 'lg:order-1' => $reverse]) aria-hidden="true">
                     @switch($service['key'])
                         @case('catalogue')
                             <div class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5">
