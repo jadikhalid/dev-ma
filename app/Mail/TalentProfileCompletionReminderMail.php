@@ -12,13 +12,16 @@ class TalentProfileCompletionReminderMail extends PortalMailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public User $user) {}
+    public function __construct(
+        public User $user,
+        public int $step = 1,
+    ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
             from: MailSender::from(),
-            subject: __('talenma.mail.talent_profile_completion_reminder.subject'),
+            subject: (string) data_get($this->copy(), 'subject'),
         );
     }
 
@@ -26,6 +29,21 @@ class TalentProfileCompletionReminderMail extends PortalMailable
     {
         return new Content(
             view: 'emails.talent-profile-completion-reminder',
+            with: [
+                'copy' => $this->copy(),
+                'step' => $this->step,
+                'isLast' => $this->step >= (int) config('talenma.profile_completion_reminder.max_reminders', 3),
+            ],
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function copy(): array
+    {
+        $copy = __('talenma.mail.talent_profile_completion_reminder.'.$this->step);
+
+        return is_array($copy) ? $copy : [];
     }
 }

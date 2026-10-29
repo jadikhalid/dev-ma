@@ -1,12 +1,4 @@
-<x-emails.layout :show-brand="false">
-    <x-slot:hero>
-        <img
-            src="{{ asset('images/emails/talent-welcome-hero.jpg') }}?v={{ filemtime(public_path('images/emails/talent-welcome-hero.jpg')) }}"
-            alt="{{ __('talenma.mail.talent_welcome.hero_alt') }}"
-            width="560"
-            style="display:block;width:100%;max-width:560px;height:auto;border:0;"
-        >
-    </x-slot:hero>
+<x-emails.layout>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">
         {{ __('talenma.mail.talent_welcome.greeting', ['name' => $user->formalDisplayName()]) }}
     </p>

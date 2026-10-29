@@ -9,7 +9,7 @@ class SendTalentProfileCompletionRemindersCommand extends Command
 {
     protected $signature = 'talents:send-profile-completion-reminders';
 
-    protected $description = 'Envoie une relance aux talents validés qui n\'ont pas encore déposé de CV, après le délai configuré';
+    protected $description = 'Envoie jusqu\'à 3 relances CV aux talents validés sans CV, espacées du délai configuré';
 
     public function handle(TalentProfileCompletionReminderService $service): int
     {

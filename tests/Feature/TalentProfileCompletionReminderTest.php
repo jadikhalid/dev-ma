@@ -26,10 +26,12 @@ class TalentProfileCompletionReminderTest extends TestCase
             ->assertSuccessful();
 
         Mail::assertSent(TalentProfileCompletionReminderMail::class, function (TalentProfileCompletionReminderMail $mail) use ($talent) {
-            return $mail->hasTo($talent->email);
+            return $mail->hasTo($talent->email) && $mail->step === 1;
         });
 
-        $this->assertNotNull($talent->fresh()->profile_completion_reminder_sent_at);
+        $fresh = $talent->fresh();
+        $this->assertNotNull($fresh->profile_completion_reminder_sent_at);
+        $this->assertSame(1, (int) $fresh->profile_completion_reminder_count);
     }
 
     public function test_reminder_is_not_sent_when_cv_is_present(): void
@@ -43,7 +45,7 @@ class TalentProfileCompletionReminderTest extends TestCase
             ->assertSuccessful();
 
         Mail::assertNothingSent();
-        $this->assertNull($talent->fresh()->profile_completion_reminder_sent_at);
+        $this->assertSame(0, (int) $talent->fresh()->profile_completion_reminder_count);
     }
 
     public function test_reminder_is_sent_when_only_the_cv_is_missing(): void
@@ -56,7 +58,7 @@ class TalentProfileCompletionReminderTest extends TestCase
             ->assertSuccessful();
 
         Mail::assertSent(TalentProfileCompletionReminderMail::class, function (TalentProfileCompletionReminderMail $mail) use ($talent) {
-            return $mail->hasTo($talent->email);
+            return $mail->hasTo($talent->email) && $mail->step === 1;
         });
     }
 
@@ -81,7 +83,35 @@ class TalentProfileCompletionReminderTest extends TestCase
         Mail::assertNothingSent();
     }
 
-    public function test_reminder_is_sent_only_once(): void
+    public function test_second_and_third_reminders_are_sent_after_each_interval(): void
+    {
+        Mail::fake();
+
+        $talent = $this->createIncompleteTalentApprovedDaysAgo(3);
+
+        $this->artisan('talents:send-profile-completion-reminders')->assertSuccessful();
+        Mail::assertSent(TalentProfileCompletionReminderMail::class, 1);
+        $this->assertSame(1, (int) $talent->fresh()->profile_completion_reminder_count);
+
+        $this->travel(49)->hours();
+        Mail::fake();
+        $this->artisan('talents:send-profile-completion-reminders')->assertSuccessful();
+        Mail::assertSent(TalentProfileCompletionReminderMail::class, fn (TalentProfileCompletionReminderMail $mail) => $mail->hasTo($talent->email) && $mail->step === 2);
+        $this->assertSame(2, (int) $talent->fresh()->profile_completion_reminder_count);
+
+        $this->travel(49)->hours();
+        Mail::fake();
+        $this->artisan('talents:send-profile-completion-reminders')->assertSuccessful();
+        Mail::assertSent(TalentProfileCompletionReminderMail::class, fn (TalentProfileCompletionReminderMail $mail) => $mail->hasTo($talent->email) && $mail->step === 3);
+        $this->assertSame(3, (int) $talent->fresh()->profile_completion_reminder_count);
+
+        $this->travel(49)->hours();
+        Mail::fake();
+        $this->artisan('talents:send-profile-completion-reminders')->assertSuccessful();
+        Mail::assertNothingSent();
+    }
+
+    public function test_reminder_is_not_resent_immediately(): void
     {
         Mail::fake();
 
@@ -91,7 +121,7 @@ class TalentProfileCompletionReminderTest extends TestCase
         $this->artisan('talents:send-profile-completion-reminders')->assertSuccessful();
 
         Mail::assertSent(TalentProfileCompletionReminderMail::class, 1);
-        $this->assertNotNull($talent->fresh()->profile_completion_reminder_sent_at);
+        $this->assertSame(1, (int) $talent->fresh()->profile_completion_reminder_count);
     }
 
     public function test_reminder_email_links_to_talent_profile_panel(): void
@@ -102,14 +132,33 @@ class TalentProfileCompletionReminderTest extends TestCase
             'name' => 'Karim Benali',
         ]);
 
-        $mail = new TalentProfileCompletionReminderMail($talent);
+        $mail = new TalentProfileCompletionReminderMail($talent, 1);
         $html = $mail->render();
 
         $this->assertStringContainsString(route('profile.edit', ['panel' => 'talent']), $html);
-        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.cta')), $html);
-        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.rest')), $html);
-        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.steps')[2]), $html);
+        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.1.cta')), $html);
+        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.1.rest')), $html);
+        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.1.steps')[2]), $html);
         $this->assertStringNotContainsString('Laravel', $html);
+    }
+
+    public function test_last_reminder_mentions_final_notice(): void
+    {
+        $talent = User::factory()->talent()->create([
+            'first_name' => 'Karim',
+            'last_name' => 'Benali',
+            'name' => 'Karim Benali',
+        ]);
+
+        $html = (new TalentProfileCompletionReminderMail($talent, 3))->render();
+
+        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.3.banner_kicker')), $html);
+        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.3.banner_title')), $html);
+        $this->assertStringContainsString(e(__('talenma.mail.talent_profile_completion_reminder.3.good_news')), $html);
+        $this->assertSame(
+            __('talenma.mail.talent_profile_completion_reminder.3.subject'),
+            (new TalentProfileCompletionReminderMail($talent, 3))->envelope()->subject,
+        );
     }
 
     private function attachCv(User $talent): void

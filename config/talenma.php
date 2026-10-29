@@ -70,11 +70,12 @@ return [
     ],
 
     /*
-    | Relance profil talent : délai après validation (heures) avant envoi
-    | si aucun CV n'est déposé.
+    | Relances profil talent (max 3) si aucun CV n'est déposé :
+    | 1re = delay_hours après validation, puis une toutes les delay_hours.
     */
     'profile_completion_reminder' => [
         'delay_hours' => (int) env('TALENMA_PROFILE_REMINDER_DELAY_HOURS', 48),
+        'max_reminders' => 3,
     ],
 
     /*

@@ -34,6 +34,7 @@ use Illuminate\Notifications\Notifiable;
     'approved_at',
     'approved_by',
     'profile_completion_reminder_sent_at',
+    'profile_completion_reminder_count',
     'rejection_reason',
     'disabled_at',
     'is_subscribed',
