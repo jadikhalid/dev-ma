@@ -64,9 +64,6 @@
 <div data-company-offers>
     {{-- Hero --}}
     <section class="relative overflow-hidden">
-        <div aria-hidden="true" class="pointer-events-none absolute -left-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(165,180,252,1)_0%,rgba(255,255,255,0)_68%)] opacity-55"></div>
-        <div aria-hidden="true" class="pointer-events-none absolute left-[55%] -top-24 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(56,189,248,1)_0%,rgba(255,255,255,0)_68%)] opacity-30"></div>
-
         <div class="home-shell relative grid items-center gap-10 py-10 sm:gap-12 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:gap-16 lg:py-16 xl:grid-cols-[minmax(0,1fr)_minmax(0,32.5rem)]">
             <div class="flex flex-col gap-6">
                 <span class="text-[13px] font-bold tracking-[0.12em] text-[#5546F0]">{{ __('talenma.company_plans.badge') }}</span>

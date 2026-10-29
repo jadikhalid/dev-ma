@@ -3,13 +3,13 @@
     use App\Support\ConsumerEmail;
 
     $trialOld = old('offer_form') === 'trial';
-    $fieldShell = 'flex flex-col gap-1.5 rounded-[14px] border border-gray-200 bg-white px-4 py-3';
-    $inputClass = 'w-full border-0 bg-transparent p-0 text-base text-gray-950 outline-none focus:ring-0';
-    $selectClass = 'w-full border-0 bg-transparent p-0 text-base text-gray-950 outline-none focus:ring-0';
-    $labelClass = 'text-[13px] font-bold text-gray-950';
+    $fieldShell = 'flex flex-col gap-0.5 rounded-xl border border-gray-200 bg-white px-3 py-2';
+    $inputClass = 'w-full border-0 bg-transparent p-0 text-sm text-gray-950 outline-none focus:ring-0';
+    $selectClass = 'w-full border-0 bg-transparent p-0 text-sm text-gray-950 outline-none focus:ring-0';
+    $labelClass = 'text-[11px] font-bold text-gray-950';
     $oldPhoneCountry = $trialOld ? old('phone_country', 'ma') : 'ma';
-    $btnPrimary = 'inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-[linear-gradient(120deg,#2563EB_0%,#5546F0_45%,#8B5CF6_100%)] px-5 py-3.5 text-sm font-bold text-white shadow-[0_14px_28px_-14px_rgba(79,70,229,0.8)] transition hover:brightness-105 disabled:opacity-70';
-    $btnSecondary = 'inline-flex items-center justify-center rounded-[14px] border border-gray-200 bg-white px-5 py-3.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50';
+    $btnPrimary = 'inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(120deg,#2563EB_0%,#5546F0_45%,#8B5CF6_100%)] px-4 py-2.5 text-sm font-bold text-white shadow-[0_14px_28px_-14px_rgba(79,70,229,0.8)] transition hover:brightness-105 disabled:opacity-70';
+    $btnSecondary = 'inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50';
 @endphp
 
 <div
@@ -52,7 +52,7 @@
         id="company-trial-request-form"
         method="POST"
         action="{{ route('company.trial.store') }}"
-        class="relative flex flex-col gap-3.5"
+        class="relative flex flex-col gap-3"
         novalidate
         x-show="step < 3"
         @submit="onSubmit($event)"
@@ -62,18 +62,18 @@
         <input type="hidden" name="offer_form" value="trial">
 
         <div>
-            <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                 <span x-text="stepTitle()">{{ __('talenma.company_offer.trial_form.step_contact') }}</span>
                 <span x-text="@js(__('talenma.company_offer.trial_form.step_label', ['current' => '__C__', 'total' => 2])).replace('__C__', step)">{{ __('talenma.company_offer.trial_form.step_label', ['current' => 1, 'total' => 2]) }}</span>
             </div>
-            <div class="mt-2 grid grid-cols-2 gap-1.5" aria-hidden="true">
-                <span class="h-1.5 rounded-full bg-[#5546F0]"></span>
-                <span class="h-1.5 rounded-full transition-colors" :class="step >= 2 ? 'bg-[#5546F0]' : 'bg-gray-200'"></span>
+            <div class="mt-1.5 grid grid-cols-2 gap-1" aria-hidden="true">
+                <span class="h-1 rounded-full bg-[#5546F0]"></span>
+                <span class="h-1 rounded-full transition-colors" :class="step >= 2 ? 'bg-[#5546F0]' : 'bg-gray-200'"></span>
             </div>
         </div>
 
         {{-- Étape 1 : coordonnées --}}
-        <fieldset x-show="step === 1" class="flex flex-col gap-3.5" data-trial-step="1">
+        <fieldset x-show="step === 1" class="flex flex-col gap-3" data-trial-step="1">
             <legend class="sr-only">{{ __('talenma.company_offer.trial_form.step_contact') }}</legend>
             <div class="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -84,7 +84,7 @@
                             value="{{ $trialOld ? old('first_name') : '' }}"
                             @input="clearFieldError('first_name')" :class="fieldInvalidClass('first_name')" class="{{ $inputClass }}">
                     </label>
-                    <p x-show="fieldMessage('first_name')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('first_name')"></p>
+                    <p x-show="fieldMessage('first_name')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('first_name')"></p>
                 </div>
                 <div>
                     <label for="trial_last_name" class="{{ $fieldShell }}">
@@ -94,7 +94,7 @@
                             value="{{ $trialOld ? old('last_name') : '' }}"
                             @input="clearFieldError('last_name')" :class="fieldInvalidClass('last_name')" class="{{ $inputClass }}">
                     </label>
-                    <p x-show="fieldMessage('last_name')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('last_name')"></p>
+                    <p x-show="fieldMessage('last_name')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('last_name')"></p>
                 </div>
             </div>
 
@@ -106,60 +106,96 @@
                         value="{{ $trialOld ? old('company_name') : '' }}"
                         @input="clearFieldError('company_name')" :class="fieldInvalidClass('company_name')" class="{{ $inputClass }}">
                 </label>
-                <p x-show="fieldMessage('company_name')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('company_name')"></p>
+                <p x-show="fieldMessage('company_name')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('company_name')"></p>
             </div>
 
-            <div>
-                <label for="trial_email" class="{{ $fieldShell }}">
-                    <span class="{{ $labelClass }}">{{ __('talenma.company_offer.demo_form.email') }}<span class="text-rose-500">*</span></span>
-                    <input id="trial_email" name="email" type="email" required maxlength="255" autocomplete="email"
-                        placeholder="vous@entreprise.com"
-                        value="{{ $trialOld ? old('email') : '' }}"
-                        @input="clearFieldError('email')" :class="fieldInvalidClass('email')" class="{{ $inputClass }}">
-                </label>
-                <p class="mt-1 text-xs text-gray-500">{{ __('talenma.company_offer.trial_email_hint') }}</p>
-                <p x-show="fieldMessage('email')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('email')"></p>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div>
+                    <label for="trial_email" class="{{ $fieldShell }}">
+                        <span class="{{ $labelClass }}">{{ __('talenma.company_offer.demo_form.email') }}<span class="text-rose-500">*</span></span>
+                        <input id="trial_email" name="email" type="email" required maxlength="255" autocomplete="email"
+                            placeholder="vous@entreprise.com"
+                            value="{{ $trialOld ? old('email') : '' }}"
+                            @input="clearFieldError('email')" :class="fieldInvalidClass('email')" class="{{ $inputClass }}">
+                    </label>
+                    <p x-show="fieldMessage('email')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('email')"></p>
+                </div>
+                <div>
+                    <div class="{{ $fieldShell }}">
+                        <span class="{{ $labelClass }}">{{ __('talenma.company_offer.demo_form.phone') }}<span class="text-rose-500">*</span></span>
+                        <div class="flex min-w-0 items-center gap-1.5">
+                            <select name="phone_country" aria-label="{{ __('talenma.company_offer.demo_form.phone_country') }}" class="w-[4.75rem] shrink-0 border-0 bg-transparent p-0 text-sm text-gray-950 outline-none focus:ring-0">
+                                @foreach (CompanyDemoRequest::PHONE_COUNTRIES as $code => $country)
+                                    <option value="{{ $code }}" @selected($oldPhoneCountry === $code)>{{ $country['flag'] }} {{ $country['dial'] }}</option>
+                                @endforeach
+                            </select>
+                            <input id="trial_phone" name="phone" type="tel" inputmode="numeric" required maxlength="15" autocomplete="tel-national" placeholder="6 00 00 00 00"
+                                value="{{ $trialOld ? preg_replace('/\D+/', '', (string) old('phone')) : '' }}"
+                                @input="$el.value = $el.value.replace(/\D/g, ''); clearFieldError('phone')" :class="fieldInvalidClass('phone')" class="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-gray-950 outline-none focus:ring-0">
+                        </div>
+                    </div>
+                    <p x-show="fieldMessage('phone')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('phone')"></p>
+                </div>
             </div>
 
             <div class="grid gap-3 sm:grid-cols-2">
                 <div>
                     <label for="trial_password" class="{{ $fieldShell }}">
                         <span class="{{ $labelClass }}">{{ __('talenma.auth.password') }}<span class="text-rose-500">*</span></span>
-                        <input id="trial_password" name="password" type="password" required minlength="8" maxlength="128" autocomplete="new-password"
-                            @input="clearFieldError('password')" :class="fieldInvalidClass('password')" class="{{ $inputClass }}">
+                        <div class="relative" x-data="{ show: false }">
+                            <input id="trial_password" name="password" type="password" required minlength="8" maxlength="128" autocomplete="new-password"
+                                x-bind:type="show ? 'text' : 'password'"
+                                @input="clearFieldError('password')" :class="fieldInvalidClass('password')" class="{{ $inputClass }} pr-8">
+                            <button
+                                type="button"
+                                tabindex="-1"
+                                class="absolute inset-y-0 right-0 flex items-center text-gray-400 hover:text-gray-600"
+                                x-on:click="show = !show"
+                                x-bind:aria-label="show ? @js(__('talenma.auth.hide_password')) : @js(__('talenma.auth.show_password'))"
+                                x-bind:aria-pressed="show"
+                            >
+                                <svg x-show="!show" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>
+                                <svg x-show="show" x-cloak class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12c1.292 2.4 3.997 4.243 7.066 5.177 1.943.49 3.98.49 5.923 0 3.069-.934 5.774-2.777 7.066-5.177a10.48 10.48 0 0 0-2.046-3.777M9.88 9.88a3 3 0 1 0 4.24 4.24M3 3l18 18" />
+                                </svg>
+                            </button>
+                        </div>
                     </label>
-                    <p x-show="fieldMessage('password')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('password')"></p>
+                    <p x-show="fieldMessage('password')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('password')"></p>
                 </div>
                 <div>
                     <label for="trial_password_confirmation" class="{{ $fieldShell }}">
                         <span class="{{ $labelClass }}">{{ __('talenma.auth.confirm_password') }}<span class="text-rose-500">*</span></span>
-                        <input id="trial_password_confirmation" name="password_confirmation" type="password" required minlength="8" maxlength="128" autocomplete="new-password"
-                            @input="clearFieldError('password_confirmation')" :class="fieldInvalidClass('password_confirmation')" class="{{ $inputClass }}">
+                        <div class="relative" x-data="{ show: false }">
+                            <input id="trial_password_confirmation" name="password_confirmation" type="password" required minlength="8" maxlength="128" autocomplete="new-password"
+                                x-bind:type="show ? 'text' : 'password'"
+                                @input="clearFieldError('password_confirmation')" :class="fieldInvalidClass('password_confirmation')" class="{{ $inputClass }} pr-8">
+                            <button
+                                type="button"
+                                tabindex="-1"
+                                class="absolute inset-y-0 right-0 flex items-center text-gray-400 hover:text-gray-600"
+                                x-on:click="show = !show"
+                                x-bind:aria-label="show ? @js(__('talenma.auth.hide_password')) : @js(__('talenma.auth.show_password'))"
+                                x-bind:aria-pressed="show"
+                            >
+                                <svg x-show="!show" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>
+                                <svg x-show="show" x-cloak class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12c1.292 2.4 3.997 4.243 7.066 5.177 1.943.49 3.98.49 5.923 0 3.069-.934 5.774-2.777 7.066-5.177a10.48 10.48 0 0 0-2.046-3.777M9.88 9.88a3 3 0 1 0 4.24 4.24M3 3l18 18" />
+                                </svg>
+                            </button>
+                        </div>
                     </label>
-                    <p x-show="fieldMessage('password_confirmation')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('password_confirmation')"></p>
+                    <p x-show="fieldMessage('password_confirmation')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('password_confirmation')"></p>
                 </div>
             </div>
 
-            <div>
-                <div class="{{ $fieldShell }}">
-                    <span class="{{ $labelClass }}">{{ __('talenma.company_offer.demo_form.phone') }}<span class="text-rose-500">*</span></span>
-                    <div class="flex gap-2">
-                        <select name="phone_country" aria-label="{{ __('talenma.company_offer.demo_form.phone_country') }}" class="w-28 shrink-0 {{ $selectClass }}">
-                            @foreach (CompanyDemoRequest::PHONE_COUNTRIES as $code => $country)
-                                <option value="{{ $code }}" @selected($oldPhoneCountry === $code)>{{ $country['flag'] }} {{ $country['dial'] }}</option>
-                            @endforeach
-                        </select>
-                        <input id="trial_phone" name="phone" type="tel" required maxlength="20" autocomplete="tel-national" placeholder="+212 / +33 …"
-                            value="{{ $trialOld ? old('phone') : '' }}"
-                            @input="clearFieldError('phone')" :class="fieldInvalidClass('phone')" class="min-w-0 flex-1 {{ $inputClass }}">
-                    </div>
-                </div>
-                <p x-show="fieldMessage('phone')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('phone')"></p>
-            </div>
-
-            <p class="text-xs leading-relaxed text-gray-500">{{ __('talenma.company_offer.trial_privacy') }}</p>
-
-            <div class="flex flex-col-reverse gap-3 pt-1 sm:flex-row">
+            <div class="mt-3 flex flex-col-reverse gap-2 sm:flex-row">
                 <button type="button" @click="cancel()" class="{{ $btnSecondary }}" data-trial-cancel>
                     {{ __('talenma.company_offer.trial_form.cancel') }}
                 </button>
@@ -171,7 +207,7 @@
         </fieldset>
 
         {{-- Étape 2 : entreprise --}}
-        <fieldset x-show="step === 2" x-cloak class="flex flex-col gap-3.5" data-trial-step="2">
+        <fieldset x-show="step === 2" x-cloak class="flex flex-col gap-3" data-trial-step="2">
             <legend class="sr-only">{{ __('talenma.company_offer.trial_form.step_company') }}</legend>
             <div class="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -185,7 +221,7 @@
                             @endforeach
                         </select>
                     </label>
-                    <p x-show="fieldMessage('sector')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('sector')"></p>
+                    <p x-show="fieldMessage('sector')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('sector')"></p>
                 </div>
                 <div>
                     <label for="trial_country" class="{{ $fieldShell }}">
@@ -198,19 +234,19 @@
                             @endforeach
                         </select>
                     </label>
-                    <p x-show="fieldMessage('company_country')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('company_country')"></p>
+                    <p x-show="fieldMessage('company_country')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('company_country')"></p>
                 </div>
             </div>
 
             <div>
                 <label for="trial_description" class="{{ $fieldShell }}">
                     <span class="{{ $labelClass }}">{{ __('talenma.company.description') }}</span>
-                    <textarea id="trial_description" name="company_description" rows="3" maxlength="5000"
+                    <textarea id="trial_description" name="company_description" rows="2" maxlength="5000"
                         @input="clearFieldError('company_description')" :class="fieldInvalidClass('company_description')"
                         class="{{ $inputClass }} resize-none"
                         placeholder="{{ __('talenma.company.description_placeholder') }}">{{ $trialOld ? old('company_description') : '' }}</textarea>
                 </label>
-                <p x-show="fieldMessage('company_description')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('company_description')"></p>
+                <p x-show="fieldMessage('company_description')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('company_description')"></p>
             </div>
 
             <div>
@@ -221,14 +257,14 @@
                         placeholder="https://..."
                         @input="clearFieldError('company_website')" :class="fieldInvalidClass('company_website')" class="{{ $inputClass }}">
                 </label>
-                <p x-show="fieldMessage('company_website')" x-cloak class="mt-1 text-xs text-rose-600" x-text="fieldMessage('company_website')"></p>
+                <p x-show="fieldMessage('company_website')" x-cloak class="mt-0.5 text-[11px] text-rose-600" x-text="fieldMessage('company_website')"></p>
             </div>
 
             <div
-                class="rounded-[14px] border bg-gray-50 px-4 py-3"
+                class="rounded-xl border bg-gray-50 px-3 py-2"
                 :class="fieldErrors.data_processing_consent ? 'border-rose-400' : 'border-gray-200'"
             >
-                <label class="flex cursor-pointer items-start gap-3">
+                <label class="flex cursor-pointer items-start gap-2.5">
                     <input
                         id="trial_consent"
                         name="data_processing_consent"
@@ -236,23 +272,23 @@
                         value="1"
                         @checked($trialOld && old('data_processing_consent'))
                         @change="clearFieldError('data_processing_consent')"
-                        class="mt-0.5 size-5 rounded border-gray-300 text-[#5546F0] shadow-sm focus:ring-[#5546F0]"
+                        class="mt-0.5 size-4 shrink-0 rounded border-gray-300 text-[#5546F0] shadow-sm focus:ring-[#5546F0]"
                         required
                     >
-                    <span class="text-[13px] leading-snug text-gray-600">
+                    <span class="text-[11px] leading-snug text-gray-600">
                         {!! __('talenma.auth.data_processing_consent_company', [
                             'policy' => '<a href="'.e(route('privacy')).'" target="_blank" rel="noopener noreferrer" class="font-semibold text-[#5546F0] underline decoration-indigo-200 underline-offset-2 hover:text-indigo-800">'.e(__('talenma.auth.privacy_policy')).'</a>',
                         ]) !!}
                     </span>
                 </label>
-                <p x-show="fieldMessage('data_processing_consent')" x-cloak class="mt-2 text-xs text-rose-600" x-text="fieldMessage('data_processing_consent')"></p>
+                <p x-show="fieldMessage('data_processing_consent')" x-cloak class="mt-1 text-[11px] text-rose-600" x-text="fieldMessage('data_processing_consent')"></p>
             </div>
 
             <div
-                class="rounded-[14px] border bg-gray-50 px-4 py-3"
+                class="rounded-xl border bg-gray-50 px-3 py-2"
                 :class="fieldErrors.trial_terms ? 'border-rose-400' : 'border-gray-200'"
             >
-                <label class="flex cursor-pointer items-start gap-3">
+                <label class="flex cursor-pointer items-start gap-2.5">
                     <input
                         id="trial_terms"
                         name="trial_terms"
@@ -260,19 +296,19 @@
                         value="1"
                         @checked($trialOld && old('trial_terms'))
                         @change="clearFieldError('trial_terms')"
-                        class="mt-0.5 size-5 rounded border-gray-300 text-[#5546F0] shadow-sm focus:ring-[#5546F0]"
+                        class="mt-0.5 size-4 shrink-0 rounded border-gray-300 text-[#5546F0] shadow-sm focus:ring-[#5546F0]"
                         required
                     >
-                    <span class="text-[13px] leading-snug text-gray-600">
+                    <span class="text-[11px] leading-snug text-gray-600">
                         {!! __('talenma.company_offer.trial_terms.accept', [
                             'terms' => '<a href="'.e(route('company.trial.terms')).'" target="_blank" rel="noopener noreferrer" class="font-semibold text-[#5546F0] underline decoration-indigo-200 underline-offset-2 hover:text-indigo-800">'.e(__('talenma.company_offer.trial_terms.link')).'</a>',
                         ]) !!}
                     </span>
                 </label>
-                <p x-show="fieldMessage('trial_terms')" x-cloak class="mt-2 text-xs text-rose-600" x-text="fieldMessage('trial_terms')"></p>
+                <p x-show="fieldMessage('trial_terms')" x-cloak class="mt-1 text-[11px] text-rose-600" x-text="fieldMessage('trial_terms')"></p>
             </div>
 
-            <div class="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:flex-wrap">
+            <div class="mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap">
                 <button type="button" @click="cancel()" class="{{ $btnSecondary }}" data-trial-cancel>
                     {{ __('talenma.company_offer.trial_form.cancel') }}
                 </button>

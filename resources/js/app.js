@@ -10142,13 +10142,24 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
         this.step = 1;
         this.setLoading(false);
         this.$nextTick(() => {
-            this.$root.closest('.overflow-y-auto')?.scrollTo({ top: 0 });
+            const drawer = this.$root.closest('.overflow-y-auto');
+
+            if (drawer) {
+                drawer.scrollTo({ top: 0 });
+
+                return;
+            }
+
+            window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
         });
     },
 
     cancel() {
         this.resetWizard();
-        this.$dispatch('company-offer-drawer-close');
+
+        if (this.mode === 'demo') {
+            this.$dispatch('company-offer-drawer-close');
+        }
     },
 
     goToStep(step) {
@@ -10162,7 +10173,7 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
                 return;
             }
 
-            this.$root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
         });
     },
 

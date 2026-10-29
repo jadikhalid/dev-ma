@@ -20,7 +20,7 @@
 @endphp
 
 <section
-    class="relative overflow-hidden bg-gradient-to-br from-white via-sky-50 to-sky-100"
+    class="relative overflow-hidden"
     @if ($showOfferForms)
     x-data="{
         init() {

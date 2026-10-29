@@ -23,8 +23,11 @@
         'page-home' => request()->routeIs('home'),
         'page-how' => request()->routeIs('career.how'),
         'page-offers' => request()->routeIs('career.offers'),
+        'page-company' => \App\Support\PortalHost::isCompanyHost(),
         'page-company-home' => request()->routeIs('company.offer'),
         'page-company-offers' => request()->routeIs('company.offers'),
+        'page-company-trial' => request()->routeIs('company.trial'),
+        'page-company-hero-bleed' => \App\Support\PortalHost::isCompanyHost(),
     ])
     @if (request()->routeIs('home')) data-mobile-locale-auto="1" data-locale-suggest-url="{{ route('locale.suggest') }}" @endif
 >

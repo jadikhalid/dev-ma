@@ -33,14 +33,10 @@
 <div
     data-company-trial
     x-data="{ close() { window.location.href = @js(route('company.offer')); } }"
-    @company-offer-drawer-close.window="close()"
 >
     {{-- Hero + form --}}
     <section class="relative overflow-hidden">
-        <div aria-hidden="true" class="pointer-events-none absolute -left-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(165,180,252,1)_0%,rgba(255,255,255,0)_68%)] opacity-55"></div>
-        <div aria-hidden="true" class="pointer-events-none absolute left-[55%] -top-24 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(235,186,110,1)_0%,rgba(255,255,255,0)_68%)] opacity-30"></div>
-
-        <div class="home-shell relative grid items-center gap-10 py-10 sm:gap-12 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,28.75rem)] lg:gap-14 lg:py-16">
+        <div class="home-shell relative grid items-center gap-10 py-10 sm:gap-12 sm:py-14 lg:grid-cols-2 lg:gap-10 lg:py-16">
             <div class="flex flex-col gap-6">
                 <span class="inline-flex self-start items-center gap-2 rounded-full bg-[#EBBA6E] px-3.5 py-2 text-[13px] font-extrabold tracking-[0.06em] text-[#0D0B2B]">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13M12 8c-2-4-6-4-6-1s4 1 6 1zM12 8c2-4 6-4 6-1s-4 1-6 1z"/></svg>
@@ -63,12 +59,12 @@
 
             <div
                 id="demande"
-                class="relative scroll-mt-28 rounded-[28px] border border-[#EEF0F4] bg-white p-6 shadow-[0_2px_4px_rgba(17,24,39,0.08),0_30px_60px_-24px_rgba(49,46,129,0.45)] sm:p-8"
+                class="relative scroll-mt-28 rounded-[24px] border border-[#EEF0F4] bg-white p-4 shadow-[0_2px_4px_rgba(17,24,39,0.08),0_30px_60px_-24px_rgba(49,46,129,0.45)] sm:p-5"
                 data-company-trial-offer
             >
-                <div class="mb-5 flex flex-col gap-1">
-                    <h2 class="text-[22px] font-extrabold text-gray-950">{{ __('talenma.company_offer.trial_title') }}</h2>
-                    <p class="text-sm text-gray-500">{{ __('talenma.company_offer.trial_subtitle') }}</p>
+                <div class="mb-3 flex flex-col gap-0.5">
+                    <h2 class="text-lg font-extrabold text-gray-950 sm:text-xl">{{ __('talenma.company_offer.trial_title') }}</h2>
+                    <p class="text-xs text-gray-500 sm:text-sm">{{ __('talenma.company_offer.trial_subtitle') }}</p>
                 </div>
                 @include('company.partials.trial-request-form', [
                     'professionSectors' => $professionSectors,

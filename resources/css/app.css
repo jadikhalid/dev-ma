@@ -61,13 +61,72 @@
     .page-home .home-align-wide,
     .page-offers .home-shell,
     .page-offers .home-align-wide,
+    .page-company .home-shell,
+    .page-company .home-align-wide,
     .page-company-home .home-shell,
     .page-company-home .home-align-wide,
     .page-company-offers .home-shell,
     .page-company-offers .home-align-wide {
-        max-width: 80rem;
+        max-width: 80rem; /* aligné sur le header max-w-7xl */
         padding-left: 2rem;
         padding-right: 2rem;
+    }
+}
+
+/*
+ * Company portal wash (essai hero): indigo + gold radials under the sticky header.
+ * Fixed to the page top so every public company page shares the same atmosphere.
+ */
+.page-company {
+    position: relative;
+    isolation: isolate;
+}
+
+.page-company::before,
+.page-company::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    z-index: -1; /* behind header/main without overriding their z-index */
+    border-radius: 9999px;
+}
+
+.page-company::before {
+    left: -10rem;
+    top: -10rem;
+    height: 32rem;
+    width: 32rem;
+    background: radial-gradient(circle, rgba(165, 180, 252, 1) 0%, rgba(255, 255, 255, 0) 68%);
+    opacity: 0.55;
+}
+
+.page-company::after {
+    left: 55%;
+    top: -6rem;
+    height: 28rem;
+    width: 28rem;
+    background: radial-gradient(circle, rgba(235, 186, 110, 1) 0%, rgba(255, 255, 255, 0) 68%);
+    opacity: 0.3;
+}
+
+/* First content block bleeds under the transparent sticky header at scroll top. */
+.page-company-hero-bleed [data-company-offer-hero],
+.page-company-hero-bleed [data-company-trial] > section:first-of-type,
+.page-company-hero-bleed [data-company-offers] > section:first-of-type,
+.page-company-hero-bleed [data-company-demo],
+.page-company-hero-bleed [data-company-trial-terms] {
+    margin-top: -72px;
+    padding-top: 72px;
+}
+
+@media (min-width: 640px) {
+    .page-company-hero-bleed [data-company-offer-hero],
+    .page-company-hero-bleed [data-company-trial] > section:first-of-type,
+    .page-company-hero-bleed [data-company-offers] > section:first-of-type,
+    .page-company-hero-bleed [data-company-demo],
+    .page-company-hero-bleed [data-company-trial-terms] {
+        margin-top: -84px;
+        padding-top: 84px;
     }
 }
 

@@ -5,7 +5,7 @@
 
 @section('content')
 <section
-    class="relative bg-gradient-to-br from-white via-sky-50 to-sky-100"
+    class="relative"
     data-company-demo
     x-data="{ close() { window.location.href = @js(route('company.offer')); } }"
     @company-offer-drawer-close.window="close()"

@@ -8,12 +8,27 @@
     ])->map(fn (array $link) => $link + ['active' => request()->routeIs($link['route'])]);
     $talentSpaceUrl = PortalHost::wwwRootUrl();
     $showGuestCtas = ! auth()->user()?->isCompany();
+    $heroBleed = true;
 @endphp
 
 <header
-    class="sticky top-0 z-[55] w-full border-b border-[#EEF0F4] bg-white"
-    x-data="{ mobileNav: false }"
-    x-init="$watch('mobileNav', (value) => document.documentElement.classList.toggle('overflow-hidden', value))"
+    @class([
+        'sticky top-0 z-[55] w-full border-b transition-[background-color,border-color,box-shadow] duration-200',
+        'border-[#EEF0F4] bg-white' => ! $heroBleed,
+        'border-transparent bg-transparent' => $heroBleed,
+    ])
+    x-data="{ mobileNav: false, scrolled: {{ $heroBleed ? 'false' : 'true' }} }"
+    x-init="
+        $watch('mobileNav', (value) => document.documentElement.classList.toggle('overflow-hidden', value));
+        @if ($heroBleed)
+            scrolled = window.scrollY > 12;
+        @endif
+    "
+    @if ($heroBleed)
+        @scroll.window="scrolled = window.scrollY > 12"
+        :data-scrolled="scrolled.toString()"
+        :class="(scrolled || mobileNav) ? '!border-[#EEF0F4] !bg-white shadow-[0_1px_0_rgba(17,24,39,0.04)]' : ''"
+    @endif
     @keydown.escape.window="mobileNav = false"
     data-company-header
 >

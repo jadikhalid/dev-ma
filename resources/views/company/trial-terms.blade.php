@@ -4,7 +4,7 @@
 @section('meta_description', __('talenma.company_offer.trial_terms.meta'))
 
 @section('content')
-<section class="relative bg-gradient-to-br from-white via-sky-50 to-sky-100" data-company-trial-terms>
+<section class="relative" data-company-trial-terms>
     <div class="home-shell pb-16 pt-8 sm:pb-20 sm:pt-12">
         <article class="mx-auto max-w-3xl rounded-[1.75rem] border border-slate-200/80 bg-white px-5 py-7 shadow-[0_16px_40px_rgba(15,23,42,0.06)] sm:px-8 sm:py-9">
             <h1 class="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">{{ __('talenma.company_offer.trial_terms.title') }}</h1>
