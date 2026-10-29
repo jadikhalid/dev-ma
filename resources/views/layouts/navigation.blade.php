@@ -201,27 +201,41 @@
                                 @endif
                             </span>
                         </x-nav-link>
-                        <x-nav-link :href="route('company.jobs.index')" :active="request()->routeIs('company.jobs.*')" :disabled="$pendingAccount">
-                            <span class="inline-flex items-center gap-1.5">
-                                {{ __('talenma.nav.jobs') }}
-                                @if ($jobsPending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                    </span>
-                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
-                                @endif
-                            </span>
-                        </x-nav-link>
                         @if ($pendingAccount)
-                            <span class="inline-flex items-center gap-1.5 rounded-[5px] border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-sm font-semibold text-indigo-300 shadow-sm shadow-indigo-500/10 cursor-not-allowed select-none" aria-disabled="true">
+                            <span class="inline-flex items-center gap-1.5 rounded-[5px] border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-sm font-semibold text-emerald-300 shadow-sm shadow-emerald-500/10 cursor-not-allowed select-none" aria-disabled="true">
+                                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6" />
+                                </svg>
+                                {{ __('talenma.nav.jobs') }}
+                            </span>
+                            <span class="ml-2 inline-flex items-center gap-1.5 rounded-[5px] border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-sm font-semibold text-indigo-300 shadow-sm shadow-indigo-500/10 cursor-not-allowed select-none" aria-disabled="true">
                                 {{ __('talenma.nav.talents') }}
                             </span>
                         @else
                             <a
-                                href="{{ route('company.search') }}"
+                                href="{{ route('company.jobs.index') }}"
                                 @class([
                                     'inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-sm font-semibold shadow-sm transition',
+                                    'border-emerald-600 bg-emerald-600 text-white shadow-emerald-600/20' => request()->routeIs('company.jobs.*'),
+                                    'border-emerald-300 bg-emerald-50 text-emerald-700 shadow-emerald-500/10 hover:border-emerald-600 hover:bg-emerald-600 hover:text-white hover:shadow-emerald-600/20' => ! request()->routeIs('company.jobs.*'),
+                                ])
+                            >
+                                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6" />
+                                </svg>
+                                {{ __('talenma.nav.jobs') }}
+                                @if ($jobsPending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-200"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                @endif
+                            </a>
+                            <a
+                                href="{{ route('company.search') }}"
+                                @class([
+                                    'ml-2 inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-sm font-semibold shadow-sm transition',
                                     'border-indigo-600 bg-indigo-600 text-white shadow-indigo-600/20' => request()->routeIs('company.search', 'company.talent.*'),
                                     'border-indigo-300 bg-indigo-50 text-indigo-700 shadow-indigo-500/10 hover:border-indigo-600 hover:bg-indigo-600 hover:text-white hover:shadow-indigo-600/20' => ! request()->routeIs('company.search', 'company.talent.*'),
                                 ])
@@ -274,7 +288,6 @@
                 </div>
             </div>
             <div class="hidden lg:flex items-center gap-3 shrink-0">
-                <x-locale-switcher />
                 @if ($canSwitchModeratorMode)
                     <form method="POST" action="{{ route('moderator-mode.update') }}" class="flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1">
                         @csrf
@@ -334,12 +347,13 @@
                         </form>
                     </x-slot>
                 </x-dropdown>
+                <x-header-locale-menu />
             </div>
             <div class="flex items-center gap-2 lg:hidden shrink-0">
-                <x-locale-switcher />
                 @if ($authUser->canAccessWorkspaceApps())
                     <x-talent-apps-launcher />
                 @endif
+                <x-header-locale-menu />
                 <button
                     type="button"
                     @click="open = !open"
@@ -578,27 +592,41 @@
                                 @endif
                             </span>
                         </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('company.jobs.index')" :active="request()->routeIs('company.jobs.*')">
-                            <span class="inline-flex items-center gap-2">
-                                {{ __('talenma.nav.jobs') }}
-                                @if ($jobsPending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                                    </span>
-                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
-                                @endif
-                            </span>
-                        </x-responsive-nav-link>
                         @if ($pendingAccount)
-                            <span class="mx-3 my-1 inline-flex items-center gap-1.5 rounded-[5px] border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-sm font-semibold text-indigo-300 shadow-sm shadow-indigo-500/10 cursor-not-allowed" aria-disabled="true">
+                            <span class="mx-3 my-1 inline-flex items-center gap-1.5 rounded-[5px] border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-sm font-semibold text-emerald-300 shadow-sm shadow-emerald-500/10 cursor-not-allowed" aria-disabled="true">
+                                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6" />
+                                </svg>
+                                {{ __('talenma.nav.jobs') }}
+                            </span>
+                            <span class="mx-3 mt-2 mb-1 inline-flex items-center gap-1.5 rounded-[5px] border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-sm font-semibold text-indigo-300 shadow-sm shadow-indigo-500/10 cursor-not-allowed" aria-disabled="true">
                                 {{ __('talenma.nav.talents') }}
                             </span>
                         @else
                             <a
-                                href="{{ route('company.search') }}"
+                                href="{{ route('company.jobs.index') }}"
                                 @class([
                                     'mx-3 my-1 inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-sm font-semibold shadow-sm transition',
+                                    'border-emerald-600 bg-emerald-600 text-white shadow-emerald-600/20' => request()->routeIs('company.jobs.*'),
+                                    'border-emerald-300 bg-emerald-50 text-emerald-700 shadow-emerald-500/10 hover:border-emerald-600 hover:bg-emerald-600 hover:text-white hover:shadow-emerald-600/20' => ! request()->routeIs('company.jobs.*'),
+                                ])
+                            >
+                                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 2.707a2.18 2.18 0 0 1-.75 1.662m0 0c-.45.283-.99.451-1.567.5a51.25 51.25 0 0 1-3.483.1 51.25 51.25 0 0 1-3.483-.1c-.577-.049-1.118-.217-1.567-.5m0 0a2.18 2.18 0 0 1-.75-1.662m0 0V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25v.75m-6 0h6" />
+                                </svg>
+                                {{ __('talenma.nav.jobs') }}
+                                @if ($jobsPending)
+                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.jobs.nav_new') }}">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75"></span>
+                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-200"></span>
+                                    </span>
+                                    <span class="sr-only">{{ __('talenma.jobs.nav_new') }}</span>
+                                @endif
+                            </a>
+                            <a
+                                href="{{ route('company.search') }}"
+                                @class([
+                                    'mx-3 mt-2 mb-1 inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-sm font-semibold shadow-sm transition',
                                     'border-indigo-600 bg-indigo-600 text-white shadow-indigo-600/20' => request()->routeIs('company.search', 'company.talent.*'),
                                     'border-indigo-300 bg-indigo-50 text-indigo-700 shadow-indigo-500/10 hover:border-indigo-600 hover:bg-indigo-600 hover:text-white hover:shadow-indigo-600/20' => ! request()->routeIs('company.search', 'company.talent.*'),
                                 ])
