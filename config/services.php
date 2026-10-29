@@ -41,4 +41,18 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.5-flash-lite'),
+        'fallback_models' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('GEMINI_FALLBACK_MODELS', ''))
+        ))),
+        'endpoint' => env(
+            'GEMINI_ENDPOINT',
+            'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
+        ),
+        'timeout' => (int) env('GEMINI_TIMEOUT', 20),
+    ],
+
 ];

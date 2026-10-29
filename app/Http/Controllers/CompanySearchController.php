@@ -12,11 +12,13 @@ use App\Services\DirectHireService;
 use App\Services\ProfessionCatalogService;
 use App\Services\RecruitmentRequestService;
 use App\Services\TalentActivityTracker;
+use App\Services\TalentCatalogPromptParser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CompanySearchController extends Controller
@@ -27,6 +29,7 @@ class CompanySearchController extends Controller
         private DirectHireService $directHires,
         private RecruitmentRequestService $recruitmentRequests,
         private CompanyTalentActionStateService $talentActions,
+        private TalentCatalogPromptParser $promptParser,
     ) {}
 
     public function index(Request $request): View|JsonResponse|RedirectResponse
@@ -149,6 +152,41 @@ class CompanySearchController extends Controller
             'existingNamedRequest' => $existingNamedRequest,
             'lockedDirectHire' => $lockedDirectHire,
             'forceRevealProfile' => $forceReveal,
+        ]);
+    }
+
+    public function parseAiFilters(Request $request): JsonResponse
+    {
+        if (! $request->user()?->isCompany() || ! $request->user()->canAccessTalentPool()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'prompt' => ['required', 'string', 'max:'.TalentCatalogPromptParser::MAX_PROMPT_LENGTH],
+        ]);
+
+        // Gemini can take several seconds; avoid PHP's default 30s fatal on web.
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(45);
+        }
+
+        try {
+            $filters = $this->promptParser->parse($validated['prompt'], app()->getLocale());
+        } catch (RuntimeException $e) {
+            $status = match ($e->getMessage()) {
+                'not_configured', 'api_unreachable', 'api_error', 'empty_response', 'invalid_json' => 503,
+                'empty_prompt' => 422,
+                default => 503,
+            };
+
+            return response()->json([
+                'message' => __('talenma.talents.ai_filters_error'),
+                'code' => $e->getMessage(),
+            ], $status);
+        }
+
+        return response()->json([
+            'filters' => $filters,
         ]);
     }
 

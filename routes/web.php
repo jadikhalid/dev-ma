@@ -420,6 +420,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
         Route::get('/talents', [CompanySearchController::class, 'index'])->name('company.search');
+        Route::post('/talents/ai-filters', [CompanySearchController::class, 'parseAiFilters'])
+            ->middleware('throttle:20,1')
+            ->name('company.search.ai-filters');
         Route::get('/talents/{talent}', [CompanySearchController::class, 'show'])->name('company.talent.show');
         Route::get('/talents/{talent}/cv', [CompanySearchController::class, 'showCv'])->name('company.talent.cv');
 

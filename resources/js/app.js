@@ -4834,7 +4834,9 @@ Alpine.data('companyTalentProfileDrawer', (config = {}) => ({
 Alpine.data('companyTalentCatalog', (config) => ({
     sectors: config.sectors ?? [],
     searchUrl: config.searchUrl ?? '',
+    aiFiltersUrl: config.aiFiltersUrl ?? '',
     labels: config.labels ?? {},
+    searchMode: 'manual',
     sectorSlug: config.initialSector ?? '',
     professionSlug: config.initialProfession ?? '',
     experience: config.initialExperience || 'all',
@@ -4847,6 +4849,11 @@ Alpine.data('companyTalentCatalog', (config) => ({
     keywordSuggestionsOpen: false,
     keywordHideTimer: null,
     maxKeywords: 3,
+    aiPrompt: '',
+    aiLoading: false,
+    aiError: null,
+    aiSummary: '',
+    aiFilters: null,
     talents: config.initialTalents ?? [],
     meta: config.initialMeta ?? {
         total: 0,
@@ -4876,6 +4883,10 @@ Alpine.data('companyTalentCatalog', (config) => ({
     composeSuccessUrl: null,
     canProposeDirectHire: config.canProposeDirectHire !== false,
     unlockSending: false,
+
+    init() {
+        this.publishFoundCount();
+    },
 
     get filteredProfessions() {
         if (! this.sectorSlug) {
@@ -4945,7 +4956,115 @@ Alpine.data('companyTalentCatalog', (config) => ({
         return template.replace(':count', String(this.meta.total ?? this.talents.length));
     },
 
+    publishFoundCount() {
+        window.dispatchEvent(new CustomEvent('talent-catalog-meta', {
+            detail: { total: this.meta?.total ?? this.talents.length ?? 0 },
+        }));
+    },
+
+    get aiSummaryLabel() {
+        if (! this.aiSummary) {
+            return '';
+        }
+
+        const template = this.labels.aiFiltersSummary ?? ':summary';
+
+        return template.replace(':summary', this.aiSummary);
+    },
+
+    get isAiSearchActive() {
+        return this.searchMode === 'ai' && Boolean(this.aiFilters);
+    },
+
+    resetManualFilters() {
+        this.sectorSlug = '';
+        this.professionSlug = '';
+        this.experience = 'all';
+        this.status = 'all';
+        this.selectedKeywords = [];
+        this.keywordInput = '';
+        this.keywordSuggestionsOpen = false;
+    },
+
+    clearAiSearch() {
+        this.searchMode = 'manual';
+        this.aiFilters = null;
+        this.aiSummary = '';
+        this.aiError = null;
+    },
+
+    activateManualSearch() {
+        if (this.searchMode === 'ai' || this.aiFilters || this.aiSummary) {
+            this.clearAiSearch();
+        }
+
+        this.searchMode = 'manual';
+    },
+
+    async clearAiSearchAndRefresh() {
+        this.clearAiSearch();
+        this.aiPrompt = '';
+        await this.refreshResults();
+    },
+
+    async applyAiFilters() {
+        const prompt = String(this.aiPrompt ?? '').trim();
+
+        if (! prompt || ! this.aiFiltersUrl || this.aiLoading) {
+            return;
+        }
+
+        this.aiLoading = true;
+        this.aiError = null;
+        this.aiSummary = '';
+
+        try {
+            const response = await fetch(this.aiFiltersUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrf,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ prompt }),
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                throw new Error(payload.message || 'ai_filters_failed');
+            }
+
+            const filters = payload.filters ?? {};
+
+            this.resetManualFilters();
+            this.aiFilters = {
+                sector: filters.sector || '',
+                profession: filters.profession || '',
+                experience: filters.experience || 'all',
+                status: filters.status || 'all',
+                keywords: Array.isArray(filters.keywords)
+                    ? filters.keywords.map((item) => String(item).trim()).filter(Boolean).slice(0, this.maxKeywords)
+                    : [],
+            };
+            this.searchMode = 'ai';
+            this.aiSummary = String(filters.summary ?? '').trim() || prompt;
+
+            await this.refreshResults();
+        } catch (error) {
+            this.aiError = error?.message && error.message !== 'ai_filters_failed'
+                ? error.message
+                : (this.labels.aiFiltersError ?? 'Une erreur est survenue.');
+        } finally {
+            this.aiLoading = false;
+        }
+    },
+
     onSectorChange() {
+        this.activateManualSearch();
+
         const isValidProfession = this.filteredProfessions.some(
             (profession) => profession.slug === this.professionSlug,
         );
@@ -4959,7 +5078,13 @@ Alpine.data('companyTalentCatalog', (config) => ({
     },
 
     onProfessionChange() {
+        this.activateManualSearch();
         this.resetKeywordIfInvalid();
+        this.refreshResults();
+    },
+
+    onManualFilterChange() {
+        this.activateManualSearch();
         this.refreshResults();
     },
 
@@ -4992,6 +5117,7 @@ Alpine.data('companyTalentCatalog', (config) => ({
             return;
         }
 
+        this.activateManualSearch();
         this.selectedKeywords = [...this.selectedKeywords, value];
         this.keywordInput = '';
         this.keywordSuggestionsOpen = false;
@@ -5007,6 +5133,7 @@ Alpine.data('companyTalentCatalog', (config) => ({
     },
 
     removeKeyword(index) {
+        this.activateManualSearch();
         this.selectedKeywords = this.selectedKeywords.filter((_, i) => i !== index);
         this.refreshResults();
     },
@@ -5029,27 +5156,48 @@ Alpine.data('companyTalentCatalog', (config) => ({
             .filter(Boolean);
     },
 
+    activeSearchFilters() {
+        if (this.searchMode === 'ai' && this.aiFilters) {
+            return {
+                sector: this.aiFilters.sector || '',
+                profession: this.aiFilters.profession || '',
+                experience: this.aiFilters.experience || 'all',
+                status: this.aiFilters.status || 'all',
+                keywords: Array.isArray(this.aiFilters.keywords) ? this.aiFilters.keywords : [],
+            };
+        }
+
+        return {
+            sector: this.sectorSlug || '',
+            profession: this.professionSlug || '',
+            experience: this.experience || 'all',
+            status: this.status || 'all',
+            keywords: this.selectedKeywords,
+        };
+    },
+
     buildQuery(page = 1) {
         const params = new URLSearchParams();
+        const filters = this.activeSearchFilters();
 
-        if (this.sectorSlug) {
-            params.set('sector', this.sectorSlug);
+        if (filters.sector) {
+            params.set('sector', filters.sector);
         }
 
-        if (this.professionSlug) {
-            params.set('profession', this.professionSlug);
+        if (filters.profession) {
+            params.set('profession', filters.profession);
         }
 
-        if (this.experience && this.experience !== 'all') {
-            params.set('experience', this.experience);
+        if (filters.experience && filters.experience !== 'all') {
+            params.set('experience', filters.experience);
         }
 
-        if (this.status && this.status !== 'all') {
-            params.set('status', this.status);
+        if (filters.status && filters.status !== 'all') {
+            params.set('status', filters.status);
         }
 
-        if (this.selectedKeywords.length) {
-            params.set('keyword', this.selectedKeywords.join(', '));
+        if (filters.keywords.length) {
+            params.set('keyword', filters.keywords.join(', '));
         }
 
         if (page > 1) {
@@ -5060,7 +5208,18 @@ Alpine.data('companyTalentCatalog', (config) => ({
     },
 
     syncUrl(page = 1) {
-        const params = this.buildQuery(page);
+        // Keep catalogue filter params out of the address bar during AI search
+        // so the mapping stays invisible to the user.
+        const params = this.searchMode === 'ai'
+            ? (() => {
+                const aiParams = new URLSearchParams();
+                if (page > 1) {
+                    aiParams.set('page', String(page));
+                }
+
+                return aiParams;
+            })()
+            : this.buildQuery(page);
         const query = params.toString();
         const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
 
@@ -5103,6 +5262,7 @@ Alpine.data('companyTalentCatalog', (config) => ({
             if (typeof payload.can_propose_direct_hire === 'boolean') {
                 this.canProposeDirectHire = payload.can_propose_direct_hire;
             }
+            this.publishFoundCount();
         } catch (error) {
             if (token !== this.requestToken) {
                 return;

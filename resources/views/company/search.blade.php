@@ -1,8 +1,17 @@
 ﻿<x-app-layout>
     <x-slot name="header">
-        <div>
+        <div
+            x-data="{
+                total: {{ (int) $talents->total() }},
+                template: @js(__('talenma.talents.found', ['count' => ':count'])),
+                get foundLabel() {
+                    return this.template.replace(':count', String(this.total ?? 0));
+                },
+            }"
+            @talent-catalog-meta.window="total = Number($event.detail?.total ?? 0)"
+        >
             <h2 class="text-xl font-bold">{{ __('talenma.talents.title') }}</h2>
-            <p class="text-sm text-gray-500">{{ __('talenma.talents.subtitle') }}</p>
+            <p class="text-sm text-gray-500" x-text="foundLabel"></p>
         </div>
     </x-slot>
 
@@ -80,6 +89,7 @@
         x-data="companyTalentCatalog({
             sectors: @js($sectors),
             searchUrl: @js(route('company.search')),
+            aiFiltersUrl: @js(route('company.search.ai-filters')),
             initialTalents: @js($initialTalents),
             initialMeta: @js([
                 'total' => $talents->total(),
@@ -118,132 +128,217 @@
                 'namedDisabled' => __('talenma.recruitment.named_blocked_open'),
                 'talentLocked' => __('talenma.recruitment.talent_lock_badge'),
                 'unlockError' => __('talenma.recruitment.talent_unlock_error'),
+                'aiFiltersLoading' => __('talenma.talents.ai_filters_loading'),
+                'aiFiltersError' => __('talenma.talents.ai_filters_error'),
+                'aiFiltersSummary' => __('talenma.talents.ai_filters_summary', ['summary' => ':summary']),
             ]),
             composeUrl: @js(route('inbox.store')),
             csrf: @js(csrf_token()),
             canProposeDirectHire: @js($canProposeDirectHire),
         })"
     >
-        <div class="bg-white rounded-2xl border p-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div>
-                    <x-input-label for="catalog-sector" :value="__('talenma.home.search_sector')" />
-                    <select
-                        id="catalog-sector"
-                        x-model="sectorSlug"
-                        @change="onSectorChange()"
-                        class="{{ $selectClass }}"
+        <div class="space-y-4">
+            <div
+                class="rounded-2xl border bg-white p-4 sm:p-5"
+                :class="isAiSearchActive ? 'border-indigo-200 ring-1 ring-indigo-100' : 'border-gray-200'"
+            >
+                <p class="text-sm font-medium text-gray-900">{{ __('talenma.talents.ai_filters_title') }}</p>
+                <div class="relative mt-3">
+                    <label class="sr-only" for="catalog-ai-prompt">{{ __('talenma.talents.ai_filters_title') }}</label>
+                    <input
+                        id="catalog-ai-prompt"
+                        type="text"
+                        x-model="aiPrompt"
+                        maxlength="500"
+                        :disabled="aiLoading"
+                        placeholder="{{ __('talenma.talents.ai_filters_placeholder') }}"
+                        class="block w-full rounded-xl border-gray-300 py-2.5 pl-3 pr-12 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
+                        @keydown.enter.prevent="applyAiFilters()"
+                    />
+                    <button
+                        type="button"
+                        class="absolute inset-y-1 right-1 inline-flex w-10 items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        :disabled="aiLoading || ! aiPrompt.trim()"
+                        :aria-label="aiLoading ? labels.aiFiltersLoading : @js(__('talenma.talents.ai_filters_apply'))"
+                        :title="aiLoading ? labels.aiFiltersLoading : @js(__('talenma.talents.ai_filters_apply'))"
+                        @click="applyAiFilters()"
                     >
-                        <option value="">{{ __('talenma.home.search_sector_all') }}</option>
-                        @foreach ($sectors as $sectorOption)
-                            <option value="{{ $sectorOption['slug'] }}">{{ $sectorOption['name'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <x-input-label for="catalog-profession" :value="__('talenma.home.search_profession')" />
-                    <select
-                        id="catalog-profession"
-                        x-model="professionSlug"
-                        @change="onProfessionChange()"
-                        :disabled="! professionsEnabled"
-                        class="{{ $selectClass }} disabled:bg-gray-50 disabled:text-gray-400"
-                    >
-                        <option value="" x-text="professionPlaceholder"></option>
-                        <template x-for="profession in filteredProfessions" :key="profession.slug">
-                            <option :value="profession.slug" x-text="profession.name"></option>
-                        </template>
-                    </select>
-                </div>
-
-                <div>
-                    <x-input-label for="catalog-experience" :value="__('talenma.home.search_drawer_filter_experience')" />
-                    <select
-                        id="catalog-experience"
-                        x-model="experience"
-                        @change="refreshResults()"
-                        class="{{ $selectClass }}"
-                    >
-                        <option value="all">{{ __('talenma.home.search_drawer_filter_all') }}</option>
-                        <option value="0-1">{{ __('talenma.home.search_drawer_filter_exp_0_1') }}</option>
-                        <option value="1-5">{{ __('talenma.home.search_drawer_filter_exp_1_5') }}</option>
-                        <option value="5-10">{{ __('talenma.home.search_drawer_filter_exp_5_10') }}</option>
-                        <option value="10+">{{ __('talenma.home.search_drawer_filter_exp_10_plus') }}</option>
-                    </select>
-                </div>
-
-                <div>
-                    <x-input-label for="catalog-status" :value="__('talenma.home.search_drawer_filter_status')" />
-                    <select
-                        id="catalog-status"
-                        x-model="status"
-                        @change="refreshResults()"
-                        class="{{ $selectClass }}"
-                    >
-                        <option value="all">{{ __('talenma.home.search_drawer_filter_all') }}</option>
-                        <option value="{{ \App\Models\Profile::STATUS_AVAILABLE }}">{{ __('talenma.talent.available') }}</option>
-                        <option value="{{ \App\Models\Profile::STATUS_BUSY }}">{{ __('talenma.talent.busy') }}</option>
-                        <option value="{{ \App\Models\Profile::STATUS_LISTENING }}">{{ __('talenma.talent.listening') }}</option>
-                    </select>
-                </div>
-
-                <div class="relative">
-                    <x-input-label for="catalog-keywords" :value="__('talenma.home.search_skills')" />
-                    <div class="mt-1 min-h-[42px] rounded-lg border border-gray-300 bg-white px-2 py-1.5 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500"
-                         :class="{ 'bg-gray-50': ! keywordsEnabled }"
-                    >
-                        <div class="flex flex-wrap gap-1.5">
-                            <template x-for="(keyword, index) in selectedKeywords" :key="keyword">
-                                <span class="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                                    <span x-text="keyword"></span>
-                                    <button
-                                        type="button"
-                                        class="text-indigo-400 hover:text-indigo-700"
-                                        @click="removeKeyword(index)"
-                                        :aria-label="@js(__('talenma.talent.specialization_remove_keyword'))"
-                                    >&times;</button>
-                                </span>
-                            </template>
-                            <input
-                                id="catalog-keywords"
-                                type="text"
-                                x-model="keywordInput"
-                                @focus="keywordSuggestionsOpen = true"
-                                @input="keywordSuggestionsOpen = true"
-                                @keydown.enter.prevent="addFirstKeywordSuggestion()"
-                                @keydown.escape="keywordSuggestionsOpen = false"
-                                @blur="hideKeywordSuggestionsSoon()"
-                                :disabled="! keywordsEnabled || keywordsAtMax"
-                                :placeholder="keywordsEnabled ? (keywordsAtMax ? labels.keywordsMax : labels.keywordPlaceholder) : labels.keywordBlocked"
-                                class="min-w-[8rem] flex-1 border-0 bg-transparent p-1 text-sm focus:ring-0 disabled:cursor-not-allowed disabled:text-gray-400"
+                        <svg
+                            x-show="! aiLoading"
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                fill="currentColor"
+                                d="M12 2.2c.35 2.85 1.55 5.05 3.55 7.05S20.95 12.65 23.8 13c-2.85.35-5.05 1.55-7.05 3.55S12.35 20.95 12 23.8c-.35-2.85-1.55-5.05-3.55-7.05S3.05 13.35.2 13c2.85-.35 5.05-1.55 7.05-3.55S11.65 5.05 12 2.2z"
                             />
-                        </div>
+                        </svg>
+                        <svg
+                            x-show="aiLoading"
+                            x-cloak
+                            class="h-5 w-5 animate-spin"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div
+                    x-show="isAiSearchActive && aiSummary"
+                    x-cloak
+                    class="mt-3 flex items-start gap-2 rounded-xl bg-indigo-50 px-3 py-2 text-sm text-indigo-900"
+                >
+                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            fill="currentColor"
+                            d="M12 2.2c.35 2.85 1.55 5.05 3.55 7.05S20.95 12.65 23.8 13c-2.85.35-5.05 1.55-7.05 3.55S12.35 20.95 12 23.8c-.35-2.85-1.55-5.05-3.55-7.05S3.05 13.35.2 13c2.85-.35 5.05-1.55 7.05-3.55S11.65 5.05 12 2.2z"
+                        />
+                    </svg>
+                    <p class="min-w-0 flex-1 leading-snug" x-text="aiSummaryLabel"></p>
+                    <button
+                        type="button"
+                        class="shrink-0 rounded-md px-1.5 text-indigo-500 hover:bg-indigo-100 hover:text-indigo-800"
+                        @click="clearAiSearchAndRefresh()"
+                        :aria-label="@js(__('talenma.talents.ai_filters_clear'))"
+                        :title="@js(__('talenma.talents.ai_filters_clear'))"
+                    >&times;</button>
+                </div>
+                <p
+                    x-show="aiError"
+                    x-cloak
+                    class="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700"
+                    x-text="aiError"
+                ></p>
+            </div>
+
+            <div
+                class="rounded-2xl border bg-white p-4 sm:p-5"
+                :class="isAiSearchActive ? 'border-gray-200 opacity-70' : 'border-gray-200'"
+            >
+                <p class="mb-4 text-sm font-medium text-gray-900">{{ __('talenma.talents.manual_filters_title') }}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div>
+                        <x-input-label for="catalog-sector" :value="__('talenma.home.search_sector')" />
+                        <select
+                            id="catalog-sector"
+                            x-model="sectorSlug"
+                            @change="onSectorChange()"
+                            class="{{ $selectClass }}"
+                        >
+                            <option value="">{{ __('talenma.home.search_sector_all') }}</option>
+                            @foreach ($sectors as $sectorOption)
+                                <option value="{{ $sectorOption['slug'] }}">{{ $sectorOption['name'] }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div
-                        x-show="keywordSuggestionsOpen && keywordsEnabled && ! keywordsAtMax && keywordInput.trim()"
-                        x-cloak
-                        class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg"
-                    >
-                        <template x-if="filteredAvailableKeywords.length === 0">
-                            <p class="px-3 py-2 text-sm text-gray-500" x-text="labels.keywordEmpty"></p>
-                        </template>
-                        <template x-for="suggestion in filteredAvailableKeywords" :key="suggestion">
-                            <button
-                                type="button"
-                                class="block w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
-                                @mousedown.prevent="addKeyword(suggestion)"
-                                x-text="suggestion"
-                            ></button>
-                        </template>
+
+                    <div>
+                        <x-input-label for="catalog-profession" :value="__('talenma.home.search_profession')" />
+                        <select
+                            id="catalog-profession"
+                            x-model="professionSlug"
+                            @change="onProfessionChange()"
+                            :disabled="! professionsEnabled"
+                            class="{{ $selectClass }} disabled:bg-gray-50 disabled:text-gray-400"
+                        >
+                            <option value="" x-text="professionPlaceholder"></option>
+                            <template x-for="profession in filteredProfessions" :key="profession.slug">
+                                <option :value="profession.slug" x-text="profession.name"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div>
+                        <x-input-label for="catalog-experience" :value="__('talenma.home.search_drawer_filter_experience')" />
+                        <select
+                            id="catalog-experience"
+                            x-model="experience"
+                            @change="onManualFilterChange()"
+                            class="{{ $selectClass }}"
+                        >
+                            <option value="all">{{ __('talenma.home.search_drawer_filter_all') }}</option>
+                            <option value="0-1">{{ __('talenma.home.search_drawer_filter_exp_0_1') }}</option>
+                            <option value="1-5">{{ __('talenma.home.search_drawer_filter_exp_1_5') }}</option>
+                            <option value="5-10">{{ __('talenma.home.search_drawer_filter_exp_5_10') }}</option>
+                            <option value="10+">{{ __('talenma.home.search_drawer_filter_exp_10_plus') }}</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <x-input-label for="catalog-status" :value="__('talenma.home.search_drawer_filter_status')" />
+                        <select
+                            id="catalog-status"
+                            x-model="status"
+                            @change="onManualFilterChange()"
+                            class="{{ $selectClass }}"
+                        >
+                            <option value="all">{{ __('talenma.home.search_drawer_filter_all') }}</option>
+                            <option value="{{ \App\Models\Profile::STATUS_AVAILABLE }}">{{ __('talenma.talent.available') }}</option>
+                            <option value="{{ \App\Models\Profile::STATUS_BUSY }}">{{ __('talenma.talent.busy') }}</option>
+                            <option value="{{ \App\Models\Profile::STATUS_LISTENING }}">{{ __('talenma.talent.listening') }}</option>
+                        </select>
+                    </div>
+
+                    <div class="relative">
+                        <x-input-label for="catalog-keywords" :value="__('talenma.home.search_skills')" />
+                        <div class="mt-1 min-h-[42px] rounded-lg border border-gray-300 bg-white px-2 py-1.5 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500"
+                             :class="{ 'bg-gray-50': ! keywordsEnabled }"
+                        >
+                            <div class="flex flex-wrap gap-1.5">
+                                <template x-for="(keyword, index) in selectedKeywords" :key="keyword">
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                                        <span x-text="keyword"></span>
+                                        <button
+                                            type="button"
+                                            class="text-indigo-400 hover:text-indigo-700"
+                                            @click="removeKeyword(index)"
+                                            :aria-label="@js(__('talenma.talent.specialization_remove_keyword'))"
+                                        >&times;</button>
+                                    </span>
+                                </template>
+                                <input
+                                    id="catalog-keywords"
+                                    type="text"
+                                    x-model="keywordInput"
+                                    @focus="keywordSuggestionsOpen = true"
+                                    @input="keywordSuggestionsOpen = true"
+                                    @keydown.enter.prevent="addFirstKeywordSuggestion()"
+                                    @keydown.escape="keywordSuggestionsOpen = false"
+                                    @blur="hideKeywordSuggestionsSoon()"
+                                    :disabled="! keywordsEnabled || keywordsAtMax"
+                                    :placeholder="keywordsEnabled ? (keywordsAtMax ? labels.keywordsMax : labels.keywordPlaceholder) : labels.keywordBlocked"
+                                    class="min-w-[8rem] flex-1 border-0 bg-transparent p-1 text-sm focus:ring-0 disabled:cursor-not-allowed disabled:text-gray-400"
+                                />
+                            </div>
+                        </div>
+                        <div
+                            x-show="keywordSuggestionsOpen && keywordsEnabled && ! keywordsAtMax && keywordInput.trim()"
+                            x-cloak
+                            class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+                        >
+                            <template x-if="filteredAvailableKeywords.length === 0">
+                                <p class="px-3 py-2 text-sm text-gray-500" x-text="labels.keywordEmpty"></p>
+                            </template>
+                            <template x-for="suggestion in filteredAvailableKeywords" :key="suggestion">
+                                <button
+                                    type="button"
+                                    class="block w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
+                                    @mousedown.prevent="addKeyword(suggestion)"
+                                    x-text="suggestion"
+                                ></button>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center justify-between gap-3">
-            <p class="text-sm text-gray-600" x-text="foundLabel"></p>
-            <div x-show="loading" class="flex items-center gap-2 text-sm text-gray-500">
+        <div class="flex items-center justify-end gap-3" x-show="loading" x-cloak>
+            <div class="flex items-center gap-2 text-sm text-gray-500">
                 <svg class="h-4 w-4 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
