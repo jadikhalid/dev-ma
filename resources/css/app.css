@@ -264,6 +264,27 @@
         width: min(48rem, 50vw);
         height: min(48rem, 50vw);
     }
+
+    /* How page: keep wash full-bleed (do not clamp to 80rem). */
+    .page-how .how-hero-frame {
+        left: 0;
+        right: 0;
+        width: 100%;
+        transform: none;
+    }
+
+    .page-how .how-hero-frame .how-wash-lilac {
+        left: -10rem;
+        width: min(52rem, 56vw);
+        height: min(52rem, 56vw);
+    }
+
+    .page-how .how-hero-frame .how-wash-sky {
+        left: 55%;
+        right: auto;
+        width: min(48rem, 50vw);
+        height: min(48rem, 50vw);
+    }
 }
 
 @media (min-width: 1440px) {
@@ -283,13 +304,6 @@
 
     .page-home .home-recruiting-companies {
         margin-top: 1.125rem;
-    }
-
-    .page-how .how-hero-frame {
-        right: auto;
-        left: 50%;
-        width: min(100%, 80rem);
-        transform: translateX(-50%);
     }
 
     .page-how .how-hero-frame .how-wash-lilac {
