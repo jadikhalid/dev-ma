@@ -253,6 +253,12 @@
         width: 100%;
     }
 
+    .page-home .home-hero-wash {
+        /* Soften the bottom clip so the wash does not stop abruptly. */
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%);
+    }
+
     .page-home .home-hero-wash::before {
         left: -10rem;
         width: min(52rem, 56vw);
@@ -271,6 +277,8 @@
         right: 0;
         width: 100%;
         transform: none;
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%);
     }
 
     .page-how .how-hero-frame .how-wash-lilac {
