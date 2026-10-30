@@ -202,7 +202,7 @@ class PendingRegistrationService
     {
         $pending = PendingRegistration::query()->where('token', $token)->first();
 
-        if (! $pending) {
+        if (! $pending || $pending->isCompleted()) {
             throw ValidationException::withMessages([
                 'token' => __('talenma.auth.registration_cancel_invalid'),
             ]);

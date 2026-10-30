@@ -661,7 +661,7 @@ class CompanyOfferAndTrialTest extends TestCase
         $this->assertSame(1, User::query()->where('email', 'trial@acme.test')->count());
     }
 
-    public function test_company_verify_on_talent_host_finishes_on_company_portal(): void
+    public function test_company_verify_on_talent_host_is_bounced_to_company_portal_before_creating_account(): void
     {
         Mail::fake();
 
@@ -671,21 +671,43 @@ class CompanyOfferAndTrialTest extends TestCase
 
         $pending = PendingRegistration::query()->where('email', 'cross-host@acme.test')->firstOrFail();
         $www = config('talenma.hosts.www');
+        $company = config('talenma.hosts.company');
 
         $response = $this->get('http://'.$www.'/register/verify/'.$pending->token);
 
-        $user = User::query()->where('email', 'cross-host@acme.test')->firstOrFail();
         $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['email' => 'cross-host@acme.test']);
+        $response->assertRedirect('http://'.$company.'/register/verify/'.$pending->token);
 
-        $response->assertRedirect();
-        $location = $response->headers->get('Location');
-        $this->assertNotNull($location);
-        $this->assertStringContainsString('entreprises.', parse_url($location, PHP_URL_HOST) ?? '');
-        $this->assertStringContainsString('/register/company-finish/'.$user->id, $location);
-
-        $this->get($location)
+        $this->get('http://'.$company.'/register/verify/'.$pending->token)
             ->assertRedirect(route('dashboard'));
+
+        $user = User::query()->where('email', 'cross-host@acme.test')->firstOrFail();
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_company_cancel_prefetch_does_not_block_confirmation(): void
+    {
+        Mail::fake();
+
+        $this->post(route('company.trial.store'), $this->trialPayload([
+            'email' => 'safe-links-co@acme.test',
+        ]));
+
+        $pending = PendingRegistration::query()->where('email', 'safe-links-co@acme.test')->firstOrFail();
+        $company = config('talenma.hosts.company');
+
+        $this->get('http://'.$company.'/register/cancel/'.$pending->token)
+            ->assertOk();
+
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'safe-links-co@acme.test']);
+        $this->assertDatabaseMissing('users', ['email' => 'safe-links-co@acme.test']);
+
+        $this->get('http://'.$company.'/register/verify/'.$pending->token)
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', ['email' => 'safe-links-co@acme.test']);
     }
 
     public function test_trial_request_can_be_submitted_via_ajax(): void

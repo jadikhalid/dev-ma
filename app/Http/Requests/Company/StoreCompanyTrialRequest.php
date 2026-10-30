@@ -99,7 +99,9 @@ class StoreCompanyTrialRequest extends FormRequest
                 'max:255',
                 new ProfessionalEmail,
                 Rule::unique(User::class, 'email'),
-                Rule::unique(PendingRegistration::class, 'email'),
+                Rule::unique(PendingRegistration::class, 'email')->where(
+                    fn ($query) => $query->whereNull('completed_at')
+                ),
                 Rule::unique(CompanyTrialRequest::class, 'email')->where(
                     fn ($query) => $query->where('status', CompanyTrialRequest::STATUS_PENDING)
                 ),

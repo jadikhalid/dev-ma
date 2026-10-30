@@ -21,13 +21,18 @@ Route::get('register/verify/{token}', VerifyPendingRegistrationController::class
     ->middleware('throttle:10,1')
     ->name('register.verify');
 
-Route::get('register/company-finish/{user}', FinishCompanyRegistrationController::class)
+Route::get('register/company-finish/{code}', FinishCompanyRegistrationController::class)
+    ->where('code', '[A-Za-z0-9]{20,64}')
     ->middleware('throttle:10,1')
     ->name('register.company-finish');
 
-Route::get('register/cancel/{token}', CancelPendingRegistrationController::class)
+Route::get('register/cancel/{token}', [CancelPendingRegistrationController::class, 'show'])
     ->middleware('throttle:10,1')
     ->name('register.cancel');
+
+Route::post('register/cancel/{token}', [CancelPendingRegistrationController::class, 'destroy'])
+    ->middleware('throttle:10,1')
+    ->name('register.cancel.destroy');
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])

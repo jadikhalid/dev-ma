@@ -21,6 +21,11 @@ class PurgePendingRegistrationJob implements ShouldQueue
             return;
         }
 
+        // Keep completed rows for a while so confirmation links stay idempotent.
+        if ($pending->isCompleted()) {
+            return;
+        }
+
         if ($pending->isExpired()) {
             $service->purge($pending);
         }

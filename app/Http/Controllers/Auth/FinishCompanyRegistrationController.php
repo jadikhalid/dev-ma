@@ -8,30 +8,33 @@ use App\Support\PortalHost;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Cache;
 
 class FinishCompanyRegistrationController extends Controller
 {
     /**
-     * Complete company registration login on the entreprises host
-     * after the verification link was opened on another host.
+     * Consume a one-time code and log the company in on the entreprises host.
      */
-    public function __invoke(Request $request, User $user): RedirectResponse
+    public function __invoke(Request $request, string $code): RedirectResponse
     {
-        abort_unless($request->hasValidSignature(), 403);
-        abort_unless($user->isCompany(), 404);
-
         if (! PortalHost::isCompanyHost($request)) {
-            $finishUrl = PortalHost::onCompanyHost(
-                fn () => URL::temporarySignedRoute(
-                    'register.company-finish',
-                    now()->addHour(),
-                    ['user' => $user->id],
-                    absolute: true,
-                )
-            );
+            return redirect()->away(PortalHost::companyUrl('/register/company-finish/'.$code));
+        }
 
-            return redirect()->away($finishUrl);
+        $userId = Cache::pull('company_reg_finish:'.$code);
+
+        if (! $userId) {
+            return redirect()
+                ->route('login')
+                ->with('toast_error', __('talenma.auth.registration_verify_invalid'));
+        }
+
+        $user = User::query()->find($userId);
+
+        if (! $user?->isCompany()) {
+            return redirect()
+                ->route('login')
+                ->with('toast_error', __('talenma.auth.registration_verify_invalid'));
         }
 
         Auth::login($user);
@@ -43,7 +46,7 @@ class FinishCompanyRegistrationController extends Controller
             : 'talenma.auth.registration_verified_success';
 
         return redirect()
-            ->route('dashboard')
+            ->to(route('dashboard', absolute: false))
             ->with('toast_success', __($toastKey));
     }
 }

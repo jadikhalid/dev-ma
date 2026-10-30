@@ -518,6 +518,25 @@ class RegistrationTest extends TestCase
         $this->assertDatabaseHas('pending_registrations', ['email' => 'test@example.com']);
     }
 
+    public function test_cancel_email_link_shows_confirmation_without_purging(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', $this->validTalentPayload([
+            'email' => 'wrong-owner@example.com',
+        ]));
+
+        $pending = PendingRegistration::query()->where('email', 'wrong-owner@example.com')->firstOrFail();
+
+        // GET must not destroy the pending row (email scanners prefetch cancel links).
+        $this->get(route('register.cancel', ['token' => $pending->token]))
+            ->assertOk()
+            ->assertSeeText(__('talenma.auth.registration_cancel_confirm_btn'));
+
+        $this->assertDatabaseHas('pending_registrations', ['email' => 'wrong-owner@example.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'wrong-owner@example.com']);
+    }
+
     public function test_unintended_recipient_can_cancel_pending_registration_via_email_link(): void
     {
         Mail::fake();
@@ -528,7 +547,7 @@ class RegistrationTest extends TestCase
 
         $pending = PendingRegistration::query()->where('email', 'wrong-owner@example.com')->firstOrFail();
 
-        $response = $this->get(route('register.cancel', ['token' => $pending->token]));
+        $response = $this->post(route('register.cancel.destroy', ['token' => $pending->token]));
 
         $response->assertRedirect(route('login'));
         $response->assertSessionHas('toast_success');
@@ -542,5 +561,24 @@ class RegistrationTest extends TestCase
 
         $response->assertRedirect(route('login'));
         $response->assertSessionHas('toast_error');
+    }
+
+    public function test_prefetching_cancel_link_does_not_block_email_confirmation(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', $this->validTalentPayload([
+            'email' => 'safe-links@example.com',
+        ]));
+
+        $pending = PendingRegistration::query()->where('email', 'safe-links@example.com')->firstOrFail();
+
+        $this->get(route('register.cancel', ['token' => $pending->token]))->assertOk();
+
+        $this->get(route('register.verify', ['token' => $pending->token]))
+            ->assertRedirect();
+
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', ['email' => 'safe-links@example.com']);
     }
 }
