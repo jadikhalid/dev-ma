@@ -630,7 +630,7 @@ class CompanyOfferAndTrialTest extends TestCase
         Mail::assertNotSent(CompanyTrialRequestMail::class);
 
         $this->get(route('register.verify', ['token' => $pending->token]))
-            ->assertRedirect(\App\Support\PortalHost::companyUrl('/dashboard'));
+            ->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticated();
         $user = User::query()->where('email', 'trial@acme.test')->first();
@@ -656,9 +656,36 @@ class CompanyOfferAndTrialTest extends TestCase
 
         // Second click (email prefetch / double open) must reopen the account, not the trial form.
         $this->get(route('register.verify', ['token' => $pending->token]))
-            ->assertRedirect(\App\Support\PortalHost::companyUrl('/dashboard'));
+            ->assertRedirect(route('dashboard'));
         $this->assertAuthenticatedAs($user);
         $this->assertSame(1, User::query()->where('email', 'trial@acme.test')->count());
+    }
+
+    public function test_company_verify_on_talent_host_finishes_on_company_portal(): void
+    {
+        Mail::fake();
+
+        $this->post(route('company.trial.store'), $this->trialPayload([
+            'email' => 'cross-host@acme.test',
+        ]));
+
+        $pending = PendingRegistration::query()->where('email', 'cross-host@acme.test')->firstOrFail();
+        $www = config('talenma.hosts.www');
+
+        $response = $this->get('http://'.$www.'/register/verify/'.$pending->token);
+
+        $user = User::query()->where('email', 'cross-host@acme.test')->firstOrFail();
+        $this->assertGuest();
+
+        $response->assertRedirect();
+        $location = $response->headers->get('Location');
+        $this->assertNotNull($location);
+        $this->assertStringContainsString('entreprises.', parse_url($location, PHP_URL_HOST) ?? '');
+        $this->assertStringContainsString('/register/company-finish/'.$user->id, $location);
+
+        $this->get($location)
+            ->assertRedirect(route('dashboard'));
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_trial_request_can_be_submitted_via_ajax(): void

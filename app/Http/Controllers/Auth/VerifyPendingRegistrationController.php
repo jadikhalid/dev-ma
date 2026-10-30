@@ -8,6 +8,7 @@ use App\Services\PendingRegistrationService;
 use App\Support\PortalHost;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 
 class VerifyPendingRegistrationController extends Controller
@@ -20,11 +21,20 @@ class VerifyPendingRegistrationController extends Controller
             return $this->redirectAfterVerificationFailure($exception);
         }
 
-        // Company sessions live only on the entreprises host.
+        // Company sessions are host-only (SESSION_DOMAIN is null). If the verify
+        // link was opened on www, bounce to a signed finish URL on entreprises
+        // so Auth::login happens where the company portal cookie lives.
         if ($user->isCompany() && ! PortalHost::isCompanyHost(request())) {
-            return redirect()
-                ->away(PortalHost::companyLoginUrl())
-                ->with('toast_success', __('talenma.auth.registration_verified_approved_login'));
+            $finishUrl = PortalHost::onCompanyHost(
+                fn () => URL::temporarySignedRoute(
+                    'register.company-finish',
+                    now()->addHour(),
+                    ['user' => $user->id],
+                    absolute: true,
+                )
+            );
+
+            return redirect()->away($finishUrl);
         }
 
         Auth::login($user);
@@ -52,12 +62,6 @@ class VerifyPendingRegistrationController extends Controller
         $toastKey = $user->isApproved()
             ? 'talenma.auth.registration_verified_approved'
             : 'talenma.auth.registration_verified_success';
-
-        if ($user->isCompany()) {
-            return redirect()
-                ->away(PortalHost::companyUrl('/dashboard'))
-                ->with('toast_success', __($toastKey));
-        }
 
         return redirect()
             ->route($user->homeRouteName())

@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\ResendPendingRegistrationController;
 use App\Http\Controllers\Auth\RestartPendingRegistrationController;
+use App\Http\Controllers\Auth\FinishCompanyRegistrationController;
 use App\Http\Controllers\Auth\VerifyPendingRegistrationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
@@ -19,6 +20,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('register/verify/{token}', VerifyPendingRegistrationController::class)
     ->middleware('throttle:10,1')
     ->name('register.verify');
+
+Route::get('register/company-finish/{user}', FinishCompanyRegistrationController::class)
+    ->middleware('throttle:10,1')
+    ->name('register.company-finish');
 
 Route::get('register/cancel/{token}', CancelPendingRegistrationController::class)
     ->middleware('throttle:10,1')
