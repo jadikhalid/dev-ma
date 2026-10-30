@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\PendingRegistrationService;
+use App\Support\PortalHost;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -16,12 +17,14 @@ class VerifyPendingRegistrationController extends Controller
         try {
             $user = $service->complete($token);
         } catch (ValidationException $exception) {
-            $message = collect($exception->errors())->flatten()->first()
-                ?? __('talenma.auth.registration_verify_invalid');
+            return $this->redirectAfterVerificationFailure($exception);
+        }
 
+        // Company sessions live only on the entreprises host.
+        if ($user->isCompany() && ! PortalHost::isCompanyHost(request())) {
             return redirect()
-                ->route('register')
-                ->with('toast_error', $message);
+                ->away(PortalHost::companyLoginUrl())
+                ->with('toast_success', __('talenma.auth.registration_verified_approved_login'));
         }
 
         Auth::login($user);
@@ -50,8 +53,31 @@ class VerifyPendingRegistrationController extends Controller
             ? 'talenma.auth.registration_verified_approved'
             : 'talenma.auth.registration_verified_success';
 
+        if ($user->isCompany()) {
+            return redirect()
+                ->away(PortalHost::companyUrl('/dashboard'))
+                ->with('toast_success', __($toastKey));
+        }
+
         return redirect()
             ->route($user->homeRouteName())
             ->with('toast_success', __($toastKey));
+    }
+
+    private function redirectAfterVerificationFailure(ValidationException $exception): RedirectResponse
+    {
+        $message = collect($exception->errors())->flatten()->first()
+            ?? __('talenma.auth.registration_verify_invalid');
+
+        // Never bounce companies back to the public trial form after a verify click.
+        if (PortalHost::isCompanyHost(request())) {
+            return redirect()
+                ->route('login')
+                ->with('toast_error', $message);
+        }
+
+        return redirect()
+            ->route('register')
+            ->with('toast_error', $message);
     }
 }

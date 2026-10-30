@@ -186,7 +186,11 @@ class RegistrationTest extends TestCase
         $this->assertSame(User::APPROVAL_PENDING, $user->approval_status);
         $this->assertNotNull($user->data_processing_consent_at);
         $this->assertSame(config('talenma.data_processing_consent_version'), $user->data_processing_consent_version);
-        $this->assertDatabaseMissing('pending_registrations', ['email' => 'test@example.com']);
+        $this->assertDatabaseHas('pending_registrations', [
+            'email' => 'test@example.com',
+            'user_id' => $user->id,
+        ]);
+        $this->assertNotNull($pending->fresh()->completed_at);
         Mail::assertNotSent(TalentWelcomeMail::class);
     }
 

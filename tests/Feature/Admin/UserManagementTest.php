@@ -394,7 +394,11 @@ class UserManagementTest extends TestCase
         $user = User::query()->where('email', 'force-verify@example.com')->first();
         $this->assertNotNull($user);
         $this->assertNotNull($user->email_verified_at);
-        $this->assertDatabaseMissing('pending_registrations', ['email' => 'force-verify@example.com']);
+        $this->assertDatabaseHas('pending_registrations', [
+            'email' => 'force-verify@example.com',
+            'user_id' => $user->id,
+        ]);
+        $this->assertNotNull($pending->fresh()->completed_at);
         $this->assertAuthenticatedAs($admin);
 
         $response->assertRedirect(route('admin.users.index', [

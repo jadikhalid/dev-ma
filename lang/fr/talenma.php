@@ -1833,6 +1833,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
         'registration_resend_unavailable' => 'Aucune inscription en attente pour cette adresse, ou le délai de 24 heures est expiré.',
         'registration_verified_success' => 'Votre e-mail est confirmé. Votre dossier est en cours de validation par notre équipe.',
         'registration_verified_approved' => 'Votre e-mail est confirmé. Votre compte est activé : bienvenue sur Talents du Maroc !',
+        'registration_verified_approved_login' => 'Votre e-mail est confirmé. Connectez-vous pour accéder à votre espace entreprise.',
         'registration_welcome_complete_profile' => 'Compte créé — bienvenue ! Complétez votre profil pour être visible auprès des entreprises.',
         'registration_verify_invalid' => 'Ce lien de confirmation est invalide ou a déjà été utilisé.',
         'registration_verify_expired' => 'Ce lien a expiré. Votre inscription a été annulée. Veuillez vous inscrire à nouveau.',

@@ -14,6 +14,8 @@ class PendingRegistration extends Model
         'payload',
         'document_paths',
         'expires_at',
+        'completed_at',
+        'user_id',
     ];
 
     protected function casts(): array
@@ -22,7 +24,18 @@ class PendingRegistration extends Model
             'payload' => 'array',
             'document_paths' => 'array',
             'expires_at' => 'datetime',
+            'completed_at' => 'datetime',
         ];
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->completed_at !== null && $this->user_id !== null;
+    }
+
+    public function isCompanyRegistration(): bool
+    {
+        return ($this->payload['role'] ?? null) === 'company';
     }
 
     public static function generateToken(): string

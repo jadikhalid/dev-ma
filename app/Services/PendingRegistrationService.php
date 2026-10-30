@@ -221,8 +221,17 @@ class PendingRegistrationService
 
     private function sendVerificationMail(PendingRegistration $pending): void
     {
-        $verificationUrl = URL::route('register.verify', ['token' => $pending->token], absolute: true);
-        $cancellationUrl = URL::route('register.cancel', ['token' => $pending->token], absolute: true);
+        $buildUrls = function () use ($pending): array {
+            return [
+                URL::route('register.verify', ['token' => $pending->token], absolute: true),
+                URL::route('register.cancel', ['token' => $pending->token], absolute: true),
+            ];
+        };
+
+        // Company accounts only have a session on the entreprises host.
+        [$verificationUrl, $cancellationUrl] = ($pending->payload['role'] ?? null) === 'company'
+            ? \App\Support\PortalHost::onCompanyHost($buildUrls)
+            : \App\Support\PortalHost::onWwwHost($buildUrls);
 
         Mail::to($pending->email)
             ->locale($pending->locale)
@@ -245,6 +254,19 @@ class PendingRegistrationService
         $pending = PendingRegistration::query()->where('token', $token)->first();
 
         if (! $pending) {
+            throw ValidationException::withMessages([
+                'token' => __('talenma.auth.registration_verify_invalid'),
+            ]);
+        }
+
+        // Idempotent: email clients often prefetch the link once before the user clicks.
+        if ($pending->isCompleted()) {
+            $user = User::query()->find($pending->user_id);
+
+            if ($user) {
+                return $user;
+            }
+
             throw ValidationException::withMessages([
                 'token' => __('talenma.auth.registration_verify_invalid'),
             ]);
@@ -296,13 +318,16 @@ class PendingRegistrationService
      */
     private function finalize(PendingRegistration $pending): User
     {
-        if (User::query()->where('email', $pending->email)->exists()) {
-            $this->purge($pending);
+        $existing = User::query()->where('email', $pending->email)->first();
 
-            throw ValidationException::withMessages([
-                'email' => __('talenma.auth.validation.email_taken'),
-            ]);
+        if ($existing) {
+            // Another hit (prefetch / double-click) already created the account.
+            $this->markCompleted($pending, $existing);
+
+            return $existing;
         }
+
+        $locale = $pending->locale;
 
         $user = DB::transaction(function () use ($pending) {
             $payload = $pending->payload;
@@ -393,16 +418,31 @@ class PendingRegistrationService
                 $this->attachDocuments($profile, $pending);
             }
 
-            $this->purge($pending);
+            $this->markCompleted($pending, $user);
 
             return $user;
         });
 
         if ($user->isTalent() && $user->isApproved()) {
-            $this->sendWelcomeMail($user, $pending->locale);
+            $this->sendWelcomeMail($user, $locale);
         }
 
         return $user;
+    }
+
+    private function markCompleted(PendingRegistration $pending, User $user): void
+    {
+        $this->deleteDocumentStorage($pending);
+
+        $payload = $pending->payload ?? [];
+        unset($payload['password']);
+
+        $pending->forceFill([
+            'completed_at' => now(),
+            'user_id' => $user->id,
+            'payload' => $payload,
+            'document_paths' => null,
+        ])->save();
     }
 
     public function purge(PendingRegistration $pending): void
@@ -416,6 +456,7 @@ class PendingRegistrationService
         $count = 0;
 
         PendingRegistration::query()
+            ->whereNull('completed_at')
             ->where('expires_at', '<', now())
             ->each(function (PendingRegistration $pending) use (&$count) {
                 $this->purge($pending);

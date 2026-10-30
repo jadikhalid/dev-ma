@@ -630,7 +630,7 @@ class CompanyOfferAndTrialTest extends TestCase
         Mail::assertNotSent(CompanyTrialRequestMail::class);
 
         $this->get(route('register.verify', ['token' => $pending->token]))
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(\App\Support\PortalHost::companyUrl('/dashboard'));
 
         $this->assertAuthenticated();
         $user = User::query()->where('email', 'trial@acme.test')->first();
@@ -649,6 +649,16 @@ class CompanyOfferAndTrialTest extends TestCase
             'user_id' => $user->id,
             'trial_terms_version' => config('talenma.trial_terms_version'),
         ]);
+
+        $pending->refresh();
+        $this->assertNotNull($pending->completed_at);
+        $this->assertSame($user->id, $pending->user_id);
+
+        // Second click (email prefetch / double open) must reopen the account, not the trial form.
+        $this->get(route('register.verify', ['token' => $pending->token]))
+            ->assertRedirect(\App\Support\PortalHost::companyUrl('/dashboard'));
+        $this->assertAuthenticatedAs($user);
+        $this->assertSame(1, User::query()->where('email', 'trial@acme.test')->count());
     }
 
     public function test_trial_request_can_be_submitted_via_ajax(): void

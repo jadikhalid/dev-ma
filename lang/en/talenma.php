@@ -1833,6 +1833,7 @@ An administrator or moderator is reviewing your application before your company 
         'registration_resend_unavailable' => 'No pending registration was found for this address, or the 24-hour window has expired.',
         'registration_verified_success' => 'Your email is confirmed. Your application is being reviewed by our team.',
         'registration_verified_approved' => 'Your email is confirmed. Your account is active — welcome to Talents du Maroc!',
+        'registration_verified_approved_login' => 'Your email is confirmed. Please sign in to open your company workspace.',
         'registration_welcome_complete_profile' => 'Account created — welcome! Complete your profile to be visible to companies.',
         'registration_verify_invalid' => 'This confirmation link is invalid or has already been used.',
         'registration_verify_expired' => 'This link has expired. Your registration was cancelled. Please sign up again.',
