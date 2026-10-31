@@ -4982,6 +4982,28 @@ Alpine.data('companyTalentCatalog', (config) => ({
         return template.replace(':count', String(this.meta.total ?? this.talents.length));
     },
 
+    get hasActiveSearchFilters() {
+        if (this.isAiSearchActive) {
+            return true;
+        }
+
+        const filters = this.activeSearchFilters();
+
+        return Boolean(
+            filters.sector
+            || filters.profession
+            || (filters.experience && filters.experience !== 'all')
+            || (filters.status && filters.status !== 'all')
+            || filters.country
+            || filters.city
+            || (Array.isArray(filters.keywords) && filters.keywords.length > 0)
+        );
+    },
+
+    get showFoundCount() {
+        return this.hasActiveSearchFilters && Number(this.meta?.total ?? 0) > 0;
+    },
+
     publishFoundCount() {
         window.dispatchEvent(new CustomEvent('talent-catalog-meta', {
             detail: { total: this.meta?.total ?? this.talents.length ?? 0 },
