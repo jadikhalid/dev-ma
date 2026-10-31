@@ -4,7 +4,7 @@ Esquisse de travail. Ce texte n’est pas un conseil juridique et ne doit pas ê
 
 Statut : brouillon, octobre 2026.
 
-La partie gratuite est l’essai de trois mois (périmètre Pro). Il n’y a pas d’offre gratuite permanente.
+La partie gratuite est l’essai de 45 jours (périmètre Essentiel). Il n’y a pas d’offre gratuite permanente.
 
 Tant que la SASU française n’est pas immatriculée, ce contrat ne peut pas être signé en son nom. Aujourd’hui, la plateforme est opérée par JADI DIGITAL.
 
@@ -74,17 +74,18 @@ Il s’interdit également d’utiliser l’essai pour constituer une liste de c
 
 ## Article 7. Durée et prix
 
-L’essai dure trois mois à compter de l’ouverture du compte, après validation par l’Éditeur. Il est gratuit. Il ne se reconduit pas. Aucun prélèvement n’est émis pendant l’essai.
+L’essai dure 45 jours à compter de l’ouverture du compte, après validation par l’Éditeur. Il est gratuit. Il ne se reconduit pas. Aucun prélèvement n’est émis pendant l’essai.
 
 ## Article 8. Périmètre
 
-Pendant l’essai, le Client dispose du périmètre du plan Pro :
+Pendant l’essai, le Client dispose du périmètre Essentiel élargi sur 45 jours :
 
 - catalogue de talents vérifiés et recherche ;
 - candidature directe ;
-- jusqu’à cinq annonces actives en même temps ;
-- crédits d’intermédiation dans la limite fixée à l’annexe ;
-- page entreprise enrichie.
+- jusqu’à trois annonces actives simultanément (annonces en cours) — volume total sur la période non plafonné ;
+- page entreprise standard.
+
+L’intermédiation et la page marque employeur enrichie ne sont pas incluses dans l’essai.
 
 L’Éditeur peut retirer ou modifier une fonction encore indiquée comme bêta, sans que cela prolonge la durée de l’essai.
 

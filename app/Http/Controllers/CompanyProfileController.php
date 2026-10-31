@@ -84,6 +84,7 @@ class CompanyProfileController extends Controller
                 $extra = [
                     'sector_label' => $profile->sector ?: '—',
                     'location_label' => collect([$profile->city, $profile->countryLabel()])->filter()->implode(', '),
+                    'reload' => $request->boolean('from_dashboard'),
                 ];
             }
 

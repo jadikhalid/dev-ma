@@ -19,7 +19,7 @@
 
     if ($isTrial && $orgPlan->trial_ends_at) {
         $periodEnd = $orgPlan->trial_ends_at->timezone($tz)->startOfDay();
-        $periodStart = $periodEnd->copy()->subMonths(\App\Models\CompanyProfile::TRIAL_MONTHS);
+        $periodStart = $periodEnd->copy()->subDays(\App\Models\CompanyProfile::TRIAL_DAYS);
         $hasFinitePeriod = true;
         $daysLeft = $orgPlan->trialDaysRemaining();
     } elseif ($orgPlan->subscription_expires_at) {
@@ -37,7 +37,6 @@
 
     $jobsUsed = $orgPlan->publishedJobsCount();
     $jobsLimit = $orgPlan->activeJobLimit();
-    $jobsLeft = max(0, $jobsLimit - $jobsUsed);
     $sourcingIncluded = $orgPlan->canUseSourcing();
     $creditsLimit = $orgPlan->sourcingCreditsPerYear();
     $creditsUsed = $sourcingIncluded ? $orgPlan->sourcingCreditsUsedThisYear() : 0;
@@ -68,27 +67,18 @@
                 <dd class="text-sm font-bold text-slate-950">{{ $badge }}</dd>
             </div>
 
-            <div class="flex items-start justify-between gap-3 rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-slate-100">
-                <dt class="text-xs font-medium text-slate-600">{{ __('talenma.dashboard.company.plan_usage.period_label') }}</dt>
-                <dd class="text-right">
-                    @if ($hasFinitePeriod && $periodStart && $periodEnd)
-                        <p class="text-sm font-bold text-slate-950">
-                            {{ __('talenma.dashboard.company.plan_usage.period', [
-                                'start' => $periodStart->format('d/m/Y'),
-                                'end' => $periodEnd->format('d/m/Y'),
-                            ]) }}
-                        </p>
-                        @if ($daysLeft !== null)
-                            <p class="mt-0.5 text-[11px] text-slate-500">
-                                {{ $daysLeft === 1
-                                    ? __('talenma.dashboard.company.plan_usage.days_left_one')
-                                    : __('talenma.dashboard.company.plan_usage.days_left', ['days' => $daysLeft]) }}
-                            </p>
-                        @endif
-                    @else
-                        <p class="text-sm font-bold text-slate-950">{{ __('talenma.dashboard.company.plan_usage.no_end_date') }}</p>
-                    @endif
-                </dd>
+            <div class="rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-slate-100">
+                <p class="text-xs font-medium text-slate-600">{{ __('talenma.dashboard.company.plan_usage.period_label') }}</p>
+                @if ($hasFinitePeriod && $periodStart && $periodEnd)
+                    <p class="mt-0.5 text-[11px] font-normal leading-snug text-slate-400">
+                        {{ __('talenma.dashboard.company.plan_usage.period', [
+                            'start' => $periodStart->format('d/m/Y'),
+                            'end' => $periodEnd->format('d/m/Y'),
+                        ]) }}
+                    </p>
+                @else
+                    <p class="mt-0.5 text-[11px] font-normal leading-snug text-slate-400">{{ __('talenma.dashboard.company.plan_usage.no_end_date') }}</p>
+                @endif
             </div>
         </dl>
 
@@ -105,23 +95,20 @@
                 <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100">
                     <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all" style="width: {{ $progress }}%"></div>
                 </div>
-                <p class="mt-1.5 text-[11px] text-slate-500">
-                    {{ __('talenma.dashboard.company.plan_usage.ends_on', ['date' => $periodEnd->format('d/m/Y')]) }}
-                </p>
+                @if ($daysLeft !== null)
+                    <p class="mt-1.5 text-[11px] text-slate-500">
+                        {{ $daysLeft === 1
+                            ? __('talenma.dashboard.company.plan_usage.days_left_one')
+                            : __('talenma.dashboard.company.plan_usage.days_left', ['days' => $daysLeft]) }}
+                    </p>
+                @endif
             </div>
         @endif
 
         <dl class="mt-2.5 space-y-2.5">
-            <div class="flex items-start justify-between gap-3 rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-slate-100">
+            <div class="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-slate-100">
                 <dt class="text-xs font-medium text-slate-600">{{ __('talenma.dashboard.company.plan_usage.jobs_label') }}</dt>
-                <dd class="text-right">
-                    <p class="text-sm font-bold text-slate-950">{{ __('talenma.dashboard.company.plan_usage.jobs_value', ['used' => $jobsUsed, 'limit' => $jobsLimit]) }}</p>
-                    <p class="text-[11px] {{ $jobsLeft === 0 ? 'font-semibold text-amber-700' : 'text-slate-500' }}">
-                        {{ $jobsLeft === 0
-                            ? __('talenma.dashboard.company.plan_usage.jobs_full')
-                            : __('talenma.dashboard.company.plan_usage.jobs_remaining', ['count' => $jobsLeft]) }}
-                    </p>
-                </dd>
+                <dd class="text-sm font-bold text-slate-950">{{ __('talenma.dashboard.company.plan_usage.jobs_value', ['used' => $jobsUsed, 'limit' => $jobsLimit]) }}</dd>
             </div>
 
             <div class="flex items-start justify-between gap-3 rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-slate-100">

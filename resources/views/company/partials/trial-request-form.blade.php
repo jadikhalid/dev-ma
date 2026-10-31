@@ -327,14 +327,22 @@
     </form>
 
     {{-- Étape 3 : remerciement --}}
-    <div x-show="step === 3" x-cloak class="space-y-4" data-trial-step="3">
-        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-[#5546F0]">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+    <div
+        x-show="step === 3"
+        x-cloak
+        class="flex flex-col items-center justify-center"
+        :style="lockedHeight ? `min-height: ${lockedHeight}px` : null"
+        data-trial-step="3"
+    >
+        <div class="flex w-full max-w-sm flex-col items-center gap-4 text-center">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-[#5546F0]">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900">{{ __('talenma.company_offer.trial_form.thanks_title') }}</h3>
+            <p class="text-sm leading-relaxed text-gray-600">{{ __('talenma.company_offer.trial_form.thanks_text') }}</p>
+            <button type="button" @click="close()" class="{{ $btnSecondary }} w-full">
+                {{ __('talenma.company_offer.trial_form.close') }}
+            </button>
         </div>
-        <h3 class="text-2xl font-bold text-gray-900">{{ __('talenma.company_offer.trial_form.thanks_title') }}</h3>
-        <p class="text-sm leading-relaxed text-gray-600">{{ __('talenma.company_offer.trial_form.thanks_text') }}</p>
-        <button type="button" @click="close()" class="{{ $btnSecondary }} w-full">
-            {{ __('talenma.company_offer.trial_form.close') }}
-        </button>
     </div>
 </div>

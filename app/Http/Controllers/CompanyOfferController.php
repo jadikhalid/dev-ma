@@ -41,7 +41,7 @@ class CompanyOfferController extends Controller
         }
 
         return view('company.offer', [
-            'trialMonths' => CompanyProfile::TRIAL_MONTHS,
+            'trialDays' => CompanyProfile::TRIAL_DAYS,
             'priceFromEur' => CompanyProfile::PLAN_PRICE_FROM_EUR,
             'professionSectors' => $this->professionCatalog->sectorsForLocale(),
             'companyCountryOptions' => CompanyProfile::countryOptions(),
@@ -206,16 +206,13 @@ class CompanyOfferController extends Controller
         $message = __('talenma.company_offer.trial_sent');
 
         if ($request->expectsJson()) {
-            $request->session()->flash('toast_sticky_success', $message);
-
             return response()->json([
                 'message' => $message,
-                'redirect' => route('company.offer'),
             ]);
         }
 
         return redirect()
-            ->route('company.offer')
-            ->with('toast_sticky_success', $message);
+            ->route('company.trial')
+            ->with('toast_success', $message);
     }
 }

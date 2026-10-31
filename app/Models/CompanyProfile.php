@@ -33,7 +33,18 @@ class CompanyProfile extends Model
 {
     use HasFactory;
 
-    public const TRIAL_MONTHS = 3;
+    /** Duration of the free company trial, in calendar days. */
+    public const TRIAL_DAYS = 45;
+
+    /**
+     * Max simultaneous published jobs during trial.
+     * Drafts / closed / hidden do not count; total posts over the period are unlimited.
+     */
+    public const TRIAL_ACTIVE_JOB_LIMIT = 3;
+
+    public const ESSENTIAL_ACTIVE_JOB_LIMIT = 1;
+
+    public const PRO_ACTIVE_JOB_LIMIT = 5;
 
     public const PLAN_TRIAL = 'trial';
 
@@ -131,7 +142,7 @@ class CompanyProfile extends Model
         $this->forceFill([
             'is_subscribed' => false,
             'subscription_expires_at' => null,
-            'trial_ends_at' => $start->copy()->addMonths(self::TRIAL_MONTHS),
+            'trial_ends_at' => $start->copy()->addDays(self::TRIAL_DAYS),
             'plan' => self::PLAN_TRIAL,
         ])->save();
     }
@@ -159,9 +170,10 @@ class CompanyProfile extends Model
     public function activeJobLimit(): int
     {
         return match ($this->commercialPlan()) {
-            self::PLAN_ESSENTIAL => 1,
-            self::PLAN_TRIAL, self::PLAN_PRO, self::PLAN_CUSTOM => 5,
-            default => 1,
+            self::PLAN_TRIAL => self::TRIAL_ACTIVE_JOB_LIMIT,
+            self::PLAN_ESSENTIAL => self::ESSENTIAL_ACTIVE_JOB_LIMIT,
+            self::PLAN_PRO, self::PLAN_CUSTOM => self::PRO_ACTIVE_JOB_LIMIT,
+            default => self::ESSENTIAL_ACTIVE_JOB_LIMIT,
         };
     }
 
@@ -180,6 +192,9 @@ class CompanyProfile extends Model
         return in_array($this->commercialPlan(), [self::PLAN_PRO, self::PLAN_CUSTOM], true);
     }
 
+    /**
+     * Count of currently live (published) job postings — the concurrent quota.
+     */
     public function publishedJobsCount(): int
     {
         return $this->jobPostings()
@@ -187,6 +202,10 @@ class CompanyProfile extends Model
             ->count();
     }
 
+    /**
+     * Whether another job may go live now. Closing/hiding frees a slot;
+     * creating drafts is always allowed regardless of this check.
+     */
     public function canPublishAnotherJob(): bool
     {
         return $this->publishedJobsCount() < $this->activeJobLimit();

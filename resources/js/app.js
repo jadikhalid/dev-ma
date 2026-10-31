@@ -10434,6 +10434,7 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
     loadingTargetId: config.loadingTargetId || null,
     submitting: false,
     fieldErrors: {},
+    lockedHeight: null,
     step: 1,
     demoStepTitles: {
         1: config.messages?.step_contact || '',
@@ -10511,6 +10512,7 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
         }
 
         this.submitting = false;
+        this.lockedHeight = null;
         this.step = 1;
         this.setLoading(false);
         this.$nextTick(() => {
@@ -10931,13 +10933,15 @@ Alpine.data('companyOfferAjaxForm', (config = {}) => ({
                 return;
             }
 
-            this.resetForm(form);
-
             if (this.mode === 'demo' || this.mode === 'trial') {
+                this.lockedHeight = Math.ceil(this.$root.getBoundingClientRect().height);
+                this.resetForm(form);
                 this.goToStep(this.thanksStep());
 
                 return;
             }
+
+            this.resetForm(form);
 
             pushToast('success', payload?.message || this.messages.sent || '');
             this.$dispatch('company-offer-form-sent', { mode: this.mode });

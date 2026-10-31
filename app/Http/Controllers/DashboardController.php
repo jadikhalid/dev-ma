@@ -102,6 +102,10 @@ class DashboardController extends Controller
             $recentActivity = $this->companyActivity->recentActivity($user, 15);
             $this->activityToasts->flashUnseen($user, $recentActivity, 'company');
 
+            $companyIdentityPanel = ($profile && $user->canManageCompanyProfile())
+                ? app(CompanyProfileController::class)->panelData($profile)
+                : null;
+
             return view('dashboard.company', compact(
                 'recentRequests',
                 'directHires',
@@ -109,6 +113,7 @@ class DashboardController extends Controller
                 'completion',
                 'directHireUnseen',
                 'recentActivity',
+                'companyIdentityPanel',
             ));
         }
 

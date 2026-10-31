@@ -33,7 +33,7 @@ class CompanyProfileFactory extends Factory
         return $this->state(fn () => [
             'is_subscribed' => false,
             'subscription_expires_at' => null,
-            'trial_ends_at' => $endsAt ?? now()->addMonths(CompanyProfile::TRIAL_MONTHS),
+            'trial_ends_at' => $endsAt ?? now()->addDays(CompanyProfile::TRIAL_DAYS),
             'plan' => CompanyProfile::PLAN_TRIAL,
         ]);
     }

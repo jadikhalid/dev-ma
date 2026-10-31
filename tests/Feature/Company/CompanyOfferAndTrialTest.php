@@ -613,8 +613,8 @@ class CompanyOfferAndTrialTest extends TestCase
 
         $response = $this->post(route('company.trial.store'), $this->trialPayload());
 
-        $response->assertRedirect(route('company.offer'));
-        $response->assertSessionHas('toast_sticky_success', __('talenma.company_offer.trial_sent'));
+        $response->assertRedirect(route('company.trial'));
+        $response->assertSessionHas('toast_success', __('talenma.company_offer.trial_sent'));
         $response->assertSessionHas('pending_registration_email', 'trial@acme.test');
         $this->assertGuest();
         $this->assertDatabaseMissing('users', ['email' => 'trial@acme.test']);
@@ -725,9 +725,10 @@ class CompanyOfferAndTrialTest extends TestCase
             ->assertOk()
             ->assertJson([
                 'message' => __('talenma.company_offer.trial_sent'),
-                'redirect' => route('company.offer'),
             ])
-            ->assertSessionHas('toast_sticky_success', __('talenma.company_offer.trial_sent'));
+            ->assertJsonMissingPath('redirect')
+            ->assertSessionMissing('toast_sticky_success')
+            ->assertSessionMissing('toast_success');
 
         $this->assertGuest();
         $this->assertDatabaseMissing('users', ['email' => 'ajax-trial@acme.test']);
@@ -834,7 +835,7 @@ class CompanyOfferAndTrialTest extends TestCase
         });
     }
 
-    public function test_approving_legacy_pending_company_starts_three_month_trial(): void
+    public function test_approving_legacy_pending_company_starts_45_day_trial(): void
     {
         Mail::fake();
 
@@ -858,6 +859,12 @@ class CompanyOfferAndTrialTest extends TestCase
 
         $this->assertTrue($company->isApproved());
         $this->assertTrue($profile->isOnTrial());
+        $this->assertNotNull($profile->trial_ends_at);
+        $this->assertSame(
+            now()->startOfDay()->addDays(CompanyProfile::TRIAL_DAYS)->toDateString(),
+            $profile->trial_ends_at->copy()->startOfDay()->toDateString()
+        );
+        $this->assertSame(CompanyProfile::TRIAL_DAYS, $profile->trialDaysRemaining());
         Mail::assertSent(CompanyApprovedMail::class);
     }
 

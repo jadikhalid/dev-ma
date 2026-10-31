@@ -104,6 +104,7 @@
                 @include('dashboard.partials.company-org-column', [
                     'profile' => $profile,
                     'canEditOrg' => $user->canManageCompanyProfile(),
+                    'companyIdentityPanel' => $companyIdentityPanel ?? null,
                 ])
             </div>
 

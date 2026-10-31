@@ -1,6 +1,6 @@
 # Conditions d’essai gratuit — Talents du Maroc
 
-Esquisse allégée, octobre 2026. Ce texte n’est pas un conseil juridique et ne doit pas être présenté comme signé en l’état. Il concerne uniquement l’essai de trois mois. L’abonnement payant reste décrit dans le contrat-cadre (`docs/contrat-cadre-entreprise.md`).
+Esquisse allégée, octobre 2026. Ce texte n’est pas un conseil juridique et ne doit pas être présenté comme signé en l’état. Il concerne uniquement l’essai de 45 jours. L’abonnement payant reste décrit dans le contrat-cadre (`docs/contrat-cadre-entreprise.md`).
 
 Aujourd’hui, la plateforme est opérée par JADI DIGITAL, SASU immatriculée à Paris. L’adresse et le numéro RCS ci-dessous sont fictifs, posés pour le lancement. Ils seront remplacés par l’identité légale réelle.
 
@@ -16,7 +16,7 @@ La société qui demande l’essai, désignée par la raison sociale, le pays et
 
 ## 1. Objet
 
-Après confirmation de l’adresse e-mail, JADI DIGITAL ouvre à l’Entreprise un accès gratuit de trois mois à Talents du Maroc, pour chercher et recruter des talents.
+Après confirmation de l’adresse e-mail, JADI DIGITAL ouvre à l’Entreprise un accès gratuit de 45 jours à Talents du Maroc, pour chercher et recruter des talents.
 
 L’essai ne se reconduit pas. Il ne devient pas un abonnement. Aucune somme n’est due, et aucun prélèvement n’est émis.
 
@@ -28,7 +28,7 @@ Une mise en relation n’est ni une embauche, ni une promesse de recrutement. Si
 
 ## 3. Ce qui est ouvert pendant l’essai
 
-L’accès correspond au périmètre présenté sur la page Nos offres pour l’essai de trois mois : catalogue et recherche, candidature directe, jusqu’à cinq annonces actives en même temps, intermédiation dans la limite communiquée à l’ouverture du compte, et page entreprise enrichie.
+L’accès correspond au périmètre présenté sur la page Nos offres pour l’essai de 45 jours : catalogue et recherche, candidature directe, jusqu’à trois annonces actives simultanément (annonces en cours), et page entreprise standard. Le volume total d’annonces sur la période n’est pas plafonné — seules les annonces en ligne en même temps le sont. L’intermédiation et la page marque employeur enrichie ne sont pas incluses.
 
 JADI DIGITAL ne garantit ni un nombre de candidatures, ni un délai, ni l’adéquation d’un profil à un poste.
 
@@ -44,7 +44,7 @@ L’Entreprise reste responsable des données de candidats qu’elle dépose ens
 
 ## 6. Fin de l’essai
 
-À l’issue des trois mois, l’accès au catalogue et aux outils de recrutement s’arrête. Les annonces en ligne sont retirées.
+À l’issue des 45 jours, l’accès au catalogue et aux outils de recrutement s’arrête. Les annonces en ligne sont retirées.
 
 Pendant trente jours, l’Entreprise peut récupérer ses propres offres et l’historique de ses échanges. Les profils de talents ne sont pas téléchargeables en masse.
 

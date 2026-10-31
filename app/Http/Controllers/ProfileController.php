@@ -274,9 +274,15 @@ class ProfileController extends Controller
         ]);
 
         if ($request->wantsJson()) {
+            $fresh = $profile->fresh();
+
             return response()->json([
                 'message' => __('talenma.account.contact_saved'),
-                'representative_photo_url' => $profile->fresh()->representativePhotoUrl(),
+                'representative_photo_url' => $fresh->representativePhotoUrl(),
+                'representative_name' => $fresh->representative_name,
+                'phone' => $fresh->phone,
+                // Dashboard modal: refresh the page card without navigating away first.
+                'reload' => $request->boolean('from_dashboard'),
             ]);
         }
 

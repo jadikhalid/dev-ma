@@ -72,6 +72,7 @@ class CompanyUserController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => __('talenma.company_users.created'),
+                'reload' => $request->boolean('from_dashboard'),
             ]);
         }
 
@@ -144,6 +145,7 @@ class CompanyUserController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => __('talenma.company_users.updated'),
+                'reload' => $request->boolean('from_dashboard'),
             ]);
         }
 
@@ -188,6 +190,7 @@ class CompanyUserController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => __('talenma.company_users.removed'),
+                'reload' => $request->boolean('from_dashboard'),
             ]);
         }
 

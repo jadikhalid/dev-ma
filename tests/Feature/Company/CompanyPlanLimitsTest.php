@@ -53,11 +53,13 @@ class CompanyPlanLimitsTest extends TestCase
         $this->assertSame(JobPosting::STATUS_DRAFT, $draft->fresh()->status);
     }
 
-    public function test_trial_plan_allows_five_published_jobs_and_blocks_sixth(): void
+    public function test_trial_plan_allows_three_simultaneous_published_jobs_and_blocks_fourth(): void
     {
         [$owner, $profile] = $this->makeCompanyOwner(CompanyProfile::PLAN_TRIAL);
 
-        for ($i = 1; $i <= 5; $i++) {
+        $this->assertSame(CompanyProfile::TRIAL_ACTIVE_JOB_LIMIT, $profile->activeJobLimit());
+
+        for ($i = 1; $i <= CompanyProfile::TRIAL_ACTIVE_JOB_LIMIT; $i++) {
             JobPosting::create([
                 'company_profile_id' => $profile->id,
                 'created_by' => $owner->id,
@@ -73,7 +75,7 @@ class CompanyPlanLimitsTest extends TestCase
         $draft = JobPosting::create([
             'company_profile_id' => $profile->id,
             'created_by' => $owner->id,
-            'title' => 'Role 6',
+            'title' => 'Role 4',
             'description' => str_repeat('Description du poste pour annonce entreprise. ', 3),
             'status' => JobPosting::STATUS_DRAFT,
             'remote_ok' => true,
@@ -87,6 +89,50 @@ class CompanyPlanLimitsTest extends TestCase
             ->assertSessionHas('toast_error');
 
         $this->assertSame(JobPosting::STATUS_DRAFT, $draft->fresh()->status);
+    }
+
+    public function test_trial_can_publish_again_after_hiding_a_live_job(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner(CompanyProfile::PLAN_TRIAL);
+
+        $live = [];
+        for ($i = 1; $i <= CompanyProfile::TRIAL_ACTIVE_JOB_LIMIT; $i++) {
+            $live[] = JobPosting::create([
+                'company_profile_id' => $profile->id,
+                'created_by' => $owner->id,
+                'title' => "Live {$i}",
+                'description' => str_repeat('Description du poste pour annonce entreprise. ', 3),
+                'status' => JobPosting::STATUS_PUBLISHED,
+                'published_at' => now()->subMinutes($i),
+                'remote_ok' => true,
+                'work_modes' => ['remote'],
+            ]);
+        }
+
+        $next = JobPosting::create([
+            'company_profile_id' => $profile->id,
+            'created_by' => $owner->id,
+            'title' => 'Next role',
+            'description' => str_repeat('Description du poste pour annonce entreprise. ', 3),
+            'status' => JobPosting::STATUS_DRAFT,
+            'remote_ok' => true,
+            'work_modes' => ['remote'],
+        ]);
+
+        $this->assertFalse($profile->fresh()->canPublishAnotherJob());
+
+        $this->actingAs($owner)
+            ->post(route('company.jobs.hide', $live[0]))
+            ->assertRedirect();
+
+        $this->assertTrue($profile->fresh()->canPublishAnotherJob());
+
+        $this->actingAs($owner)
+            ->post(route('company.jobs.publish', $next))
+            ->assertRedirect();
+
+        $this->assertSame(JobPosting::STATUS_PUBLISHED, $next->fresh()->status);
+        $this->assertSame(CompanyProfile::TRIAL_ACTIVE_JOB_LIMIT, $profile->fresh()->publishedJobsCount());
     }
 
     public function test_trial_and_essential_cannot_create_sourcing_requests(): void
@@ -175,7 +221,8 @@ class CompanyPlanLimitsTest extends TestCase
             ->assertSee('data-company-plan-usage', false)
             ->assertSee('data-plan="trial"', false)
             ->assertSee(__('talenma.dashboard.company.plan_usage.credits_not_included'), false)
-            ->assertSee('1 / 5', false);
+            ->assertSee(__('talenma.dashboard.company.plan_usage.jobs_label'), false)
+            ->assertSee('1 / 3', false);
 
         [$essentialOwner] = $this->makeCompanyOwner(CompanyProfile::PLAN_ESSENTIAL);
         $this->actingAs($essentialOwner)
@@ -207,7 +254,7 @@ class CompanyPlanLimitsTest extends TestCase
             'user_id' => $owner->id,
             'plan' => $plan,
             'is_subscribed' => $plan !== CompanyProfile::PLAN_TRIAL,
-            'trial_ends_at' => $plan === CompanyProfile::PLAN_TRIAL ? now()->addMonths(3) : null,
+            'trial_ends_at' => $plan === CompanyProfile::PLAN_TRIAL ? now()->addDays(CompanyProfile::TRIAL_DAYS) : null,
             'subscription_expires_at' => $plan !== CompanyProfile::PLAN_TRIAL ? now()->addYear() : null,
             'country' => 'fr',
             'city' => 'Paris',

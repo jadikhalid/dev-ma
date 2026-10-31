@@ -6,9 +6,12 @@
                 {{ __('talenma.dashboard.company.sourcing_all') }}
             </a>
         </div>
-        <div class="activity-scroll h-[calc(4*2.75rem+3*0.5rem)] overflow-y-auto overscroll-contain px-3.5 py-3">
+        <div @class([
+            'activity-scroll h-[calc(4*2.75rem+3*0.5rem)] overflow-y-auto overscroll-contain px-3.5 py-3',
+            'flex items-center justify-center' => $recentRequests->isEmpty(),
+        ])>
             @if ($recentRequests->isEmpty())
-                <p class="text-xs text-slate-500">{{ __('talenma.dashboard.company.ongoing_empty') }}</p>
+                <p class="text-center text-xs text-slate-500">{{ __('talenma.dashboard.company.ongoing_empty') }}</p>
             @else
                 <ul class="space-y-2">
                     @foreach ($recentRequests as $req)
@@ -40,9 +43,12 @@
                 {{ __('talenma.dashboard.company.direct_hires_all') }}
             </a>
         </div>
-        <div class="activity-scroll h-[calc(4*2.75rem+3*0.5rem)] overflow-y-auto overscroll-contain px-3.5 py-3">
+        <div @class([
+            'activity-scroll h-[calc(4*2.75rem+3*0.5rem)] overflow-y-auto overscroll-contain px-3.5 py-3',
+            'flex items-center justify-center' => $directHires->isEmpty(),
+        ])>
             @if ($directHires->isEmpty())
-                <p class="text-xs text-slate-500">{{ __('talenma.dashboard.company.direct_hires_empty') }}</p>
+                <p class="text-center text-xs text-slate-500">{{ __('talenma.dashboard.company.direct_hires_empty') }}</p>
             @else
                 <ul class="space-y-2">
                     @foreach ($directHires as $hire)
