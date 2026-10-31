@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -26,6 +27,15 @@ class PendingRegistration extends Model
             'expires_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Rows still waiting for the user to confirm their email.
+     * Completed rows are kept briefly for idempotent confirmation links.
+     */
+    public function scopeAwaitingEmailConfirmation(Builder $query): Builder
+    {
+        return $query->whereNull('completed_at');
     }
 
     public function isCompleted(): bool

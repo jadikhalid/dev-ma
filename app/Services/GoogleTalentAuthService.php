@@ -62,7 +62,7 @@ class GoogleTalentAuthService
             ]);
         }
 
-        if (PendingRegistration::query()->where('email', $email)->exists()) {
+        if (PendingRegistration::query()->awaitingEmailConfirmation()->where('email', $email)->exists()) {
             throw ValidationException::withMessages([
                 'email' => __('talenma.auth.google_pending'),
             ]);

@@ -342,6 +342,51 @@ class UserManagementTest extends TestCase
             ->assertSee(__('talenma.admin.users.filter_email_pending'));
     }
 
+    public function test_email_pending_filter_hides_already_confirmed_registrations(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);
+        $talent = User::factory()->create([
+            'role' => 'dev',
+            'email' => 'basma-done@example.com',
+            'email_verified_at' => now(),
+            'approval_status' => User::APPROVAL_APPROVED,
+        ]);
+
+        PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'basma-done@example.com',
+            'locale' => 'fr',
+            'payload' => [
+                'name' => 'Basma Done',
+                'password' => bcrypt('Password1'),
+                'role' => 'dev',
+            ],
+            'expires_at' => now()->addHours(12),
+            'completed_at' => now(),
+            'user_id' => $talent->id,
+        ]);
+
+        PendingRegistration::query()->create([
+            'token' => PendingRegistration::generateToken(),
+            'email' => 'still-waiting@example.com',
+            'locale' => 'fr',
+            'payload' => [
+                'name' => 'Still Waiting',
+                'password' => bcrypt('Password1'),
+                'role' => 'dev',
+            ],
+            'expires_at' => now()->addHours(12),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index', ['filter' => 'email_pending']))
+            ->assertOk()
+            ->assertSee('Still Waiting')
+            ->assertSee('still-waiting@example.com')
+            ->assertDontSee('basma-done@example.com')
+            ->assertDontSee('Basma Done');
+    }
+
     public function test_admin_can_delete_pending_email_registration(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'approval_status' => null]);

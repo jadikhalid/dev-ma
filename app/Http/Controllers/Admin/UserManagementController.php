@@ -34,7 +34,7 @@ class UserManagementController extends Controller
         $filter = $request->string('filter')->toString() ?: 'pending';
         $search = trim($request->string('q')->toString());
 
-        $pendingEmailCount = PendingRegistration::query()->count();
+        $pendingEmailCount = PendingRegistration::query()->awaitingEmailConfirmation()->count();
 
         $shared = [
             'filter' => $filter,
@@ -53,7 +53,9 @@ class UserManagementController extends Controller
         ];
 
         if ($filter === 'email_pending') {
-            $pendingQuery = PendingRegistration::query()->latest();
+            $pendingQuery = PendingRegistration::query()
+                ->awaitingEmailConfirmation()
+                ->latest();
 
             if ($search !== '') {
                 $like = '%'.$search.'%';
@@ -177,7 +179,9 @@ class UserManagementController extends Controller
                 'max:255',
                 Rule::unique(User::class, 'email'),
                 Rule::unique(User::class, 'pending_email'),
-                Rule::unique(PendingRegistration::class, 'email'),
+                Rule::unique(PendingRegistration::class, 'email')->where(
+                    fn ($query) => $query->whereNull('completed_at')
+                ),
             ],
         ], [
             'email.required' => __('talenma.auth.validation.email_required'),

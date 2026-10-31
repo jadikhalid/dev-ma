@@ -87,7 +87,9 @@ class RegisterRequest extends FormRequest
                 'email',
                 'max:255',
                 Rule::unique(User::class),
-                Rule::unique(PendingRegistration::class),
+                Rule::unique(PendingRegistration::class)->where(
+                    fn ($query) => $query->whereNull('completed_at')
+                ),
             ],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => ['required', 'string', 'in:dev'],
