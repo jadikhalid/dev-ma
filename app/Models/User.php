@@ -69,6 +69,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'profile_completion_reminder_sent_at' => 'datetime',
             'disabled_at' => 'datetime',
             'dashboard_activity_seen_at' => 'datetime',
+            'inbox_welcome_sent_at' => 'datetime',
             'password' => 'hashed',
             'is_subscribed' => 'boolean',
             'subscription_expires_at' => 'datetime',

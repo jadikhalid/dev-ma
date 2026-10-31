@@ -25,7 +25,11 @@ class InboxController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $this->messaging->markAllReadFor($user);
+        if ($user->isCompany()) {
+            $this->messaging->ensureCompanyInboxWelcome($user);
+        } elseif ($user->isTalent()) {
+            $this->messaging->ensureTalentInboxWelcome($user);
+        }
 
         $conversations = $this->messaging->conversationsFor($user)
             ->map(fn (Conversation $conversation) => $this->messaging->presentConversationSummary($conversation, $user));
@@ -33,7 +37,7 @@ class InboxController extends Controller
         return view('inbox.index', [
             'conversations' => $conversations,
             'conversation' => null,
-            'unreadCount' => 0,
+            'unreadCount' => $this->messaging->unreadCountFor($user),
         ]);
     }
 
@@ -43,6 +47,12 @@ class InboxController extends Controller
 
         if (! $user->isCompany() && ! $user->isTalent() && ! $user->canAccessStaffMessaging()) {
             return redirect()->route('dashboard');
+        }
+
+        if ($user->isCompany()) {
+            $this->messaging->ensureCompanyInboxWelcome($user);
+        } elseif ($user->isTalent()) {
+            $this->messaging->ensureTalentInboxWelcome($user);
         }
 
         $this->messaging->assertCanAccess($user, $conversation);

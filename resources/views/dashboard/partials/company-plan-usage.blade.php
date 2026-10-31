@@ -117,7 +117,7 @@
                     @if ($sourcingIncluded)
                         <p class="text-sm font-bold text-slate-950">{{ __('talenma.dashboard.company.plan_usage.credits_value', ['left' => $creditsLeft, 'limit' => $creditsLimit]) }}</p>
                     @else
-                        <p class="text-sm font-bold text-slate-950">{{ __('talenma.dashboard.company.plan_usage.credits_not_included') }}</p>
+                        <p class="text-sm font-normal text-slate-600">{{ __('talenma.dashboard.company.plan_usage.credits_not_included') }}</p>
                     @endif
                 </dd>
             </div>

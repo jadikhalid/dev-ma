@@ -66,21 +66,8 @@
 
             <template x-if="!profileLoading && selectedProfile">
                 <div>
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <h2 class="text-2xl font-bold text-gray-900" x-text="selectedProfile.name"></h2>
-                            <p class="mt-1 text-sm font-medium text-indigo-600">
-                                <span x-text="selectedProfile.profession_label"></span>
-                                <span x-show="selectedProfile.profession_label && selectedProfile.sector_label"> - </span>
-                                <span x-text="selectedProfile.sector_label"></span>
-                            </p>
-                            <p
-                                class="mt-1 text-sm text-gray-500"
-                                x-show="selectedProfile.employer_label"
-                                x-text="'{{ __('talenma.talent.employer') }} : ' + selectedProfile.employer_label"
-                            ></p>
-                        </div>
-                        <div class="flex shrink-0 flex-col items-end gap-2">
+                    <div class="flex items-start gap-4">
+                        <div class="shrink-0">
                             <template x-if="selectedProfile.avatar_url">
                                 <img
                                     :src="selectedProfile.avatar_url"
@@ -95,19 +82,34 @@
                                     aria-hidden="true"
                                 ></span>
                             </template>
-                            <span
-                                x-show="selectedProfile.availability_label"
-                                class="rounded-full px-3 py-1 text-xs font-semibold"
-                                :class="profileStatusClass(selectedProfile.availability_tone)"
-                                x-text="selectedProfile.availability_label"
-                            ></span>
-                            <span
-                                x-show="selectedProfile.talent_locked"
-                                class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200"
-                            >
-                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
-                                {{ __('talenma.recruitment.talent_lock_badge') }}
-                            </span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h2 class="text-2xl font-bold text-gray-900" x-text="selectedProfile.name"></h2>
+                            <p class="mt-1 text-sm font-medium text-indigo-600">
+                                <span x-text="selectedProfile.profession_label"></span>
+                                <span x-show="selectedProfile.profession_label && selectedProfile.sector_label"> - </span>
+                                <span x-text="selectedProfile.sector_label"></span>
+                            </p>
+                            <p
+                                class="mt-1 text-sm text-gray-500"
+                                x-show="selectedProfile.employer_label"
+                                x-text="'{{ __('talenma.talent.employer') }} : ' + selectedProfile.employer_label"
+                            ></p>
+                            <div class="mt-2.5 flex flex-wrap items-center gap-2">
+                                <span
+                                    x-show="selectedProfile.availability_label"
+                                    class="rounded-full px-3 py-1 text-xs font-semibold"
+                                    :class="profileStatusClass(selectedProfile.availability_tone)"
+                                    x-text="selectedProfile.availability_label"
+                                ></span>
+                                <span
+                                    x-show="selectedProfile.talent_locked"
+                                    class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200"
+                                >
+                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+                                    {{ __('talenma.recruitment.talent_lock_badge') }}
+                                </span>
+                            </div>
                         </div>
                     </div>
 

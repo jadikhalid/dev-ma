@@ -45,6 +45,7 @@
             talentSearchUrl: @js($canCompose ? route('inbox.talent-suggestions') : null),
             canCompose: @js($canCompose),
             canDelete: @js($canDelete),
+            initialUnreadCount: @js((int) ($unreadCount ?? 0)),
             csrf: @js(csrf_token()),
             labels: @js([
                 'replyPlaceholder' => __('talenma.inbox.reply_placeholder'),
@@ -55,6 +56,7 @@
                 'attachmentsHint' => __('talenma.inbox.attachments_hint'),
                 'empty' => __('talenma.inbox.empty'),
                 'emptyDesc' => __('talenma.inbox.empty_desc'),
+                'unreadShort' => __('talenma.inbox.unread_short'),
                 'selectConversation' => __('talenma.inbox.select_conversation'),
                 'selectConversationDesc' => __('talenma.inbox.select_conversation_desc'),
                 'back' => __('talenma.inbox.back'),
@@ -76,20 +78,20 @@
         })"
         @inbox-open-compose.window="openCompose()"
     >
-        <div class="rounded-2xl border border-indigo-100/80 bg-white shadow-sm shadow-indigo-600/5 overflow-hidden min-h-[32rem] h-[min(78vh,46rem)] grid lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)]">
+        <div class="rounded-2xl border border-indigo-200 bg-white shadow-md shadow-indigo-600/10 ring-1 ring-indigo-100 overflow-hidden min-h-[32rem] h-[min(78vh,46rem)] grid lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)]">
             {{-- Left: conversation list --}}
             <aside
-                class="border-b lg:border-b-0 lg:border-r border-indigo-100/80 flex-col min-h-0 bg-gradient-to-b from-slate-50/90 to-white"
+                class="border-b lg:border-b-0 lg:border-r-2 border-indigo-200 flex-col min-h-0 bg-slate-50"
                 :class="hasSelection ? 'hidden lg:flex' : 'flex'"
             >
-                <div class="shrink-0 px-4 py-3.5 border-b border-indigo-100/80 bg-indigo-100/80">
+                <div class="shrink-0 px-4 py-3.5 border-b border-indigo-200 bg-indigo-100">
                     <p class="text-xs font-bold uppercase tracking-[0.11em] text-indigo-900">{{ __('talenma.inbox.conversations') }}</p>
                 </div>
 
                 <div class="flex-1 overflow-y-auto min-h-0">
                     <template x-if="conversations.length === 0">
                         <div class="px-5 py-16 text-center flex flex-col items-center">
-                            <span class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-400 ring-1 ring-indigo-100" aria-hidden="true">
+                            <span class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-400 ring-1 ring-indigo-200" aria-hidden="true">
                                 <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
                                 </svg>
@@ -99,7 +101,7 @@
                         </div>
                     </template>
 
-                    <ul x-show="conversations.length > 0" class="divide-y divide-slate-100 min-h-full">
+                    <ul x-show="conversations.length > 0" class="divide-y divide-slate-200/90 min-h-full">
                         <template x-for="item in conversations" :key="item.id">
                             <li class="group relative flex items-stretch">
                                 <button
@@ -116,15 +118,21 @@
                                             <div class="flex items-center gap-2">
                                                 <p
                                                     class="truncate text-sm font-semibold"
-                                                    :class="isActive(item) ? 'text-indigo-900' : 'text-gray-900'"
+                                                    :class="isActive(item) || item.unread ? 'text-indigo-950' : 'text-gray-900'"
                                                     x-text="item.counterpart?.name"
                                                 ></p>
                                                 <span
                                                     x-show="item.unread && ! isActive(item)"
-                                                    class="inline-flex h-2 w-2 shrink-0 rounded-full bg-indigo-600"
+                                                    x-cloak
+                                                    class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-indigo-600 ring-2 ring-indigo-100"
+                                                    :title="labels.unreadShort || ''"
                                                 ></span>
                                             </div>
-                                            <p class="mt-0.5 truncate text-xs text-slate-500" x-text="item.subject"></p>
+                                            <p
+                                                class="mt-0.5 truncate text-xs"
+                                                :class="item.unread && ! isActive(item) ? 'font-semibold text-slate-700' : 'text-slate-500'"
+                                                x-text="item.subject"
+                                            ></p>
                                             <p class="mt-1 truncate text-xs text-slate-400" x-text="item.last_message_preview"></p>
                                         </div>
                                         <time
@@ -156,7 +164,7 @@
             {{-- Right: thread --}}
             <section
                 data-inbox-thread
-                class="flex-col min-h-0 min-w-0 relative bg-white"
+                class="flex-col min-h-0 min-w-0 relative bg-white ring-1 ring-inset ring-slate-200/80"
                 :class="hasSelection ? 'flex' : 'hidden lg:flex'"
             >
                 <div
@@ -173,7 +181,7 @@
 
                 <template x-if="hasSelection && conversation">
                     <div class="flex flex-col min-h-0 flex-1">
-                        <div class="shrink-0 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-slate-50 px-4 sm:px-5 py-3.5">
+                        <div class="shrink-0 border-b border-indigo-200 bg-gradient-to-r from-indigo-50 via-white to-slate-50 px-4 sm:px-5 py-3.5">
                             <button
                                 type="button"
                                 class="lg:hidden inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-800 mb-2.5"
@@ -193,7 +201,7 @@
                             </div>
                         </div>
 
-                        <div x-ref="thread" class="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-3 min-h-0 bg-slate-50/80">
+                        <div x-ref="thread" class="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-3 min-h-0 bg-slate-100/70">
                             <template x-for="message in messages" :key="message.id">
                                 <div class="flex" :class="message.is_mine ? 'justify-end' : 'justify-start'">
                                     <div
@@ -226,7 +234,7 @@
                             </template>
                         </div>
 
-                        <form class="shrink-0 border-t border-indigo-100 bg-white p-3 sm:p-4 space-y-3" @submit.prevent="sendReply()">
+                        <form class="shrink-0 border-t border-indigo-200 bg-white p-3 sm:p-4 space-y-3" @submit.prevent="sendReply()">
                             <div class="rounded-2xl bg-slate-50 p-2 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-indigo-400 focus-within:bg-white transition">
                                 <textarea
                                     x-model="body"

@@ -123,6 +123,8 @@ class UserModerationService
 
         Mail::to($user->email)->send(new TalentApprovedMail($user));
         $this->pendingRegistrations->sendWelcomeMail($user);
+
+        app(MessagingService::class)->ensureTalentInboxWelcome($user->fresh());
     }
 
     public function rejectTalent(User $user, ?string $reason, User $reviewer): void
@@ -178,6 +180,8 @@ class UserModerationService
             $user->fresh()->loadMissing('companyProfile'),
             $plainPassword,
         ));
+
+        app(MessagingService::class)->ensureCompanyInboxWelcome($user->fresh());
     }
 
     public function rejectCompany(User $user, ?string $reason, User $reviewer): void

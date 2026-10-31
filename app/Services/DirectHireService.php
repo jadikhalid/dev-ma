@@ -955,13 +955,69 @@ class DirectHireService
     public function queryForCompany(User $company): \Illuminate\Database\Eloquent\Builder
     {
         $query = DirectHireRequest::query()
-            ->where('hire_origin', DirectHireRequest::ORIGIN_COMPANY);
+            ->where('hire_origin', DirectHireRequest::ORIGIN_COMPANY)
+            ->whereNull('company_hidden_at');
 
         if (! $company->isCompany()) {
             return $query->whereRaw('0 = 1');
         }
 
         return $query->where('company_user_id', $company->id);
+    }
+
+    /**
+     * Hide a closed dossier from the company workspace. Purges when the other side is gone too.
+     */
+    public function hideForCompany(DirectHireRequest $request, User $company): void
+    {
+        if (! $company->isCompany()) {
+            abort(403);
+        }
+
+        if ($request->isStaffInitiated()) {
+            abort(403);
+        }
+
+        abort_unless((int) $request->company_user_id === (int) $company->id, 403);
+        abort_unless($request->isTerminal(), 422, __('talenma.direct_hire.delete_closed_only'));
+
+        if ($request->company_hidden_at) {
+            return;
+        }
+
+        $request->forceFill(['company_hidden_at' => now()])->save();
+
+        if ($request->talent_hidden_at || $request->talent_user_id === null) {
+            $this->purge($request);
+        }
+    }
+
+    /**
+     * Hide a closed dossier from the talent workspace. Purges when the other side is gone too.
+     */
+    public function hideForTalent(DirectHireRequest $request, User $talent): void
+    {
+        abort_unless($talent->isTalent() && (int) $request->talent_user_id === (int) $talent->id, 403);
+        abort_unless($request->isTerminal(), 422, __('talenma.direct_hire.delete_closed_only'));
+
+        if ($request->talent_hidden_at) {
+            return;
+        }
+
+        $request->forceFill(['talent_hidden_at' => now()])->save();
+
+        if (
+            $request->company_hidden_at
+            || $request->company_user_id === null
+            || $request->isStaffInitiated()
+        ) {
+            $this->purge($request);
+        }
+    }
+
+    public function purge(DirectHireRequest $request): void
+    {
+        $request->delete();
     }
 
     /**
@@ -1172,6 +1228,7 @@ class DirectHireService
 
         return DirectHireRequest::query()
             ->where('talent_user_id', $talent->id)
+            ->whereNull('talent_hidden_at')
             ->where(function ($query) {
                 $query->whereNull('talent_seen_at')
                     ->orWhereColumn('talent_seen_at', '<', 'updated_at');
@@ -1384,6 +1441,10 @@ class DirectHireService
         $sameCreator = (int) $request->company_user_id === (int) $actor->id;
 
         abort_unless($sameCreator, 403);
+
+        if ($request->company_hidden_at) {
+            abort(404);
+        }
     }
 
     public function assertStaffCanManage(DirectHireRequest $request, User $actor): void
@@ -1403,6 +1464,10 @@ class DirectHireService
     public function assertTalentCanView(DirectHireRequest $request, User $talent): void
     {
         abort_unless($talent->isTalent() && $request->talent_user_id === $talent->id, 403);
+
+        if ($request->talent_hidden_at) {
+            abort(404);
+        }
     }
 
     public function assertCanChat(DirectHireRequest $request, User $user): void

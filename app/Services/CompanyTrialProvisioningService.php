@@ -99,6 +99,8 @@ class CompanyTrialProvisioningService
         } catch (\Throwable $exception) {
             report($exception);
         }
+
+        app(MessagingService::class)->ensureCompanyInboxWelcome($user->fresh());
     }
 
     public function reject(CompanyTrialRequest $request, User $actor, ?string $reason = null): void

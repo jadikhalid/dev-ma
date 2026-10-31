@@ -383,6 +383,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/talent/direct-hire/{directHire}', [TalentDirectHireController::class, 'show'])->name('talent.direct-hire.show');
         Route::post('/talent/direct-hire/{directHire}/decide', [TalentDirectHireController::class, 'decide'])->name('talent.direct-hire.decide');
         Route::post('/talent/direct-hire/{directHire}/messages', [TalentDirectHireController::class, 'storeMessage'])->name('talent.direct-hire.messages.store');
+        Route::delete('/talent/direct-hire/{directHire}', [TalentDirectHireController::class, 'destroy'])->name('talent.direct-hire.destroy');
     });
 
     Route::middleware('account.approved')->group(function () {
@@ -427,6 +428,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/talents/{talent}/cv', [CompanySearchController::class, 'showCv'])->name('company.talent.cv');
 
         Route::get('/company/direct-hire', [CompanyDirectHireController::class, 'index'])->name('company.direct-hire.index');
+        Route::get('/company/direct-hire/talent-suggestions', [CompanyDirectHireController::class, 'searchTalents'])
+            ->middleware('throttle:60,1')
+            ->name('company.direct-hire.talent-suggestions');
         Route::get('/talents/{talent}/direct-hire', [CompanyDirectHireController::class, 'create'])->name('company.direct-hire.create');
         Route::post('/talents/{talent}/direct-hire', [CompanyDirectHireController::class, 'store'])->name('company.direct-hire.store');
         Route::get('/company/direct-hire/{directHire}', [CompanyDirectHireController::class, 'show'])->name('company.direct-hire.show');
@@ -438,10 +442,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/company/direct-hire/{directHire}/unlock-talent', [CompanyDirectHireController::class, 'unlockTalent'])->name('company.direct-hire.unlock-talent');
         Route::post('/company/direct-hire/{directHire}/deferral', [CompanyDirectHireController::class, 'respondToDeferral'])->name('company.direct-hire.deferral');
         Route::post('/company/direct-hire/{directHire}/withdraw', [CompanyDirectHireController::class, 'withdraw'])->name('company.direct-hire.withdraw');
+        Route::delete('/company/direct-hire/{directHire}', [CompanyDirectHireController::class, 'destroy'])->name('company.direct-hire.destroy');
 
         Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');
         Route::post('/recruitment/request', [RecruitmentRequestController::class, 'store'])->name('recruitment.store');
         Route::get('/sourcing', [RecruitmentRequestController::class, 'index'])->name('sourcing.index');
+        Route::get('/sourcing/talent-suggestions', [RecruitmentRequestController::class, 'searchTalents'])
+            ->middleware('throttle:60,1')
+            ->name('sourcing.talent-suggestions');
         Route::get('/sourcing/{recruitmentRequest}', [RecruitmentRequestController::class, 'show'])->name('sourcing.show');
         Route::post('/sourcing/{recruitmentRequest}/unlock-talent', [RecruitmentRequestController::class, 'unlockTalent'])->name('sourcing.unlock-talent');
         Route::post('/sourcing/{recruitmentRequest}/messages', [RecruitmentRequestController::class, 'storeMessage'])->name('sourcing.messages.store');

@@ -12,6 +12,9 @@
     $companyOrg = $authUser->isCompany() ? $authUser->companyOrganization() : null;
     $isCompanyOwner = $authUser->isCompanyOwner();
     $actingAsModerator = $authUser->isActingAsModerator();
+    // Espace talent : logo → accueil public. Entreprise / staff : logo non cliquable.
+    $brandLogoLinked = $authUser->isTalent() && ! $actingAsModerator;
+    $brandLogoHref = $brandLogoLinked ? route('home') : null;
     $canSwitchModeratorMode = $authUser->canActAsModerator() && ! $authUser->isAdmin();
     $inboxUnread = (! $pendingAccount && ($authUser->isCompany() || $authUser->isTalent() || $authUser->canAccessStaffMessaging()))
         ? app(\App\Services\MessagingService::class)->unreadCountFor($authUser)
@@ -46,10 +49,18 @@
         <div class="flex justify-between h-16">
             <div class="flex flex-1 items-center gap-2 sm:gap-4 min-w-0">
                 <div class="brand-logo-phone">
-                    <x-brand-logo :href="$homeUrl" size="sm" phone :linked="! $pendingAccount" />
+                    @if ($brandLogoLinked)
+                        <x-brand-logo size="sm" phone href="{{ $brandLogoHref }}" />
+                    @else
+                        <x-brand-logo size="sm" phone :linked="false" />
+                    @endif
                 </div>
                 <div class="brand-logo-desktop">
-                    <x-brand-logo :href="$homeUrl" size="sm" :linked="! $pendingAccount" />
+                    @if ($brandLogoLinked)
+                        <x-brand-logo size="sm" href="{{ $brandLogoHref }}" />
+                    @else
+                        <x-brand-logo size="sm" :linked="false" />
+                    @endif
                 </div>
                 <div x-data="navOverflow" class="hidden lg:flex flex-1 items-center gap-1 min-w-0 pr-4" data-nav-overflow>
                     <div x-ref="row" class="flex items-center gap-1 min-w-0 whitespace-nowrap" data-nav-overflow-row>
@@ -88,11 +99,13 @@
                                 <span class="inline-flex items-center gap-1.5">
                                     {{ __('talenma.nav.admin_direct_hire') }}
                                     @if ($directHirePending)
-                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
-                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        <span data-direct-hire-nav-pending class="inline-flex items-center gap-1.5">
+                                            <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                                <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                            </span>
+                                            <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                         </span>
-                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                     @endif
                                 </span>
                             </x-nav-link>
@@ -160,11 +173,13 @@
                                 <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
                                 {{ __('talenma.nav.direct_hire') }}
                                 @if ($directHirePending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    <span data-direct-hire-nav-pending class="inline-flex items-center gap-1.5">
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                     </span>
-                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                 @endif
                             </span>
                         </x-nav-link>
@@ -193,11 +208,13 @@
                             <span class="inline-flex items-center gap-1.5">
                                 {{ __('talenma.nav.direct_hire') }}
                                 @if ($directHirePending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    <span data-direct-hire-nav-pending class="inline-flex items-center gap-1.5">
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                     </span>
-                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                 @endif
                             </span>
                         </x-nav-link>
@@ -431,11 +448,13 @@
                                 <span class="inline-flex items-center gap-2">
                                     {{ __('talenma.nav.admin_direct_hire') }}
                                     @if ($directHirePending)
-                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
-                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        <span data-direct-hire-nav-pending class="inline-flex items-center gap-1.5">
+                                            <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                                <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                            </span>
+                                            <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                         </span>
-                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                     @endif
                                 </span>
                             </x-responsive-nav-link>
@@ -503,11 +522,13 @@
                                 <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/></svg>
                                 {{ __('talenma.nav.direct_hire') }}
                                 @if ($directHirePending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    <span data-direct-hire-nav-pending class="inline-flex items-center gap-1.5">
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                     </span>
-                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                 @endif
                             </span>
                         </x-responsive-nav-link>
@@ -584,11 +605,13 @@
                             <span class="inline-flex items-center gap-2">
                                 {{ __('talenma.nav.direct_hire') }}
                                 @if ($directHirePending)
-                                    <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
-                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                    <span data-direct-hire-nav-pending class="inline-flex items-center gap-1.5">
+                                        <span class="relative flex h-2.5 w-2.5" title="{{ __('talenma.direct_hire.nav_new') }}">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                        </span>
+                                        <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                     </span>
-                                    <span class="sr-only">{{ __('talenma.direct_hire.nav_new') }}</span>
                                 @endif
                             </span>
                         </x-responsive-nav-link>

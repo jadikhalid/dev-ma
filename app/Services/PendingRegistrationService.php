@@ -427,6 +427,10 @@ class PendingRegistrationService
             $this->sendWelcomeMail($user, $locale);
         }
 
+        if ($user->isCompany() && $user->isApproved()) {
+            app(MessagingService::class)->ensureCompanyInboxWelcome($user->fresh());
+        }
+
         return $user;
     }
 

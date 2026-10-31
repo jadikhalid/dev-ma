@@ -28,9 +28,68 @@ class RecruitmentRequestController extends Controller
 
         $all = $user->recruitmentRequests()->with('talent')->latest()->get();
 
+        $canAccessPool = $user->canAccessTalentPool();
+        $sourcingDenied = $this->recruitmentRequests->sourcingDeniedMessage($user);
+        $canComposeNamed = $canAccessPool && $sourcingDenied === null;
+
         return view('sourcing.index', [
             'openRequests' => $all->where('mode', RecruitmentRequest::MODE_OPEN)->values(),
             'namedRequests' => $all->where('mode', RecruitmentRequest::MODE_NAMED)->values(),
+            'canComposeNamed' => $canComposeNamed,
+            'composeNamedDisabledReason' => $canComposeNamed
+                ? null
+                : (
+                    $canAccessPool
+                        ? ($sourcingDenied ?: __('talenma.company_offer.sourcing_not_included'))
+                        : __('talenma.company_offer.plan_required')
+                ),
+        ]);
+    }
+
+    public function searchTalents(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user?->isCompany() && $user->isApproved(), 403);
+
+        if (! $user->canAccessTalentPool() || $this->recruitmentRequests->sourcingDeniedMessage($user) !== null) {
+            return response()->json(['results' => []]);
+        }
+
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:1', 'max:100'],
+        ]);
+
+        $term = trim($data['q']);
+        $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+
+        $candidates = User::query()
+            ->where('role', 'dev')
+            ->where('approval_status', User::APPROVAL_APPROVED)
+            ->whereHas('profile', fn ($query) => $query->listable())
+            ->with('profile.profession')
+            ->where(function ($query) use ($like) {
+                $query->where('name', 'like', $like)
+                    ->orWhere('first_name', 'like', $like)
+                    ->orWhere('last_name', 'like', $like);
+            })
+            ->orderBy('name')
+            ->limit(24)
+            ->get();
+
+        $results = $candidates
+            ->filter(fn (User $talent) => $this->recruitmentRequests->companyCanRequestNamedForTalent($user, $talent))
+            ->take(12)
+            ->map(fn (User $talent) => [
+                'id' => $talent->id,
+                'label' => $talent->profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
+                'subtitle' => $talent->profile?->professionLabel(),
+            ])
+            ->values()
+            ->all();
+
+        return response()->json([
+            'results' => $results,
         ]);
     }
 

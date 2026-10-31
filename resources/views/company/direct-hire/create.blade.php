@@ -1,14 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="min-w-0">
-                <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.create_title') }}</h2>
-                <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.create_subtitle', ['name' => $talent->name]) }}</p>
-            </div>
-            <a
-                href="{{ route('company.search') }}"
-                class="inline-flex shrink-0 items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50"
-            >{{ __('talenma.direct_hire.create_back') }}</a>
+        <div class="min-w-0">
+            <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.create_title') }}</h2>
+            <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.create_subtitle', ['name' => $talent->name]) }}</p>
         </div>
     </x-slot>
 

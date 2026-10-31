@@ -3,11 +3,15 @@
     'editable' => false,
     'maxBytes' => null,
     'personName' => null,
+    'compact' => false,
 ])
 
 @php
     $maxBytes = $maxBytes ?? (app(\App\Services\TalentPresentationVideoService::class)->maxKilobytes() * 1024);
     $maxMo = max(1, (int) ceil($maxBytes / (1024 * 1024)));
+    $frameAspect = $compact ? 'aspect-[4/3]' : 'aspect-video';
+    $playBtn = $compact ? 'h-10 w-10' : 'h-14 w-14';
+    $playIcon = $compact ? 'h-4 w-4' : 'h-6 w-6';
 @endphp
 
 <div
@@ -24,19 +28,31 @@
             },
         })"
     @endif
-    {{ $attributes->merge(['class' => 'relative bg-white rounded-2xl border p-6 sm:p-8 h-full flex flex-col']) }}
+    {{ $attributes->class([
+        'relative bg-white rounded-2xl border h-full flex flex-col',
+        'p-3.5' => $compact,
+        'p-6 sm:p-8' => ! $compact,
+    ]) }}
 >
-    <div class="flex items-center justify-between gap-3">
-        <p class="text-lg font-bold uppercase tracking-wide text-indigo-600">{{ __('talenma.dashboard.talent.video_snapshot') }}</p>
+    <div class="flex items-center justify-between gap-2">
+        <p @class([
+            'font-bold uppercase tracking-wide text-indigo-600',
+            'text-sm' => $compact,
+            'text-lg' => ! $compact,
+        ])>{{ __('talenma.dashboard.talent.video_snapshot') }}</p>
         @if ($editable)
             <button
                 type="button"
-                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-indigo-600 transition hover:border-indigo-200 hover:bg-indigo-100 hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                @class([
+                    'inline-flex shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-indigo-600 transition hover:border-indigo-200 hover:bg-indigo-100 hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
+                    'h-7 w-7' => $compact,
+                    'h-8 w-8' => ! $compact,
+                ])
                 @click="openHelp()"
                 aria-label="{{ __('talenma.talent.presentation_video_help_aria') }}"
                 title="{{ __('talenma.talent.presentation_video_help_aria') }}"
             >
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <svg @class(['h-3.5 w-3.5' => $compact, 'h-4 w-4' => ! $compact]) viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <circle cx="12" cy="12" r="9" />
                     <path stroke-linecap="round" d="M12 16v-4" />
                     <circle cx="12" cy="8" r="0.75" fill="currentColor" stroke="none" />
@@ -45,11 +61,11 @@
         @endif
     </div>
 
-    <div class="mt-4 flex-1 flex flex-col">
+    <div @class(['flex-1 flex flex-col', 'mt-3' => $compact, 'mt-4' => ! $compact])>
         @if ($editable)
             <template x-if="videoUrl">
-                <div class="space-y-3">
-                    <div class="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-900">
+                <div class="space-y-2.5">
+                    <div class="relative {{ $frameAspect }} w-full overflow-hidden rounded-xl bg-slate-900 shadow-sm ring-1 ring-black/5">
                         <x-talent-video-thumbnail :person-name="$personName" class="absolute inset-0 h-full w-full" x-show="!playing" />
                         <button
                             type="button"
@@ -57,8 +73,8 @@
                             @click="playing = true; $nextTick(() => $refs.player?.play())"
                             x-show="!playing"
                         >
-                            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-indigo-600 shadow-lg">
-                                <svg class="ml-0.5 h-6 w-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <span class="flex {{ $playBtn }} items-center justify-center rounded-full bg-white/95 text-indigo-600 shadow-lg">
+                                <svg class="ml-0.5 {{ $playIcon }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                     <path d="M8 5.14v13.72L19 12 8 5.14Z" />
                                 </svg>
                             </span>
@@ -76,21 +92,29 @@
                             @ended="playing = false; $refs.player.currentTime = 0"
                         ></video>
                     </div>
-                    <p class="text-xs text-gray-500">{{ __('talenma.dashboard.talent.video_ready_hint') }}</p>
+                    <p class="text-[11px] leading-snug text-gray-500">{{ __('talenma.dashboard.talent.video_ready_hint') }}</p>
                 </div>
             </template>
 
             <template x-if="!videoUrl">
-                <div class="relative aspect-video w-full overflow-hidden rounded-xl border border-dashed border-gray-200 bg-slate-50">
+                <div class="relative {{ $frameAspect }} w-full overflow-hidden rounded-xl border border-dashed border-gray-200 bg-slate-50 shadow-sm">
                     <x-talent-video-thumbnail :branded="false" class="absolute inset-0 h-full w-full opacity-80" />
-                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/55 px-4 text-center">
-                        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/10 text-indigo-600">
-                            <svg class="ml-0.5 h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <div @class([
+                        'absolute inset-0 flex flex-col items-center justify-center bg-white/60 text-center',
+                        'gap-1.5 px-3' => $compact,
+                        'gap-2 px-4' => ! $compact,
+                    ])>
+                        <span @class([
+                            'flex items-center justify-center rounded-full bg-indigo-600/10 text-indigo-600',
+                            'h-10 w-10' => $compact,
+                            'h-12 w-12' => ! $compact,
+                        ])>
+                            <svg @class(['ml-0.5', 'h-4 w-4' => $compact, 'h-5 w-5' => ! $compact]) viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                 <path d="M8 5.14v13.72L19 12 8 5.14Z" />
                             </svg>
                         </span>
-                        <p class="text-sm font-medium text-gray-800">{{ __('talenma.dashboard.talent.video_empty_title') }}</p>
-                        <p class="text-xs text-gray-500 max-w-[16rem]">{{ __('talenma.dashboard.talent.video_empty_desc') }}</p>
+                        <p @class(['font-medium text-gray-800', 'text-xs' => $compact, 'text-sm' => ! $compact])>{{ __('talenma.dashboard.talent.video_empty_title') }}</p>
+                        <p @class(['text-gray-500', 'text-[11px] leading-snug max-w-[12rem]' => $compact, 'text-xs max-w-[16rem]' => ! $compact])>{{ __('talenma.dashboard.talent.video_empty_desc') }}</p>
                     </div>
                 </div>
             </template>
@@ -99,7 +123,7 @@
                 method="POST"
                 action="{{ route('talent.presentation-video.store') }}"
                 enctype="multipart/form-data"
-                class="mt-4 space-y-3"
+                @class(['space-y-2.5' => $compact, 'mt-4 space-y-3' => ! $compact, 'mt-3' => $compact])
                 data-ajax
                 data-loading-target="talent-presentation-video-card"
                 data-ajax-timeout="180000"
@@ -108,7 +132,7 @@
             >
                 @csrf
                 <div>
-                    <label for="presentation_video" class="block text-sm font-medium text-gray-700">
+                    <label for="presentation_video" @class(['block font-medium text-gray-700', 'text-xs' => $compact, 'text-sm' => ! $compact])>
                         <span x-text="videoUrl ? @js(__('talenma.talent.presentation_video_replace')) : @js(__('talenma.talent.presentation_video_upload'))"></span>
                     </label>
                     <input
@@ -121,16 +145,20 @@
                         required
                         data-required
                         data-required-message="{{ __('talenma.talent.presentation_video_required') }}"
-                        class="mt-2 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                        @class([
+                            'mt-1.5 block w-full text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100',
+                            'text-xs file:py-1.5 file:px-3 file:text-xs' => $compact,
+                            'mt-2 text-sm file:mr-4 file:py-2 file:px-4 file:text-sm' => ! $compact,
+                        ])
                     >
-                    <p class="mt-1 text-xs text-gray-500" x-show="!pendingName">{{ __('talenma.talent.presentation_video_hint', ['max' => $maxMo]) }}</p>
-                    <p class="mt-1 text-xs text-gray-600" x-show="pendingName" x-cloak>
+                    <p @class(['mt-1 text-gray-500', 'text-[11px] leading-snug' => $compact, 'text-xs' => ! $compact]) x-show="!pendingName">{{ __('talenma.talent.presentation_video_hint', ['max' => $maxMo]) }}</p>
+                    <p @class(['mt-1 text-gray-600', 'text-[11px]' => $compact, 'text-xs' => ! $compact]) x-show="pendingName" x-cloak>
                         <span x-text="pendingName"></span>
                         <span class="text-gray-400" x-text="' · ' + pendingSizeLabel"></span>
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <x-primary-button type="submit" class="justify-center">{{ __('talenma.talent.save_section') }}</x-primary-button>
+                    <x-primary-button type="submit" @class(['justify-center', 'text-xs px-3 py-1.5' => $compact])>{{ __('talenma.talent.save_section') }}</x-primary-button>
                 </div>
             </form>
 
@@ -270,7 +298,7 @@
         @else
             @if (filled($videoUrl))
                 <div
-                    class="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-900"
+                    class="relative {{ $frameAspect }} w-full overflow-hidden rounded-xl bg-slate-900 shadow-sm ring-1 ring-black/5"
                     x-data="{ playing: false }"
                 >
                     <x-talent-video-thumbnail :person-name="$personName" class="absolute inset-0 h-full w-full" x-show="!playing" />
@@ -280,8 +308,8 @@
                         x-show="!playing"
                         @click="playing = true; $nextTick(() => $refs.player?.play())"
                     >
-                        <span class="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-indigo-600 shadow-lg">
-                            <svg class="ml-0.5 h-6 w-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <span class="flex {{ $playBtn }} items-center justify-center rounded-full bg-white/95 text-indigo-600 shadow-lg">
+                            <svg class="ml-0.5 {{ $playIcon }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                 <path d="M8 5.14v13.72L19 12 8 5.14Z" />
                             </svg>
                         </span>
@@ -299,10 +327,14 @@
                     ></video>
                 </div>
             @else
-                <div class="relative aspect-video w-full overflow-hidden rounded-xl border border-dashed border-gray-200 bg-slate-50">
+                <div class="relative {{ $frameAspect }} w-full overflow-hidden rounded-xl border border-dashed border-gray-200 bg-slate-50 shadow-sm">
                     <x-talent-video-thumbnail :branded="false" class="absolute inset-0 h-full w-full opacity-80" />
-                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/55 px-4 text-center">
-                        <p class="text-sm font-medium text-gray-800">{{ __('talenma.dashboard.talent.video_empty_title') }}</p>
+                    <div @class([
+                        'absolute inset-0 flex flex-col items-center justify-center bg-white/55 text-center',
+                        'gap-1.5 px-3' => $compact,
+                        'gap-2 px-4' => ! $compact,
+                    ])>
+                        <p @class(['font-medium text-gray-800', 'text-xs' => $compact, 'text-sm' => ! $compact])>{{ __('talenma.dashboard.talent.video_empty_title') }}</p>
                     </div>
                 </div>
             @endif

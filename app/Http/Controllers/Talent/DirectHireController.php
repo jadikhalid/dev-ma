@@ -21,6 +21,7 @@ class DirectHireController extends Controller
 
         $base = DirectHireRequest::query()
             ->where('talent_user_id', $user->id)
+            ->whereNull('talent_hidden_at')
             ->with(['companyProfile', 'company', 'rounds']);
 
         $open = (clone $base)
@@ -130,6 +131,25 @@ class DirectHireController extends Controller
 
         return redirect()
             ->route('talent.direct-hire.show', $directHire)
+            ->with('toast_success', $message);
+    }
+
+    public function destroy(Request $request, DirectHireRequest $directHire): JsonResponse|RedirectResponse
+    {
+        $this->directHires->hideForTalent($directHire, $request->user());
+
+        $message = __('talenma.direct_hire.deleted_closed');
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => $message,
+                'stay' => true,
+                'unseen_pending' => $this->directHires->talentHasUnseenChanges($request->user()),
+            ]);
+        }
+
+        return redirect()
+            ->route('talent.direct-hire.index')
             ->with('toast_success', $message);
     }
 }

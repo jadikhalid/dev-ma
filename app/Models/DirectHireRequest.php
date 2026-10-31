@@ -32,6 +32,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'staff_seen_at',
     'talent_locked_at',
     'talent_unlocked_at',
+    'company_hidden_at',
+    'talent_hidden_at',
 ])]
 class DirectHireRequest extends Model
 {
@@ -165,7 +167,19 @@ class DirectHireRequest extends Model
             'staff_seen_at' => 'datetime',
             'talent_locked_at' => 'datetime',
             'talent_unlocked_at' => 'datetime',
+            'company_hidden_at' => 'datetime',
+            'talent_hidden_at' => 'datetime',
         ];
+    }
+
+    public function isHiddenForCompany(): bool
+    {
+        return $this->company_hidden_at !== null;
+    }
+
+    public function isHiddenForTalent(): bool
+    {
+        return $this->talent_hidden_at !== null;
     }
 
     public function hasActiveTalentLock(): bool

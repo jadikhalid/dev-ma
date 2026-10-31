@@ -37,9 +37,71 @@ class DirectHireController extends Controller
             ->latest()
             ->get();
 
+        $canAccessPool = $user->canAccessTalentPool();
+        $canCompose = $canAccessPool && $open->isEmpty();
+
         return view('company.direct-hire.index', [
             'openRequests' => $open,
             'closedRequests' => $closed,
+            'canCompose' => $canCompose,
+            'composeDisabledReason' => $canCompose
+                ? null
+                : (
+                    $canAccessPool
+                        ? __('talenma.direct_hire.cta_disabled_hint')
+                        : __('talenma.company_offer.plan_required')
+                ),
+        ]);
+    }
+
+    public function searchTalents(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user?->isCompany() && $user->isApproved(), 403);
+
+        if (! $user->canAccessTalentPool()) {
+            return response()->json(['results' => []], 403);
+        }
+
+        if ($this->directHires->companyHasOpenRequest($user)) {
+            return response()->json(['results' => []]);
+        }
+
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:1', 'max:100'],
+        ]);
+
+        $term = trim($data['q']);
+        $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+
+        $candidates = User::query()
+            ->where('role', 'dev')
+            ->where('approval_status', User::APPROVAL_APPROVED)
+            ->whereHas('profile', fn ($query) => $query->listable())
+            ->with('profile.profession')
+            ->where(function ($query) use ($like) {
+                $query->where('name', 'like', $like)
+                    ->orWhere('first_name', 'like', $like)
+                    ->orWhere('last_name', 'like', $like);
+            })
+            ->orderBy('name')
+            ->limit(24)
+            ->get();
+
+        $results = $candidates
+            ->filter(fn (User $talent) => $this->directHires->companyCanPropose($user, $talent))
+            ->take(12)
+            ->map(fn (User $talent) => [
+                'id' => $talent->id,
+                'label' => $talent->profile?->visibleDisplayName($talent) ?? $talent->publicDisplayName(),
+                'subtitle' => $talent->profile?->professionLabel(),
+            ])
+            ->values()
+            ->all();
+
+        return response()->json([
+            'results' => $results,
         ]);
     }
 
@@ -476,5 +538,24 @@ class DirectHireController extends Controller
         );
 
         return back()->with('toast_success', __('talenma.direct_hire.withdrawn'));
+    }
+
+    public function destroy(Request $request, DirectHireRequest $directHire): JsonResponse|RedirectResponse
+    {
+        $this->directHires->hideForCompany($directHire, $request->user());
+
+        $message = __('talenma.direct_hire.deleted_closed');
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => $message,
+                'stay' => true,
+                'unseen_pending' => $this->directHires->companyHasUnseenChanges($request->user()),
+            ]);
+        }
+
+        return redirect()
+            ->route('company.direct-hire.index')
+            ->with('toast_success', $message);
     }
 }

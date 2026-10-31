@@ -49,7 +49,18 @@ class MessagingService
                 ->whereNull('company_hidden_at')
                 ->when($excludedIds !== [], fn ($q) => $q->whereNotIn('id', $excludedIds));
         } elseif ($user->canAccessStaffMessaging()) {
-            $query->where('channel', Conversation::CHANNEL_STAFF);
+            $adminIds = User::query()->where('role', 'admin')->pluck('id');
+
+            $query->where(function ($q) use ($adminIds) {
+                $q->where('channel', Conversation::CHANNEL_STAFF);
+
+                if ($adminIds->isNotEmpty()) {
+                    $q->orWhere(function ($outreach) use ($adminIds) {
+                        $outreach->where('channel', Conversation::CHANNEL_TALENT)
+                            ->whereIn('company_user_id', $adminIds);
+                    });
+                }
+            });
         } elseif ($user->isTalent()) {
             $excludedIds = $this->directHireConversationIdsFor($user);
 
@@ -80,12 +91,34 @@ class MessagingService
         }
 
         if ($user->canAccessStaffMessaging()) {
+            $adminIds = User::query()->where('role', 'admin')->pluck('id');
+
             return Conversation::query()
-                ->where('channel', Conversation::CHANNEL_STAFF)
+                ->where(function ($q) use ($adminIds) {
+                    $q->where('channel', Conversation::CHANNEL_STAFF);
+
+                    if ($adminIds->isNotEmpty()) {
+                        $q->orWhere(function ($outreach) use ($adminIds) {
+                            $outreach->where('channel', Conversation::CHANNEL_TALENT)
+                                ->whereIn('company_user_id', $adminIds);
+                        });
+                    }
+                })
                 ->whereNotNull('last_message_at')
                 ->where(function ($q) {
-                    $q->whereNull('talent_last_read_at')
-                        ->orWhereColumn('last_message_at', '>', 'talent_last_read_at');
+                    $q->where(function ($staff) {
+                        $staff->where('channel', Conversation::CHANNEL_STAFF)
+                            ->where(function ($read) {
+                                $read->whereNull('talent_last_read_at')
+                                    ->orWhereColumn('last_message_at', '>', 'talent_last_read_at');
+                            });
+                    })->orWhere(function ($outreach) {
+                        $outreach->where('channel', Conversation::CHANNEL_TALENT)
+                            ->where(function ($read) {
+                                $read->whereNull('company_last_read_at')
+                                    ->orWhereColumn('last_message_at', '>', 'company_last_read_at');
+                            });
+                    });
                 })
                 ->count();
         }
@@ -130,6 +163,8 @@ class MessagingService
         }
 
         if ($user->canAccessStaffMessaging()) {
+            $adminIds = User::query()->where('role', 'admin')->pluck('id');
+
             Conversation::query()
                 ->where('channel', Conversation::CHANNEL_STAFF)
                 ->whereNotNull('last_message_at')
@@ -138,6 +173,18 @@ class MessagingService
                         ->orWhereColumn('last_message_at', '>', 'talent_last_read_at');
                 })
                 ->update(['talent_last_read_at' => $now]);
+
+            if ($adminIds->isNotEmpty()) {
+                Conversation::query()
+                    ->where('channel', Conversation::CHANNEL_TALENT)
+                    ->whereIn('company_user_id', $adminIds)
+                    ->whereNotNull('last_message_at')
+                    ->where(function ($q) {
+                        $q->whereNull('company_last_read_at')
+                            ->orWhereColumn('last_message_at', '>', 'company_last_read_at');
+                    })
+                    ->update(['company_last_read_at' => $now]);
+            }
 
             return;
         }
@@ -366,6 +413,147 @@ class MessagingService
     }
 
     /**
+     * First inbox touch for a company: staff welcome thread + email with short usage tips.
+     * Idempotent via users.inbox_welcome_sent_at.
+     */
+    public function ensureCompanyInboxWelcome(User $company): ?Conversation
+    {
+        if (! $company->isCompany() || ! $company->isApproved() || $company->inbox_welcome_sent_at) {
+            return null;
+        }
+
+        try {
+            $admin = $this->resolveAdminRecipient();
+        } catch (ValidationException) {
+            return null;
+        }
+
+        if ((int) $admin->id === (int) $company->id) {
+            return null;
+        }
+
+        try {
+            return DB::transaction(function () use ($company, $admin) {
+                $locked = User::query()->whereKey($company->id)->lockForUpdate()->first();
+
+                if (! $locked || $locked->inbox_welcome_sent_at) {
+                    return null;
+                }
+
+                $conversation = Conversation::query()->firstOrCreate(
+                    [
+                        'company_user_id' => $company->id,
+                        'talent_user_id' => $admin->id,
+                        'channel' => Conversation::CHANNEL_STAFF,
+                    ],
+                    [
+                        'subject' => __('talenma.inbox.welcome_subject'),
+                    ],
+                );
+
+                if ($conversation->wasRecentlyCreated || blank($conversation->subject)) {
+                    $conversation->forceFill([
+                        'subject' => __('talenma.inbox.welcome_subject'),
+                    ])->save();
+                }
+
+                $alreadyWelcomed = $conversation->messages()
+                    ->where('sender_user_id', $admin->id)
+                    ->exists();
+
+                if (! $alreadyWelcomed) {
+                    // Welcome stays in-app only — never notify by email.
+                    $this->postMessage(
+                        $conversation,
+                        $admin,
+                        __('talenma.inbox.welcome_body'),
+                        [],
+                        notify: false,
+                    );
+                }
+
+                $locked->forceFill(['inbox_welcome_sent_at' => now()])->save();
+
+                return $conversation->fresh(['messages.attachments', 'talent', 'company']);
+            });
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return null;
+        }
+    }
+
+    /**
+     * First inbox touch for a talent: platform welcome thread (no email).
+     * Idempotent via users.inbox_welcome_sent_at.
+     */
+    public function ensureTalentInboxWelcome(User $talent): ?Conversation
+    {
+        if (! $talent->isTalent() || ! $talent->isApproved() || $talent->inbox_welcome_sent_at) {
+            return null;
+        }
+
+        try {
+            $admin = $this->resolveAdminRecipient();
+        } catch (ValidationException) {
+            return null;
+        }
+
+        if ((int) $admin->id === (int) $talent->id) {
+            return null;
+        }
+
+        try {
+            return DB::transaction(function () use ($talent, $admin) {
+                $locked = User::query()->whereKey($talent->id)->lockForUpdate()->first();
+
+                if (! $locked || $locked->inbox_welcome_sent_at) {
+                    return null;
+                }
+
+                $conversation = Conversation::query()->firstOrCreate(
+                    [
+                        'company_user_id' => $admin->id,
+                        'talent_user_id' => $talent->id,
+                        'channel' => Conversation::CHANNEL_TALENT,
+                    ],
+                    [
+                        'subject' => __('talenma.inbox.welcome_subject'),
+                    ],
+                );
+
+                if ($conversation->wasRecentlyCreated || blank($conversation->subject)) {
+                    $conversation->forceFill([
+                        'subject' => __('talenma.inbox.welcome_subject'),
+                    ])->save();
+                }
+
+                $alreadyWelcomed = $conversation->messages()
+                    ->where('sender_user_id', $admin->id)
+                    ->exists();
+
+                if (! $alreadyWelcomed) {
+                    $this->postMessage(
+                        $conversation,
+                        $admin,
+                        __('talenma.inbox.welcome_body_talent'),
+                        [],
+                        notify: false,
+                    );
+                }
+
+                $locked->forceFill(['inbox_welcome_sent_at' => now()])->save();
+
+                return $conversation->fresh(['messages.attachments', 'talent', 'company']);
+            });
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return null;
+        }
+    }
+
+    /**
      * @param  list<UploadedFile>  $files
      */
     public function reply(
@@ -383,7 +571,10 @@ class MessagingService
                 $this->assertCompanyCanMessage($sender);
             }
         } elseif ($sender->canAccessStaffMessaging()) {
-            abort_unless($conversation->isStaffChannel(), 403);
+            abort_unless(
+                $conversation->isStaffChannel() || $conversation->isPlatformTalentOutreach(),
+                403,
+            );
         }
 
         return $this->postMessage($conversation, $sender, $body, $files);
@@ -418,9 +609,12 @@ class MessagingService
                         $counterpart?->profile?->professionLabel(),
                         $counterpart?->profile?->sectorLabel(),
                     ])->filter()->implode(' - ')
-                    : ($conversation->isStaffChannel() && $viewer->isCompany()
-                        ? __('talenma.inbox.staff_role_label')
-                        : null),
+                    : (
+                        ($conversation->isStaffChannel() && $viewer->isCompany())
+                        || ($conversation->isPlatformTalentOutreach() && $viewer->isTalent())
+                            ? __('talenma.inbox.staff_role_label')
+                            : null
+                    ),
                 ...$this->counterpartVisual($conversation, $viewer, $counterpart),
             ],
             'messages' => $conversation->messages->map(fn (Message $message) => $this->presentMessage($message, $viewer))->values(),
@@ -494,6 +688,10 @@ class MessagingService
             return __('talenma.inbox.staff_counterpart');
         }
 
+        if ($viewer->isTalent() && ($conversation->isPlatformTalentOutreach() || $counterpart?->isAdmin())) {
+            return __('talenma.inbox.staff_counterpart');
+        }
+
         if ($viewer->isCompany()) {
             return $counterpart?->profile?->visibleDisplayName($counterpart)
                 ?? $counterpart?->publicDisplayName()
@@ -509,7 +707,7 @@ class MessagingService
      */
     private function counterpartVisual(Conversation $conversation, User $viewer, ?User $counterpart): array
     {
-        if ($conversation->isStaffChannel()) {
+        if ($conversation->isStaffChannel() || ($viewer->isTalent() && $conversation->isPlatformTalentOutreach())) {
             return [
                 'avatar_url' => null,
                 'initials' => 'TM',
@@ -562,6 +760,7 @@ class MessagingService
         User $sender,
         string $body,
         array $files = [],
+        bool $notify = true,
     ): Message {
         $this->validateAttachments($files);
 
@@ -595,7 +794,9 @@ class MessagingService
             $readColumn => $now,
         ])->save();
 
-        $this->notifyRecipient($conversation, $message, $sender);
+        if ($notify) {
+            $this->notifyRecipient($conversation, $message, $sender);
+        }
 
         return $message->load('attachments', 'sender');
     }

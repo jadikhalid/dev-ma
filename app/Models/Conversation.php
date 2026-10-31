@@ -77,12 +77,36 @@ class Conversation extends Model
             return true;
         }
 
+        if ($this->isPlatformTalentOutreach() && $user->canAccessStaffMessaging()) {
+            return true;
+        }
+
         return (int) $this->talent_user_id === (int) $user->id;
     }
 
     public function isCompanySideParticipant(User $user): bool
     {
-        return (int) $this->company_user_id === (int) $user->id;
+        if ((int) $this->company_user_id === (int) $user->id) {
+            return true;
+        }
+
+        // Staff answering a platform welcome/outreach thread to a talent.
+        return $this->isPlatformTalentOutreach() && $user->canAccessStaffMessaging();
+    }
+
+    /**
+     * Welcome / support thread where the platform admin is stored as company_user_id
+     * and the talent as talent_user_id on the talent channel.
+     */
+    public function isPlatformTalentOutreach(): bool
+    {
+        if ($this->channel !== self::CHANNEL_TALENT) {
+            return false;
+        }
+
+        $this->loadMissing('company');
+
+        return (bool) $this->company?->isAdmin();
     }
 
     public function counterpartFor(User $user): ?User
