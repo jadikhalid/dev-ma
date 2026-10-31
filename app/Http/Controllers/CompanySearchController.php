@@ -82,10 +82,12 @@ class CompanySearchController extends Controller
         }
 
         $sectors = $this->professionCatalog->sectorsForLocale();
+        $globalTalentCount = $this->listableTalentsQuery()->count();
 
         return view('company.search', [
             'talents' => $talents,
             'sectors' => $sectors,
+            'globalTalentCount' => $globalTalentCount,
             'canProposeDirectHire' => $canProposeDirectHire,
             'hiredTalentIds' => $hiredTalentIds,
             'blockedNamedTalentIds' => $blockedNamedTalentIds,
@@ -97,7 +99,11 @@ class CompanySearchController extends Controller
                 'experience' => (string) $request->input('experience', 'all'),
                 'status' => (string) $request->input('status', 'all'),
                 'keyword' => (string) $request->input('keyword', ''),
+                'country' => (string) $request->input('country', ''),
+                'city' => (string) $request->input('city', ''),
             ],
+            'countryOptions' => Profile::countryOptions(),
+            'citiesByCountry' => Profile::citiesByCountry(),
         ]);
     }
 
@@ -228,12 +234,20 @@ class CompanySearchController extends Controller
     /**
      * @return \Illuminate\Database\Eloquent\Builder<User>
      */
-    private function filteredTalentsQuery(Request $request)
+    private function listableTalentsQuery()
     {
-        $query = User::where('role', 'dev')
+        return User::where('role', 'dev')
             ->where('approval_status', User::APPROVAL_APPROVED)
             ->with(['profile.profession', 'profile.professionSector', 'profile.documents'])
             ->whereHas('profile', fn ($q) => $q->listable());
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<User>
+     */
+    private function filteredTalentsQuery(Request $request)
+    {
+        $query = $this->listableTalentsQuery();
 
         if ($request->filled('sector')) {
             $query->whereHas('profile.professionSector', fn ($q) => $q->where('slug', $request->sector));
@@ -290,6 +304,23 @@ class CompanySearchController extends Controller
                     });
                 });
             }
+        }
+
+        $country = trim((string) $request->input('country', ''));
+
+        if (Profile::isValidCountry($country)) {
+            $city = trim((string) $request->input('city', ''));
+            $cityVariants = $city !== ''
+                ? Profile::cityStorageVariants($country, $city)
+                : [];
+
+            $query->whereHas('profile', function ($q) use ($country, $cityVariants) {
+                $q->where('country', $country);
+
+                if ($cityVariants !== []) {
+                    $q->whereIn('city', $cityVariants);
+                }
+            });
         }
 
         return $query;

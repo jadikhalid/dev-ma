@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'user_id',
@@ -104,6 +105,75 @@ class Profile extends Model
         }
 
         return self::citiesByCountry()[$country] ?? [];
+    }
+
+    public static function isValidCountry(?string $country): bool
+    {
+        return filled($country) && array_key_exists($country, self::countryOptions());
+    }
+
+    /**
+     * Resolve a free-text city to the current-locale catalog label for a country.
+     */
+    public static function resolveCityForCountry(?string $country, ?string $city): ?string
+    {
+        if (! self::isValidCountry($country) || ! filled($city)) {
+            return null;
+        }
+
+        $needle = mb_strtolower(Str::ascii(trim($city)));
+        $locales = array_values(array_unique([app()->getLocale(), 'fr', 'en']));
+
+        foreach ($locales as $locale) {
+            $labels = $country === self::COUNTRY_US
+                ? UsStateCatalog::labels($locale)
+                : ProfileCityCatalog::forCountry($country, $locale);
+
+            foreach ($labels as $label) {
+                if (mb_strtolower(Str::ascii($label)) === $needle) {
+                    // Prefer the current-locale spelling when available.
+                    $preferred = self::citiesForCountry($country);
+                    foreach ($preferred as $preferredLabel) {
+                        if (mb_strtolower(Str::ascii($preferredLabel)) === $needle) {
+                            return $preferredLabel;
+                        }
+                    }
+
+                    return $label;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * All FR/EN catalog spellings that match a city (for DB filtering).
+     *
+     * @return list<string>
+     */
+    public static function cityStorageVariants(?string $country, ?string $city): array
+    {
+        if (! self::isValidCountry($country) || ! filled($city)) {
+            return [];
+        }
+
+        $needle = mb_strtolower(Str::ascii(trim($city)));
+        $matches = [];
+
+        foreach (['fr', 'en'] as $locale) {
+            $labels = $country === self::COUNTRY_US
+                ? UsStateCatalog::labels($locale)
+                : ProfileCityCatalog::forCountry($country, $locale);
+
+            foreach ($labels as $label) {
+                if (mb_strtolower(Str::ascii($label)) === $needle) {
+                    $matches[] = $label;
+                }
+            }
+        }
+
+        return array_values(array_unique($matches));
     }
 
     public function countryLabel(): ?string

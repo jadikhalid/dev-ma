@@ -80,7 +80,9 @@ class TalentCatalogAiFiltersTest extends TestCase
                                         'experience' => '5-10',
                                         'status' => Profile::STATUS_AVAILABLE,
                                         'keywords' => ['PHP / Laravel', 'InventedSkill', 'Backend'],
-                                        'summary' => 'Full-stack Laravel disponible, 5-10 ans',
+                                        'country' => 'ma',
+                                        'city' => 'Casablanca',
+                                        'summary' => 'Full-stack Laravel à Casablanca, disponible, 5-10 ans',
                                     ], JSON_UNESCAPED_UNICODE),
                                 ],
                             ],
@@ -102,7 +104,9 @@ class TalentCatalogAiFiltersTest extends TestCase
             ->assertJsonPath('filters.experience', '5-10')
             ->assertJsonPath('filters.status', Profile::STATUS_AVAILABLE)
             ->assertJsonPath('filters.keywords', ['PHP / Laravel', 'Backend'])
-            ->assertJsonPath('filters.summary', 'Full-stack Laravel disponible, 5-10 ans');
+            ->assertJsonPath('filters.country', 'ma')
+            ->assertJsonPath('filters.city', 'Casablanca')
+            ->assertJsonPath('filters.summary', 'Full-stack Laravel à Casablanca, disponible, 5-10 ans');
 
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'generativelanguage.googleapis.com')
@@ -126,6 +130,8 @@ class TalentCatalogAiFiltersTest extends TestCase
                                         'experience' => '99-years',
                                         'status' => 'vacation',
                                         'keywords' => ['Random'],
+                                        'country' => 'xx',
+                                        'city' => 'Atlantis',
                                         'summary' => 'Hors catalogue',
                                     ]),
                                 ],
@@ -147,7 +153,47 @@ class TalentCatalogAiFiltersTest extends TestCase
             ->assertJsonPath('filters.profession', '')
             ->assertJsonPath('filters.experience', 'all')
             ->assertJsonPath('filters.status', 'all')
-            ->assertJsonPath('filters.keywords', []);
+            ->assertJsonPath('filters.keywords', [])
+            ->assertJsonPath('filters.country', '')
+            ->assertJsonPath('filters.city', '');
+    }
+
+    public function test_city_is_cleared_when_country_is_missing_or_mismatched(): void
+    {
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    [
+                        'content' => [
+                            'parts' => [
+                                [
+                                    'text' => json_encode([
+                                        'sector' => '',
+                                        'profession' => '',
+                                        'experience' => 'all',
+                                        'status' => 'all',
+                                        'keywords' => [],
+                                        'country' => 'fr',
+                                        'city' => 'Casablanca',
+                                        'summary' => 'France only',
+                                    ]),
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $company = $this->companyWithAccess();
+
+        $this->actingAs($company)
+            ->postJson(route('company.search.ai-filters'), [
+                'prompt' => 'Talents en France',
+            ])
+            ->assertOk()
+            ->assertJsonPath('filters.country', 'fr')
+            ->assertJsonPath('filters.city', '');
     }
 
     public function test_profession_forces_parent_sector(): void

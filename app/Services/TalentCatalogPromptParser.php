@@ -33,6 +33,8 @@ class TalentCatalogPromptParser
      *     experience: string,
      *     status: string,
      *     keywords: list<string>,
+     *     country: string,
+     *     city: string,
      *     summary: string
      * }
      */
@@ -51,19 +53,23 @@ class TalentCatalogPromptParser
         $locale = $locale ?? app()->getLocale();
         $catalog = $this->compactCatalog($locale);
         $statusValues = array_keys(Profile::statusOptions());
+        $countryOptions = Profile::countryOptions();
+        $citiesByCountry = Profile::citiesByCountry();
 
         $system = <<<'PROMPT'
 Tu convertis une recherche RH en filtres catalogue JSON strict.
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, de la forme:
-{"sector":"slug-ou-vide","profession":"slug-ou-vide","experience":"all|0-1|1-5|5-10|10+","status":"all|…","keywords":["…"],"summary":"phrase courte"}
+{"sector":"slug-ou-vide","profession":"slug-ou-vide","experience":"all|0-1|1-5|5-10|10+","status":"all|…","keywords":["…"],"country":"code-ou-vide","city":"ville-catalogue-ou-vide","summary":"phrase courte"}
 Règles:
 - sector et profession doivent être des slugs du catalogue fourni, ou "".
 - Si profession est renseigné, sector doit être le secteur parent de ce métier.
 - experience: all si non précisé; 0-1 jeune diplômé / <1 an; 1-5; 5-10; 10+ sinon.
 - status: all si non précisé; sinon une des valeurs exactes listées.
-- keywords: 0 à 3 libellés courts tirés du prompt (ex. MOA, Laravel) ; "" si aucun.
+- keywords: 0 à 3 libellés courts tirés du prompt (ex. MOA, Laravel) ; [] si aucun.
+- country: code pays du catalogue (ma, fr, …) ou "".
+- city: libellé exact de cities_by_country pour ce country, ou "". Si country est "", city doit être "".
 - summary: une courte phrase (FR ou EN selon la langue du prompt) décrivant les filtres choisis.
-- N'invente aucun slug hors catalogue. Choisis le métier le plus proche sémantiquement.
+- N'invente aucun slug / code / ville hors catalogue. Choisis le métier et le lieu les plus proches sémantiquement.
 PROMPT;
 
         // Slim prompt catalog (no specializations) keeps Gemini latency under PHP's 30s web limit.
@@ -72,6 +78,11 @@ PROMPT;
             'prompt' => $prompt,
             'allowed_experience' => self::EXPERIENCE_VALUES,
             'allowed_status' => array_merge(['all'], $statusValues),
+            'allowed_countries' => collect($countryOptions)
+                ->map(fn (string $name, string $code) => ['code' => $code, 'name' => $name])
+                ->values()
+                ->all(),
+            'cities_by_country' => $citiesByCountry,
             'catalog' => $this->promptCatalog($catalog),
         ];
 
@@ -242,6 +253,8 @@ PROMPT;
      *     experience: string,
      *     status: string,
      *     keywords: list<string>,
+     *     country: string,
+     *     city: string,
      *     summary: string
      * }
      */
@@ -314,6 +327,16 @@ PROMPT;
             $keywords = array_values(array_slice(array_unique($matched), 0, self::MAX_KEYWORDS));
         }
 
+        $country = trim((string) ($raw['country'] ?? ''));
+        if ($country !== '' && ! Profile::isValidCountry($country)) {
+            $country = '';
+        }
+
+        $city = '';
+        if ($country !== '') {
+            $city = Profile::resolveCityForCountry($country, trim((string) ($raw['city'] ?? ''))) ?? '';
+        }
+
         $summary = trim(Str::limit((string) ($raw['summary'] ?? ''), 160, ''));
 
         return [
@@ -322,6 +345,8 @@ PROMPT;
             'experience' => $experience,
             'status' => $status,
             'keywords' => $keywords,
+            'country' => $country,
+            'city' => $city,
             'summary' => $summary,
         ];
     }

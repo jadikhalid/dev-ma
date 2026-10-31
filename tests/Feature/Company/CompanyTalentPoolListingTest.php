@@ -5,6 +5,7 @@ namespace Tests\Feature\Company;
 use App\Models\CompanyProfile;
 use App\Models\Profession;
 use App\Models\ProfessionSector;
+use App\Models\Profile;
 use App\Models\ProfileDocument;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -100,8 +101,84 @@ class CompanyTalentPoolListingTest extends TestCase
             ->assertOk();
     }
 
-    private function createTalent(?Profession $profession, ?string $bio, bool $withCv, bool $isPublic = true): User
+    public function test_talent_pool_can_filter_by_country_and_city(): void
     {
+        $sector = ProfessionSector::query()->create([
+            'slug' => 'it-location',
+            'name_fr' => 'IT',
+            'name_en' => 'IT',
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $profession = Profession::query()->create([
+            'profession_sector_id' => $sector->id,
+            'slug' => 'dev-location',
+            'name_fr' => 'Développeur',
+            'name_en' => 'Developer',
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $casablanca = $this->createTalent(
+            $profession,
+            bio: null,
+            withCv: true,
+            country: Profile::COUNTRY_MA,
+            city: 'Casablanca',
+        );
+        $rabat = $this->createTalent(
+            $profession,
+            bio: null,
+            withCv: true,
+            country: Profile::COUNTRY_MA,
+            city: 'Rabat',
+        );
+        $paris = $this->createTalent(
+            $profession,
+            bio: null,
+            withCv: true,
+            country: Profile::COUNTRY_FR,
+            city: 'Paris',
+        );
+
+        $company = User::factory()->companyOwner()->create();
+        CompanyProfile::factory()->onTrial()->create(['user_id' => $company->id]);
+
+        $moroccoIds = collect(
+            $this->actingAs($company)
+                ->getJson(route('company.search', ['country' => Profile::COUNTRY_MA]))
+                ->assertOk()
+                ->json('talents')
+        )->pluck('id');
+
+        $this->assertTrue($moroccoIds->contains($casablanca->id));
+        $this->assertTrue($moroccoIds->contains($rabat->id));
+        $this->assertFalse($moroccoIds->contains($paris->id));
+
+        $cityIds = collect(
+            $this->actingAs($company)
+                ->getJson(route('company.search', [
+                    'country' => Profile::COUNTRY_MA,
+                    'city' => 'Casablanca',
+                ]))
+                ->assertOk()
+                ->json('talents')
+        )->pluck('id');
+
+        $this->assertTrue($cityIds->contains($casablanca->id));
+        $this->assertFalse($cityIds->contains($rabat->id));
+        $this->assertFalse($cityIds->contains($paris->id));
+    }
+
+    private function createTalent(
+        ?Profession $profession,
+        ?string $bio,
+        bool $withCv,
+        bool $isPublic = true,
+        ?string $country = null,
+        ?string $city = null,
+    ): User {
         $talent = User::factory()->talent()->create();
 
         $profile = $talent->profile()->create([
@@ -109,6 +186,8 @@ class CompanyTalentPoolListingTest extends TestCase
             'profession_sector_id' => $profession?->profession_sector_id,
             'bio' => $bio,
             'is_public' => $isPublic,
+            'country' => $country,
+            'city' => $city,
         ]);
 
         if ($withCv) {

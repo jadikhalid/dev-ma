@@ -4841,6 +4841,10 @@ Alpine.data('companyTalentCatalog', (config) => ({
     professionSlug: config.initialProfession ?? '',
     experience: config.initialExperience || 'all',
     status: config.initialStatus || 'all',
+    country: config.initialCountry ?? '',
+    city: config.initialCity ?? '',
+    countryOptions: config.countryOptions ?? {},
+    citiesByCountry: config.citiesByCountry ?? {},
     selectedKeywords: (config.initialKeyword ?? '')
         .split(',')
         .map((item) => item.trim())
@@ -4928,6 +4932,28 @@ Alpine.data('companyTalentCatalog', (config) => ({
         return Boolean(this.sectorSlug && this.professionSlug);
     },
 
+    get countryOptionList() {
+        return Object.entries(this.countryOptions).map(([code, label]) => ({ code, label }));
+    },
+
+    get filteredCities() {
+        if (! this.country) {
+            return [];
+        }
+
+        return this.citiesByCountry[this.country] ?? [];
+    },
+
+    get citiesEnabled() {
+        return Boolean(this.country);
+    },
+
+    get cityPlaceholder() {
+        return this.citiesEnabled
+            ? (this.labels.cityAll ?? '')
+            : (this.labels.cityBlocked ?? '');
+    },
+
     get keywordsAtMax() {
         return this.selectedKeywords.length >= this.maxKeywords;
     },
@@ -4981,6 +5007,8 @@ Alpine.data('companyTalentCatalog', (config) => ({
         this.professionSlug = '';
         this.experience = 'all';
         this.status = 'all';
+        this.country = '';
+        this.city = '';
         this.selectedKeywords = [];
         this.keywordInput = '';
         this.keywordSuggestionsOpen = false;
@@ -5045,6 +5073,8 @@ Alpine.data('companyTalentCatalog', (config) => ({
                 profession: filters.profession || '',
                 experience: filters.experience || 'all',
                 status: filters.status || 'all',
+                country: filters.country || '',
+                city: filters.city || '',
                 keywords: Array.isArray(filters.keywords)
                     ? filters.keywords.map((item) => String(item).trim()).filter(Boolean).slice(0, this.maxKeywords)
                     : [],
@@ -5080,6 +5110,16 @@ Alpine.data('companyTalentCatalog', (config) => ({
     onProfessionChange() {
         this.activateManualSearch();
         this.resetKeywordIfInvalid();
+        this.refreshResults();
+    },
+
+    onCountryChange() {
+        this.activateManualSearch();
+
+        if (! this.filteredCities.includes(this.city)) {
+            this.city = '';
+        }
+
         this.refreshResults();
     },
 
@@ -5163,6 +5203,8 @@ Alpine.data('companyTalentCatalog', (config) => ({
                 profession: this.aiFilters.profession || '',
                 experience: this.aiFilters.experience || 'all',
                 status: this.aiFilters.status || 'all',
+                country: this.aiFilters.country || '',
+                city: this.aiFilters.city || '',
                 keywords: Array.isArray(this.aiFilters.keywords) ? this.aiFilters.keywords : [],
             };
         }
@@ -5172,6 +5214,8 @@ Alpine.data('companyTalentCatalog', (config) => ({
             profession: this.professionSlug || '',
             experience: this.experience || 'all',
             status: this.status || 'all',
+            country: this.country || '',
+            city: this.city || '',
             keywords: this.selectedKeywords,
         };
     },
@@ -5194,6 +5238,14 @@ Alpine.data('companyTalentCatalog', (config) => ({
 
         if (filters.status && filters.status !== 'all') {
             params.set('status', filters.status);
+        }
+
+        if (filters.country) {
+            params.set('country', filters.country);
+        }
+
+        if (filters.city) {
+            params.set('city', filters.city);
         }
 
         if (filters.keywords.length) {

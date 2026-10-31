@@ -1,24 +1,16 @@
 ﻿<x-app-layout>
     <x-slot name="header">
-        <div
-            x-data="{
-                total: {{ (int) $talents->total() }},
-                template: @js(__('talenma.talents.found', ['count' => ':count'])),
-                get foundLabel() {
-                    return this.template.replace(':count', String(this.total ?? 0));
-                },
-            }"
-            @talent-catalog-meta.window="total = Number($event.detail?.total ?? 0)"
-        >
+        <div>
             <h2 class="text-xl font-bold">{{ __('talenma.talents.title') }}</h2>
-            <p class="text-sm text-gray-500" x-text="foundLabel"></p>
+            <p class="text-sm text-gray-500">{{ __('talenma.talents.pool_count', ['count' => $globalTalentCount]) }}</p>
         </div>
     </x-slot>
 
     <x-process-help topic="talents" />
 
     @php
-        $selectClass = 'mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500';
+        $selectClass = 'mt-0.5 block w-full rounded-lg border-gray-300 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500';
+        $filterLabelClass = 'block text-xs font-medium text-gray-600';
         $canProposeDirectHire = $canProposeDirectHire ?? true;
         $hiredTalentIds = $hiredTalentIds ?? [];
         $blockedNamedTalentIds = $blockedNamedTalentIds ?? [];
@@ -85,7 +77,7 @@
     @endphp
 
     <div
-        class="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8"
+        class="py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4"
         x-data="companyTalentCatalog({
             sectors: @js($sectors),
             searchUrl: @js(route('company.search')),
@@ -104,6 +96,10 @@
             initialExperience: @js($filters['experience']),
             initialStatus: @js($filters['status']),
             initialKeyword: @js($filters['keyword']),
+            initialCountry: @js($filters['country']),
+            initialCity: @js($filters['city']),
+            countryOptions: @js($countryOptions),
+            citiesByCountry: @js($citiesByCountry),
             labels: @js([
                 'found' => __('talenma.talents.found', ['count' => ':count']),
                 'loading' => __('talenma.home.search_drawer_loading'),
@@ -119,6 +115,9 @@
                 'keywordBlocked' => __('talenma.home.search_skills_blocked_placeholder'),
                 'keywordEmpty' => __('talenma.home.search_skills_no_match'),
                 'keywordsMax' => __('talenma.home.search_skills_max_reached'),
+                'countryAll' => __('talenma.talents.filter_country_all'),
+                'cityAll' => __('talenma.talents.filter_city_all'),
+                'cityBlocked' => __('talenma.talents.filter_city_blocked'),
                 'prev' => __('talenma.common.previous'),
                 'next' => __('talenma.common.next'),
                 'composeError' => __('talenma.inbox.error'),
@@ -137,92 +136,15 @@
             canProposeDirectHire: @js($canProposeDirectHire),
         })"
     >
-        <div class="space-y-4">
+        <div class="space-y-2.5">
             <div
-                class="rounded-2xl border bg-white p-4 sm:p-5"
-                :class="isAiSearchActive ? 'border-indigo-200 ring-1 ring-indigo-100' : 'border-gray-200'"
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 sm:px-4"
+                :class="isAiSearchActive ? 'opacity-70' : ''"
             >
-                <p class="text-sm font-medium text-gray-900">{{ __('talenma.talents.ai_filters_title') }}</p>
-                <div class="relative mt-3">
-                    <label class="sr-only" for="catalog-ai-prompt">{{ __('talenma.talents.ai_filters_title') }}</label>
-                    <input
-                        id="catalog-ai-prompt"
-                        type="text"
-                        x-model="aiPrompt"
-                        maxlength="500"
-                        :disabled="aiLoading"
-                        placeholder="{{ __('talenma.talents.ai_filters_placeholder') }}"
-                        class="block w-full rounded-xl border-gray-300 py-2.5 pl-3 pr-12 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
-                        @keydown.enter.prevent="applyAiFilters()"
-                    />
-                    <button
-                        type="button"
-                        class="absolute inset-y-1 right-1 inline-flex w-10 items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-                        :disabled="aiLoading || ! aiPrompt.trim()"
-                        :aria-label="aiLoading ? labels.aiFiltersLoading : @js(__('talenma.talents.ai_filters_apply'))"
-                        :title="aiLoading ? labels.aiFiltersLoading : @js(__('talenma.talents.ai_filters_apply'))"
-                        @click="applyAiFilters()"
-                    >
-                        <svg
-                            x-show="! aiLoading"
-                            class="h-5 w-5"
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path
-                                fill="currentColor"
-                                d="M12 2.2c.35 2.85 1.55 5.05 3.55 7.05S20.95 12.65 23.8 13c-2.85.35-5.05 1.55-7.05 3.55S12.35 20.95 12 23.8c-.35-2.85-1.55-5.05-3.55-7.05S3.05 13.35.2 13c2.85-.35 5.05-1.55 7.05-3.55S11.65 5.05 12 2.2z"
-                            />
-                        </svg>
-                        <svg
-                            x-show="aiLoading"
-                            x-cloak
-                            class="h-5 w-5 animate-spin"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div
-                    x-show="isAiSearchActive && aiSummary"
-                    x-cloak
-                    class="mt-3 flex items-start gap-2 rounded-xl bg-indigo-50 px-3 py-2 text-sm text-indigo-900"
-                >
-                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" viewBox="0 0 24 24" aria-hidden="true">
-                        <path
-                            fill="currentColor"
-                            d="M12 2.2c.35 2.85 1.55 5.05 3.55 7.05S20.95 12.65 23.8 13c-2.85.35-5.05 1.55-7.05 3.55S12.35 20.95 12 23.8c-.35-2.85-1.55-5.05-3.55-7.05S3.05 13.35.2 13c2.85-.35 5.05-1.55 7.05-3.55S11.65 5.05 12 2.2z"
-                        />
-                    </svg>
-                    <p class="min-w-0 flex-1 leading-snug" x-text="aiSummaryLabel"></p>
-                    <button
-                        type="button"
-                        class="shrink-0 rounded-md px-1.5 text-indigo-500 hover:bg-indigo-100 hover:text-indigo-800"
-                        @click="clearAiSearchAndRefresh()"
-                        :aria-label="@js(__('talenma.talents.ai_filters_clear'))"
-                        :title="@js(__('talenma.talents.ai_filters_clear'))"
-                    >&times;</button>
-                </div>
-                <p
-                    x-show="aiError"
-                    x-cloak
-                    class="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700"
-                    x-text="aiError"
-                ></p>
-            </div>
-
-            <div
-                class="rounded-2xl border bg-white p-4 sm:p-5"
-                :class="isAiSearchActive ? 'border-gray-200 opacity-70' : 'border-gray-200'"
-            >
-                <p class="mb-4 text-sm font-medium text-gray-900">{{ __('talenma.talents.manual_filters_title') }}</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ __('talenma.talents.manual_filters_title') }}</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 sm:gap-2.5">
                     <div>
-                        <x-input-label for="catalog-sector" :value="__('talenma.home.search_sector')" />
+                        <label for="catalog-sector" class="{{ $filterLabelClass }}">{{ __('talenma.home.search_sector') }}</label>
                         <select
                             id="catalog-sector"
                             x-model="sectorSlug"
@@ -237,7 +159,7 @@
                     </div>
 
                     <div>
-                        <x-input-label for="catalog-profession" :value="__('talenma.home.search_profession')" />
+                        <label for="catalog-profession" class="{{ $filterLabelClass }}">{{ __('talenma.home.search_profession') }}</label>
                         <select
                             id="catalog-profession"
                             x-model="professionSlug"
@@ -253,7 +175,7 @@
                     </div>
 
                     <div>
-                        <x-input-label for="catalog-experience" :value="__('talenma.home.search_drawer_filter_experience')" />
+                        <label for="catalog-experience" class="{{ $filterLabelClass }}">{{ __('talenma.home.search_drawer_filter_experience') }}</label>
                         <select
                             id="catalog-experience"
                             x-model="experience"
@@ -269,7 +191,7 @@
                     </div>
 
                     <div>
-                        <x-input-label for="catalog-status" :value="__('talenma.home.search_drawer_filter_status')" />
+                        <label for="catalog-status" class="{{ $filterLabelClass }}">{{ __('talenma.home.search_drawer_filter_status') }}</label>
                         <select
                             id="catalog-status"
                             x-model="status"
@@ -283,14 +205,45 @@
                         </select>
                     </div>
 
-                    <div class="relative">
-                        <x-input-label for="catalog-keywords" :value="__('talenma.home.search_skills')" />
-                        <div class="mt-1 min-h-[42px] rounded-lg border border-gray-300 bg-white px-2 py-1.5 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500"
+                    <div>
+                        <label for="catalog-country" class="{{ $filterLabelClass }}">{{ __('talenma.talent.country') }}</label>
+                        <select
+                            id="catalog-country"
+                            x-model="country"
+                            @change="onCountryChange()"
+                            class="{{ $selectClass }}"
+                        >
+                            <option value="" x-text="labels.countryAll"></option>
+                            <template x-for="option in countryOptionList" :key="option.code">
+                                <option :value="option.code" x-text="option.label"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="catalog-city" class="{{ $filterLabelClass }}">{{ __('talenma.talent.city') }}</label>
+                        <select
+                            id="catalog-city"
+                            x-model="city"
+                            @change="onManualFilterChange()"
+                            :disabled="! citiesEnabled"
+                            class="{{ $selectClass }} disabled:bg-gray-50 disabled:text-gray-400"
+                        >
+                            <option value="" x-text="cityPlaceholder"></option>
+                            <template x-for="cityOption in filteredCities" :key="cityOption">
+                                <option :value="cityOption" x-text="cityOption"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div class="relative col-span-2 sm:col-span-3 lg:col-span-4 xl:col-span-1">
+                        <label for="catalog-keywords" class="{{ $filterLabelClass }}">{{ __('talenma.home.search_skills') }}</label>
+                        <div class="mt-0.5 min-h-[34px] rounded-lg border border-gray-300 bg-white px-1.5 py-1 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500"
                              :class="{ 'bg-gray-50': ! keywordsEnabled }"
                         >
-                            <div class="flex flex-wrap gap-1.5">
+                            <div class="flex flex-wrap gap-1">
                                 <template x-for="(keyword, index) in selectedKeywords" :key="keyword">
-                                    <span class="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-1.5 py-0.5 text-[11px] font-medium text-indigo-700">
                                         <span x-text="keyword"></span>
                                         <button
                                             type="button"
@@ -311,14 +264,14 @@
                                     @blur="hideKeywordSuggestionsSoon()"
                                     :disabled="! keywordsEnabled || keywordsAtMax"
                                     :placeholder="keywordsEnabled ? (keywordsAtMax ? labels.keywordsMax : labels.keywordPlaceholder) : labels.keywordBlocked"
-                                    class="min-w-[8rem] flex-1 border-0 bg-transparent p-1 text-sm focus:ring-0 disabled:cursor-not-allowed disabled:text-gray-400"
+                                    class="min-w-[6rem] flex-1 border-0 bg-transparent p-0.5 text-sm focus:ring-0 disabled:cursor-not-allowed disabled:text-gray-400"
                                 />
                             </div>
                         </div>
                         <div
                             x-show="keywordSuggestionsOpen && keywordsEnabled && ! keywordsAtMax && keywordInput.trim()"
                             x-cloak
-                            class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+                            class="absolute z-20 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg"
                         >
                             <template x-if="filteredAvailableKeywords.length === 0">
                                 <p class="px-3 py-2 text-sm text-gray-500" x-text="labels.keywordEmpty"></p>
@@ -326,7 +279,7 @@
                             <template x-for="suggestion in filteredAvailableKeywords" :key="suggestion">
                                 <button
                                     type="button"
-                                    class="block w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
+                                    class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
                                     @mousedown.prevent="addKeyword(suggestion)"
                                     x-text="suggestion"
                                 ></button>
@@ -335,10 +288,90 @@
                     </div>
                 </div>
             </div>
+
+            <div
+                class="rounded-xl border bg-white px-3 py-2.5 sm:px-4"
+                :class="isAiSearchActive ? 'border-indigo-200 ring-1 ring-indigo-100' : 'border-gray-200'"
+            >
+                <div class="flex items-center gap-2">
+                    <p class="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ __('talenma.talents.ai_filters_title') }}</p>
+                    <div class="relative min-w-0 flex-1">
+                        <label class="sr-only" for="catalog-ai-prompt">{{ __('talenma.talents.ai_filters_title') }}</label>
+                        <input
+                            id="catalog-ai-prompt"
+                            type="text"
+                            x-model="aiPrompt"
+                            maxlength="500"
+                            :disabled="aiLoading"
+                            placeholder="{{ __('talenma.talents.ai_filters_placeholder') }}"
+                            class="block w-full rounded-lg border-gray-300 py-1.5 pl-2.5 pr-10 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
+                            @keydown.enter.prevent="applyAiFilters()"
+                        />
+                        <button
+                            type="button"
+                            class="absolute inset-y-0.5 right-0.5 inline-flex w-8 items-center justify-center rounded-md bg-indigo-600 text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="aiLoading || ! aiPrompt.trim()"
+                            :aria-label="aiLoading ? labels.aiFiltersLoading : @js(__('talenma.talents.ai_filters_apply'))"
+                            :title="aiLoading ? labels.aiFiltersLoading : @js(__('talenma.talents.ai_filters_apply'))"
+                            @click="applyAiFilters()"
+                        >
+                            <svg
+                                x-show="! aiLoading"
+                                class="h-4 w-4"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    fill="currentColor"
+                                    d="M12 2.2c.35 2.85 1.55 5.05 3.55 7.05S20.95 12.65 23.8 13c-2.85.35-5.05 1.55-7.05 3.55S12.35 20.95 12 23.8c-.35-2.85-1.55-5.05-3.55-7.05S3.05 13.35.2 13c2.85-.35 5.05-1.55 7.05-3.55S11.65 5.05 12 2.2z"
+                                />
+                            </svg>
+                            <svg
+                                x-show="aiLoading"
+                                x-cloak
+                                class="h-4 w-4 animate-spin"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div
+                    x-show="isAiSearchActive && aiSummary"
+                    x-cloak
+                    class="mt-2 flex items-start gap-2 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs text-indigo-900"
+                >
+                    <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-600" viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            fill="currentColor"
+                            d="M12 2.2c.35 2.85 1.55 5.05 3.55 7.05S20.95 12.65 23.8 13c-2.85.35-5.05 1.55-7.05 3.55S12.35 20.95 12 23.8c-.35-2.85-1.55-5.05-3.55-7.05S3.05 13.35.2 13c2.85-.35 5.05-1.55 7.05-3.55S11.65 5.05 12 2.2z"
+                        />
+                    </svg>
+                    <p class="min-w-0 flex-1 leading-snug" x-text="aiSummaryLabel"></p>
+                    <button
+                        type="button"
+                        class="shrink-0 rounded px-1 text-indigo-500 hover:bg-indigo-100 hover:text-indigo-800"
+                        @click="clearAiSearchAndRefresh()"
+                        :aria-label="@js(__('talenma.talents.ai_filters_clear'))"
+                        :title="@js(__('talenma.talents.ai_filters_clear'))"
+                    >&times;</button>
+                </div>
+                <p
+                    x-show="aiError"
+                    x-cloak
+                    class="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs text-red-700"
+                    x-text="aiError"
+                ></p>
+            </div>
         </div>
 
-        <div class="flex items-center justify-end gap-3" x-show="loading" x-cloak>
-            <div class="flex items-center gap-2 text-sm text-gray-500">
+        <div class="flex items-center justify-between gap-3">
+            <p class="text-sm font-medium text-gray-700" x-text="foundLabel"></p>
+            <div class="flex items-center gap-2 text-sm text-gray-500" x-show="loading" x-cloak>
                 <svg class="h-4 w-4 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
