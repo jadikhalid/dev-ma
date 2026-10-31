@@ -89,8 +89,8 @@ final class ProfileCityCatalog
     private static function canada(string $locale): array
     {
         return $locale === 'en'
-            ? ['Toronto', 'Montreal', 'Vancouver', 'Calgary', 'Ottawa', 'Edmonton', 'Winnipeg', 'Quebec City', 'Hamilton', 'Halifax']
-            : ['Toronto', 'Montréal', 'Vancouver', 'Calgary', 'Ottawa', 'Edmonton', 'Winnipeg', 'Québec', 'Hamilton', 'Halifax'];
+            ? ['Toronto', 'Montreal', 'Moncton', 'Vancouver', 'Calgary', 'Ottawa', 'Edmonton', 'Winnipeg', 'Quebec City', 'Hamilton', 'Halifax']
+            : ['Toronto', 'Montréal', 'Moncton', 'Vancouver', 'Calgary', 'Ottawa', 'Edmonton', 'Winnipeg', 'Québec', 'Hamilton', 'Halifax'];
     }
 
     /**

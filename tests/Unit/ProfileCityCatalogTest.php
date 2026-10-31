@@ -75,6 +75,17 @@ class ProfileCityCatalogTest extends TestCase
         $this->assertNotContains('Barcelone', $cities);
     }
 
+    public function test_canada_includes_moncton(): void
+    {
+        app()->setLocale('fr');
+
+        $this->assertContains('Moncton', Profile::citiesForCountry(Profile::COUNTRY_CA));
+
+        app()->setLocale('en');
+
+        $this->assertContains('Moncton', Profile::citiesForCountry(Profile::COUNTRY_CA));
+    }
+
     public function test_us_state_catalog_is_sorted_alphabetically(): void
     {
         app()->setLocale('fr');
