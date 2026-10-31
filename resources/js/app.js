@@ -3782,23 +3782,35 @@ Alpine.data('companyJobApplicationStatus', (config = {}) => ({
 
 Alpine.data('companyJobsIndex', (config = {}) => ({
     searchUrl: config.searchUrl ?? '',
-    scope: config.initialScope ?? 'all',
-    sectorSlug: config.initialSector ?? '',
-    defaultSector: config.defaultSector ?? '',
-    query: config.initialQuery ?? '',
-    counts: config.initialCounts ?? { all: 0, company: 0, company_closed: 0, mine: 0, closed: 0 },
+    aiFiltersUrl: config.aiFiltersUrl ?? '',
+    csrf: config.csrf ?? '',
+    scope: config.initialScope ?? 'company',
+    filters: {
+        keywords: [],
+        author: '',
+        sector: '',
+        profession: '',
+        country: '',
+        city: '',
+        day: null,
+        month: null,
+        year: null,
+        ...(config.initialFilters ?? {}),
+    },
+    counts: config.initialCounts ?? { company: 0, company_closed: 0, mine: 0, closed: 0 },
     jobs: Array.isArray(config.initialJobs) ? config.initialJobs : [],
     total: Array.isArray(config.initialJobs) ? config.initialJobs.length : 0,
     labels: config.labels ?? {},
     loading: false,
     error: null,
     requestToken: 0,
+    aiPrompt: '',
+    aiLoading: false,
+    aiError: null,
+    aiSummary: '',
+    aiFilters: null,
 
     get scopeLabel() {
-        if (this.scope === 'company') {
-            return this.labels.company ?? '';
-        }
-
         if (this.scope === 'company_closed') {
             return this.labels.companyClosed ?? '';
         }
@@ -3811,16 +3823,40 @@ Alpine.data('companyJobsIndex', (config = {}) => ({
             return this.labels.closed ?? '';
         }
 
-        return this.labels.all ?? '';
+        return this.labels.company ?? '';
+    },
+
+    get isAiSearchActive() {
+        return Boolean(this.aiFilters);
+    },
+
+    get hasActiveFilters() {
+        const filters = this.filters ?? {};
+
+        return (Array.isArray(filters.keywords) && filters.keywords.length > 0)
+            || Boolean(filters.author)
+            || Boolean(filters.sector)
+            || Boolean(filters.profession)
+            || Boolean(filters.country)
+            || Boolean(filters.city)
+            || filters.day != null
+            || filters.month != null
+            || filters.year != null;
+    },
+
+    get aiSummaryLabel() {
+        if (! this.aiSummary) {
+            return '';
+        }
+
+        const template = this.labels.aiFiltersSummary ?? ':summary';
+
+        return template.replace(':summary', this.aiSummary);
     },
 
     get emptyMessage() {
-        if (this.scope === 'all' && (this.sectorSlug || (this.query ?? '').trim() !== '')) {
+        if (this.hasActiveFilters) {
             return this.labels.emptyFiltered ?? this.labels.empty ?? '';
-        }
-
-        if (this.scope === 'company') {
-            return this.labels.emptyCompany ?? this.labels.empty ?? '';
         }
 
         if (this.scope === 'company_closed') {
@@ -3835,7 +3871,21 @@ Alpine.data('companyJobsIndex', (config = {}) => ({
             return this.labels.emptyClosed ?? this.labels.empty ?? '';
         }
 
-        return this.labels.empty ?? '';
+        return this.labels.emptyCompany ?? this.labels.empty ?? '';
+    },
+
+    emptyFilters() {
+        return {
+            keywords: [],
+            author: '',
+            sector: '',
+            profession: '',
+            country: '',
+            city: '',
+            day: null,
+            month: null,
+            year: null,
+        };
     },
 
     setScope(scope) {
@@ -3844,22 +3894,125 @@ Alpine.data('companyJobsIndex', (config = {}) => ({
         }
 
         this.scope = scope;
-
-        if (scope !== 'all') {
-            this.query = '';
-        } else if (! this.sectorSlug && this.defaultSector) {
-            this.sectorSlug = this.defaultSector;
-        }
-
         this.refresh();
     },
 
-    onSectorChange() {
-        if (this.scope !== 'all') {
+    clearAiSearch() {
+        this.aiFilters = null;
+        this.aiSummary = '';
+        this.aiError = null;
+        this.filters = this.emptyFilters();
+    },
+
+    async clearAiSearchAndRefresh() {
+        this.clearAiSearch();
+        this.aiPrompt = '';
+        await this.refresh();
+    },
+
+    async applyAiFilters() {
+        const prompt = String(this.aiPrompt ?? '').trim();
+
+        if (! prompt || ! this.aiFiltersUrl || this.aiLoading) {
             return;
         }
 
-        this.refresh();
+        this.aiLoading = true;
+        this.aiError = null;
+        this.aiSummary = '';
+
+        try {
+            const response = await fetch(this.aiFiltersUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrf,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ prompt }),
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                throw new Error(payload.message || 'ai_filters_failed');
+            }
+
+            const filters = payload.filters ?? {};
+
+            this.filters = {
+                keywords: Array.isArray(filters.keywords)
+                    ? filters.keywords.map((item) => String(item).trim()).filter(Boolean).slice(0, 5)
+                    : [],
+                author: String(filters.author ?? '').trim(),
+                sector: String(filters.sector ?? '').trim(),
+                profession: String(filters.profession ?? '').trim(),
+                country: String(filters.country ?? '').trim(),
+                city: String(filters.city ?? '').trim(),
+                day: filters.day == null || filters.day === '' ? null : Number(filters.day),
+                month: filters.month == null || filters.month === '' ? null : Number(filters.month),
+                year: filters.year == null || filters.year === '' ? null : Number(filters.year),
+            };
+            this.aiFilters = { ...this.filters };
+            this.aiSummary = String(filters.summary ?? '').trim() || prompt;
+
+            await this.refresh();
+        } catch (error) {
+            this.aiError = error?.message && error.message !== 'ai_filters_failed'
+                ? error.message
+                : (this.labels.aiFiltersError ?? 'Une erreur est survenue.');
+        } finally {
+            this.aiLoading = false;
+        }
+    },
+
+    buildSearchParams() {
+        const params = new URLSearchParams();
+        params.set('scope', this.scope || 'company');
+
+        const filters = this.filters ?? this.emptyFilters();
+
+        (Array.isArray(filters.keywords) ? filters.keywords : []).forEach((keyword) => {
+            if (keyword) {
+                params.append('keywords[]', keyword);
+            }
+        });
+
+        if (filters.author) {
+            params.set('author', filters.author);
+        }
+
+        if (filters.sector) {
+            params.set('sector', filters.sector);
+        }
+
+        if (filters.profession) {
+            params.set('profession', filters.profession);
+        }
+
+        if (filters.country) {
+            params.set('country', filters.country);
+        }
+
+        if (filters.city) {
+            params.set('city', filters.city);
+        }
+
+        if (filters.day != null && filters.day !== '') {
+            params.set('day', String(filters.day));
+        }
+
+        if (filters.month != null && filters.month !== '') {
+            params.set('month', String(filters.month));
+        }
+
+        if (filters.year != null && filters.year !== '') {
+            params.set('year', String(filters.year));
+        }
+
+        return params;
     },
 
     syncUrl() {
@@ -3867,18 +4020,10 @@ Alpine.data('companyJobsIndex', (config = {}) => ({
             return;
         }
 
-        const params = new URLSearchParams();
+        const params = this.buildSearchParams();
 
-        if (this.scope && this.scope !== 'all') {
-            params.set('scope', this.scope);
-        }
-
-        if (this.scope === 'all') {
-            params.set('sector', this.sectorSlug ?? '');
-
-            if ((this.query ?? '').trim() !== '') {
-                params.set('q', this.query.trim());
-            }
+        if (params.get('scope') === 'company') {
+            params.delete('scope');
         }
 
         const query = params.toString();
@@ -3893,17 +4038,7 @@ Alpine.data('companyJobsIndex', (config = {}) => ({
         }
 
         const token = ++this.requestToken;
-        const params = new URLSearchParams();
-
-        params.set('scope', this.scope || 'all');
-
-        if (this.scope === 'all') {
-            params.set('sector', this.sectorSlug ?? '');
-
-            if ((this.query ?? '').trim() !== '') {
-                params.set('q', this.query.trim());
-            }
-        }
+        const params = this.buildSearchParams();
 
         this.loading = true;
         this.error = null;
@@ -3933,8 +4068,11 @@ Alpine.data('companyJobsIndex', (config = {}) => ({
             this.counts = payload.counts ?? this.counts;
             this.scope = payload.scope ?? this.scope;
 
-            if (this.scope === 'all') {
-                this.sectorSlug = payload.sector ?? this.sectorSlug;
+            if (payload.filters && typeof payload.filters === 'object') {
+                this.filters = {
+                    ...this.emptyFilters(),
+                    ...payload.filters,
+                };
             }
         } catch (error) {
             if (token !== this.requestToken) {

@@ -7,6 +7,7 @@ use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\JobPostingActivityEvent;
 use App\Models\Profile;
+use App\Services\CompanyJobPromptParser;
 use App\Services\JobPostingService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
@@ -14,12 +15,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use RuntimeException;
 
 class CompanyJobController extends Controller
 {
     public function __construct(
         private JobPostingService $jobs,
         private ProfessionCatalogService $professions,
+        private CompanyJobPromptParser $jobPromptParser,
     ) {}
 
     public function index(Request $request): View|JsonResponse
@@ -33,24 +36,13 @@ class CompanyJobController extends Controller
         $requestedScope = $request->string('scope')->toString();
         $scope = in_array($requestedScope, ['company', 'company_closed', 'mine', 'closed'], true)
             ? $requestedScope
-            : 'all';
-        $defaultSectorSlug = $this->professions->slugsFromProfile($org->profession_sector_id, null)['sector'];
-        $sectorSlug = $request->has('sector')
-            ? trim($request->string('sector')->toString())
-            : $defaultSectorSlug;
-        $query = trim($request->string('q')->toString());
-
-        // Search filters apply only to the platform catalog ("all").
-        $applySearchFilters = $scope === 'all';
-        $activeSectorSlug = $applySearchFilters ? $sectorSlug : '';
-        $activeQuery = $applySearchFilters ? $query : '';
+            : 'company';
+        $filters = $this->searchFiltersFromRequest($request);
 
         $orgQuery = JobPosting::query()->where('company_profile_id', $org->id);
         $orgOpenQuery = (clone $orgQuery)->where('status', '!=', JobPosting::STATUS_CLOSED);
-        $platformOpenQuery = JobPosting::query()->where('status', JobPosting::STATUS_PUBLISHED);
 
         $counts = [
-            'all' => (clone $platformOpenQuery)->count(),
             'company' => (clone $orgOpenQuery)->count(),
             'company_closed' => (clone $orgQuery)->where('status', JobPosting::STATUS_CLOSED)->count(),
             'mine' => (clone $orgOpenQuery)->where('created_by', $user->id)->count(),
@@ -61,61 +53,33 @@ class CompanyJobController extends Controller
         ];
 
         $jobsQuery = match ($scope) {
-            'company' => (clone $orgOpenQuery),
             'company_closed' => (clone $orgQuery)->where('status', JobPosting::STATUS_CLOSED),
             'mine' => (clone $orgOpenQuery)->where('created_by', $user->id),
             'closed' => (clone $orgQuery)
                 ->where('status', JobPosting::STATUS_CLOSED)
                 ->where('created_by', $user->id),
-            default => (clone $platformOpenQuery),
+            default => (clone $orgOpenQuery),
         };
 
-        $jobsQuery
-            ->when($activeSectorSlug !== '', function ($builder) use ($activeSectorSlug) {
-                $builder->whereHas(
-                    'professionSector',
-                    fn ($sector) => $sector->where('slug', $activeSectorSlug)
-                );
-            })
-            ->when($activeQuery !== '', function ($builder) use ($activeQuery) {
-                $like = '%'.$activeQuery.'%';
+        $this->applySearchFilters($jobsQuery, $filters);
 
-                $builder->where(function ($inner) use ($like) {
-                    $inner->where('title', 'like', $like)
-                        ->orWhere('description', 'like', $like)
-                        ->orWhere('location_city', 'like', $like)
-                        ->orWhereHas('companyProfile.user', function ($companyUser) use ($like) {
-                            $companyUser->where('name', 'like', $like);
-                        })
-                        ->orWhereHas('profession', function ($profession) use ($like) {
-                            $profession->where('name_fr', 'like', $like)
-                                ->orWhere('name_en', 'like', $like);
-                        })
-                        ->orWhereHas('professionSector', function ($sector) use ($like) {
-                            $sector->where('name_fr', 'like', $like)
-                                ->orWhere('name_en', 'like', $like);
-                        });
-                });
-            })
-            ->with(['professionSector', 'profession', 'companyProfile.user'])
+        $jobsQuery
+            ->with(['professionSector', 'profession', 'creator'])
             ->withCount('applications')
             ->when(
                 in_array($scope, ['company_closed', 'closed'], true),
                 fn ($builder) => $builder->latest('closed_at'),
-                fn ($builder) => $scope === 'all'
-                    ? $builder->latest('published_at')
-                    : $builder->latest(),
+                fn ($builder) => $builder->latest(),
             );
 
-        $present = fn (JobPosting $job) => $this->presentJobCard($job, $org);
+        $present = fn (JobPosting $job) => $this->presentJobCard($job);
 
         if ($request->wantsJson()) {
             $jobs = $jobsQuery->limit(100)->get();
 
             return response()->json([
                 'scope' => $scope,
-                'sector' => $applySearchFilters ? $sectorSlug : $defaultSectorSlug,
-                'q' => $applySearchFilters ? $query : '',
+                'filters' => $filters,
                 'total' => $jobs->count(),
                 'counts' => $counts,
                 'jobs' => $jobs->map($present)->values(),
@@ -125,16 +89,44 @@ class CompanyJobController extends Controller
         $jobs = $jobsQuery->limit(100)->get()
             ->map($present)
             ->values();
-        $professionSectors = $this->professions->sectorsForLocale();
 
         return view('company.jobs.index', [
             'jobs' => $jobs,
             'scope' => $scope,
             'counts' => $counts,
-            'sectorSlug' => $applySearchFilters ? $sectorSlug : $defaultSectorSlug,
-            'defaultSectorSlug' => $defaultSectorSlug,
-            'query' => $applySearchFilters ? $query : '',
-            'professionSectors' => $professionSectors,
+            'filters' => $filters,
+        ]);
+    }
+
+    public function parseAiFilters(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->canManageJobs(), 403);
+
+        $validated = $request->validate([
+            'prompt' => ['required', 'string', 'max:'.CompanyJobPromptParser::MAX_PROMPT_LENGTH],
+        ]);
+
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(45);
+        }
+
+        try {
+            $filters = $this->jobPromptParser->parse($validated['prompt'], app()->getLocale());
+        } catch (RuntimeException $e) {
+            $status = match ($e->getMessage()) {
+                'not_configured', 'api_unreachable', 'api_error', 'empty_response', 'invalid_json' => 503,
+                'empty_prompt' => 422,
+                default => 503,
+            };
+
+            return response()->json([
+                'message' => __('talenma.jobs.ai_filters_error'),
+                'code' => $e->getMessage(),
+            ], $status);
+        }
+
+        return response()->json([
+            'filters' => $filters,
         ]);
     }
 
@@ -182,32 +174,20 @@ class CompanyJobController extends Controller
 
     public function show(Request $request, JobPosting $job): View
     {
+        $this->authorizeJob($request, $job);
+
         $user = $request->user();
-        abort_unless($user->canManageJobs(), 403);
+        $this->jobs->markSeenForCompany($user, $job);
+        $job->load(['applications.talent.profile', 'creator', 'professionSector', 'profession', 'companyProfile.user']);
 
-        $org = $user->companyOrganization();
-        abort_unless($org, 404);
-
-        $ownsJob = $job->company_profile_id === $org->id;
-
-        if ($ownsJob) {
-            $this->jobs->markSeenForCompany($user, $job);
-            $job->load(['applications.talent.profile', 'creator', 'professionSector', 'profession', 'companyProfile.user']);
-
-            $applicationsTotal = $job->applications->count();
-            $matchingApplications = $job->applications
-                ->filter(fn (JobApplication $application) => $job->matchesTalentProfile($application->talent))
-                ->values();
-        } else {
-            abort_unless($job->isPublished(), 404);
-            $job->load(['creator', 'professionSector', 'profession', 'companyProfile.user']);
-            $applicationsTotal = 0;
-            $matchingApplications = collect();
-        }
+        $applicationsTotal = $job->applications->count();
+        $matchingApplications = $job->applications
+            ->filter(fn (JobApplication $application) => $job->matchesTalentProfile($application->talent))
+            ->values();
 
         return view('company.jobs.show', [
             'job' => $job,
-            'ownsJob' => $ownsJob,
+            'ownsJob' => true,
             'matchingApplications' => $matchingApplications,
             'applicationsTotal' => $applicationsTotal,
         ]);
@@ -425,25 +405,23 @@ class CompanyJobController extends Controller
      *     status: string,
      *     status_label: string,
      *     summary: string,
+     *     creator: string|null,
+     *     published_label: string|null,
+     *     closed_label: string|null,
      *     unseen: bool,
      *     tone: array{bar: string, badge: string, hover: string}
      * }
      */
-    private function presentJobCard(JobPosting $job, CompanyProfile $viewerOrg): array
+    private function presentJobCard(JobPosting $job): array
     {
-        $ownsJob = $job->company_profile_id === $viewerOrg->id;
-        $companyName = $job->advertiserName();
-        if ($companyName === '—') {
-            $companyName = '';
-        }
+        $attribution = $job->creatorAttribution();
+        $creatorLabel = filled($attribution['person']) ? $attribution['person'] : null;
+        $publishedAt = $job->published_at;
 
         $summaryParts = array_filter([
-            (! $ownsJob && $companyName !== '') ? $companyName : null,
             $job->professionSummary(),
             $job->experienceLabel() !== '' ? $job->experienceLabel() : null,
-            $ownsJob
-                ? __('talenma.jobs.applications_count', ['count' => $job->applications_count])
-                : null,
+            __('talenma.jobs.applications_count', ['count' => $job->applications_count]),
             $job->locationLabel() !== '' ? $job->locationLabel() : null,
             $job->workModesSummary() !== '' ? $job->workModesSummary() : null,
         ]);
@@ -455,7 +433,14 @@ class CompanyJobController extends Controller
             'status' => $job->status,
             'status_label' => $job->statusLabel(),
             'summary' => implode(' · ', $summaryParts),
-            'unseen' => $ownsJob && $job->hasUnseenChangesForCompany(),
+            'creator' => $creatorLabel,
+            'published_label' => $publishedAt
+                ? __('talenma.jobs.card_published_on', ['date' => $publishedAt->translatedFormat('d M Y')])
+                : null,
+            'closed_label' => $job->closed_at
+                ? __('talenma.jobs.card_closed_on', ['date' => $job->closed_at->translatedFormat('d M Y')])
+                : null,
+            'unseen' => $job->hasUnseenChangesForCompany(),
             'tone' => match ($job->status) {
                 JobPosting::STATUS_PUBLISHED => [
                     'bar' => 'bg-emerald-500',
@@ -516,6 +501,157 @@ class CompanyJobController extends Controller
 
         $org = $user->companyOrganization();
         abort_unless($org && $job->company_profile_id === $org->id, 403);
+    }
+
+    /**
+     * @return array{
+     *     keywords: list<string>,
+     *     author: string,
+     *     sector: string,
+     *     profession: string,
+     *     country: string,
+     *     city: string,
+     *     day: int|null,
+     *     month: int|null,
+     *     year: int|null
+     * }
+     */
+    private function searchFiltersFromRequest(Request $request): array
+    {
+        $keywords = $request->input('keywords', []);
+        if (is_string($keywords)) {
+            $keywords = preg_split('/\s*,\s*/', $keywords) ?: [];
+        }
+        if (! is_array($keywords)) {
+            $keywords = [];
+        }
+
+        $keywords = array_values(array_filter(array_map(
+            fn ($item) => is_string($item) || is_numeric($item) ? trim((string) $item) : '',
+            $keywords
+        )));
+
+        $day = $request->filled('day') && is_numeric($request->input('day')) ? (int) $request->input('day') : null;
+        $month = $request->filled('month') && is_numeric($request->input('month')) ? (int) $request->input('month') : null;
+        $year = $request->filled('year') && is_numeric($request->input('year')) ? (int) $request->input('year') : null;
+
+        return [
+            'keywords' => array_slice($keywords, 0, CompanyJobPromptParser::MAX_KEYWORDS),
+            'author' => trim($request->string('author')->toString()),
+            'sector' => trim($request->string('sector')->toString()),
+            'profession' => trim($request->string('profession')->toString()),
+            'country' => trim($request->string('country')->toString()),
+            'city' => trim($request->string('city')->toString()),
+            'day' => ($day !== null && $day >= 1 && $day <= 31) ? $day : null,
+            'month' => ($month !== null && $month >= 1 && $month <= 12) ? $month : null,
+            'year' => ($year !== null && $year >= 2000 && $year <= 2100) ? $year : null,
+        ];
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\JobPosting>  $builder
+     * @param  array{
+     *     keywords: list<string>,
+     *     author: string,
+     *     sector: string,
+     *     profession: string,
+     *     country: string,
+     *     city: string,
+     *     day: int|null,
+     *     month: int|null,
+     *     year: int|null
+     * }  $filters
+     */
+    private function applySearchFilters($builder, array $filters): void
+    {
+        foreach ($filters['keywords'] as $keyword) {
+            $like = '%'.$keyword.'%';
+
+            $builder->where(function ($inner) use ($like) {
+                $inner->where('title', 'like', $like)
+                    ->orWhere('description', 'like', $like)
+                    ->orWhere('location_city', 'like', $like)
+                    ->orWhereHas('profession', function ($profession) use ($like) {
+                        $profession->where('name_fr', 'like', $like)
+                            ->orWhere('name_en', 'like', $like);
+                    })
+                    ->orWhereHas('professionSector', function ($sector) use ($like) {
+                        $sector->where('name_fr', 'like', $like)
+                            ->orWhere('name_en', 'like', $like);
+                    });
+            });
+        }
+
+        if ($filters['author'] !== '') {
+            $like = '%'.$filters['author'].'%';
+
+            $builder->whereHas('creator', function ($creator) use ($like) {
+                $creator->where('name', 'like', $like)
+                    ->orWhere('first_name', 'like', $like)
+                    ->orWhere('last_name', 'like', $like);
+            });
+        }
+
+        if ($filters['sector'] !== '') {
+            $builder->whereHas(
+                'professionSector',
+                fn ($sector) => $sector->where('slug', $filters['sector'])
+            );
+        }
+
+        if ($filters['profession'] !== '') {
+            $builder->whereHas(
+                'profession',
+                fn ($profession) => $profession->where('slug', $filters['profession'])
+            );
+        }
+
+        if ($filters['country'] !== '') {
+            $builder->where('location_country', $filters['country']);
+        }
+
+        if ($filters['city'] !== '') {
+            $builder->where('location_city', $filters['city']);
+        }
+
+        $day = $filters['day'];
+        $month = $filters['month'];
+        $year = $filters['year'];
+
+        if ($day === null && $month === null && $year === null) {
+            return;
+        }
+
+        $ambiguousDayOrMonth = $day !== null
+            && $month === null
+            && $year === null
+            && $day >= 1
+            && $day <= 12;
+
+        $builder->where(function ($dateGroup) use ($day, $month, $year, $ambiguousDayOrMonth) {
+            foreach (['published_at', 'closed_at'] as $column) {
+                $dateGroup->orWhere(function ($columnQuery) use ($column, $day, $month, $year, $ambiguousDayOrMonth) {
+                    $columnQuery->whereNotNull($column);
+
+                    if ($year !== null) {
+                        $columnQuery->whereYear($column, $year);
+                    }
+
+                    if ($month !== null) {
+                        $columnQuery->whereMonth($column, $month);
+                    }
+
+                    if ($ambiguousDayOrMonth) {
+                        $columnQuery->where(function ($either) use ($column, $day) {
+                            $either->whereDay($column, $day)
+                                ->orWhereMonth($column, $day);
+                        });
+                    } elseif ($day !== null) {
+                        $columnQuery->whereDay($column, $day);
+                    }
+                });
+            }
+        });
     }
 
     private function rejectIfClosed(Request $request, JobPosting $job): JsonResponse|RedirectResponse|null

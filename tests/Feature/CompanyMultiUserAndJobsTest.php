@@ -430,6 +430,156 @@ class CompanyMultiUserAndJobsTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_company_jobs_index_lists_only_own_organization_jobs(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner();
+        $member = $this->makeCompanyMember($owner, $profile);
+        [$otherOwner, $otherProfile] = $this->makeCompanyOwner();
+        $otherOwner->update([
+            'email' => 'other.owner@example.com',
+            'name' => 'OTHER CO',
+        ]);
+
+        $ownJob = JobPosting::create([
+            'company_profile_id' => $profile->id,
+            'created_by' => $owner->id,
+            'title' => 'Own company role',
+            'description' => str_repeat('Looking for experienced backend talent. ', 3),
+            'status' => JobPosting::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+
+        $memberJob = JobPosting::create([
+            'company_profile_id' => $profile->id,
+            'created_by' => $member->id,
+            'title' => 'Member role',
+            'description' => str_repeat('Looking for experienced backend talent. ', 3),
+            'status' => JobPosting::STATUS_DRAFT,
+        ]);
+
+        $foreignJob = JobPosting::create([
+            'company_profile_id' => $otherProfile->id,
+            'created_by' => $otherOwner->id,
+            'title' => 'Foreign company role',
+            'description' => str_repeat('Looking for experienced backend talent. ', 3),
+            'status' => JobPosting::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+
+        $companyList = $this->actingAs($owner)
+            ->getJson(route('company.jobs.index'))
+            ->assertOk()
+            ->assertJsonPath('scope', 'company')
+            ->assertJsonMissingPath('counts.all');
+
+        $titles = collect($companyList->json('jobs'))->pluck('title')->all();
+        $this->assertEqualsCanonicalizing(['Own company role', 'Member role'], $titles);
+        $this->assertSame(2, $companyList->json('counts.company'));
+        $this->assertSame(1, $companyList->json('counts.mine'));
+
+        $mineList = $this->actingAs($member)
+            ->getJson(route('company.jobs.index', ['scope' => 'mine']))
+            ->assertOk()
+            ->assertJsonPath('scope', 'mine');
+
+        $this->assertSame(['Member role'], collect($mineList->json('jobs'))->pluck('title')->all());
+        $this->assertSame(1, $mineList->json('counts.mine'));
+        $this->assertSame(2, $mineList->json('counts.company'));
+
+        $this->actingAs($owner)
+            ->get(route('company.jobs.show', $foreignJob))
+            ->assertForbidden();
+
+        $this->actingAs($owner)
+            ->get(route('company.jobs.show', $ownJob))
+            ->assertOk();
+
+        $this->actingAs($owner)
+            ->get(route('company.jobs.index', ['scope' => 'all']))
+            ->assertOk()
+            ->assertDontSee('Foreign company role', false)
+            ->assertSee(__('talenma.jobs.company_index_subtitle'), false);
+    }
+
+    public function test_company_jobs_search_matches_publication_and_closure_date_parts(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner();
+
+        JobPosting::create([
+            'company_profile_id' => $profile->id,
+            'created_by' => $owner->id,
+            'title' => 'June published role',
+            'description' => str_repeat('Looking for experienced backend talent. ', 3),
+            'status' => JobPosting::STATUS_PUBLISHED,
+            'published_at' => '2026-06-10 09:00:00',
+        ]);
+
+        JobPosting::create([
+            'company_profile_id' => $profile->id,
+            'created_by' => $owner->id,
+            'title' => 'October published role',
+            'description' => str_repeat('Looking for experienced backend talent. ', 3),
+            'status' => JobPosting::STATUS_PUBLISHED,
+            'published_at' => '2026-10-03 09:00:00',
+        ]);
+
+        $closedJob = JobPosting::create([
+            'company_profile_id' => $profile->id,
+            'created_by' => $owner->id,
+            'title' => 'Closed october role',
+            'description' => str_repeat('Looking for experienced backend talent. ', 3),
+            'status' => JobPosting::STATUS_CLOSED,
+            'published_at' => '2025-05-01 09:00:00',
+            'closed_at' => '2026-10-10 18:00:00',
+        ]);
+
+        JobPosting::create([
+            'company_profile_id' => $profile->id,
+            'created_by' => $owner->id,
+            'title' => 'Unrelated march role',
+            'description' => str_repeat('Looking for experienced backend talent. ', 3),
+            'status' => JobPosting::STATUS_PUBLISHED,
+            'published_at' => '2026-03-15 09:00:00',
+        ]);
+
+        $byDay = $this->actingAs($owner)
+            ->getJson(route('company.jobs.index', ['day' => 10]))
+            ->assertOk();
+        $this->assertEqualsCanonicalizing(
+            ['June published role', 'October published role'],
+            collect($byDay->json('jobs'))->pluck('title')->all()
+        );
+
+        $byMonth = $this->actingAs($owner)
+            ->getJson(route('company.jobs.index', ['month' => 6]))
+            ->assertOk();
+        $this->assertSame(['June published role'], collect($byMonth->json('jobs'))->pluck('title')->all());
+
+        $byYear = $this->actingAs($owner)
+            ->getJson(route('company.jobs.index', ['year' => 2026]))
+            ->assertOk();
+        $this->assertEqualsCanonicalizing(
+            ['June published role', 'October published role', 'Unrelated march role'],
+            collect($byYear->json('jobs'))->pluck('title')->all()
+        );
+
+        $byCombo = $this->actingAs($owner)
+            ->getJson(route('company.jobs.index', ['day' => 10, 'month' => 6]))
+            ->assertOk();
+        $this->assertSame(['June published role'], collect($byCombo->json('jobs'))->pluck('title')->all());
+
+        $this->actingAs($owner)
+            ->getJson(route('company.jobs.index', ['scope' => 'company_closed', 'day' => 10]))
+            ->assertOk()
+            ->assertJsonPath('jobs.0.id', $closedJob->id)
+            ->assertJsonPath('jobs.0.title', 'Closed october role');
+
+        $this->actingAs($owner)
+            ->getJson(route('company.jobs.index', ['scope' => 'company_closed', 'month' => 10]))
+            ->assertOk()
+            ->assertJsonPath('jobs.0.id', $closedJob->id);
+    }
+
     /**
      * @return array{0: ProfessionSector, 1: Profession}
      */

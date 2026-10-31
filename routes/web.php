@@ -448,6 +448,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::middleware('company.jobs')->prefix('company/jobs')->name('company.jobs.')->group(function () {
             Route::get('/', [CompanyJobController::class, 'index'])->name('index');
+            Route::post('/ai-filters', [CompanyJobController::class, 'parseAiFilters'])->name('ai-filters');
             Route::get('/create', [CompanyJobController::class, 'create'])->name('create');
             Route::post('/', [CompanyJobController::class, 'store'])->name('store');
             Route::get('/{job}', [CompanyJobController::class, 'show'])->name('show');
