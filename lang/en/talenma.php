@@ -2386,6 +2386,8 @@ Best regards,',
     ],
     'company_offer' => [
         'meta_title' => 'Company offer — Talents du Maroc',
+        'home_meta_title' => 'Talents du Maroc — Companies — Home',
+        'home_meta_description' => 'Verified Moroccan talent and an ATS to source, shortlist and hire. Request a demo or try free for 45 days.',
         'meta_description' => 'Request a demo or try Talents du Maroc free for 45 days. Catalogue and hiring tools, then subscription on quote.',
         'badge' => 'Company offer',
         'title' => 'Hire Moroccan talent',

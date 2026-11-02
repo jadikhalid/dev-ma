@@ -2387,6 +2387,8 @@ Cordialement,',
     ],
     'company_offer' => [
         'meta_title' => 'Offre entreprise — Talents du Maroc',
+        'home_meta_title' => 'Talents du Maroc — Entreprises — Accueil',
+        'home_meta_description' => 'Des talents marocains vérifiés et un ATS pour les sourcer, les shortlister et les recruter. Demandez une démo ou essayez gratuitement 45 jours.',
         'meta_description' => 'Demandez une démo ou essayez Talents du Maroc gratuitement pendant 45 jours. Catalogue et recrutement, puis abonnement sur devis.',
         'badge' => 'Offre entreprise',
         'title' => 'Recrutez les talents marocains',
