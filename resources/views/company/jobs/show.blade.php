@@ -200,82 +200,121 @@
                             @php
                                 $currentStatus = $application->normalizedStatus();
                                 $nextStatuses = $job->isMutable() ? $application->availableNextStatuses() : [];
+                                $linkedHire = $application->directHireRequest;
                             @endphp
-                            @if ($nextStatuses === [])
-                                <span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                                    {{ $application->statusLabel() }}
-                                </span>
-                            @else
-                                <div
-                                    class="shrink-0"
-                                    x-data="companyJobApplicationStatus({
-                                        current: @js($currentStatus),
-                                        messages: @js([
-                                            'viewedTitle' => __('talenma.jobs.application_status_viewed_confirm_title'),
-                                            'viewedBody' => __('talenma.jobs.application_status_viewed_confirm_body'),
-                                            'viewedBtn' => __('talenma.jobs.application_status_viewed_confirm_btn'),
-                                            'closedTitle' => __('talenma.jobs.application_status_closed_confirm_title'),
-                                            'closedBody' => __('talenma.jobs.application_status_closed_confirm_body'),
-                                            'closedBtn' => __('talenma.jobs.application_status_closed_confirm_btn'),
-                                            'cancel' => __('talenma.jobs.application_status_confirm_cancel'),
-                                        ]),
-                                    })"
-                                >
-                                    <form
-                                        method="POST"
-                                        action="{{ route('company.jobs.applications.update', [$job, $application]) }}"
-                                        class="flex flex-wrap items-center gap-2"
-                                        data-loading-target="company-job-show-page"
-                                        data-error-message="{{ __('talenma.jobs.save_error') }}"
-                                        data-network-error-message="{{ __('talenma.jobs.network_error') }}"
-                                        @submit.prevent="requestUpdate($event)"
-                                    >
-                                        @csrf
-                                        @method('PATCH')
-                                        <select name="status" x-model="selectedStatus" class="border-gray-300 rounded-lg text-sm">
-                                            <option value="{{ $currentStatus }}" selected>{{ __('talenma.jobs.application_status_'.$currentStatus) }}</option>
-                                            @foreach ($nextStatuses as $status)
-                                                <option value="{{ $status }}">{{ __('talenma.jobs.application_status_'.$status) }}</option>
-                                            @endforeach
-                                        </select>
-                                        <button
-                                            type="submit"
-                                            class="px-3 py-2 text-sm font-semibold text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
-                                            :disabled="selectedStatus === current"
-                                        >{{ __('talenma.jobs.save_status') }}</button>
-                                    </form>
-
+                            <div class="shrink-0 flex flex-col items-stretch sm:items-end gap-2">
+                                @if ($currentStatus === \App\Models\JobApplication::STATUS_IN_PROCESS)
+                                    <span class="inline-flex items-center rounded-md bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-800">
+                                        {{ $application->statusLabel() }}
+                                    </span>
+                                    @if ($linkedHire)
+                                        <a
+                                            href="{{ route('company.direct-hire.show', $linkedHire) }}"
+                                            class="inline-flex items-center justify-center px-3 py-2 text-sm font-semibold text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-50"
+                                        >{{ __('talenma.jobs.direct_hire_open') }}</a>
+                                    @endif
+                                @elseif ($currentStatus === \App\Models\JobApplication::STATUS_RETAINED)
+                                    <span class="inline-flex items-center rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                                        {{ $application->statusLabel() }}
+                                    </span>
+                                    @if ($linkedHire)
+                                        <a
+                                            href="{{ route('company.direct-hire.show', $linkedHire) }}"
+                                            class="inline-flex items-center justify-center px-3 py-2 text-sm font-semibold text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-50"
+                                        >{{ __('talenma.jobs.direct_hire_open') }}</a>
+                                    @endif
+                                @elseif ($nextStatuses === [])
+                                    <span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                        {{ $application->statusLabel() }}
+                                    </span>
+                                @else
+                                    @if ($job->isMutable())
+                                        @if ($canLaunchDirectHire ?? false)
+                                            <form
+                                                method="POST"
+                                                action="{{ route('company.jobs.applications.direct-hire', [$job, $application]) }}"
+                                                class="flex"
+                                                data-loading-target="company-job-show-page"
+                                                data-error-message="{{ __('talenma.jobs.save_error') }}"
+                                                data-network-error-message="{{ __('talenma.jobs.network_error') }}"
+                                            >
+                                                @csrf
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex items-center justify-center px-3 py-2 text-sm font-semibold text-white bg-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-700"
+                                                >{{ __('talenma.jobs.direct_hire_launch') }}</button>
+                                            </form>
+                                        @elseif ($directHireBlockedHint ?? null)
+                                            <p class="max-w-[16rem] text-right text-[11px] text-amber-700">{{ $directHireBlockedHint }}</p>
+                                        @endif
+                                    @endif
                                     <div
-                                        x-show="confirming"
-                                        x-cloak
-                                        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-                                        role="dialog"
-                                        aria-modal="true"
-                                        @keydown.escape.window="closeConfirm"
+                                        x-data="companyJobApplicationStatus({
+                                            current: @js($currentStatus),
+                                            messages: @js([
+                                                'rejectedTitle' => __('talenma.jobs.application_status_rejected_confirm_title'),
+                                                'rejectedBody' => __('talenma.jobs.application_status_rejected_confirm_body'),
+                                                'rejectedBtn' => __('talenma.jobs.application_status_rejected_confirm_btn'),
+                                                'cancel' => __('talenma.jobs.application_status_confirm_cancel'),
+                                            ]),
+                                        })"
                                     >
-                                        <div class="absolute inset-0 bg-slate-900/40" @click="closeConfirm" aria-hidden="true"></div>
-                                        <div class="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
-                                            <p class="text-base font-semibold text-slate-900" x-text="confirmTitle"></p>
-                                            <p class="mt-2 text-sm text-slate-600" x-text="confirmBody"></p>
-                                            <div class="mt-5 flex flex-wrap justify-end gap-3">
-                                                <button
-                                                    type="button"
-                                                    class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-gray-700 hover:bg-gray-50"
-                                                    @click="closeConfirm"
-                                                    x-text="messages.cancel"
-                                                ></button>
-                                                <button
-                                                    type="button"
-                                                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg font-semibold text-sm text-white"
-                                                    :class="confirmButtonClass"
-                                                    @click="confirmSubmit"
-                                                    x-text="confirmButtonLabel"
-                                                ></button>
+                                        <form
+                                            method="POST"
+                                            action="{{ route('company.jobs.applications.update', [$job, $application]) }}"
+                                            class="flex flex-wrap items-center gap-2 justify-end"
+                                            data-loading-target="company-job-show-page"
+                                            data-error-message="{{ __('talenma.jobs.save_error') }}"
+                                            data-network-error-message="{{ __('talenma.jobs.network_error') }}"
+                                            @submit.prevent="requestUpdate($event)"
+                                        >
+                                            @csrf
+                                            @method('PATCH')
+                                            <select name="status" x-model="selectedStatus" class="border-gray-300 rounded-lg text-sm">
+                                                <option value="{{ $currentStatus }}" selected>{{ __('talenma.jobs.application_status_'.$currentStatus) }}</option>
+                                                @foreach ($nextStatuses as $status)
+                                                    <option value="{{ $status }}">{{ __('talenma.jobs.application_status_'.$status) }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button
+                                                type="submit"
+                                                class="px-3 py-2 text-sm font-semibold text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
+                                                :disabled="selectedStatus === current"
+                                            >{{ __('talenma.jobs.save_status') }}</button>
+                                        </form>
+
+                                        <div
+                                            x-show="confirming"
+                                            x-cloak
+                                            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                                            role="dialog"
+                                            aria-modal="true"
+                                            @keydown.escape.window="closeConfirm"
+                                        >
+                                            <div class="absolute inset-0 bg-slate-900/40" @click="closeConfirm" aria-hidden="true"></div>
+                                            <div class="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
+                                                <p class="text-base font-semibold text-slate-900" x-text="confirmTitle"></p>
+                                                <p class="mt-2 text-sm text-slate-600" x-text="confirmBody"></p>
+                                                <div class="mt-5 flex flex-wrap justify-end gap-3">
+                                                    <button
+                                                        type="button"
+                                                        class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-gray-700 hover:bg-gray-50"
+                                                        @click="closeConfirm"
+                                                        x-text="messages.cancel"
+                                                    ></button>
+                                                    <button
+                                                        type="button"
+                                                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg font-semibold text-sm text-white"
+                                                        :class="confirmButtonClass"
+                                                        @click="confirmSubmit"
+                                                        x-text="confirmButtonLabel"
+                                                    ></button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            @endif
+                                @endif
+                            </div>
                         </div>
                         @if ($application->cover_message)
                             <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ $application->cover_message }}</p>

@@ -79,7 +79,8 @@
                                     @php
                                         $dotClass = match ($event['status'] ?? null) {
                                             'received', 'submitted' => 'bg-sky-500',
-                                            'viewed', 'reviewed', 'shortlisted' => 'bg-indigo-500',
+                                            'viewed', 'reviewed', 'shortlisted', 'in_process' => 'bg-indigo-500',
+                                            'retained', 'hired' => 'bg-emerald-500',
                                             'closed', 'rejected', 'withdrawn' => 'bg-slate-500',
                                             default => 'bg-slate-400',
                                         };

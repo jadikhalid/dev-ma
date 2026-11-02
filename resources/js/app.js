@@ -3745,27 +3745,19 @@ Alpine.data('companyJobApplicationStatus', (config = {}) => ({
     pendingStatus: null,
 
     get confirmTitle() {
-        return this.pendingStatus === 'closed'
-            ? (this.messages.closedTitle || '')
-            : (this.messages.viewedTitle || '');
+        return this.messages.rejectedTitle || this.messages.closedTitle || '';
     },
 
     get confirmBody() {
-        return this.pendingStatus === 'closed'
-            ? (this.messages.closedBody || '')
-            : (this.messages.viewedBody || '');
+        return this.messages.rejectedBody || this.messages.closedBody || '';
     },
 
     get confirmButtonLabel() {
-        return this.pendingStatus === 'closed'
-            ? (this.messages.closedBtn || '')
-            : (this.messages.viewedBtn || '');
+        return this.messages.rejectedBtn || this.messages.closedBtn || '';
     },
 
     get confirmButtonClass() {
-        return this.pendingStatus === 'closed'
-            ? 'bg-amber-600 hover:bg-amber-700'
-            : 'bg-emerald-600 hover:bg-emerald-700';
+        return 'bg-amber-600 hover:bg-amber-700';
     },
 
     requestUpdate(event) {

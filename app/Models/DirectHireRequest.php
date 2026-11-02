@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'company_user_id',
     'talent_user_id',
+    'job_application_id',
     'talent_name_snapshot',
     'company_profile_id',
     'company_name_snapshot',
@@ -220,6 +221,11 @@ class DirectHireRequest extends Model
     public function talent(): BelongsTo
     {
         return $this->belongsTo(User::class, 'talent_user_id');
+    }
+
+    public function jobApplication(): BelongsTo
+    {
+        return $this->belongsTo(JobApplication::class);
     }
 
     public function initiatedBy(): BelongsTo

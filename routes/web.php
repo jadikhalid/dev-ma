@@ -466,6 +466,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/{job}/close', [CompanyJobController::class, 'close'])->name('close');
             Route::post('/{job}/hide', [CompanyJobController::class, 'hide'])->name('hide');
             Route::patch('/{job}/applications/{application}', [CompanyJobController::class, 'updateApplication'])->name('applications.update');
+            Route::post('/{job}/applications/{application}/direct-hire', [CompanyJobController::class, 'startDirectHire'])->name('applications.direct-hire');
         });
     });
 });

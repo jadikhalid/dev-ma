@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'job_posting_id',
     'talent_user_id',
+    'direct_hire_request_id',
     'cover_message',
     'status',
     'submitted_at',
@@ -21,14 +22,28 @@ class JobApplication extends Model
 
     public const STATUS_RECEIVED = 'received';
 
-    public const STATUS_VIEWED = 'viewed';
+    /** Direct Hire launched — process ongoing. */
+    public const STATUS_IN_PROCESS = 'in_process';
 
-    public const STATUS_CLOSED = 'closed';
+    /** Hired after a successful Direct Hire. */
+    public const STATUS_RETAINED = 'retained';
+
+    public const STATUS_REJECTED = 'rejected';
+
+    /** @deprecated Use STATUS_IN_PROCESS */
+    public const STATUS_SHORTLISTED = 'in_process';
+
+    /** @deprecated Use STATUS_REJECTED */
+    public const STATUS_CLOSED = 'rejected';
+
+    /** @deprecated Legacy status removed from the workflow */
+    public const STATUS_VIEWED = 'received';
 
     public const STATUSES = [
         self::STATUS_RECEIVED,
-        self::STATUS_VIEWED,
-        self::STATUS_CLOSED,
+        self::STATUS_IN_PROCESS,
+        self::STATUS_RETAINED,
+        self::STATUS_REJECTED,
     ];
 
     protected function casts(): array
@@ -49,6 +64,11 @@ class JobApplication extends Model
         return $this->belongsTo(User::class, 'talent_user_id');
     }
 
+    public function directHireRequest(): BelongsTo
+    {
+        return $this->belongsTo(DirectHireRequest::class);
+    }
+
     public function statusLabel(): string
     {
         return __('talenma.jobs.application_status_'.$this->normalizedStatus());
@@ -58,8 +78,10 @@ class JobApplication extends Model
     {
         return match ($this->status) {
             'submitted' => self::STATUS_RECEIVED,
-            'reviewed', 'shortlisted' => self::STATUS_VIEWED,
-            'rejected', 'withdrawn' => self::STATUS_CLOSED,
+            'reviewed', 'viewed' => self::STATUS_RECEIVED,
+            'shortlisted', 'in_process' => self::STATUS_IN_PROCESS,
+            'retained', 'hired' => self::STATUS_RETAINED,
+            'rejected', 'withdrawn', 'closed' => self::STATUS_REJECTED,
             default => in_array($this->status, self::STATUSES, true)
                 ? $this->status
                 : self::STATUS_RECEIVED,
@@ -67,13 +89,15 @@ class JobApplication extends Model
     }
 
     /**
+     * Statuses the company may set manually from the applications panel.
+     * In-process / retained are driven by Direct Hire only.
+     *
      * @return list<string>
      */
     public function availableNextStatuses(): array
     {
         return match ($this->normalizedStatus()) {
-            self::STATUS_RECEIVED => [self::STATUS_VIEWED, self::STATUS_CLOSED],
-            self::STATUS_VIEWED => [self::STATUS_CLOSED],
+            self::STATUS_RECEIVED => [self::STATUS_REJECTED],
             default => [],
         };
     }
@@ -85,7 +109,20 @@ class JobApplication extends Model
 
     public function isClosed(): bool
     {
-        return $this->normalizedStatus() === self::STATUS_CLOSED;
+        return in_array($this->normalizedStatus(), [
+            self::STATUS_REJECTED,
+            self::STATUS_RETAINED,
+        ], true);
+    }
+
+    public function isInProcess(): bool
+    {
+        return $this->normalizedStatus() === self::STATUS_IN_PROCESS;
+    }
+
+    public function isRetained(): bool
+    {
+        return $this->normalizedStatus() === self::STATUS_RETAINED;
     }
 
     /**
@@ -94,9 +131,13 @@ class JobApplication extends Model
     public static function closedStorageStatuses(): array
     {
         return [
-            self::STATUS_CLOSED,
+            self::STATUS_REJECTED,
+            self::STATUS_RETAINED,
+            'closed',
             'rejected',
             'withdrawn',
+            'retained',
+            'hired',
         ];
     }
 

@@ -214,12 +214,15 @@ class JobPostingService
         $closedCount = 0;
 
         foreach ($job->applications as $application) {
-            if ($application->normalizedStatus() === JobApplication::STATUS_CLOSED) {
+            if (in_array($application->normalizedStatus(), [
+                JobApplication::STATUS_REJECTED,
+                JobApplication::STATUS_RETAINED,
+            ], true)) {
                 continue;
             }
 
             $application->update([
-                'status' => JobApplication::STATUS_CLOSED,
+                'status' => JobApplication::STATUS_REJECTED,
                 'talent_seen_at' => null,
             ]);
 
@@ -227,7 +230,7 @@ class JobPostingService
                 $job,
                 JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
                 $actor,
-                JobApplication::STATUS_CLOSED,
+                JobApplication::STATUS_REJECTED,
                 $application->talent?->name,
                 $actor?->isCompany() ?? false,
                 (int) $application->talent_user_id,

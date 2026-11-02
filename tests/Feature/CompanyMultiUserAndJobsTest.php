@@ -249,12 +249,22 @@ class CompanyMultiUserAndJobsTest extends TestCase
         $this->assertSame(JobApplication::STATUS_RECEIVED, $application->status);
 
         $this->actingAs($member)
+            ->from(route('company.jobs.show', $job))
             ->patch(route('company.jobs.applications.update', [$job, $application]), [
-                'status' => JobApplication::STATUS_VIEWED,
+                'status' => JobApplication::STATUS_IN_PROCESS,
+            ])
+            ->assertRedirect(route('company.jobs.show', $job))
+            ->assertSessionHas('toast_error');
+
+        $this->assertSame(JobApplication::STATUS_RECEIVED, $application->fresh()->status);
+
+        $this->actingAs($member)
+            ->patch(route('company.jobs.applications.update', [$job, $application]), [
+                'status' => JobApplication::STATUS_REJECTED,
             ])
             ->assertRedirect();
 
-        $this->assertSame(JobApplication::STATUS_VIEWED, $application->fresh()->status);
+        $this->assertSame(JobApplication::STATUS_REJECTED, $application->fresh()->status);
 
         $this->actingAs($member)
             ->from(route('company.jobs.show', $job))
@@ -264,25 +274,7 @@ class CompanyMultiUserAndJobsTest extends TestCase
             ->assertRedirect(route('company.jobs.show', $job))
             ->assertSessionHas('toast_error');
 
-        $this->assertSame(JobApplication::STATUS_VIEWED, $application->fresh()->status);
-
-        $this->actingAs($member)
-            ->patch(route('company.jobs.applications.update', [$job, $application]), [
-                'status' => JobApplication::STATUS_CLOSED,
-            ])
-            ->assertRedirect();
-
-        $this->assertSame(JobApplication::STATUS_CLOSED, $application->fresh()->status);
-
-        $this->actingAs($member)
-            ->from(route('company.jobs.show', $job))
-            ->patch(route('company.jobs.applications.update', [$job, $application]), [
-                'status' => JobApplication::STATUS_VIEWED,
-            ])
-            ->assertRedirect(route('company.jobs.show', $job))
-            ->assertSessionHas('toast_error');
-
-        $this->assertSame(JobApplication::STATUS_CLOSED, $application->fresh()->status);
+        $this->assertSame(JobApplication::STATUS_REJECTED, $application->fresh()->status);
     }
 
     public function test_talent_job_cards_show_publication_date_and_only_content_updates(): void

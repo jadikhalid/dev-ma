@@ -291,12 +291,9 @@
                                 x-data="companyJobApplicationStatus({
                                     current: @js($currentStatus),
                                     messages: @js([
-                                        'viewedTitle' => __('talenma.jobs.application_status_viewed_confirm_title'),
-                                        'viewedBody' => __('talenma.jobs.application_status_viewed_confirm_body'),
-                                        'viewedBtn' => __('talenma.jobs.application_status_viewed_confirm_btn'),
-                                        'closedTitle' => __('talenma.jobs.application_status_closed_confirm_title'),
-                                        'closedBody' => __('talenma.jobs.application_status_closed_confirm_body'),
-                                        'closedBtn' => __('talenma.jobs.application_status_closed_confirm_btn'),
+                                        'rejectedTitle' => __('talenma.jobs.application_status_rejected_confirm_title'),
+                                        'rejectedBody' => __('talenma.jobs.application_status_rejected_confirm_body'),
+                                        'rejectedBtn' => __('talenma.jobs.application_status_rejected_confirm_btn'),
                                         'cancel' => __('talenma.jobs.application_status_confirm_cancel'),
                                     ]),
                                 })"

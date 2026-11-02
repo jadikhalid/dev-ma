@@ -387,9 +387,10 @@ class TalentJobController extends Controller
         foreach ($statusEvents as $event) {
             $rawStatus = is_string($event->status) ? $event->status : null;
             $status = match ($rawStatus) {
-                'submitted', 'received' => JobApplication::STATUS_RECEIVED,
-                'reviewed', 'shortlisted', 'viewed' => JobApplication::STATUS_VIEWED,
-                'rejected', 'withdrawn', 'closed' => JobApplication::STATUS_CLOSED,
+                'submitted', 'received', 'reviewed', 'viewed' => JobApplication::STATUS_RECEIVED,
+                'shortlisted', 'in_process' => JobApplication::STATUS_IN_PROCESS,
+                'retained', 'hired' => JobApplication::STATUS_RETAINED,
+                'rejected', 'withdrawn', 'closed' => JobApplication::STATUS_REJECTED,
                 default => null,
             };
 

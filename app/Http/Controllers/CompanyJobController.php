@@ -8,12 +8,14 @@ use App\Models\JobPosting;
 use App\Models\JobPostingActivityEvent;
 use App\Models\Profile;
 use App\Services\CompanyJobPromptParser;
+use App\Services\DirectHireService;
 use App\Services\JobPostingService;
 use App\Services\ProfessionCatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
 
@@ -23,6 +25,7 @@ class CompanyJobController extends Controller
         private JobPostingService $jobs,
         private ProfessionCatalogService $professions,
         private CompanyJobPromptParser $jobPromptParser,
+        private DirectHireService $directHires,
     ) {}
 
     public function index(Request $request): View|JsonResponse
@@ -178,7 +181,14 @@ class CompanyJobController extends Controller
 
         $user = $request->user();
         $this->jobs->markSeenForCompany($user, $job);
-        $job->load(['applications.talent.profile', 'creator', 'professionSector', 'profession', 'companyProfile.user']);
+        $job->load([
+            'applications.talent.profile',
+            'applications.directHireRequest',
+            'creator',
+            'professionSector',
+            'profession',
+            'companyProfile.user',
+        ]);
 
         $applicationsTotal = $job->applications->count();
         $matchingApplications = $job->applications
@@ -190,6 +200,10 @@ class CompanyJobController extends Controller
             'ownsJob' => true,
             'matchingApplications' => $matchingApplications,
             'applicationsTotal' => $applicationsTotal,
+            'canLaunchDirectHire' => $this->directHires->companyCanPropose($request->user()),
+            'directHireBlockedHint' => $this->directHires->companyHasOpenRequest($request->user())
+                ? __('talenma.direct_hire.cta_disabled_hint')
+                : null,
         ]);
     }
 
@@ -348,6 +362,44 @@ class CompanyJobController extends Controller
         $this->jobs->acknowledgeForCompany($job);
 
         return $this->respond($request, __('talenma.jobs.application_updated'), reload: true);
+    }
+
+    public function startDirectHire(Request $request, JobPosting $job, JobApplication $application): JsonResponse|RedirectResponse
+    {
+        $this->authorizeJob($request, $job);
+        abort_unless($application->job_posting_id === $job->id, 404);
+
+        if ($response = $this->rejectIfClosed($request, $job)) {
+            return $response;
+        }
+
+        try {
+            $directHire = $this->directHires->createFromJobApplication($request->user(), $application);
+        } catch (ValidationException $e) {
+            $message = collect($e->errors())->flatten()->first()
+                ?: __('talenma.jobs.direct_hire_launch_failed');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return back()->with('toast_error', $message);
+        }
+
+        $message = __('talenma.jobs.direct_hire_launched');
+
+        if ($request->expectsJson()) {
+            session()->flash('toast_success', $message);
+
+            return response()->json([
+                'message' => $message,
+                'show_url' => route('company.direct-hire.show', $directHire),
+            ]);
+        }
+
+        return redirect()
+            ->route('company.direct-hire.show', $directHire)
+            ->with('toast_success', $message);
     }
 
     /**

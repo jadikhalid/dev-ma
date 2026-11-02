@@ -14,6 +14,8 @@ use App\Models\DirectHireMessage;
 use App\Models\DirectHireRequest;
 use App\Models\DirectHireRound;
 use App\Models\DirectHireStatusEvent;
+use App\Models\JobApplication;
+use App\Models\JobPostingActivityEvent;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -86,6 +88,129 @@ class DirectHireService
         }
 
         return $request;
+    }
+
+    /**
+     * Launch a Direct Hire from a job application panel and mark the application as in process.
+     */
+    public function createFromJobApplication(
+        User $company,
+        JobApplication $application,
+        ?string $subject = null,
+        ?string $message = null,
+    ): DirectHireRequest {
+        $application->loadMissing(['talent', 'jobPosting']);
+
+        $talent = $application->talent;
+        $job = $application->jobPosting;
+
+        if (! $talent || ! $job) {
+            throw ValidationException::withMessages([
+                'application' => __('talenma.jobs.direct_hire_launch_invalid'),
+            ]);
+        }
+
+        if ($application->normalizedStatus() !== JobApplication::STATUS_RECEIVED) {
+            throw ValidationException::withMessages([
+                'application' => __('talenma.jobs.direct_hire_launch_not_received'),
+            ]);
+        }
+
+        if ($application->direct_hire_request_id || $application->isInProcess() || $application->isRetained()) {
+            throw ValidationException::withMessages([
+                'application' => __('talenma.jobs.direct_hire_launch_already_linked'),
+            ]);
+        }
+
+        if ($job->isClosed()) {
+            throw ValidationException::withMessages([
+                'application' => __('talenma.jobs.closed_immutable'),
+            ]);
+        }
+
+        $resolvedSubject = trim((string) ($subject ?: __('talenma.jobs.direct_hire_subject', [
+            'title' => $job->title,
+        ])));
+        $resolvedMessage = trim((string) ($message ?: __('talenma.jobs.direct_hire_message', [
+            'title' => $job->title,
+        ])));
+
+        if (mb_strlen($resolvedSubject) < 5) {
+            $resolvedSubject = mb_substr($job->title.' — '.__('talenma.nav.direct_hire'), 0, 120);
+        }
+
+        if (mb_strlen($resolvedMessage) < 40) {
+            $resolvedMessage = __('talenma.jobs.direct_hire_message', ['title' => $job->title]);
+        }
+
+        $request = $this->create($company, $talent, $resolvedSubject, $resolvedMessage);
+
+        DB::transaction(function () use ($request, $application, $company, $job, $talent) {
+            $request->update([
+                'job_application_id' => $application->id,
+            ]);
+
+            $application->update([
+                'direct_hire_request_id' => $request->id,
+                'status' => JobApplication::STATUS_IN_PROCESS,
+                'talent_seen_at' => null,
+            ]);
+
+            JobPostingActivityEvent::record(
+                $job,
+                JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+                $company,
+                JobApplication::STATUS_IN_PROCESS,
+                $talent->name,
+                true,
+                (int) $talent->id,
+            );
+        });
+
+        return $request->fresh(['talent', 'company', 'companyProfile', 'jobApplication']);
+    }
+
+    public function syncLinkedJobApplication(DirectHireRequest $request): void
+    {
+        $application = $request->jobApplication
+            ?? JobApplication::query()
+                ->where('direct_hire_request_id', $request->id)
+                ->first();
+
+        if (! $application) {
+            return;
+        }
+
+        $next = match ($request->status) {
+            DirectHireRequest::STATUS_HIRED => JobApplication::STATUS_RETAINED,
+            DirectHireRequest::STATUS_CLOSED_NEGATIVE,
+            DirectHireRequest::STATUS_WITHDRAWN,
+            DirectHireRequest::STATUS_DECLINED => JobApplication::STATUS_REJECTED,
+            default => null,
+        };
+
+        if ($next === null || $application->normalizedStatus() === $next) {
+            return;
+        }
+
+        $application->update([
+            'status' => $next,
+            'talent_seen_at' => null,
+        ]);
+
+        $application->loadMissing(['jobPosting', 'talent']);
+
+        if ($application->jobPosting) {
+            JobPostingActivityEvent::record(
+                $application->jobPosting,
+                JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+                null,
+                $next,
+                $application->talent?->name,
+                false,
+                (int) $application->talent_user_id,
+            );
+        }
     }
 
     public function decide(DirectHireRequest $request, User $talent, string $decision, ?string $note = null): DirectHireRequest
@@ -171,6 +296,8 @@ class DirectHireService
         } catch (\Throwable) {
             // Never block the hire process on mail failures.
         }
+
+        $this->syncLinkedJobApplication($request);
 
         return $request;
     }
@@ -891,8 +1018,9 @@ class DirectHireService
             $now,
         );
 
-        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
+        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile', 'jobApplication']);
         $this->notifyTalentClosed($request);
+        $this->syncLinkedJobApplication($request);
 
         return $request;
     }
@@ -943,8 +1071,9 @@ class DirectHireService
             $now,
         );
 
-        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile']);
+        $request->refresh()->loadMissing(['talent', 'company', 'companyProfile', 'jobApplication']);
         $this->notifyTalentWithdrawn($request);
+        $this->syncLinkedJobApplication($request);
 
         return $request;
     }
@@ -1412,6 +1541,7 @@ class DirectHireService
 
             $this->closeOpenHireAfterPartyLeft($hire);
             $hire->save();
+            $this->syncLinkedJobApplication($hire);
         }
     }
 
