@@ -290,11 +290,8 @@ class Profile extends Model
     {
         $user ??= $this->user;
 
-        if (! $user || ! $this->isRevealedAsPublic($forceReveal)) {
-            return null;
-        }
-
-        return $user->avatarUrl();
+        // Photo reste visible même en profil privé (seul le nom est semi-anonymisé).
+        return $user?->avatarUrl();
     }
 
     public function employerLabel(bool $forceReveal = false): ?string

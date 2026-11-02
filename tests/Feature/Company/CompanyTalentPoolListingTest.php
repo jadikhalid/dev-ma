@@ -77,6 +77,8 @@ class CompanyTalentPoolListingTest extends TestCase
 
         $talent = $this->createTalent($profession, bio: null, withCv: true, isPublic: false);
         Storage::disk('public')->put('profile-documents/cv-'.$talent->id.'.pdf', '%PDF-1.4');
+        Storage::disk('public')->put('avatars/private-talent.jpg', 'fake-image');
+        $talent->forceFill(['avatar_path' => 'avatars/private-talent.jpg'])->save();
 
         $company = User::factory()->companyOwner()->create();
         CompanyProfile::factory()->onTrial()->create(['user_id' => $company->id]);
@@ -88,6 +90,8 @@ class CompanyTalentPoolListingTest extends TestCase
         )->firstWhere('id', $talent->id);
 
         $this->assertFalse($listed['is_public']);
+        $this->assertNotEmpty($listed['avatar_url']);
+        $this->assertStringContainsString('avatars/private-talent.jpg', $listed['avatar_url']);
         $this->assertSame(route('company.talent.cv', $talent), $listed['cv_url']);
 
         $this->actingAs($company)
