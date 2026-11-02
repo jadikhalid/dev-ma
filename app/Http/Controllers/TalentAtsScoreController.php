@@ -5,14 +5,18 @@ namespace App\Http\Controllers;
 use App\Services\AtsCompatibilityScorer;
 use App\Services\AtsCvOptimizer;
 use App\Services\AtsCvTextExtractor;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 use RuntimeException;
 
 class TalentAtsScoreController extends Controller
 {
+    private const SOURCE_CACHE_TTL_SECONDS = 7200;
+
     public function __construct(
         private AtsCvTextExtractor $extractor,
         private AtsCompatibilityScorer $scorer,
@@ -24,7 +28,7 @@ class TalentAtsScoreController extends Controller
         $user = $request->user();
         abort_unless($user->canAccessWorkspaceApps(), 403);
 
-        $payload = $request->session()->get('ats_score_last');
+        $payload = $this->payloadFor($request);
 
         return view('talent.ats-score.index', [
             'result' => is_array($payload['result'] ?? null) ? $payload['result'] : null,
@@ -37,7 +41,7 @@ class TalentAtsScoreController extends Controller
         ]);
     }
 
-    public function analyze(Request $request): RedirectResponse
+    public function analyze(Request $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         abort_unless($user->canAccessWorkspaceApps(), 403);
@@ -55,9 +59,16 @@ class TalentAtsScoreController extends Controller
         try {
             $extracted = $this->extractor->extract($file);
         } catch (RuntimeException $e) {
-            return back()->withErrors([
-                'cv' => __('talenma.ats_score.errors.'.$e->getMessage()),
-            ]);
+            $message = __('talenma.ats_score.errors.'.$e->getMessage());
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $message,
+                    'errors' => ['cv' => [$message]],
+                ], 422);
+            }
+
+            return back()->withErrors(['cv' => $message]);
         }
 
         $result = $this->scorer->scoreText(
@@ -65,7 +76,7 @@ class TalentAtsScoreController extends Controller
             (bool) ($extracted['has_embedded_image'] ?? false),
         );
 
-        $request->session()->put('ats_score_last', [
+        $this->storePayload($request, [
             'filename' => $file->getClientOriginalName(),
             'source_text' => $extracted['text'],
             'result' => $result,
@@ -76,24 +87,42 @@ class TalentAtsScoreController extends Controller
             'analyzed_at' => now()->toIso8601String(),
         ]);
 
+        $message = __('talenma.ats_score.analyzed_toast');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'reload' => true,
+            ]);
+        }
+
         return redirect()
             ->route('talent.ats-score.index')
-            ->with('toast_success', __('talenma.ats_score.analyzed_toast'));
+            ->with('toast_success', $message);
     }
 
-    public function optimize(Request $request): RedirectResponse
+    public function optimize(Request $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         abort_unless($user->canAccessWorkspaceApps(), 403);
 
-        $payload = $request->session()->get('ats_score_last');
+        $payload = $this->payloadFor($request);
         $source = is_string($payload['source_text'] ?? null) ? $payload['source_text'] : '';
         $result = is_array($payload['result'] ?? null) ? $payload['result'] : null;
 
         if ($source === '' || $result === null) {
+            $message = __('talenma.ats_score.errors.optimize_needs_upload');
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $message,
+                    'errors' => ['cv' => [$message]],
+                ], 422);
+            }
+
             return redirect()
                 ->route('talent.ats-score.index')
-                ->withErrors(['cv' => __('talenma.ats_score.errors.optimize_needs_upload')]);
+                ->withErrors(['cv' => $message]);
         }
 
         $locale = app()->getLocale() === 'en' ? 'en' : 'fr';
@@ -104,13 +133,22 @@ class TalentAtsScoreController extends Controller
         $payload['suggestions'] = $optimized['suggestions'];
         $payload['remaining_actions'] = $optimized['remaining_actions'];
         $payload['optimized_at'] = now()->toIso8601String();
-        $request->session()->put('ats_score_last', $payload);
+        $this->storePayload($request, $payload);
+
+        $message = __('talenma.ats_score.optimized_toast', [
+            'score' => $optimized['result']['score'] ?? 0,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'reload' => true,
+            ]);
+        }
 
         return redirect()
             ->route('talent.ats-score.index')
-            ->with('toast_success', __('talenma.ats_score.optimized_toast', [
-                'score' => $optimized['result']['score'] ?? 0,
-            ]));
+            ->with('toast_success', $message);
     }
 
     public function downloadOptimized(Request $request): Response|RedirectResponse
@@ -118,7 +156,7 @@ class TalentAtsScoreController extends Controller
         $user = $request->user();
         abort_unless($user->canAccessWorkspaceApps(), 403);
 
-        $payload = $request->session()->get('ats_score_last');
+        $payload = $this->payloadFor($request);
         $text = is_string($payload['optimized_text'] ?? null) ? $payload['optimized_text'] : '';
 
         if ($text === '') {
@@ -135,5 +173,58 @@ class TalentAtsScoreController extends Controller
             'Content-Type' => 'text/plain; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function payloadFor(Request $request): array
+    {
+        $payload = $request->session()->get('ats_score_last');
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        $source = is_string($payload['source_text'] ?? null) ? $payload['source_text'] : '';
+        if ($source !== '') {
+            return $payload;
+        }
+
+        $cached = Cache::get($this->sourceCacheKey((int) $request->user()->id));
+        if (is_string($cached) && $cached !== '') {
+            $payload['source_text'] = $cached;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Keep heavy CV text out of the session row (avoids rare session write failures
+     * that look like a sudden logout after upload).
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function storePayload(Request $request, array $payload): void
+    {
+        $source = is_string($payload['source_text'] ?? null) ? $payload['source_text'] : '';
+        $userId = (int) $request->user()->id;
+
+        if ($source !== '') {
+            Cache::put($this->sourceCacheKey($userId), $source, self::SOURCE_CACHE_TTL_SECONDS);
+        } else {
+            Cache::forget($this->sourceCacheKey($userId));
+        }
+
+        $sessionPayload = $payload;
+        // Session keeps a short marker only; full text lives in cache.
+        $sessionPayload['source_text'] = $source !== '' ? '' : null;
+        $sessionPayload['has_source_text'] = $source !== '';
+
+        $request->session()->put('ats_score_last', $sessionPayload);
+    }
+
+    private function sourceCacheKey(int $userId): string
+    {
+        return 'ats_score_source:'.$userId;
     }
 }

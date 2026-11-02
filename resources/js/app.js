@@ -8,6 +8,98 @@ window.Alpine = Alpine;
 
 Alpine.data('navOverflow', navOverflow);
 
+Alpine.data('atsScoreUpload', (config = {}) => ({
+    fileName: '',
+    error: '',
+    submitting: false,
+    requireFile: config.requireFile !== false,
+    sessionExpired: config.sessionExpired || 'Session expired. Please sign in again.',
+    genericError: config.genericError || 'Upload failed. Please try again.',
+
+    onFileChange(event) {
+        this.fileName = event.target.files?.[0]?.name ?? '';
+        this.error = '';
+    },
+
+    csrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+    },
+
+    async submit() {
+        if (this.submitting) {
+            return;
+        }
+
+        const form = this.$el;
+        if (! (form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        if (this.requireFile) {
+            const input = form.querySelector('input[type="file"][name="cv"]');
+            if (! (input instanceof HTMLInputElement) || ! input.files?.length) {
+                this.error = this.genericError;
+                return;
+            }
+        }
+
+        this.submitting = true;
+        this.error = '';
+
+        try {
+            const body = new FormData(form);
+            if (! body.has('_token') && this.csrfToken()) {
+                body.append('_token', this.csrfToken());
+            }
+
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrfToken(),
+                },
+                credentials: 'same-origin',
+                body,
+            });
+
+            if (response.status === 401 || response.status === 419) {
+                this.error = this.sessionExpired;
+                window.setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1200);
+                return;
+            }
+
+            const payload = await response.json().catch(() => null);
+
+            if (! response.ok) {
+                const firstError = payload?.errors?.cv?.[0]
+                    || payload?.message
+                    || this.genericError;
+                this.error = firstError;
+                return;
+            }
+
+            if (payload?.reload) {
+                window.location.reload();
+                return;
+            }
+
+            if (payload?.redirect) {
+                window.location.href = payload.redirect;
+                return;
+            }
+
+            window.location.reload();
+        } catch (error) {
+            this.error = this.genericError;
+        } finally {
+            this.submitting = false;
+        }
+    },
+}));
+
 Alpine.data('magazineTicker', (config = {}) => ({
     inline: Boolean(config.inline),
     manual: Boolean(config.manual),

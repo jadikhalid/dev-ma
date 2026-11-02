@@ -75,6 +75,35 @@ TXT;
     }
 
     #[Test]
+    public function talent_can_analyze_cv_via_json_without_losing_auth(): void
+    {
+        $talent = User::factory()->talent()->create();
+
+        $content = <<<'TXT'
+Sara Benali
+Rabat, Maroc
+sara.benali@email.com
++212698765432
+linkedin.com/in/sarabenali
+Product designer Figma UX research
+Lead Designer Agency 2019 2024
+Master Design 2018 Francais Anglais
+TXT;
+
+        $file = UploadedFile::fake()->createWithContent('cv-sara.txt', $content);
+
+        $this->actingAs($talent)
+            ->postJson(route('talent.ats-score.analyze'), ['cv' => $file])
+            ->assertOk()
+            ->assertJsonPath('reload', true);
+
+        $this->actingAs($talent)
+            ->get(route('talent.ats-score.index'))
+            ->assertOk()
+            ->assertSee('cv-sara.txt', false);
+    }
+
+    #[Test]
     public function talent_can_optimize_uploaded_cv_for_free(): void
     {
         $talent = User::factory()->talent()->create();

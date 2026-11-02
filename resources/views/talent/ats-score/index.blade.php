@@ -126,27 +126,36 @@
                         </div>
                     </div>
 
-                    <form method="POST" action="{{ route('talent.ats-score.analyze') }}" enctype="multipart/form-data" class="mx-auto mt-8 max-w-xl space-y-5">
+                    <form
+                        method="POST"
+                        action="/talent/ats-score"
+                        enctype="multipart/form-data"
+                        class="mx-auto mt-8 max-w-xl space-y-5"
+                        x-data="atsScoreUpload({
+                            sessionExpired: @js(__('talenma.ats_score.errors.session_expired')),
+                            genericError: @js(__('talenma.ats_score.errors.upload_failed')),
+                        })"
+                        @submit.prevent="submit"
+                    >
                         @csrf
                         <label
                             for="ats-cv"
-                            class="group relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-emerald-300/80 bg-gradient-to-b from-emerald-50/80 to-white px-6 py-10 transition hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-900/5"
-                            x-data="{ fileName: '' }"
+                            class="group relative z-0 flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-emerald-300/80 bg-gradient-to-b from-emerald-50/80 to-white px-6 py-10 transition hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-900/5"
                             :class="fileName ? 'border-emerald-500 bg-emerald-50/90' : ''"
                         >
-                            <span class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-100 transition group-hover:scale-105">
+                            <span class="pointer-events-none mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-100 transition group-hover:scale-105">
                                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
                                 </svg>
                             </span>
                             <template x-if="!fileName">
-                                <span class="flex flex-col items-center text-center">
+                                <span class="pointer-events-none flex flex-col items-center text-center">
                                     <span class="text-sm font-semibold text-slate-800">{{ __('talenma.ats_score.upload_drop_title') }}</span>
                                     <span class="mt-1 text-xs text-slate-500">{{ __('talenma.ats_score.upload_drop_hint') }}</span>
                                 </span>
                             </template>
                             <template x-if="fileName">
-                                <span class="flex max-w-full flex-col items-center text-center px-2">
+                                <span class="pointer-events-none flex max-w-full flex-col items-center text-center px-2">
                                     <span class="text-xs font-semibold uppercase tracking-wide text-emerald-700">{{ __('talenma.ats_score.upload_selected') }}</span>
                                     <span class="mt-1.5 inline-flex max-w-full items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm ring-1 ring-emerald-100">
                                         <svg class="h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
@@ -163,22 +172,28 @@
                                 type="file"
                                 accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
                                 required
-                                class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                                @change="fileName = $event.target.files?.[0]?.name ?? ''"
+                                class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                                @change="onFileChange($event)"
                             />
                         </label>
+                        <p class="text-center text-sm text-rose-600" x-show="error" x-text="error" x-cloak></p>
                         @error('cv')
-                            <p class="text-center text-sm text-rose-600">{{ $message }}</p>
+                            <p class="text-center text-sm text-rose-600" x-show="!error">{{ $message }}</p>
                         @enderror
-                        <div class="flex justify-center">
+                        <div class="relative z-20 flex justify-center">
                             <button
                                 type="submit"
-                                class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/35"
+                                class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/35 disabled:cursor-not-allowed disabled:opacity-60"
+                                :disabled="submitting || !fileName"
                             >
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg x-show="!submitting" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.611L5 14.5"/>
                                 </svg>
-                                {{ __('talenma.ats_score.upload_cta') }}
+                                <svg x-show="submitting" x-cloak class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                <span x-text="submitting ? @js(__('talenma.ats_score.upload_working')) : @js(__('talenma.ats_score.upload_cta'))"></span>
                             </button>
                         </div>
                     </form>
@@ -353,16 +368,31 @@
                                         {{ __('talenma.ats_score.optimize_help') }}
                                     </p>
                                 </div>
-                                <form method="POST" action="{{ route('talent.ats-score.optimize') }}">
+                                <form
+                                    method="POST"
+                                    action="/talent/ats-score/optimize"
+                                    x-data="atsScoreUpload({
+                                        sessionExpired: @js(__('talenma.ats_score.errors.session_expired')),
+                                        genericError: @js(__('talenma.ats_score.errors.upload_failed')),
+                                        requireFile: false,
+                                    })"
+                                    @submit.prevent="submit"
+                                >
                                     @csrf
+                                    <p class="mb-3 text-center text-sm text-rose-600" x-show="error" x-text="error" x-cloak></p>
                                     <button
                                         type="submit"
-                                        class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition hover:from-emerald-500 hover:to-teal-500"
+                                        :disabled="submitting"
+                                        class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition hover:from-emerald-500 hover:to-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                        <svg x-show="!submitting" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5 10.5 20.25 20.25 3.75"/>
                                         </svg>
-                                        {{ __('talenma.ats_score.optimize_cta') }}
+                                        <svg x-show="submitting" x-cloak class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                        </svg>
+                                        <span x-text="submitting ? @js(__('talenma.ats_score.upload_working')) : @js(__('talenma.ats_score.optimize_cta'))"></span>
                                     </button>
                                 </form>
                             </div>
