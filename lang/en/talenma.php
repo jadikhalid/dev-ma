@@ -2007,6 +2007,7 @@ An administrator or moderator is reviewing your application before your company 
                 'activity_cat_jobs' => 'Job posting',
                 'activity_job_application_submitted' => 'You applied to “:subject” (:actor)',
                 'activity_job_application_status' => ':actor updated your application on “:subject”: :result',
+                'activity_job_application_closed' => ':actor closed the job posting “:subject” — your application: :result',
                 'activity_job_closed' => ':actor closed the job posting “:subject”',
                 'activity_job_hidden' => ':actor hid the job posting “:subject”',
                 'activity_job_postponed' => ':actor postponed the job posting “:subject”',

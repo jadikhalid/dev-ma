@@ -36,6 +36,9 @@ class JobPostingActivityEvent extends Model
 
     public const EVENT_APPLICATION_STATUS = 'application_status';
 
+    /** Job closed: one per applicant with final candidature outcome (talent feed). */
+    public const EVENT_APPLICATION_CLOSED = 'application_closed';
+
     protected function casts(): array
     {
         return [

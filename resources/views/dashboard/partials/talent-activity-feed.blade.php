@@ -44,6 +44,7 @@
                         'talent_unlocked' => __('talenma.dashboard.talent.stats.activity_talent_unlocked', ['actor' => $item['actor']]),
                         'job_application_submitted' => __('talenma.dashboard.talent.stats.activity_job_application_submitted', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                         'job_application_status' => __('talenma.dashboard.talent.stats.activity_job_application_status', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '', 'result' => $item['result'] ?? '']),
+                        'job_application_closed' => __('talenma.dashboard.talent.stats.activity_job_application_closed', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '', 'result' => $item['result'] ?? '']),
                         'job_closed' => __('talenma.dashboard.talent.stats.activity_job_closed', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                         'job_hidden' => __('talenma.dashboard.talent.stats.activity_job_hidden', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),
                         'job_postponed' => __('talenma.dashboard.talent.stats.activity_job_postponed', ['actor' => $item['actor'], 'subject' => $item['subject'] ?? '']),

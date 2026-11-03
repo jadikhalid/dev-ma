@@ -221,6 +221,59 @@ class CompanyMultiUserAndJobsTest extends TestCase
         $this->assertSame('Développeur Laravel Senior', $job->fresh()->title);
     }
 
+    public function test_closing_a_job_emits_one_combined_activity_for_the_talent(): void
+    {
+        [$owner, $profile] = $this->makeCompanyOwner();
+        $talent = User::factory()->talent()->create();
+
+        $job = JobPosting::create([
+            'company_profile_id' => $profile->id,
+            'created_by' => $owner->id,
+            'title' => 'Backend engineer',
+            'description' => str_repeat('Looking for experienced backend talent. ', 3),
+            'status' => JobPosting::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'remote_ok' => true,
+            'work_modes' => ['remote'],
+        ]);
+
+        $this->actingAs($talent)
+            ->post(route('talent.jobs.apply', $job), [
+                'cover_message' => 'Je suis motivé pour ce poste.',
+            ])
+            ->assertRedirect(route('talent.jobs.show', $job));
+
+        $this->actingAs($owner)
+            ->post(route('company.jobs.close', $job))
+            ->assertRedirect();
+
+        $this->assertSame(JobApplication::STATUS_REJECTED, JobApplication::query()->first()?->status);
+
+        $this->assertDatabaseHas('job_posting_activity_events', [
+            'job_posting_id' => $job->id,
+            'event' => \App\Models\JobPostingActivityEvent::EVENT_CLOSED,
+            'talent_user_id' => null,
+        ]);
+        $this->assertDatabaseHas('job_posting_activity_events', [
+            'job_posting_id' => $job->id,
+            'event' => \App\Models\JobPostingActivityEvent::EVENT_APPLICATION_CLOSED,
+            'talent_user_id' => $talent->id,
+            'status' => JobApplication::STATUS_REJECTED,
+        ]);
+        $this->assertDatabaseMissing('job_posting_activity_events', [
+            'job_posting_id' => $job->id,
+            'event' => \App\Models\JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+            'talent_user_id' => $talent->id,
+        ]);
+
+        $activity = app(\App\Services\TalentDashboardStatsService::class)->build($talent)['recent_activity'];
+        $jobItems = collect($activity)->where(fn (array $item) => str_starts_with((string) ($item['type'] ?? ''), 'job_'));
+
+        $this->assertCount(1, $jobItems->where('type', 'job_application_closed'));
+        $this->assertCount(0, $jobItems->where('type', 'job_closed'));
+        $this->assertCount(0, $jobItems->where('type', 'job_application_status'));
+    }
+
     public function test_talent_can_apply_and_company_can_update_application_status(): void
     {
         [$owner, $profile] = $this->makeCompanyOwner();

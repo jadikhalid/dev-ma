@@ -361,7 +361,10 @@ class TalentJobController extends Controller
 
         $statusEvents = JobPostingActivityEvent::query()
             ->where('job_posting_id', $job->id)
-            ->where('event', JobPostingActivityEvent::EVENT_APPLICATION_STATUS)
+            ->whereIn('event', [
+                JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+                JobPostingActivityEvent::EVENT_APPLICATION_CLOSED,
+            ])
             ->where(function ($query) use ($application, $job, $talentName) {
                 $query->where('talent_user_id', $application->talent_user_id);
 

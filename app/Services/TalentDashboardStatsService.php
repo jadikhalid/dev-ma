@@ -121,7 +121,7 @@ class TalentDashboardStatsService
             return collect();
         }
 
-        return JobPostingActivityEvent::query()
+        $events = JobPostingActivityEvent::query()
             ->where(function ($query) use ($talent, $appliedJobIds) {
                 $query->where(function ($owned) use ($talent, $appliedJobIds) {
                     $owned->where('talent_user_id', $talent->id)
@@ -144,18 +144,22 @@ class TalentDashboardStatsService
                 JobPostingActivityEvent::EVENT_POSTPONED,
                 JobPostingActivityEvent::EVENT_DELETED,
                 JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+                JobPostingActivityEvent::EVENT_APPLICATION_CLOSED,
             ])
             ->with(['jobPosting.companyProfile', 'companyProfile'])
             ->latest('created_at')
             ->limit($limit)
-            ->get()
-            ->map(function (JobPostingActivityEvent $event) use ($talent, $applications) {
+            ->get();
+
+        return $events
+            ->map(function (JobPostingActivityEvent $event) use ($talent, $applications, $events) {
                 $type = match ($event->event) {
                     JobPostingActivityEvent::EVENT_CLOSED => 'job_closed',
                     JobPostingActivityEvent::EVENT_HIDDEN => 'job_hidden',
                     JobPostingActivityEvent::EVENT_POSTPONED => 'job_postponed',
                     JobPostingActivityEvent::EVENT_DELETED => 'job_deleted',
                     JobPostingActivityEvent::EVENT_APPLICATION_STATUS => 'job_application_status',
+                    JobPostingActivityEvent::EVENT_APPLICATION_CLOSED => 'job_application_closed',
                     default => null,
                 };
 
@@ -172,6 +176,54 @@ class TalentDashboardStatsService
                     return null;
                 }
 
+                $legacyClosePair = static function (JobPostingActivityEvent $a, JobPostingActivityEvent $b) use ($talent): bool {
+                    if ((int) $a->job_posting_id !== (int) $b->job_posting_id) {
+                        return false;
+                    }
+
+                    if ($a->created_at === null || $b->created_at === null) {
+                        return false;
+                    }
+
+                    if (abs($a->created_at->diffInSeconds($b->created_at)) > 120) {
+                        return false;
+                    }
+
+                    $closed = $a->event === JobPostingActivityEvent::EVENT_CLOSED ? $a
+                        : ($b->event === JobPostingActivityEvent::EVENT_CLOSED ? $b : null);
+                    $status = $a->event === JobPostingActivityEvent::EVENT_APPLICATION_STATUS ? $a
+                        : ($b->event === JobPostingActivityEvent::EVENT_APPLICATION_STATUS ? $b : null);
+
+                    return $closed !== null
+                        && $status !== null
+                        && (int) $status->talent_user_id === (int) $talent->id;
+                };
+
+                // Prefer the combined candidature+clôture event; hide the bare job_closed twin.
+                if ($event->event === JobPostingActivityEvent::EVENT_CLOSED) {
+                    $hasCombinedClose = $events->contains(
+                        fn (JobPostingActivityEvent $other) => $other->event === JobPostingActivityEvent::EVENT_APPLICATION_CLOSED
+                            && (int) $other->job_posting_id === (int) $event->job_posting_id
+                            && (int) $other->talent_user_id === (int) $talent->id
+                    );
+
+                    $hasLegacyPairedStatus = $events->contains(
+                        fn (JobPostingActivityEvent $other) => $legacyClosePair($event, $other)
+                    );
+
+                    if ($hasCombinedClose || $hasLegacyPairedStatus) {
+                        return null;
+                    }
+                }
+
+                // Legacy closes emitted status + closed: show one combined line.
+                if (
+                    $event->event === JobPostingActivityEvent::EVENT_APPLICATION_STATUS
+                    && $events->contains(fn (JobPostingActivityEvent $other) => $legacyClosePair($event, $other))
+                ) {
+                    $type = 'job_application_closed';
+                }
+
                 $actor = $event->jobPosting?->companyProfile?->displayName()
                     ?: $event->companyProfile?->displayName()
                     ?: __('talenma.dashboard.talent.stats.unknown_actor');
@@ -182,7 +234,13 @@ class TalentDashboardStatsService
 
                 $result = null;
 
-                if ($event->event === JobPostingActivityEvent::EVENT_APPLICATION_STATUS && filled($event->status)) {
+                if (
+                    in_array($event->event, [
+                        JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+                        JobPostingActivityEvent::EVENT_APPLICATION_CLOSED,
+                    ], true)
+                    && filled($event->status)
+                ) {
                     $result = __('talenma.jobs.application_status_'.$event->status);
                 }
 

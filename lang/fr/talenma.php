@@ -2007,6 +2007,7 @@ Un administrateur ou un modérateur vérifie votre dossier avant l\'ouverture de
                 'activity_cat_jobs' => 'Annonce',
                 'activity_job_application_submitted' => 'Vous avez candidaté à « :subject » (:actor)',
                 'activity_job_application_status' => ':actor a mis à jour votre candidature sur « :subject » : :result',
+                'activity_job_application_closed' => ':actor a clôturé l\'annonce « :subject » — votre candidature : :result',
                 'activity_job_closed' => ':actor a clôturé l\'annonce « :subject »',
                 'activity_job_hidden' => ':actor a masqué l\'annonce « :subject »',
                 'activity_job_postponed' => ':actor a ajourné l\'annonce « :subject »',

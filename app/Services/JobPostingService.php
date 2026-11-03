@@ -80,6 +80,7 @@ class JobPostingService
                 JobPostingActivityEvent::EVENT_POSTPONED,
                 JobPostingActivityEvent::EVENT_DELETED,
                 JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+                JobPostingActivityEvent::EVENT_APPLICATION_CLOSED,
             ])
             ->where(function ($query) use ($talent) {
                 $query->where('talent_user_id', $talent->id)
@@ -214,29 +215,30 @@ class JobPostingService
         $closedCount = 0;
 
         foreach ($job->applications as $application) {
-            if (in_array($application->normalizedStatus(), [
+            $status = $application->normalizedStatus();
+
+            if (! in_array($status, [
                 JobApplication::STATUS_REJECTED,
                 JobApplication::STATUS_RETAINED,
             ], true)) {
-                continue;
+                $application->update([
+                    'status' => JobApplication::STATUS_REJECTED,
+                    'talent_seen_at' => null,
+                ]);
+                $status = JobApplication::STATUS_REJECTED;
+                $closedCount++;
             }
 
-            $application->update([
-                'status' => JobApplication::STATUS_REJECTED,
-                'talent_seen_at' => null,
-            ]);
-
+            // One talent-facing event: candidature outcome + annonce clôturée (not a separate job_closed).
             JobPostingActivityEvent::record(
                 $job,
-                JobPostingActivityEvent::EVENT_APPLICATION_STATUS,
+                JobPostingActivityEvent::EVENT_APPLICATION_CLOSED,
                 $actor,
-                JobApplication::STATUS_REJECTED,
+                $status,
                 $application->talent?->name,
                 $actor?->isCompany() ?? false,
                 (int) $application->talent_user_id,
             );
-
-            $closedCount++;
         }
 
         // Always surface the job closure in the talent nav, even if apps were already closed.
