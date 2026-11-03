@@ -292,7 +292,7 @@
                             <p class="text-sm text-slate-500">{{ __('talenma.dashboard.admin.recent_activity_empty') }}</p>
                         </div>
                     @else
-                        <ol class="relative mt-4 max-h-[22rem] space-y-2 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+                        <ol class="relative mt-4 max-h-[22rem] space-y-2 overflow-y-auto overscroll-y-auto pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
                             @foreach ($recentActivity as $item)
                                 @php
                                     $mode = (($item['detail'] ?? 'open') === 'named') ? 'named' : 'open';
