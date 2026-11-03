@@ -7,7 +7,7 @@
             </a>
         </div>
         <div @class([
-            'activity-scroll h-[calc(4*2.75rem+3*0.5rem)] overflow-y-auto overscroll-contain px-3.5 py-3',
+            'activity-scroll h-[calc(4*2.75rem+3*0.5rem)] overflow-y-auto overscroll-y-auto px-3.5 py-3',
             'flex items-center justify-center' => $recentRequests->isEmpty(),
         ])>
             @if ($recentRequests->isEmpty())
@@ -44,7 +44,7 @@
             </a>
         </div>
         <div @class([
-            'activity-scroll h-[calc(4*2.75rem+3*0.5rem)] overflow-y-auto overscroll-contain px-3.5 py-3',
+            'activity-scroll h-[calc(4*2.75rem+3*0.5rem)] overflow-y-auto overscroll-y-auto px-3.5 py-3',
             'flex items-center justify-center' => $directHires->isEmpty(),
         ])>
             @if ($directHires->isEmpty())
