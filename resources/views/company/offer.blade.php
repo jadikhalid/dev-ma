@@ -90,7 +90,7 @@
         </h1>
 
         <div class="order-3 relative mx-auto h-[360px] w-full max-w-[560px] sm:h-[400px] lg:col-start-2 lg:row-span-5 lg:row-start-1 lg:mx-0 lg:h-[500px] lg:max-w-none">
-            <div class="absolute bottom-14 left-[8%] right-0 top-0 overflow-hidden rounded-2xl shadow-[0_40px_70px_-30px_rgba(30,27,75,0.55)] sm:bottom-16 sm:left-[14%] sm:rounded-[28px] lg:bottom-[70px] lg:left-[110px] lg:rounded-[32px]">
+            <div class="absolute bottom-14 left-1/2 top-0 w-[min(100%,420px)] -translate-x-1/2 overflow-hidden rounded-2xl shadow-[0_40px_70px_-30px_rgba(30,27,75,0.55)] sm:bottom-16 sm:w-[min(100%,480px)] sm:rounded-[28px] lg:bottom-[70px] lg:left-[110px] lg:right-0 lg:w-auto lg:max-w-none lg:translate-x-0 lg:rounded-[32px]">
                 <img
                     src="{{ $heroImage }}"
                     alt="Équipe de recrutement qui analyse des résultats"
@@ -108,11 +108,15 @@
                     </div>
                     <span class="text-[10px] font-bold sm:text-[11px] lg:text-[13px]" title="Talents inscrits / Entreprises inscrites">128 talents trouvés :: {{ $talentCount }}/{{ $companyCount }}</span>
                     @foreach ([
-                        ['SE', '#5546F0', 'Médecin généraliste', '8 ans · Casablanca'],
-                        ['IA', '#7C3AED', 'Infirmière diplômée', '6 ans · Mohammedia'],
-                        ['KM', '#2563EB', 'Ingénieur DevOps', '7 ans · Full remote'],
-                    ] as [$initials, $bg, $role, $meta])
-                        <div class="flex items-center gap-1.5 sm:gap-2 lg:gap-3">
+                        ['SE', '#5546F0', 'Médecin généraliste', '8 ans · Casablanca', false],
+                        ['IA', '#7C3AED', 'Infirmière diplômée', '6 ans · Mohammedia', true],
+                        ['KM', '#2563EB', 'Ingénieur DevOps', '7 ans · Full remote', false],
+                    ] as [$initials, $bg, $role, $meta, $desktopOnly])
+                        <div @class([
+                            'items-center gap-1.5 sm:gap-2 lg:gap-3',
+                            'hidden lg:flex' => $desktopOnly,
+                            'flex' => ! $desktopOnly,
+                        ])>
                             <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white sm:h-7 sm:w-7 sm:text-[10px] lg:h-9 lg:w-9 lg:text-[11px]" style="background: {{ $bg }}">{{ $initials }}</span>
                             <span class="flex min-w-0 flex-1 flex-col gap-px">
                                 <span class="text-[11px] font-bold leading-tight sm:text-xs lg:text-sm">{{ $role }}</span>
@@ -123,7 +127,7 @@
                     @endforeach
                 </div>
             </div>
-            <div class="absolute right-1 top-3 rounded-full bg-[#EBBA6E] px-2 py-1 text-[10px] font-extrabold text-[#0D0B2B] shadow-[0_16px_30px_-14px_rgba(0,0,0,0.4)] sm:right-2 sm:top-4 sm:px-2.5 sm:py-1.5 sm:text-[11px] lg:bottom-24 lg:right-[-10px] lg:top-auto lg:px-4 lg:py-2.5 lg:text-[13px]">
+            <div class="absolute right-1 top-3 rounded-full bg-[#EBBA6E] px-2 py-1 text-[10px] font-extrabold text-[#0D0B2B] shadow-[0_16px_30px_-14px_rgba(0,0,0,0.4)] sm:right-2 sm:top-4 sm:px-2.5 sm:py-1.5 sm:text-[11px] lg:right-[-10px] lg:top-4 lg:px-4 lg:py-2.5 lg:text-[13px]">
                 Remote · Visa · Local
             </div>
         </div>
@@ -497,10 +501,6 @@
     </div>
     <div class="flex flex-col gap-3" x-data="{ open: 0 }">
         @foreach ([
-            [
-                'Pourquoi vos tarifs ne sont-ils pas affichés ?',
-                'Chaque entreprise recrute différemment. Votre tarif dépend de votre volume de recrutement, du nombre d’annonces et des services choisis : nous le construisons avec vous après une démo de la plateforme.',
-            ],
             [
                 'Quelle formule choisir ?',
                 'Essentiel convient à une équipe qui recrute en autonomie avec l’ATS. Pro ajoute l’intermédiation pour les postes stratégiques. Sur mesure s’adresse aux organisations avec un volume important ou des besoins d’intégrations RH.',
