@@ -126,7 +126,7 @@
                             <p class="text-sm text-slate-500">{{ __('talenma.dashboard.admin.activity_empty') }}</p>
                         </div>
                     @else
-                        <ul class="mt-4 max-h-[22rem] space-y-2.5 overflow-y-auto overscroll-contain pr-1">
+                        <ul class="mt-4 max-h-[22rem] space-y-2.5 overflow-y-auto overscroll-y-auto pr-1">
                             @foreach ($sourcingRequests as $req)
                                 @php
                                     $tone = match ($req->status) {
@@ -208,7 +208,7 @@
                             <p class="text-sm text-slate-500">{{ __('talenma.dashboard.admin.direct_hire_empty') }}</p>
                         </div>
                     @else
-                        <ul class="mt-4 max-h-[22rem] space-y-2.5 overflow-y-auto overscroll-contain pr-1">
+                        <ul class="mt-4 max-h-[22rem] space-y-2.5 overflow-y-auto overscroll-y-auto pr-1">
                             @foreach ($staffDirectHires as $hire)
                                 @php
                                     $tone = match ($hire->statusTone()) {
