@@ -4276,20 +4276,11 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
         }
 
         this.scope = scope;
-
-        if (scope === 'applied' || scope === 'closed') {
-            this.professionSlug = '';
-        }
-
         this.page = 1;
         this.refresh();
     },
 
     onSectorChange() {
-        if (this.scope !== 'all') {
-            return;
-        }
-
         const isValidProfession = this.filteredProfessions.some(
             (profession) => profession.slug === this.professionSlug,
         );
@@ -4304,10 +4295,6 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
     },
 
     onProfessionChange() {
-        if (this.scope !== 'all') {
-            return;
-        }
-
         this.clearKeyword();
         this.page = 1;
         this.refresh();
@@ -4415,7 +4402,7 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
 
         const keyword = this.activeKeyword();
 
-        if (this.scope === 'all' && keyword === '') {
+        if (keyword === '') {
             params.set('sector', this.sectorSlug ?? '');
 
             if (this.professionSlug) {
@@ -4448,7 +4435,7 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
 
         const keyword = this.activeKeyword();
 
-        if (this.scope === 'all' && keyword === '') {
+        if (keyword === '') {
             params.set('sector', this.sectorSlug ?? '');
 
             if (this.professionSlug) {
@@ -4493,11 +4480,8 @@ Alpine.data('talentJobsIndex', (config = {}) => ({
             this.page = Number(this.pagination.page ?? 1);
             this.counts = payload.counts ?? this.counts;
             this.scope = payload.scope ?? this.scope;
-
-            if (this.scope === 'all') {
-                this.sectorSlug = payload.sector ?? this.sectorSlug;
-                this.professionSlug = payload.profession ?? this.professionSlug;
-            }
+            this.sectorSlug = payload.sector ?? this.sectorSlug;
+            this.professionSlug = payload.profession ?? this.professionSlug;
 
             if (typeof payload.q === 'string' && (this.query.trim() === '' || payload.q === this.query.trim())) {
                 this.query = payload.q;

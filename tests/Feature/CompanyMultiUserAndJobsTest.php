@@ -391,7 +391,7 @@ class CompanyMultiUserAndJobsTest extends TestCase
         $this->actingAs($talent)
             ->get(route('talent.jobs.index'))
             ->assertOk()
-            ->assertSee('Annonces', false);
+            ->assertSee(__('talenma.jobs.talent_title'), false);
     }
 
     public function test_talent_jobs_keyword_filters_results_and_keeps_scope_counts(): void

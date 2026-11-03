@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class TalentJobController extends Controller
@@ -43,9 +44,8 @@ class TalentJobController extends Controller
             $professionSlug = '';
         }
 
-        $applySearchFilters = $scope === 'all';
-        $activeSectorSlug = $applySearchFilters ? $sectorSlug : '';
-        $activeProfessionSlug = $applySearchFilters ? $professionSlug : '';
+        $activeSectorSlug = $sectorSlug;
+        $activeProfessionSlug = $professionSlug;
 
         $baseQuery = JobPosting::query()
             ->where(function ($query) use ($user) {
@@ -147,8 +147,8 @@ class TalentJobController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'scope' => $scope,
-                'sector' => $applySearchFilters ? $sectorSlug : '',
-                'profession' => $applySearchFilters ? $professionSlug : '',
+                'sector' => $sectorSlug,
+                'profession' => $professionSlug,
                 'q' => $keyword,
                 'total' => $jobs->total(),
                 'pagination' => $pagination,
@@ -162,8 +162,8 @@ class TalentJobController extends Controller
             'pagination' => $pagination,
             'scope' => $scope,
             'counts' => $counts,
-            'sectorSlug' => $applySearchFilters ? $sectorSlug : '',
-            'professionSlug' => $applySearchFilters ? $professionSlug : '',
+            'sectorSlug' => $sectorSlug,
+            'professionSlug' => $professionSlug,
             'keyword' => $keyword,
             'professionSectors' => $this->professions->sectorsForLocale(),
         ]);
@@ -284,9 +284,14 @@ class TalentJobController extends Controller
      *     company: string,
      *     company_logo: string|null,
      *     company_initials: string,
+     *     excerpt: string,
+     *     sector: string|null,
      *     summary: string,
      *     tags: list<string>,
-     *     location: string,
+     *     location: string|null,
+     *     work_modes: list<string>,
+     *     experience: string|null,
+     *     date: string,
      *     published_label: string|null,
      *     updated_label: string|null,
      *     applied: bool,
@@ -310,6 +315,8 @@ class TalentJobController extends Controller
         ], fn ($tag) => filled($tag)));
 
         $publishedAt = $job->published_at ?? $job->created_at;
+        $location = $job->locationLabel();
+        $date = $publishedAt?->translatedFormat('d M Y') ?? '';
 
         return [
             'id' => $job->id,
@@ -318,11 +325,16 @@ class TalentJobController extends Controller
             'company' => $job->advertiserName(),
             'company_logo' => $job->advertiserLogoUrl(),
             'company_initials' => $job->advertiserInitials(),
+            'excerpt' => Str::of(strip_tags((string) $job->description))->squish()->limit(140)->toString(),
+            'sector' => $job->professionSector?->localizedName() ?: null,
             'summary' => implode(' · ', $summaryParts),
             'tags' => $tags,
-            'location' => $job->locationLabel() !== '' ? $job->locationLabel() : '—',
-            'published_label' => $publishedAt
-                ? __('talenma.jobs.card_published_on', ['date' => $publishedAt->translatedFormat('d M Y')])
+            'location' => $location !== '' ? $location : null,
+            'work_modes' => $job->collaborationModeLabels(),
+            'experience' => $job->experienceLabel() ?: null,
+            'date' => $date,
+            'published_label' => $date !== ''
+                ? __('talenma.jobs.card_published_on', ['date' => $date])
                 : null,
             'updated_label' => $job->contentUpdatedAfterPublication()
                 ? __('talenma.jobs.card_updated_on', ['date' => $job->content_updated_at->translatedFormat('d M Y')])
