@@ -46,7 +46,6 @@
         <div class="flex items-center justify-between gap-3">
             <div class="min-w-0">
                 <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.company_index_title') }}</h2>
-                <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.company_index_subtitle') }}</p>
             </div>
             <button
                 type="button"

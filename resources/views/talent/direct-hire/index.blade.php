@@ -37,7 +37,6 @@
     <x-slot name="header">
         <div>
             <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.talent_index_title') }}</h2>
-            <p class="text-sm text-gray-500">{{ __('talenma.direct_hire.talent_index_subtitle') }}</p>
         </div>
     </x-slot>
 

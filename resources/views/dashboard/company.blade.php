@@ -126,7 +126,7 @@
                             <p class="text-sm text-slate-500">{{ __('talenma.dashboard.company.activity.recent_empty') }}</p>
                         </div>
                     @else
-                        <ol class="activity-scroll relative max-h-[calc((5*4.35rem+4*0.625rem)*1.5)] space-y-2.5 overflow-y-auto overscroll-contain pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+                        <ol class="activity-scroll relative max-h-[calc((5*4.35rem+4*0.625rem)*1.5)] space-y-2.5 overflow-y-auto overscroll-y-auto pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
                             @foreach ($recentActivity as $item)
                                 @php
                                     $label = match ($item['type']) {
