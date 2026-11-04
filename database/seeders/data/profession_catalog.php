@@ -250,6 +250,83 @@ return [
                 ],
             ],
             [
+                'slug' => 'qa-analyst-engineer',
+                'name_fr' => 'Ingénieur QA Analyste',
+                'name_en' => 'QA Analyst Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'Tests fonctionnels', 'label_en' => 'Functional testing', 'keywords' => 'tests fonctionnels manuel qa'],
+                    ['label_fr' => 'Recette / UAT', 'label_en' => 'UAT / acceptance testing', 'keywords' => 'recette uat acceptance'],
+                    ['label_fr' => 'Cas de test / scénarios', 'label_en' => 'Test cases / scenarios', 'keywords' => 'cas de test scenarios'],
+                    ['label_fr' => 'Bug tracking / reporting', 'label_en' => 'Bug tracking / reporting', 'keywords' => 'jira bugs reporting'],
+                ],
+            ],
+            [
+                'slug' => 'qa-ai-engineer',
+                'name_fr' => 'Ingénieur QA IA',
+                'name_en' => 'AI QA Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'Tests de modèles IA / LLM', 'label_en' => 'AI / LLM model testing', 'keywords' => 'llm modele ia evaluation'],
+                    ['label_fr' => 'Qualité des données d\'entraînement', 'label_en' => 'Training data quality', 'keywords' => 'dataset data quality'],
+                    ['label_fr' => 'Évaluation / métriques IA', 'label_en' => 'AI evaluation / metrics', 'keywords' => 'evaluation metrics bias'],
+                    ['label_fr' => 'Tests MLOps', 'label_en' => 'MLOps testing', 'keywords' => 'mlops pipeline validation'],
+                ],
+            ],
+            [
+                'slug' => 'qa-technical-analyst-engineer',
+                'name_fr' => 'Ingénieur QA Technique Analyste',
+                'name_en' => 'Technical QA Analyst Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'Tests API / intégration', 'label_en' => 'API / integration testing', 'keywords' => 'api rest integration postman'],
+                    ['label_fr' => 'Tests de performance', 'label_en' => 'Performance testing', 'keywords' => 'performance load jmeter k6'],
+                    ['label_fr' => 'Analyse technique des anomalies', 'label_en' => 'Technical defect analysis', 'keywords' => 'analyse technique root cause'],
+                    ['label_fr' => 'Environnements de test', 'label_en' => 'Test environments', 'keywords' => 'environnements staging qa'],
+                ],
+            ],
+            [
+                'slug' => 'qa-automation-engineer',
+                'name_fr' => 'Ingénieur QA Automaticien',
+                'name_en' => 'QA Automation Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'Automatisation Selenium / Playwright', 'label_en' => 'Selenium / Playwright automation', 'keywords' => 'selenium playwright cypress'],
+                    ['label_fr' => 'Frameworks de test', 'label_en' => 'Test frameworks', 'keywords' => 'framework automatisation'],
+                    ['label_fr' => 'CI/CD des tests', 'label_en' => 'Test CI/CD', 'keywords' => 'pipeline tests ci cd'],
+                    ['label_fr' => 'Tests E2E / regression', 'label_en' => 'E2E / regression testing', 'keywords' => 'e2e regression suite'],
+                ],
+            ],
+            [
+                'slug' => 'qa-lead',
+                'name_fr' => 'Ingénieur QA Lead',
+                'name_en' => 'QA Lead Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'Lead équipe QA', 'label_en' => 'QA team lead', 'keywords' => 'lead equipe qa'],
+                    ['label_fr' => 'Stratégie de tests', 'label_en' => 'Test strategy', 'keywords' => 'strategie tests plan'],
+                    ['label_fr' => 'Coaching / mentoring QA', 'label_en' => 'QA coaching / mentoring', 'keywords' => 'coaching mentoring'],
+                    ['label_fr' => 'Qualité agile / shift-left', 'label_en' => 'Agile quality / shift-left', 'keywords' => 'agile shift-left qualite'],
+                ],
+            ],
+            [
+                'slug' => 'qa-manager',
+                'name_fr' => 'Ingénieur QA Manager',
+                'name_en' => 'QA Manager',
+                'suggestions' => [
+                    ['label_fr' => 'Management équipe QA', 'label_en' => 'QA team management', 'keywords' => 'management equipe qa'],
+                    ['label_fr' => 'Pilotage qualité produit', 'label_en' => 'Product quality management', 'keywords' => 'pilotage qualite kpi'],
+                    ['label_fr' => 'Processus & standards QA', 'label_en' => 'QA processes & standards', 'keywords' => 'process standards iso'],
+                    ['label_fr' => 'Budget / ressources QA', 'label_en' => 'QA budget / resources', 'keywords' => 'budget ressources planning'],
+                ],
+            ],
+            [
+                'slug' => 'qa-head',
+                'name_fr' => 'Ingénieur QA Head / Head of QA',
+                'name_en' => 'Head of QA',
+                'suggestions' => [
+                    ['label_fr' => 'Head of QA', 'label_en' => 'Head of QA', 'keywords' => 'head of qa direction qualite'],
+                    ['label_fr' => 'Direction de la qualité logicielle', 'label_en' => 'Software quality leadership', 'keywords' => 'direction qualite logicielle'],
+                    ['label_fr' => 'Organisation multi-équipes QA', 'label_en' => 'Multi-team QA organization', 'keywords' => 'organisation multi equipes'],
+                    ['label_fr' => 'Vision qualité / transformation', 'label_en' => 'Quality vision / transformation', 'keywords' => 'vision transformation qa'],
+                ],
+            ],
+            [
                 'slug' => 'embedded-systems-engineer',
                 'name_fr' => 'Ingénieur Systèmes Embarqués',
                 'name_en' => 'Embedded Systems Engineer',
@@ -271,6 +348,28 @@ return [
                     ['label_fr' => 'Administration Windows', 'label_en' => 'Windows administration', 'keywords' => 'windows server active directory'],
                     ['label_fr' => 'Réseaux', 'label_en' => 'Networking', 'keywords' => 'cisco firewall vpn'],
                     ['label_fr' => 'Virtualisation', 'label_en' => 'Virtualization', 'keywords' => 'vmware hyper-v virtualisation'],
+                ],
+            ],
+            [
+                'slug' => 'systems-network-engineer',
+                'name_fr' => 'Ingénieur Systèmes et Réseaux',
+                'name_en' => 'Systems & Network Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'Conception réseaux', 'label_en' => 'Network design', 'keywords' => 'conception reseaux lan wan'],
+                    ['label_fr' => 'Systèmes Linux / Windows', 'label_en' => 'Linux / Windows systems', 'keywords' => 'linux windows serveur'],
+                    ['label_fr' => 'Sécurité réseau', 'label_en' => 'Network security', 'keywords' => 'firewall vpn securite reseau'],
+                    ['label_fr' => 'Haute disponibilité', 'label_en' => 'High availability', 'keywords' => 'ha clustering redondance'],
+                ],
+            ],
+            [
+                'slug' => 'infrastructure-engineer',
+                'name_fr' => 'Ingénieur Infrastructure',
+                'name_en' => 'Infrastructure Engineer',
+                'suggestions' => [
+                    ['label_fr' => 'Infrastructure cloud', 'label_en' => 'Cloud infrastructure', 'keywords' => 'aws azure gcp cloud'],
+                    ['label_fr' => 'Datacenter / on-premise', 'label_en' => 'Datacenter / on-premise', 'keywords' => 'datacenter on premise'],
+                    ['label_fr' => 'Virtualisation / conteneurs', 'label_en' => 'Virtualization / containers', 'keywords' => 'vmware kubernetes kubernetes kubernetes'],
+                    ['label_fr' => 'Stockage / backup', 'label_en' => 'Storage / backup', 'keywords' => 'stockage backup san nas'],
                 ],
             ],
             [
