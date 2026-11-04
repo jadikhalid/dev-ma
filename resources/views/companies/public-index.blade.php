@@ -4,8 +4,13 @@
 @section('meta_description', __('talenma.public_companies.meta_index'))
 
 @section('content')
-    <section class="border-b border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-teal-50/40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <section class="relative -mt-20 overflow-hidden bg-white pt-20 sm:-mt-[4.25rem] sm:pt-[4.25rem]" data-companies-index-hero>
+        <div class="how-hero-frame" aria-hidden="true">
+            <div class="how-wash how-wash-lilac -left-24 -top-40 h-[28rem] w-[28rem] opacity-50 sm:-left-32 sm:-top-72 sm:h-[760px] sm:w-[760px]"></div>
+            <div class="how-wash how-wash-sky -right-24 -top-24 h-[22rem] w-[22rem] opacity-30 sm:-top-40 sm:right-0 sm:h-[700px] sm:w-[700px]"></div>
+        </div>
+
+        <div class="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
             <a href="{{ route('home') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
@@ -39,7 +44,7 @@
                         value="{{ $search }}"
                         maxlength="80"
                         placeholder="{{ __('talenma.public_companies.search_placeholder') }}"
-                        class="block w-full rounded-xl border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400"
+                        class="block w-full rounded-xl border-gray-200 bg-white/90 py-2.5 pl-9 pr-3 text-sm shadow-sm backdrop-blur-sm focus:border-indigo-400 focus:ring-indigo-400"
                     >
                 </div>
                 <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">

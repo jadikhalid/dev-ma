@@ -18,6 +18,9 @@ Avec `composer dev` (serveur sur `127.0.0.1:8000`) :
 - Site talents : http://127.0.0.1:8000/
 - Portail entreprises : http://entreprises.localhost:8000/
 - Ancienne URL : http://127.0.0.1:8000/entreprises → redirection 301 vers le portail
+- Pages publiques entreprises (annuaire / fiche) : **uniquement** sur le site talents  
+  (`/entreprises-partenaires`, `/entreprises-partenaires/{id}`).  
+  Sur le portail entreprises, ces chemins redirigent en 301 vers `HOST_WWW`.
 
 `entreprises.localhost` résout en général vers `127.0.0.1` sans fichier hosts (Windows / macOS / Linux récents). Sinon, ajouter dans le fichier hosts :
 

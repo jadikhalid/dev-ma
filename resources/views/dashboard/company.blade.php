@@ -252,6 +252,7 @@
             </section>
 
             @include('dashboard.partials.company-actions-column', [
+                'profile' => $profile,
                 'recentRequests' => $recentRequests,
                 'directHires' => $directHires,
                 'directHireUnseen' => $directHireUnseen,

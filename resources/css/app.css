@@ -278,8 +278,10 @@
         height: min(48rem, 50vw);
     }
 
-    /* How page: keep wash full-bleed (do not clamp to 80rem). */
-    .page-how .how-hero-frame {
+    /* How + directory + blog: keep wash full-bleed (do not clamp to 80rem). */
+    .page-how .how-hero-frame,
+    .page-companies-index .how-hero-frame,
+    .page-blog-index .how-hero-frame {
         left: 0;
         right: 0;
         width: 100%;
@@ -288,13 +290,17 @@
         mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%);
     }
 
-    .page-how .how-hero-frame .how-wash-lilac {
+    .page-how .how-hero-frame .how-wash-lilac,
+    .page-companies-index .how-hero-frame .how-wash-lilac,
+    .page-blog-index .how-hero-frame .how-wash-lilac {
         left: -10rem;
         width: min(52rem, 56vw);
         height: min(52rem, 56vw);
     }
 
-    .page-how .how-hero-frame .how-wash-sky {
+    .page-how .how-hero-frame .how-wash-sky,
+    .page-companies-index .how-hero-frame .how-wash-sky,
+    .page-blog-index .how-hero-frame .how-wash-sky {
         left: 55%;
         right: auto;
         width: min(48rem, 50vw);
@@ -321,12 +327,16 @@
         margin-top: 1.125rem;
     }
 
-    .page-how .how-hero-frame .how-wash-lilac {
+    .page-how .how-hero-frame .how-wash-lilac,
+    .page-companies-index .how-hero-frame .how-wash-lilac,
+    .page-blog-index .how-hero-frame .how-wash-lilac {
         background: radial-gradient(circle, rgba(199, 210, 254, 0.85) 0%, rgba(165, 180, 252, 0.32) 40%, rgba(255, 255, 255, 0) 76%);
         opacity: 0.42;
     }
 
-    .page-how .how-hero-frame .how-wash-sky {
+    .page-how .how-hero-frame .how-wash-sky,
+    .page-companies-index .how-hero-frame .how-wash-sky,
+    .page-blog-index .how-hero-frame .how-wash-sky {
         background: radial-gradient(circle, rgba(186, 230, 253, 0.7) 0%, rgba(56, 189, 248, 0.2) 42%, rgba(255, 255, 255, 0) 76%);
         opacity: 0.38;
     }
@@ -335,7 +345,9 @@
 /* Phone only: same wash as tablet, pulled under the header. Desktop rules stay in the block below. */
 @media (max-width: 639px), (max-height: 499px) and (max-width: 1023px) {
     .page-home [data-public-header],
-    .page-how [data-public-header] {
+    .page-how [data-public-header],
+    .page-companies-index [data-public-header],
+    .page-blog-index [data-public-header] {
         border-color: transparent;
         background-color: transparent;
         -webkit-backdrop-filter: none;
@@ -343,7 +355,9 @@
     }
 
     .page-home [data-public-header][data-scrolled="true"],
-    .page-how [data-public-header][data-scrolled="true"] {
+    .page-how [data-public-header][data-scrolled="true"],
+    .page-companies-index [data-public-header][data-scrolled="true"],
+    .page-blog-index [data-public-header][data-scrolled="true"] {
         border-color: rgb(243 244 246);
         background-color: rgb(255 255 255 / 0.95);
         -webkit-backdrop-filter: blur(12px);

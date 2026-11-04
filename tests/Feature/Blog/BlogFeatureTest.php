@@ -207,6 +207,9 @@ class BlogFeatureTest extends TestCase
     {
         $this->get(route('blog.index'))
             ->assertOk()
+            ->assertSee('page-blog-index', false)
+            ->assertSee('data-blog-index-hero', false)
+            ->assertSee('how-wash-lilac', false)
             ->assertSee(__('talenma.nav.career_advice'), false)
             ->assertDontSee(route('home').'#opportunites', false);
 

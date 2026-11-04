@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\CompanyProfile;
 use App\Models\JobPosting;
 use App\Models\User;
+use App\Support\PortalHost;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -12,6 +13,31 @@ use Tests\TestCase;
 class PublicCompanyPagesTest extends TestCase
 {
     use RefreshDatabase;
+
+    #[Test]
+    public function public_company_routes_are_anchored_on_the_talent_host(): void
+    {
+        $company = $this->makeCompany('ACME Maroc');
+        $showUrl = route('companies.public.show', $company, absolute: true);
+        $indexUrl = route('companies.public.index', absolute: true);
+
+        $this->assertStringContainsString('://'.PortalHost::wwwHost().'/', $showUrl);
+        $this->assertStringContainsString('://'.PortalHost::wwwHost().'/', $indexUrl);
+        $this->assertStringNotContainsString(PortalHost::companyHost(), $showUrl);
+        $this->assertStringNotContainsString(PortalHost::companyHost(), $indexUrl);
+
+        $companyHostShow = PortalHost::onCompanyHost(
+            fn () => route('companies.public.show', $company, absolute: true)
+        );
+        $this->assertStringContainsString('://'.PortalHost::wwwHost().'/', $companyHostShow);
+        $this->assertStringNotContainsString(PortalHost::companyHost(), $companyHostShow);
+
+        $this->get('http://'.PortalHost::companyHost().'/entreprises-partenaires')
+            ->assertRedirect(PortalHost::wwwUrl('/entreprises-partenaires'));
+
+        $this->get('http://'.PortalHost::companyHost().'/entreprises-partenaires/'.$company->id.'?utm=1')
+            ->assertRedirect(PortalHost::wwwUrl('/entreprises-partenaires/'.$company->id, ['utm' => '1']));
+    }
 
     #[Test]
     public function home_does_not_show_the_partner_companies_block(): void
@@ -117,20 +143,35 @@ class PublicCompanyPagesTest extends TestCase
     }
 
     #[Test]
-    public function company_page_header_offers_explore_companies_instead_of_home_links(): void
+    public function public_header_exposes_companies_directory_after_hiring(): void
     {
         $company = $this->makeCompany('ACME Maroc');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('data-header-hiring', false)
+            ->assertSee('data-header-explore-companies', false)
+            ->assertSee('data-header-explore-companies-icon', false)
+            ->assertSee('data-header-explore-companies-card', false)
+            ->assertDontSee('data-header-explore-companies-disabled', false)
+            ->assertSee(__('talenma.nav.explore_companies'))
+            ->assertSee(route('companies.public.index'), false);
+
+        $this->get(route('companies.public.index'))
+            ->assertOk()
+            ->assertSee('page-companies-index', false)
+            ->assertSee('data-companies-index-hero', false)
+            ->assertSee('how-wash-lilac', false)
+            ->assertSee('data-header-explore-companies-disabled', false)
+            ->assertSee('aria-disabled="true"', false)
+            ->assertSee(__('talenma.nav.explore_companies'));
 
         $this->get(route('companies.public.show', $company))
             ->assertOk()
             ->assertSee('data-header-explore-companies', false)
+            ->assertDontSee('data-header-explore-companies-disabled', false)
             ->assertSee(__('talenma.nav.explore_companies'))
             ->assertDontSee(route('home').'#opportunites', false);
-
-        $this->get(route('home'))
-            ->assertOk()
-            ->assertDontSee('data-header-explore-companies', false)
-            ->assertSee(route('career.offers'), false);
     }
 
     /**

@@ -23,6 +23,8 @@
         'flex min-h-screen flex-col font-sans text-gray-900 antialiased bg-white',
         'page-home' => request()->routeIs('home'),
         'page-how' => request()->routeIs('career.how'),
+        'page-companies-index' => request()->routeIs('companies.public.index'),
+        'page-blog-index' => request()->routeIs('blog.index'),
         'page-offers' => request()->routeIs('career.offers'),
         'page-company' => \App\Support\PortalHost::isCompanyHost(),
         'page-company-home' => request()->routeIs('company.offer'),

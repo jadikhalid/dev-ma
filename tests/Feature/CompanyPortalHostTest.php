@@ -53,12 +53,18 @@ class CompanyPortalHostTest extends TestCase
         $company = config('talenma.hosts.company');
         $www = config('talenma.hosts.www');
 
-        $this->actingAs($companyUser)
+        $html = $this->actingAs($companyUser)
             ->get('http://'.$company.'/dashboard')
             ->assertOk()
-            ->assertSee('href="'.route('dashboard').'"', false)
+            ->assertSee('data-brand-logo', false)
             ->assertDontSee('href="'.PortalHost::companyRootUrl().'"', false)
-            ->assertDontSee('href="http://'.$www.'"', false);
+            ->assertDontSee('href="http://'.$www.'"', false)
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<a\b[^>]*\bdata-brand-logo\b[^>]*\bhref="[^"]*\/dashboard"[^>]*>|<a\b[^>]*\bhref="[^"]*\/dashboard"[^>]*\bdata-brand-logo\b[^>]*>/',
+            $html,
+        );
     }
 
     public function test_company_portal_header_shows_company_identity(): void

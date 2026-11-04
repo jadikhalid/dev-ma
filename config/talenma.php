@@ -63,6 +63,7 @@ return [
     |        HOST_COMPANY=entreprises.talentsdumaroc.com
     | Local : HOST_WWW=127.0.0.1, HOST_COMPANY=entreprises.localhost
     |         (ouvrir http://entreprises.localhost:8000 — résout vers 127.0.0.1)
+    | Public company pages (/entreprises-partenaires*) are registered on HOST_WWW only.
     */
     'hosts' => [
         'www' => env('HOST_WWW', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: 'localhost'),

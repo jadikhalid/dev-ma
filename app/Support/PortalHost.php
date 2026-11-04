@@ -43,16 +43,32 @@ class PortalHost
     }
 
     /**
+     * Absolute URL on the talents (www) portal (path must start with /).
+     */
+    public static function wwwUrl(string $path = '/', array $query = []): string
+    {
+        return self::absoluteUrl(self::wwwRootUrl(), $path, $query);
+    }
+
+    /**
      * Absolute URL on the company portal (path must start with /).
      */
     public static function companyUrl(string $path = '/', array $query = []): string
+    {
+        return self::absoluteUrl(self::companyRootUrl(), $path, $query);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     */
+    private static function absoluteUrl(string $root, string $path, array $query = []): string
     {
         $path = '/'.ltrim($path, '/');
         if ($path !== '/') {
             $path = rtrim($path, '/');
         }
 
-        $url = rtrim(self::companyRootUrl(), '/').($path === '/' ? '/' : $path);
+        $url = rtrim($root, '/').($path === '/' ? '/' : $path);
 
         if ($query !== []) {
             $url .= (str_contains($url, '?') ? '&' : '?').http_build_query($query);

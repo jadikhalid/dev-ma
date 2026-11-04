@@ -12,9 +12,13 @@
     $companyOrg = $authUser->isCompany() ? $authUser->companyOrganization() : null;
     $isCompanyOwner = $authUser->isCompanyOwner();
     $actingAsModerator = $authUser->isActingAsModerator();
-    // Espace talent : logo → accueil public. Entreprise / staff : logo non cliquable.
-    $brandLogoLinked = $authUser->isTalent() && ! $actingAsModerator;
-    $brandLogoHref = $brandLogoLinked ? route('home') : null;
+    // Talent : logo → accueil public. Entreprise : logo → dashboard. Staff / modérateur : non cliquable.
+    $brandLogoLinked = ($authUser->isTalent() && ! $actingAsModerator) || $authUser->isCompany();
+    $brandLogoHref = match (true) {
+        $authUser->isCompany() => route('dashboard'),
+        $authUser->isTalent() && ! $actingAsModerator => route('home'),
+        default => null,
+    };
     $canSwitchModeratorMode = $authUser->canActAsModerator() && ! $authUser->isAdmin();
     $inboxUnread = (! $pendingAccount && ($authUser->isCompany() || $authUser->isTalent() || $authUser->canAccessStaffMessaging()))
         ? app(\App\Services\MessagingService::class)->unreadCountFor($authUser)
@@ -48,18 +52,18 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex flex-1 items-center gap-2 sm:gap-4 min-w-0">
-                <div class="brand-logo-phone">
+                <div class="brand-logo-phone" data-brand-logo-wrap>
                     @if ($brandLogoLinked)
-                        <x-brand-logo size="sm" phone href="{{ $brandLogoHref }}" />
+                        <x-brand-logo size="sm" phone href="{{ $brandLogoHref }}" data-brand-logo />
                     @else
-                        <x-brand-logo size="sm" phone :linked="false" />
+                        <x-brand-logo size="sm" phone :linked="false" data-brand-logo />
                     @endif
                 </div>
-                <div class="brand-logo-desktop">
+                <div class="brand-logo-desktop" data-brand-logo-wrap>
                     @if ($brandLogoLinked)
-                        <x-brand-logo size="sm" href="{{ $brandLogoHref }}" />
+                        <x-brand-logo size="sm" href="{{ $brandLogoHref }}" data-brand-logo />
                     @else
-                        <x-brand-logo size="sm" :linked="false" />
+                        <x-brand-logo size="sm" :linked="false" data-brand-logo />
                     @endif
                 </div>
                 <div x-data="navOverflow" class="hidden lg:flex flex-1 items-center gap-1 min-w-0 pr-4" data-nav-overflow>

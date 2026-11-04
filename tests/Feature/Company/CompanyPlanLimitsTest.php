@@ -201,8 +201,10 @@ class CompanyPlanLimitsTest extends TestCase
             'work_modes' => ['remote'],
         ]);
 
+        $publicPageUrl = route('companies.public.show', $trialOwner, absolute: true);
+
         $this->actingAs($trialOwner)
-            ->get(route('dashboard'))
+            ->get('http://'.\App\Support\PortalHost::companyHost().'/dashboard')
             ->assertOk()
             ->assertDontSee('process-help-company-dashboard', false)
             ->assertSee('data-company-org-column', false)
@@ -210,6 +212,11 @@ class CompanyPlanLimitsTest extends TestCase
             ->assertSee('order-1 min-w-0 space-y-4 lg:order-none', false)
             ->assertSee('order-2 min-w-0 space-y-4 lg:order-none', false)
             ->assertSee('activity-scroll h-[calc(4*2.75rem+3*0.5rem)]', false)
+            ->assertSee('data-company-public-page-link', false)
+            ->assertSee(__('talenma.dashboard.company.public_page_cta'), false)
+            ->assertSee('href="'.$publicPageUrl.'"', false)
+            ->assertDontSee('http://'.\App\Support\PortalHost::companyHost().'/entreprises-partenaires/', false)
+            ->assertSee('target="_blank"', false)
             ->assertSee(__('talenma.nav.sourcing'), false)
             ->assertSee(__('talenma.nav.direct_hire'), false)
             ->assertSee(__('talenma.dashboard.company.browse'), false)

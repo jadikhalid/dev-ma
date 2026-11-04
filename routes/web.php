@@ -101,12 +101,6 @@ Route::post('/jadi-digital/contact', [JadiDigitalContactController::class, 'stor
 Route::get('/annonces/{job}', [PublicJobController::class, 'show'])
     ->whereNumber('job')
     ->name('jobs.public.show');
-Route::get('/entreprises-partenaires', [PublicCompanyController::class, 'index'])
-    ->middleware('throttle:60,1')
-    ->name('companies.public.index');
-Route::get('/entreprises-partenaires/{company}', [PublicCompanyController::class, 'show'])
-    ->whereNumber('company')
-    ->name('companies.public.show');
 Route::get('/annonces/acces/{job?}', JobAccessGateController::class)
     ->middleware('auth')
     ->whereNumber('job')
@@ -157,8 +151,8 @@ Route::get('/services', [ServiceController::class, 'index'])
 |--------------------------------------------------------------------------
 | Domain-specific public roots
 |--------------------------------------------------------------------------
-| Shared routes below work on any host. Only `/` and the company landing
-| differ between www and the entreprises portal.
+| Shared routes above work on any host. Public company pages live only on
+| the talents (www) host; the entreprises portal permanently redirects there.
 */
 $wwwHost = PortalHost::wwwHost();
 $companyHost = PortalHost::companyHost();
@@ -176,10 +170,30 @@ Route::domain($companyHost)->group(function () {
         ->middleware('throttle:8,1')
         ->name('company.trial.store');
     Route::redirect('/entreprises', '/', 301);
+
+    // Public partner pages are talent-portal only — send bookmarks to www.
+    Route::get('/entreprises-partenaires', function (\Illuminate\Http\Request $request) {
+        return redirect()->away(
+            PortalHost::wwwUrl('/entreprises-partenaires', $request->query()),
+            301,
+        );
+    })->name('companies.public.index.company-host');
+    Route::get('/entreprises-partenaires/{company}', function (\Illuminate\Http\Request $request, string $company) {
+        return redirect()->away(
+            PortalHost::wwwUrl('/entreprises-partenaires/'.$company, $request->query()),
+            301,
+        );
+    })->whereNumber('company')->name('companies.public.show.company-host');
 });
 
 Route::domain($wwwHost)->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('/entreprises-partenaires', [PublicCompanyController::class, 'index'])
+        ->middleware('throttle:60,1')
+        ->name('companies.public.index');
+    Route::get('/entreprises-partenaires/{company}', [PublicCompanyController::class, 'show'])
+        ->whereNumber('company')
+        ->name('companies.public.show');
     Route::match(['get', 'post'], '/entreprises/{path?}', CompanyPortalLegacyRedirectController::class)
         ->where('path', '.*')
         ->name('company.offer.legacy');
