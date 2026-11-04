@@ -9,7 +9,7 @@
     <x-process-help topic="jobs" />
 
     <div
-        class="home-shell py-5 sm:py-6"
+        class="home-shell home-shell--offers-width py-5 sm:py-6"
         x-data="talentJobsIndex({
             searchUrl: @js(route('talent.jobs.index')),
             initialScope: @js($scope),

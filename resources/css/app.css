@@ -66,8 +66,9 @@
     .page-company-home .home-shell,
     .page-company-home .home-align-wide,
     .page-company-offers .home-shell,
-    .page-company-offers .home-align-wide {
-        max-width: 80rem; /* aligné sur le header max-w-7xl */
+    .page-company-offers .home-align-wide,
+    .home-shell.home-shell--offers-width {
+        max-width: 80rem; /* aligné sur le header max-w-7xl / page offres publique */
         padding-left: 2rem;
         padding-right: 2rem;
     }
