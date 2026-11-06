@@ -24,8 +24,8 @@ use Illuminate\Validation\ValidationException;
 
 class PendingRegistrationService
 {
-    /** Lien de confirmation d'inscription (24 heures). */
-    public const EXPIRY_HOURS = 24;
+    /** Lien de confirmation d'inscription (48 heures). */
+    public const EXPIRY_HOURS = 48;
 
     public const EXPIRY_MINUTES = self::EXPIRY_HOURS * 60;
 

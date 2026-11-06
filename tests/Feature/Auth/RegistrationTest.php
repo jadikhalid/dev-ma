@@ -6,6 +6,7 @@ use App\Mail\TalentWelcomeMail;
 use App\Mail\VerifyRegistrationMail;
 use App\Models\PendingRegistration;
 use App\Models\User;
+use App\Services\PendingRegistrationService;
 use Database\Seeders\ProfessionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -157,6 +158,30 @@ class RegistrationTest extends TestCase
             ->assertSee(__('talenma.auth.register_restart_with_other_email'))
             ->assertSee('test@example.com')
             ->assertDontSee('name="role"', false);
+    }
+
+    public function test_pending_registration_confirmation_window_is_48_hours(): void
+    {
+        $this->assertSame(48, PendingRegistrationService::EXPIRY_HOURS);
+
+        Mail::fake();
+
+        $this->post('/register', $this->validTalentPayload());
+
+        $pending = PendingRegistration::query()->where('email', 'test@example.com')->firstOrFail();
+
+        $this->assertNotNull($pending->expires_at);
+        $this->assertTrue(
+            $pending->expires_at->between(
+                now()->addHours(47)->addMinutes(50),
+                now()->addHours(48)->addMinutes(10),
+            ),
+        );
+        $this->assertStringContainsString('48', __('talenma.auth.register_success_verify'));
+        $this->assertStringContainsString(
+            '48',
+            __('talenma.mail.verify_registration.expiry', ['hours' => PendingRegistrationService::EXPIRY_HOURS]),
+        );
     }
 
     public function test_email_verification_creates_user_and_profile(): void
