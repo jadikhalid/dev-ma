@@ -451,7 +451,7 @@ class UserManagementTest extends TestCase
         ]));
     }
 
-    public function test_admin_can_resend_pending_email_and_extend_expired_link(): void
+    public function test_admin_can_resend_pending_email_and_reset_confirmation_window(): void
     {
         Mail::fake();
 
@@ -474,7 +474,28 @@ class UserManagementTest extends TestCase
             ->assertRedirect();
 
         $pending->refresh();
-        $this->assertTrue($pending->expires_at->isFuture());
+        $this->assertTrue(
+            $pending->expires_at->between(
+                now()->addHours(47)->addMinutes(50),
+                now()->addHours(48)->addMinutes(10),
+            ),
+        );
+        Mail::assertSent(\App\Mail\VerifyRegistrationMail::class, fn ($mail) => $mail->hasTo('resend@example.com'));
+
+        Mail::fake();
+        $pending->update(['expires_at' => now()->addHours(2)]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.pending-registrations.resend', $pending))
+            ->assertRedirect();
+
+        $pending->refresh();
+        $this->assertTrue(
+            $pending->expires_at->between(
+                now()->addHours(47)->addMinutes(50),
+                now()->addHours(48)->addMinutes(10),
+            ),
+        );
         Mail::assertSent(\App\Mail\VerifyRegistrationMail::class, fn ($mail) => $mail->hasTo('resend@example.com'));
     }
 

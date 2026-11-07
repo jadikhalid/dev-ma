@@ -295,18 +295,16 @@ class PendingRegistrationService
     }
 
     /**
-     * Renvoie l'e-mail de vérification ; prolonge la validité si le lien a expiré.
+     * Renvoie l'e-mail de vérification et réinitialise la fenêtre de confirmation (48 h).
      */
     public function resendForAdmin(PendingRegistration $pending): PendingRegistration
     {
-        if ($pending->isExpired()) {
-            $pending->update([
-                'expires_at' => now()->addMinutes(self::EXPIRY_MINUTES),
-            ]);
+        $pending->update([
+            'expires_at' => now()->addMinutes(self::EXPIRY_MINUTES),
+        ]);
 
-            PurgePendingRegistrationJob::dispatch($pending->id)
-                ->delay(now()->addMinutes(self::EXPIRY_MINUTES));
-        }
+        PurgePendingRegistrationJob::dispatch($pending->id)
+            ->delay(now()->addMinutes(self::EXPIRY_MINUTES));
 
         $this->sendVerificationMail($pending->fresh() ?? $pending);
 
