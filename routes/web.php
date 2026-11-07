@@ -460,13 +460,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/recruitment/request/{talent?}', [RecruitmentRequestController::class, 'create'])->name('recruitment.create');
         Route::post('/recruitment/request', [RecruitmentRequestController::class, 'store'])->name('recruitment.store');
-        Route::get('/sourcing', [RecruitmentRequestController::class, 'index'])->name('sourcing.index');
-        Route::get('/sourcing/talent-suggestions', [RecruitmentRequestController::class, 'searchTalents'])
+
+        // Legacy URI aliases (bookmarks / shared links)
+        Route::permanentRedirect('/sourcing', '/externalisation-rh');
+        Route::permanentRedirect('/sourcing/talent-suggestions', '/externalisation-rh/talent-suggestions');
+        Route::permanentRedirect('/sourcing/{recruitmentRequest}', '/externalisation-rh/{recruitmentRequest}');
+
+        Route::get('/externalisation-rh', [RecruitmentRequestController::class, 'index'])->name('sourcing.index');
+        Route::get('/externalisation-rh/talent-suggestions', [RecruitmentRequestController::class, 'searchTalents'])
             ->middleware('throttle:60,1')
             ->name('sourcing.talent-suggestions');
-        Route::get('/sourcing/{recruitmentRequest}', [RecruitmentRequestController::class, 'show'])->name('sourcing.show');
-        Route::post('/sourcing/{recruitmentRequest}/unlock-talent', [RecruitmentRequestController::class, 'unlockTalent'])->name('sourcing.unlock-talent');
-        Route::post('/sourcing/{recruitmentRequest}/messages', [RecruitmentRequestController::class, 'storeMessage'])->name('sourcing.messages.store');
+        Route::get('/externalisation-rh/{recruitmentRequest}', [RecruitmentRequestController::class, 'show'])->name('sourcing.show');
+        Route::post('/externalisation-rh/{recruitmentRequest}/unlock-talent', [RecruitmentRequestController::class, 'unlockTalent'])->name('sourcing.unlock-talent');
+        Route::post('/externalisation-rh/{recruitmentRequest}/messages', [RecruitmentRequestController::class, 'storeMessage'])->name('sourcing.messages.store');
 
         Route::middleware('company.jobs')->prefix('company/jobs')->name('company.jobs.')->group(function () {
             Route::get('/', [CompanyJobController::class, 'index'])->name('index');

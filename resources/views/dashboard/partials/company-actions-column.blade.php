@@ -62,12 +62,51 @@
             @if ($recentRequests->isEmpty())
                 <p class="text-center text-xs text-slate-500">{{ __('talenma.dashboard.company.ongoing_empty') }}</p>
             @else
-                <ul class="space-y-2">
+                <ul class="space-y-1.5">
                     @foreach ($recentRequests as $req)
+                        @php
+                            $statusTone = match ($req->statusTone()) {
+                                'sky' => 'bg-sky-50 text-sky-800 ring-sky-200',
+                                'amber' => 'bg-amber-50 text-amber-900 ring-amber-200',
+                                'emerald' => 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+                                'rose' => 'bg-rose-50 text-rose-800 ring-rose-200',
+                                default => 'bg-slate-50 text-slate-700 ring-slate-200',
+                            };
+                            $modeTone = $req->isNamed()
+                                ? 'bg-violet-100 text-violet-800'
+                                : 'bg-indigo-100 text-indigo-800';
+                            $modeLabel = $req->isNamed()
+                                ? __('talenma.dashboard.company.sourcing_mode_named')
+                                : __('talenma.dashboard.company.sourcing_mode_open');
+                            $primary = $req->isNamed()
+                                ? $req->talentCompactLabel()
+                                : \Illuminate\Support\Str::limit((string) ($req->subject ?: '—'), 36);
+                        @endphp
                         <li class="min-w-0">
-                            <a href="{{ route('sourcing.show', $req) }}" class="block min-w-0 rounded-lg px-1 py-1 hover:bg-indigo-50">
-                                <p class="truncate text-sm font-semibold text-slate-900">{{ $req->displayTitle() }}</p>
-                                <p class="truncate text-xs text-slate-500">{{ $req->statusLabel() }}</p>
+                            <a
+                                href="{{ route('sourcing.show', $req) }}"
+                                @class([
+                                    'group flex items-center gap-2 rounded-xl px-2 py-2 ring-1 transition',
+                                    'bg-violet-50/90 ring-violet-100 hover:bg-violet-100/90 hover:ring-violet-200' => $req->isNamed(),
+                                    'bg-indigo-50/90 ring-indigo-100 hover:bg-indigo-100/90 hover:ring-indigo-200' => ! $req->isNamed(),
+                                ])
+                                title="{{ $req->displayTitle() }} — {{ $req->statusLabel() }}"
+                            >
+                                <span @class([
+                                    'inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                                    $modeTone,
+                                ])>
+                                    {{ $modeLabel }}
+                                </span>
+                                <span class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900 group-hover:text-indigo-900">
+                                    {{ $primary }}
+                                </span>
+                                <span @class([
+                                    'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset',
+                                    $statusTone,
+                                ])>
+                                    {{ $req->statusLabel() }}
+                                </span>
                             </a>
                         </li>
                     @endforeach

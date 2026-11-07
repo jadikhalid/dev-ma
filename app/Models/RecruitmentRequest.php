@@ -291,16 +291,45 @@ class RecruitmentRequest extends Model
         return true;
     }
 
+    public function talentCompactLabel(): string
+    {
+        $this->loadMissing('talent');
+
+        $talent = $this->talent;
+        if (! $talent) {
+            return __('talenma.recruitment.party_deleted');
+        }
+
+        $first = trim((string) ($talent->first_name ?? ''));
+        $last = trim((string) ($talent->last_name ?? ''));
+
+        if ($first !== '' && $last !== '') {
+            return mb_strtoupper(mb_substr($first, 0, 1)).'. '.$last;
+        }
+
+        $full = trim((string) ($talent->name ?? ''));
+        if ($full === '') {
+            return '—';
+        }
+
+        $parts = preg_split('/\s+/u', $full) ?: [];
+        if (count($parts) >= 2) {
+            return mb_strtoupper(mb_substr($parts[0], 0, 1)).'. '.$parts[array_key_last($parts)];
+        }
+
+        return $full;
+    }
+
     public function displayTitle(): string
     {
-        if ($this->isNamed() && filled($this->talent?->name)) {
+        if ($this->isNamed() && $this->talent) {
             return __('talenma.dashboard.company.sourcing_named_title', [
-                'name' => $this->talent->name,
+                'name' => $this->talentCompactLabel(),
             ]);
         }
 
         return __('talenma.dashboard.company.sourcing_open_title', [
-            'title' => \Illuminate\Support\Str::limit((string) ($this->subject ?: '—'), 80),
+            'title' => \Illuminate\Support\Str::limit((string) ($this->subject ?: '—'), 48),
         ]);
     }
 

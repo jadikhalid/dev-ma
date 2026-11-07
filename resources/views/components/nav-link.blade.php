@@ -13,7 +13,7 @@
         {{ $slot }}
     </span>
 @else
-    <a {{ $attributes->merge(['class' => $classes]) }}>
+    <a {{ $attributes->merge(['class' => $classes])->merge(($active ?? false) ? ['aria-current' => 'page'] : []) }}>
         {{ $slot }}
     </a>
 @endif

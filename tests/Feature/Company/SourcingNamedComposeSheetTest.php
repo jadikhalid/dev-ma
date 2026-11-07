@@ -60,7 +60,7 @@ class SourcingNamedComposeSheetTest extends TestCase
         $this->actingAs($company)
             ->postJson(route('recruitment.store'), [
                 'developer_user_id' => $talent->id,
-                'role_title' => 'Intermédiation — Sara Eligible',
+                'role_title' => 'Externalisation du recrutement de : Sara Eligible',
                 'need' => str_repeat('Contexte détaillé pour une intermédiation ciblée. ', 3),
                 'embed' => 1,
             ])

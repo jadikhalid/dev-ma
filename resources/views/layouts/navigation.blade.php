@@ -66,7 +66,7 @@
                         <x-brand-logo size="sm" :linked="false" data-brand-logo />
                     @endif
                 </div>
-                <div x-data="navOverflow" class="hidden lg:flex flex-1 items-center gap-1 min-w-0 pr-4" data-nav-overflow>
+                <div x-data="navOverflow" class="hidden md:flex flex-1 items-center gap-1 min-w-0 pr-4" data-nav-overflow>
                     <div x-ref="row" class="flex items-center gap-1 min-w-0 whitespace-nowrap" data-nav-overflow-row>
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :disabled="$pendingAccount">
                         @if ($actingAsModerator || $authUser->isCompany())
@@ -204,14 +204,6 @@
                             </a>
                         @endif
                     @elseif ($authUser->isCompany())
-                        <x-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')" :disabled="$pendingAccount">
-                            <span class="inline-flex items-center gap-1.5">
-                                {{ __('talenma.nav.messages') }}
-                                @if ($inboxUnread > 0)
-                                    <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
-                                @endif
-                            </span>
-                        </x-nav-link>
                         <x-nav-link :href="route('sourcing.index')" :active="request()->routeIs('sourcing.*')" :disabled="$pendingAccount">
                             <span class="inline-flex items-center gap-1.5">
                                 {{ __('talenma.nav.sourcing') }}
@@ -251,6 +243,7 @@
                         @else
                             <a
                                 href="{{ route('company.jobs.index') }}"
+                                @if (request()->routeIs('company.jobs.*')) aria-current="page" @endif
                                 @class([
                                     'inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-sm font-semibold shadow-sm transition',
                                     'border-emerald-600 bg-emerald-600 text-white shadow-emerald-600/20' => request()->routeIs('company.jobs.*'),
@@ -271,6 +264,7 @@
                             </a>
                             <a
                                 href="{{ route('company.search') }}"
+                                @if (request()->routeIs('company.search', 'company.talent.*')) aria-current="page" @endif
                                 @class([
                                     'ml-2 inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-sm font-semibold shadow-sm transition',
                                     'border-indigo-600 bg-indigo-600 text-white shadow-indigo-600/20' => request()->routeIs('company.search', 'company.talent.*'),
@@ -283,6 +277,19 @@
                                 {{ __('talenma.nav.talents') }}
                             </a>
                         @endif
+                        <x-nav-link
+                            :href="route('inbox.index')"
+                            :active="request()->routeIs('inbox.*')"
+                            :disabled="$pendingAccount"
+                            data-nav-overflow-always
+                        >
+                            <span class="inline-flex items-center gap-1.5">
+                                {{ __('talenma.nav.messages') }}
+                                @if ($inboxUnread > 0)
+                                    <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                                @endif
+                            </span>
+                        </x-nav-link>
                     @endif
                     </div>
                     <div
@@ -324,7 +331,7 @@
                     </div>
                 </div>
             </div>
-            <div class="hidden lg:flex items-center gap-3 shrink-0">
+            <div class="hidden md:flex items-center gap-3 shrink-0">
                 @if ($canSwitchModeratorMode)
                     <form method="POST" action="{{ route('moderator-mode.update') }}" class="flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1">
                         @csrf
@@ -386,7 +393,7 @@
                 </x-dropdown>
                 <x-header-locale-menu />
             </div>
-            <div class="flex items-center gap-2 lg:hidden shrink-0">
+            <div class="flex items-center gap-2 md:hidden shrink-0">
                 @if ($authUser->canAccessWorkspaceApps())
                     <x-talent-apps-launcher />
                 @endif
@@ -419,7 +426,7 @@
         x-transition:leave-end="opacity-0 -translate-y-1"
         @click.outside="open = false"
         @keydown.escape.window="open = false"
-        class="lg:hidden absolute left-0 right-0 top-full z-50 border-t border-gray-200 bg-white shadow-lg"
+        class="md:hidden absolute left-0 right-0 top-full z-50 border-t border-gray-200 bg-white shadow-lg"
     >
         <div class="max-h-[calc(100vh-4rem)] overflow-y-auto py-2">
             @unless ($pendingAccount)
@@ -608,14 +615,6 @@
                             </div>
                         </div>
                     @elseif ($authUser->isCompany())
-                        <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
-                            <span class="inline-flex items-center gap-2">
-                                {{ __('talenma.nav.messages') }}
-                                @if ($inboxUnread > 0)
-                                    <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
-                                @endif
-                            </span>
-                        </x-responsive-nav-link>
                         <x-responsive-nav-link :href="route('sourcing.index')" :active="request()->routeIs('sourcing.*')">
                             <span class="inline-flex items-center gap-2">
                                 {{ __('talenma.nav.sourcing') }}
@@ -687,6 +686,14 @@
                                 {{ __('talenma.nav.talents') }}
                             </a>
                         @endif
+                        <x-responsive-nav-link :href="route('inbox.index')" :active="request()->routeIs('inbox.*')">
+                            <span class="inline-flex items-center gap-2">
+                                {{ __('talenma.nav.messages') }}
+                                @if ($inboxUnread > 0)
+                                    <span data-inbox-unread-badge class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ $inboxUnread > 99 ? '99+' : $inboxUnread }}</span>
+                                @endif
+                            </span>
+                        </x-responsive-nav-link>
                     @endif
                 </div>
             @endunless
