@@ -92,6 +92,7 @@ class PublicCompanyPagesTest extends TestCase
             ->assertOk()
             ->assertSee('ACME Maroc')
             ->assertSee('Leader marocain du conseil numérique.')
+            ->assertSee(__('talenma.public_companies.hiring_title'))
             ->assertSee('Développeurs Laravel confirmés.')
             ->assertSee('https://acme.example.com', false)
             ->assertSee('51-200')
@@ -100,6 +101,18 @@ class PublicCompanyPagesTest extends TestCase
             ->assertDontSee('Brouillon caché')
             ->assertDontSee('+212600000000')
             ->assertDontSee('Karim Secret');
+    }
+
+    #[Test]
+    public function company_page_always_shows_hiring_block_even_when_empty(): void
+    {
+        $company = $this->makeCompany('ACME Maroc');
+        $company->companyProfile->update(['hiring_needs' => null]);
+
+        $this->get(route('companies.public.show', $company))
+            ->assertOk()
+            ->assertSee(__('talenma.public_companies.hiring_title'))
+            ->assertSee(__('talenma.public_companies.hiring_empty'));
     }
 
     #[Test]

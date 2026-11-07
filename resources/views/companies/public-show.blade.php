@@ -130,12 +130,14 @@
                         @endif
                     </article>
 
-                    @if (filled($profile->hiring_needs))
-                        <article class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
-                            <h2 class="text-xl font-bold text-gray-900">{{ __('talenma.public_companies.hiring_title') }}</h2>
+                    <article class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+                        <h2 class="text-xl font-bold text-gray-900">{{ __('talenma.public_companies.hiring_title') }}</h2>
+                        @if (filled($profile->hiring_needs))
                             <div class="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-gray-700">{{ trim(strip_tags($profile->hiring_needs)) }}</div>
-                        </article>
-                    @endif
+                        @else
+                            <p class="mt-4 text-sm text-gray-500">{{ __('talenma.public_companies.hiring_empty') }}</p>
+                        @endif
+                    </article>
                 </div>
 
                 <aside class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm lg:sticky lg:top-36">
