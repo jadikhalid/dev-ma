@@ -168,44 +168,40 @@
                                         default => $item['actor'],
                                     };
 
-                                    $hideCategoryBadge = in_array(($item['type'] ?? ''), [
-                                        'recruitment_submitted',
-                                        'recruitment_status',
-                                        'recruitment_message',
-                                        'recruitment_message_sent',
-                                        'recruitment_comment',
-                                        'inbox_message',
-                                        'inbox_message_sent',
-                                    ], true);
-
-                                    [$category, $dotClass, $rowClass] = match (true) {
+                                    [$category, $badgeClass, $dotClass, $rowClass] = match (true) {
                                         str_starts_with((string) ($item['type'] ?? ''), 'job_') => [
                                             __('talenma.dashboard.company.activity.activity_cat_jobs'),
+                                            'bg-emerald-100 text-emerald-800',
                                             'bg-emerald-500',
                                             'hover:bg-emerald-50/80',
                                         ],
                                         str_starts_with((string) ($item['type'] ?? ''), 'inbox_') => [
                                             __('talenma.dashboard.company.activity.activity_cat_inbox'),
+                                            'bg-blue-100 text-blue-800',
                                             'bg-blue-500',
                                             'hover:bg-blue-50/80',
                                         ],
                                         ($item['type'] ?? '') === 'talent_unlocked' => [
                                             __('talenma.dashboard.company.activity.activity_cat_lock'),
+                                            'bg-amber-100 text-amber-900',
                                             'bg-amber-500',
                                             'hover:bg-amber-50/80',
                                         ],
                                         str_starts_with((string) ($item['type'] ?? ''), 'recruitment_') => [
                                             __('talenma.dashboard.company.activity.activity_cat_sourcing'),
-                                            'bg-sky-500',
-                                            'hover:bg-sky-50/80',
+                                            'bg-violet-100 text-violet-800',
+                                            'bg-violet-500',
+                                            'hover:bg-violet-50/80',
                                         ],
                                         str_starts_with((string) ($item['type'] ?? ''), 'direct_hire') => [
                                             __('talenma.dashboard.company.activity.activity_cat_hire'),
+                                            'bg-indigo-100 text-indigo-800',
                                             'bg-indigo-500',
                                             'hover:bg-indigo-50/80',
                                         ],
                                         default => [
                                             __('talenma.dashboard.company.activity.activity_cat_hire'),
+                                            'bg-slate-100 text-slate-700',
                                             'bg-sky-500',
                                             'hover:bg-sky-50/80',
                                         ],
@@ -220,26 +216,22 @@
                                     @if (! empty($item['href']))
                                         <a href="{{ $item['href'] }}" class="group flex flex-col gap-1.5 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm transition duration-200 {{ $rowClass }} hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                                             <div class="min-w-0">
-                                                @unless ($hideCategoryBadge)
-                                                    <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">{{ $category }}</span>
-                                                @endunless
-                                                <p @class([
-                                                    'text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800',
-                                                    'mt-1.5' => ! $hideCategoryBadge,
-                                                ])>{{ $label }}</p>
+                                                <span @class([
+                                                    'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                                                    $badgeClass,
+                                                ])>{{ $category }}</span>
+                                                <p class="mt-1.5 text-sm font-medium leading-snug text-slate-900 group-hover:text-indigo-800">{{ $label }}</p>
                                             </div>
                                             <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
                                         </a>
                                     @else
                                         <div class="flex flex-col gap-1.5 rounded-xl bg-white/90 px-3.5 py-3 ring-1 ring-slate-200/80 shadow-sm sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                                             <div class="min-w-0">
-                                                @unless ($hideCategoryBadge)
-                                                    <span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">{{ $category }}</span>
-                                                @endunless
-                                                <p @class([
-                                                    'text-sm font-medium leading-snug text-slate-900',
-                                                    'mt-1.5' => ! $hideCategoryBadge,
-                                                ])>{{ $label }}</p>
+                                                <span @class([
+                                                    'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                                                    $badgeClass,
+                                                ])>{{ $category }}</span>
+                                                <p class="mt-1.5 text-sm font-medium leading-snug text-slate-900">{{ $label }}</p>
                                             </div>
                                             <time class="shrink-0 text-xs font-medium text-slate-400 sm:pt-0.5" datetime="{{ $item['at']?->toIso8601String() }}">{{ $item['at']?->diffForHumans() }}</time>
                                         </div>

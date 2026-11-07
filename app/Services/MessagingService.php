@@ -33,6 +33,8 @@ class MessagingService
      */
     public function conversationsFor(User $user): Collection
     {
+        $this->reviveStaleHidesFor($user);
+
         $query = Conversation::query()
             ->with([
                 'company.companyProfile',
@@ -260,6 +262,8 @@ class MessagingService
     {
         abort_unless($conversation->isParticipant($user), 403);
 
+        $this->reviveStaleHideOn($conversation);
+
         if ($user->isCompany() && $conversation->company_hidden_at) {
             abort(404);
         }
@@ -277,7 +281,66 @@ class MessagingService
     }
 
     /**
-     * Masque définitivement le fil côté entreprise (le talent conserve l’échange).
+     * Si l’autre partie a écrit après un masquage, le fil réapparaît
+     * (y compris pour les réponses envoyées avant le correctif « revive »).
+     */
+    public function reviveStaleHideOn(Conversation $conversation): void
+    {
+        $updates = [];
+
+        if (
+            $conversation->talent_hidden_at
+            && $conversation->last_message_at
+            && $conversation->last_message_at->gt($conversation->talent_hidden_at)
+        ) {
+            $updates['talent_hidden_at'] = null;
+        }
+
+        if (
+            $conversation->company_hidden_at
+            && $conversation->last_message_at
+            && $conversation->last_message_at->gt($conversation->company_hidden_at)
+        ) {
+            $updates['company_hidden_at'] = null;
+        }
+
+        if ($updates === []) {
+            return;
+        }
+
+        $conversation->forceFill($updates)->save();
+    }
+
+    /**
+     * Répare en lot les fils masqués puis relancés par un message de l’autre partie.
+     */
+    public function reviveStaleHidesFor(User $user): void
+    {
+        if ($user->isCompany()) {
+            Conversation::query()
+                ->where('company_user_id', $user->id)
+                ->whereNotNull('company_hidden_at')
+                ->whereNotNull('last_message_at')
+                ->whereColumn('last_message_at', '>', 'company_hidden_at')
+                ->update(['company_hidden_at' => null]);
+
+            return;
+        }
+
+        if ($user->isTalent()) {
+            Conversation::query()
+                ->where('talent_user_id', $user->id)
+                ->where('channel', Conversation::CHANNEL_TALENT)
+                ->whereNotNull('talent_hidden_at')
+                ->whereNotNull('last_message_at')
+                ->whereColumn('last_message_at', '>', 'talent_hidden_at')
+                ->update(['talent_hidden_at' => null]);
+        }
+    }
+
+    /**
+     * Masque le fil côté entreprise (le talent conserve l’échange).
+     * Un nouveau message du talent le fera réapparaître.
      */
     public function hideForCompany(User $company, Conversation $conversation): void
     {
@@ -292,7 +355,8 @@ class MessagingService
     }
 
     /**
-     * Masque définitivement le fil côté talent (l’entreprise conserve l’échange).
+     * Masque le fil côté talent (l’entreprise conserve l’échange).
+     * Un nouveau message de l’entreprise le fera réapparaître.
      */
     public function hideForTalent(User $talent, Conversation $conversation): void
     {
@@ -308,6 +372,24 @@ class MessagingService
         }
 
         $conversation->forceFill(['talent_hidden_at' => now()])->save();
+    }
+
+    /**
+     * Réaffiche le fil chez le destinataire s’il l’avait masqué.
+     */
+    public function reviveHiddenForCounterpart(Conversation $conversation, User $sender): void
+    {
+        if ($conversation->isCompanySideParticipant($sender)) {
+            if ($conversation->talent_hidden_at) {
+                $conversation->forceFill(['talent_hidden_at' => null])->save();
+            }
+
+            return;
+        }
+
+        if ($conversation->company_hidden_at) {
+            $conversation->forceFill(['company_hidden_at' => null])->save();
+        }
     }
 
     /**
@@ -617,7 +699,12 @@ class MessagingService
                     ),
                 ...$this->counterpartVisual($conversation, $viewer, $counterpart),
             ],
-            'messages' => $conversation->messages->map(fn (Message $message) => $this->presentMessage($message, $viewer))->values(),
+            // Plus récent en haut du panneau de droite.
+            'messages' => $conversation->messages
+                ->sortByDesc(fn (Message $message) => [$message->created_at?->timestamp ?? 0, $message->id])
+                ->values()
+                ->map(fn (Message $message) => $this->presentMessage($message, $viewer))
+                ->values(),
             'show_url' => route('inbox.show', $conversation),
         ];
     }
@@ -793,6 +880,9 @@ class MessagingService
             'last_message_at' => $now,
             $readColumn => $now,
         ])->save();
+
+        // Un nouveau message réactive le fil chez l’autre partie si elle l’avait masqué.
+        $this->reviveHiddenForCounterpart($conversation, $sender);
 
         if ($notify) {
             $this->notifyRecipient($conversation, $message, $sender);

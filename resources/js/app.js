@@ -7327,7 +7327,8 @@ Alpine.data('inboxWorkspace', (config) => ({
 
         const id = Number(conversationPayload.id);
         const threadMessages = conversationPayload.messages ?? this.messages ?? [];
-        const latest = threadMessages.length > 0 ? threadMessages[threadMessages.length - 1] : null;
+        // Le fil inbox est trié du plus récent au plus ancien.
+        const latest = threadMessages.length > 0 ? threadMessages[0] : null;
         const existing = this.conversations.find((item) => Number(item.id) === id) ?? {};
         const previewSource = latest?.body ?? existing.last_message_preview ?? '';
         const preview = previewSource
@@ -7422,7 +7423,7 @@ Alpine.data('inboxWorkspace', (config) => ({
 
             if (nextMessages.length > previousCount) {
                 this.bumpConversationInList(this.conversation);
-                this.$nextTick(() => this.scrollToBottom());
+                this.$nextTick(() => this.scrollToTop());
             }
         } catch (error) {
             // Silent polling failures.
@@ -7469,7 +7470,7 @@ Alpine.data('inboxWorkspace', (config) => ({
             this.bumpConversationInList(this.conversation);
             this.body = '';
             this.files = [];
-            this.$nextTick(() => this.scrollToBottom());
+            this.$nextTick(() => this.scrollToTop());
         } catch (error) {
             this.error = error?.message || this.labels.error;
         } finally {
@@ -7565,7 +7566,7 @@ Alpine.data('inboxThread', (config) => ({
             this.messages = nextMessages;
 
             if (nextMessages.length > previousCount) {
-                this.$nextTick(() => this.scrollToBottom());
+                this.$nextTick(() => this.scrollToTop());
             }
         } catch (error) {
             // Silent polling failures.
@@ -7608,7 +7609,7 @@ Alpine.data('inboxThread', (config) => ({
             this.messages = payload.conversation?.messages ?? this.messages;
             this.body = '';
             this.files = [];
-            this.$nextTick(() => this.scrollToBottom());
+            this.$nextTick(() => this.scrollToTop());
         } catch (error) {
             this.error = error?.message || this.labels.error;
         } finally {
@@ -9587,6 +9588,19 @@ function updateInboxNavBadge(count) {
         badge.textContent = label;
         badge.hidden = false;
         badge.classList.remove('hidden');
+    });
+
+    // Pastille sur le menu ⋮ quand Messages est dans le overflow.
+    document.querySelectorAll('[data-inbox-overflow-ping]').forEach((ping) => {
+        if (n <= 0) {
+            ping.hidden = true;
+            ping.classList.add('hidden');
+
+            return;
+        }
+
+        ping.hidden = false;
+        ping.classList.remove('hidden');
     });
 }
 

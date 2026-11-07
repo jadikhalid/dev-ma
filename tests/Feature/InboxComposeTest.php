@@ -234,4 +234,130 @@ class InboxComposeTest extends TestCase
             ->assertOk()
             ->assertSee('Mission Vue', false);
     }
+
+    public function test_company_reply_revives_thread_hidden_by_talent(): void
+    {
+        $company = User::factory()->companyOwner()->create();
+        $company->companyProfile()->create([
+            'country' => 'fr',
+            'is_subscribed' => true,
+        ]);
+        $talent = $this->createContactableTalent();
+
+        $store = $this->actingAs($company)->postJson(route('inbox.store'), [
+            'talent_id' => $talent->id,
+            'subject' => 'Mission Revive',
+            'body' => 'Bonjour, nous cherchons un développeur pour une mission de plusieurs mois.',
+        ]);
+
+        $store->assertCreated();
+        $conversationId = $store->json('conversation.id');
+
+        $this->actingAs($talent)
+            ->deleteJson(route('inbox.destroy', $conversationId))
+            ->assertOk();
+
+        $this->actingAs($talent)
+            ->get(route('inbox.show', $conversationId))
+            ->assertNotFound();
+
+        $this->actingAs($company)->postJson(route('inbox.messages.store', $conversationId), [
+            'body' => 'Bonjour, nous revenons vers vous avec plus de détails sur la mission.',
+        ])->assertCreated();
+
+        $this->assertNull(
+            \App\Models\Conversation::query()->find($conversationId)?->talent_hidden_at
+        );
+
+        $this->actingAs($talent)
+            ->get(route('inbox.show', $conversationId))
+            ->assertOk()
+            ->assertSee('Mission Revive', false);
+
+        $this->actingAs($talent)
+            ->get(route('inbox.index'))
+            ->assertOk()
+            ->assertSee('Mission Revive', false);
+    }
+
+    public function test_talent_reply_revives_thread_hidden_by_company(): void
+    {
+        $company = User::factory()->companyOwner()->create();
+        $company->companyProfile()->create([
+            'country' => 'fr',
+            'is_subscribed' => true,
+        ]);
+        $talent = $this->createContactableTalent();
+
+        $store = $this->actingAs($company)->postJson(route('inbox.store'), [
+            'talent_id' => $talent->id,
+            'subject' => 'Mission Company Hide',
+            'body' => 'Bonjour, nous cherchons un développeur pour une mission de plusieurs mois.',
+        ]);
+
+        $store->assertCreated();
+        $conversationId = $store->json('conversation.id');
+
+        $this->actingAs($company)
+            ->deleteJson(route('inbox.destroy', $conversationId))
+            ->assertOk();
+
+        $this->actingAs($company)
+            ->get(route('inbox.show', $conversationId))
+            ->assertNotFound();
+
+        $this->actingAs($talent)->postJson(route('inbox.messages.store', $conversationId), [
+            'body' => 'Bonjour, je suis disponible pour en discuter cette semaine.',
+        ])->assertCreated();
+
+        $this->assertNull(
+            \App\Models\Conversation::query()->find($conversationId)?->company_hidden_at
+        );
+
+        $this->actingAs($company)
+            ->get(route('inbox.show', $conversationId))
+            ->assertOk()
+            ->assertSee('Mission Company Hide', false);
+    }
+
+    public function test_stale_hide_is_revived_when_counterpart_already_replied(): void
+    {
+        $company = User::factory()->companyOwner()->create();
+        $company->companyProfile()->create([
+            'country' => 'fr',
+            'is_subscribed' => true,
+        ]);
+        $talent = $this->createContactableTalent();
+
+        $store = $this->actingAs($company)->postJson(route('inbox.store'), [
+            'talent_id' => $talent->id,
+            'subject' => 'Mission Stale',
+            'body' => 'Bonjour, nous cherchons un développeur pour une mission de plusieurs mois.',
+        ]);
+
+        $store->assertCreated();
+        $conversationId = (int) $store->json('conversation.id');
+
+        $this->actingAs($talent)
+            ->deleteJson(route('inbox.destroy', $conversationId))
+            ->assertOk();
+
+        // Simule une réponse entreprise avant le correctif « revive » :
+        // last_message_at avancé, talent_hidden_at toujours renseigné.
+        $conversation = \App\Models\Conversation::query()->findOrFail($conversationId);
+        $hiddenAt = now()->subMinute();
+        $conversation->forceFill([
+            'talent_hidden_at' => $hiddenAt,
+            'last_message_at' => now(),
+        ])->save();
+
+        $this->actingAs($talent)
+            ->get(route('inbox.show', $conversationId))
+            ->assertOk()
+            ->assertSee('Mission Stale', false);
+
+        $this->assertNull(
+            \App\Models\Conversation::query()->find($conversationId)?->talent_hidden_at
+        );
+    }
 }

@@ -307,11 +307,24 @@
                             aria-haspopup="menu"
                             aria-label="{{ __('talenma.nav.more') }}"
                             title="{{ __('talenma.nav.more') }}"
-                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition"
+                            class="relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition"
                             :class="moreOpen || hasActiveOverflow ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
                             data-nav-more-button
                         >
                             <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="12" cy="19" r="1.75"/></svg>
+                            <span
+                                data-inbox-overflow-ping
+                                @class([
+                                    'pointer-events-none absolute right-1 top-1 flex h-2 w-2',
+                                    'hidden' => $inboxUnread <= 0,
+                                ])
+                                title="{{ __('talenma.inbox.unread_short') }}"
+                                @if ($inboxUnread <= 0) hidden @endif
+                            >
+                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75"></span>
+                                <span class="relative inline-flex h-2 w-2 rounded-full bg-indigo-600"></span>
+                                <span class="sr-only">{{ __('talenma.inbox.unread_short') }}</span>
+                            </span>
                         </button>
                         <div
                             x-ref="menu"
