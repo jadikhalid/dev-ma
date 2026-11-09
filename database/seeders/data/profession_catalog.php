@@ -1783,6 +1783,18 @@ return [
                 ],
             ],
             [
+                'slug' => 'telecom-cx-sales-agent',
+                'name_fr' => 'Conseiller CX / Sales centre d\'appels (BPO télécoms)',
+                'name_en' => 'CX / Sales Call Center Advisor (Telecom BPO)',
+                'suggestions' => [
+                    ['label_fr' => 'Vente & expérience client télécoms', 'label_en' => 'Telecom sales & customer experience', 'keywords' => 'cx sales telecom'],
+                    ['label_fr' => 'Besoins client & solutions adaptées', 'label_en' => 'Needs assessment & adapted solutions', 'keywords' => 'besoins solutions'],
+                    ['label_fr' => 'Présentation offres / objections', 'label_en' => 'Offer presentations / objection handling', 'keywords' => 'presentation objections upsell'],
+                    ['label_fr' => 'CRM / suivi comptes opérateur', 'label_en' => 'Operator CRM / account follow-up', 'keywords' => 'crm suivi comptes'],
+                    ['label_fr' => 'Rétention / collections / négociation', 'label_en' => 'Retention / collections / negotiation', 'keywords' => 'retention collections negociation'],
+                ],
+            ],
+            [
                 'slug' => 'telecom-account-manager',
                 'name_fr' => 'Chargé(e) d\'Affaires Entreprises Télécoms',
                 'name_en' => 'Telecom Business Account Manager',
@@ -2447,6 +2459,18 @@ return [
                     ['label_fr' => 'Téléconseiller commercial', 'label_en' => 'Sales teleadvisor', 'keywords' => 'teleconseiller commercial'],
                     ['label_fr' => 'Inside sales / SDR', 'label_en' => 'Inside sales / SDR', 'keywords' => 'sdr inside sales'],
                     ['label_fr' => 'Chargé de prises de rendez-vous', 'label_en' => 'Appointment setter', 'keywords' => 'prise rendez vous'],
+                ],
+            ],
+            [
+                'slug' => 'commerce-cx-sales-agent',
+                'name_fr' => 'Conseiller CX / Sales centre d\'appels (BPO)',
+                'name_en' => 'CX / Sales Call Center Advisor (BPO)',
+                'suggestions' => [
+                    ['label_fr' => 'Sales & customer experience', 'label_en' => 'Sales & customer experience', 'keywords' => 'cx sales bpo'],
+                    ['label_fr' => 'Analyse des besoins & solutions adaptées', 'label_en' => 'Needs analysis & adapted solutions', 'keywords' => 'besoins solutions'],
+                    ['label_fr' => 'Négociation / objections / upsell', 'label_en' => 'Negotiation / objections / upsell', 'keywords' => 'negociation objections upsell'],
+                    ['label_fr' => 'CRM / suivi commercial', 'label_en' => 'CRM / sales follow-up', 'keywords' => 'crm suivi commercial'],
+                    ['label_fr' => 'Relation client / rétention', 'label_en' => 'Customer relations / retention', 'keywords' => 'relation client retention'],
                 ],
             ],
 
