@@ -527,6 +527,18 @@ return [
                 ],
             ],
             [
+                'slug' => 'data-analyst',
+                'name_fr' => 'Data Analyst',
+                'name_en' => 'Data Analyst',
+                'suggestions' => [
+                    ['label_fr' => 'SQL / requêtage', 'label_en' => 'SQL / querying', 'keywords' => 'sql requetes reporting'],
+                    ['label_fr' => 'BI & dashboards (Power BI / Tableau)', 'label_en' => 'BI & dashboards (Power BI / Tableau)', 'keywords' => 'power bi tableau dashboard'],
+                    ['label_fr' => 'Reporting / KPI', 'label_en' => 'Reporting / KPIs', 'keywords' => 'reporting kpi indicateurs'],
+                    ['label_fr' => 'Data visualisation', 'label_en' => 'Data visualization', 'keywords' => 'dataviz visualisation'],
+                    ['label_fr' => 'Excel avancé / data prep', 'label_en' => 'Advanced Excel / data prep', 'keywords' => 'excel power query data prep'],
+                ],
+            ],
+            [
                 'slug' => 'data-scientist',
                 'name_fr' => 'Data Scientist',
                 'name_en' => 'Data Scientist',
