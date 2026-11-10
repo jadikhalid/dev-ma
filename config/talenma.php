@@ -9,6 +9,13 @@ return [
         'youtube' => env('SOCIAL_YOUTUBE_URL', 'https://www.youtube.com/channel/UCjmtHFsH0U-Uddo5xM3mhgg'),
     ],
 
+    'contact' => [
+        'email' => env('CONTACT_EMAIL', 'contact@talentsdumaroc.com'),
+        'phone' => env('CONTACT_PHONE', ''),
+        'address' => env('CONTACT_ADDRESS', '12, rue de la Paix, 75002 Paris, France'),
+        'recipient' => env('CONTACT_RECIPIENT', 'contact@talentsdumaroc.com'),
+    ],
+
     /*
     | Photos hero de secours (public/images/hero/) — utilisées si moins de 6
     | talents publics avec photo de profil.

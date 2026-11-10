@@ -4,7 +4,7 @@
 
 @php
     $talentHeader = auth()->check() && auth()->user()->isTalent();
-    $homeHeader = request()->routeIs('home', 'career.how', 'companies.public.index', 'blog.index');
+    $homeHeader = request()->routeIs('home', 'career.how', 'companies.public.index', 'blog.index', 'contact');
 
     $navLinks = [
         [

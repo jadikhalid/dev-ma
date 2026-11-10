@@ -121,7 +121,8 @@
 .page-company-hero-bleed [data-company-trial] > section:first-of-type,
 .page-company-hero-bleed [data-company-offers] > section:first-of-type,
 .page-company-hero-bleed [data-company-demo],
-.page-company-hero-bleed [data-company-trial-terms] {
+.page-company-hero-bleed [data-company-trial-terms],
+.page-company-hero-bleed [data-contact-hero] {
     margin-top: -72px;
     padding-top: 72px;
 }
@@ -131,7 +132,8 @@
     .page-company-hero-bleed [data-company-trial] > section:first-of-type,
     .page-company-hero-bleed [data-company-offers] > section:first-of-type,
     .page-company-hero-bleed [data-company-demo],
-    .page-company-hero-bleed [data-company-trial-terms] {
+    .page-company-hero-bleed [data-company-trial-terms],
+    .page-company-hero-bleed [data-contact-hero] {
         margin-top: -84px;
         padding-top: 84px;
     }
@@ -278,8 +280,9 @@
         height: min(48rem, 50vw);
     }
 
-    /* How + directory + blog: keep wash full-bleed (do not clamp to 80rem). */
+    /* How + directory + blog + contact: keep wash full-bleed (do not clamp to 80rem). */
     .page-how .how-hero-frame,
+    .page-contact .how-hero-frame,
     .page-companies-index .how-hero-frame,
     .page-blog-index .how-hero-frame {
         left: 0;
@@ -291,6 +294,7 @@
     }
 
     .page-how .how-hero-frame .how-wash-lilac,
+    .page-contact .how-hero-frame .how-wash-lilac,
     .page-companies-index .how-hero-frame .how-wash-lilac,
     .page-blog-index .how-hero-frame .how-wash-lilac {
         left: -10rem;
@@ -299,6 +303,7 @@
     }
 
     .page-how .how-hero-frame .how-wash-sky,
+    .page-contact .how-hero-frame .how-wash-sky,
     .page-companies-index .how-hero-frame .how-wash-sky,
     .page-blog-index .how-hero-frame .how-wash-sky {
         left: 55%;
@@ -328,6 +333,7 @@
     }
 
     .page-how .how-hero-frame .how-wash-lilac,
+    .page-contact .how-hero-frame .how-wash-lilac,
     .page-companies-index .how-hero-frame .how-wash-lilac,
     .page-blog-index .how-hero-frame .how-wash-lilac {
         background: radial-gradient(circle, rgba(199, 210, 254, 0.85) 0%, rgba(165, 180, 252, 0.32) 40%, rgba(255, 255, 255, 0) 76%);
@@ -335,6 +341,7 @@
     }
 
     .page-how .how-hero-frame .how-wash-sky,
+    .page-contact .how-hero-frame .how-wash-sky,
     .page-companies-index .how-hero-frame .how-wash-sky,
     .page-blog-index .how-hero-frame .how-wash-sky {
         background: radial-gradient(circle, rgba(186, 230, 253, 0.7) 0%, rgba(56, 189, 248, 0.2) 42%, rgba(255, 255, 255, 0) 76%);
@@ -346,6 +353,7 @@
 @media (max-width: 639px), (max-height: 499px) and (max-width: 1023px) {
     .page-home [data-public-header],
     .page-how [data-public-header],
+    .page-contact [data-public-header],
     .page-companies-index [data-public-header],
     .page-blog-index [data-public-header] {
         border-color: transparent;
@@ -356,6 +364,7 @@
 
     .page-home [data-public-header][data-scrolled="true"],
     .page-how [data-public-header][data-scrolled="true"],
+    .page-contact [data-public-header][data-scrolled="true"],
     .page-companies-index [data-public-header][data-scrolled="true"],
     .page-blog-index [data-public-header][data-scrolled="true"] {
         border-color: rgb(243 244 246);

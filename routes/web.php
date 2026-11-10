@@ -24,6 +24,7 @@ use App\Http\Controllers\LibraryGateController;
 use App\Http\Controllers\LibraryIntroController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CareerPageController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Company\DirectHireController as CompanyDirectHireController;
 use App\Http\Controllers\CompanyOfferController;
 use App\Http\Controllers\CompanyPortalLegacyRedirectController;
@@ -85,7 +86,10 @@ Route::get('/travailler/{mode}', [CareerPageController::class, 'way'])
     ->whereIn('mode', ['full-remote', 'sponsorship-visa', 'placement-local'])
     ->name('career.ways.show');
 Route::view('/faq', 'pages.faq')->name('faq');
-Route::view('/contact', 'pages.contact')->name('contact');
+Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('contact.store');
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])
     ->where('slug', '[A-Za-z0-9\-]+')

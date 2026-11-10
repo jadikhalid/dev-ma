@@ -503,19 +503,19 @@
         @foreach ([
             [
                 'Quelle formule choisir ?',
-                'Essentiel convient à une équipe qui recrute en autonomie avec l’ATS. Pro ajoute l’intermédiation pour les postes stratégiques. Sur mesure s’adresse aux organisations avec un volume important ou des besoins d’intégrations RH.',
+                'Essentiel si vous recrutez quelques profils par an et gérez vos recrutements vous-même. Pro si vous recrutez régulièrement et souhaitez être accompagné par notre équipe. Sur mesure pour de nombreuses annonces, plusieurs utilisateurs ou des intégrations avec vos outils RH.',
             ],
             [
                 'Que comprend l’essai gratuit ?',
-                '45 jours d’accès complet à la plateforme : ATS, sourcing, catalogue, candidature directe et publication d’annonces. Sans carte bancaire et sans engagement.',
+                'Pendant 45 jours, vous accédez à tout le plan Essentiel : l’ATS, le sourcing dans le catalogue de talents vérifiés, la candidature directe, 3 annonces actives et votre page entreprise. L’essai est gratuit, sans engagement et facultatif.',
             ],
             [
                 'Qu’est-ce que l’ATS intégré ?',
-                'Un outil de suivi des recrutements inclus dans toutes les formules : publication d’annonces, pipeline visuel, collaboration d’équipe, messagerie et tableau de bord — de l’annonce à l’embauche.',
+                'C’est votre outil de recrutement, inclus dans toutes les formules. Publiez vos annonces, sourcez et shortlistez des talents, centralisez les candidatures et suivez chaque candidat jusqu’à l’embauche, au même endroit.',
             ],
             [
                 'Quelle différence entre le sourcing et l’intermédiation ?',
-                'Le sourcing vous laisse shortlister vous-même dans l’ATS. L’intermédiation confie la recherche et la présélection à notre équipe, jusqu’à la mise en relation.',
+                'Le sourcing, vous le faites vous-même dans votre ATS : il vous propose des talents adaptés à votre poste, vous affinez avec les filtres et constituez votre short-list. Avec l’intermédiation, notre équipe s’en charge pour vous, jusqu’à la mise en relation avec les candidats retenus.',
             ],
         ] as $i => [$q, $a])
             <div class="rounded-[18px] border border-[#E8E9F0] bg-white px-[26px] py-[22px]">
