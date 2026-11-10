@@ -69,74 +69,89 @@
 @endpush
 
 @section('content')
-<div class="bg-[#F7F7FB]">
-    <section class="home-shell grid gap-10 py-14 sm:gap-12 sm:py-20 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-16 lg:py-24">
-        <div class="flex flex-col gap-3.5">
-            <span class="text-[13px] font-bold tracking-[0.12em] text-[#5546F0]">{{ $faqCopy['badge'] }}</span>
-            <h1 class="text-3xl font-extrabold leading-[1.08] tracking-[-0.03em] text-gray-950 sm:text-[2.625rem]">{{ $faqCopy['title'] }}</h1>
-            <p class="text-base text-gray-600">{{ $faqCopy['intro'] }}</p>
-            <p class="text-base text-gray-600">
-                {{ $faqCopy['contact'] }}
-                <a href="{{ route('contact') }}" class="font-semibold text-[#5546F0] hover:text-indigo-800">{{ $faqCopy['contact_link'] }}</a>
-            </p>
-        </div>
+<div @class(['relative' => ! $isCompanyFaq])>
+    <section
+        @class([
+            'relative overflow-hidden',
+            '-mt-20 pt-20 sm:-mt-[4.25rem] sm:pt-[4.25rem]' => ! $isCompanyFaq,
+        ])
+        @if ($isCompanyFaq) data-faq-hero @endif
+    >
+        @unless ($isCompanyFaq)
+            <div class="how-hero-frame" aria-hidden="true">
+                <div class="how-wash how-wash-lilac -left-24 -top-40 h-[28rem] w-[28rem] opacity-50 sm:-left-32 sm:-top-72 sm:h-[760px] sm:w-[760px]"></div>
+                <div class="how-wash how-wash-sky -right-24 -top-24 h-[22rem] w-[22rem] opacity-30 sm:-top-40 sm:right-0 sm:h-[700px] sm:w-[700px]"></div>
+            </div>
+        @endunless
 
-        <div class="flex flex-col gap-3" x-data="{ open: 0 }">
-            @foreach ($faqItems as $index => $item)
-                <div
-                    class="rounded-[18px] border border-[#E8E9F0] bg-white px-5 py-5 shadow-none transition-shadow duration-300 ease-out sm:px-6"
-                    :class="open === {{ $index }} ? 'shadow-[0_1px_2px_rgba(17,24,39,0.06),0_12px_32px_-12px_rgba(49,46,129,0.22)]' : ''"
-                >
-                    <button
-                        type="button"
-                        id="faq-question-{{ $index }}"
-                        class="flex w-full items-center justify-between gap-4 text-left text-[17px] font-semibold text-gray-950"
-                        @click="open = open === {{ $index }} ? null : {{ $index }}"
-                        :aria-expanded="(open === {{ $index }}).toString()"
-                        aria-controls="faq-answer-{{ $index }}"
-                    >
-                        <span>{{ $item['q'] }}</span>
-                        <span
-                            class="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-xl transition-colors duration-300 ease-out"
-                            :class="open === {{ $index }} ? 'bg-[#0D0B2B] text-white' : 'bg-gray-100 text-gray-950'"
-                            aria-hidden="true"
-                            x-text="open === {{ $index }} ? '−' : '+'"
-                        ></span>
-                    </button>
+        <div class="home-shell relative grid gap-10 py-14 sm:gap-12 sm:py-20 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-16 lg:py-24">
+            <div class="flex flex-col gap-3.5">
+                <span class="text-[13px] font-bold tracking-[0.12em] text-[#5546F0]">{{ $faqCopy['badge'] }}</span>
+                <h1 class="text-3xl font-extrabold leading-[1.08] tracking-[-0.03em] text-gray-950 sm:text-[2.625rem]">{{ $faqCopy['title'] }}</h1>
+                <p class="text-base text-gray-600">{{ $faqCopy['intro'] }}</p>
+                <p class="text-base text-gray-600">
+                    {{ $faqCopy['contact'] }}
+                    <a href="{{ route('contact') }}" class="font-semibold text-[#5546F0] hover:text-indigo-800">{{ $faqCopy['contact_link'] }}</a>
+                </p>
+            </div>
 
+            <div class="flex flex-col gap-3" x-data="{ open: 0 }">
+                @foreach ($faqItems as $index => $item)
                     <div
-                        class="grid transition-[grid-template-rows] duration-300 ease-out"
-                        :class="open === {{ $index }} ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+                        class="rounded-[18px] border border-[#E8E9F0] bg-white px-5 py-5 shadow-none transition-shadow duration-300 ease-out sm:px-6"
+                        :class="open === {{ $index }} ? 'shadow-[0_1px_2px_rgba(17,24,39,0.06),0_12px_32px_-12px_rgba(49,46,129,0.22)]' : ''"
                     >
-                        <div class="min-h-0 overflow-hidden">
-                            <div
-                                id="faq-answer-{{ $index }}"
-                                class="mt-3 space-y-3 text-base leading-relaxed text-gray-600 transition-opacity duration-300 ease-out"
-                                role="region"
-                                aria-labelledby="faq-question-{{ $index }}"
-                                :class="open === {{ $index }} ? 'opacity-100' : 'opacity-0'"
-                                :aria-hidden="(open !== {{ $index }}).toString()"
-                            >
-                                @if (filled($item['a'] ?? null))
-                                    <p>{{ $item['a'] }}</p>
-                                @endif
+                        <button
+                            type="button"
+                            id="faq-question-{{ $index }}"
+                            class="flex w-full items-center justify-between gap-4 text-left text-[17px] font-semibold text-gray-950"
+                            @click="open = open === {{ $index }} ? null : {{ $index }}"
+                            :aria-expanded="(open === {{ $index }}).toString()"
+                            aria-controls="faq-answer-{{ $index }}"
+                        >
+                            <span>{{ $item['q'] }}</span>
+                            <span
+                                class="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-xl transition-colors duration-300 ease-out"
+                                :class="open === {{ $index }} ? 'bg-[#0D0B2B] text-white' : 'bg-gray-100 text-gray-950'"
+                                aria-hidden="true"
+                                x-text="open === {{ $index }} ? '−' : '+'"
+                            ></span>
+                        </button>
 
-                                @if (! empty($item['list']) && is_array($item['list']))
-                                    <ul class="list-disc space-y-2 pl-5">
-                                        @foreach ($item['list'] as $line)
-                                            <li>{{ $line }}</li>
-                                        @endforeach
-                                    </ul>
-                                @endif
+                        <div
+                            class="grid transition-[grid-template-rows] duration-300 ease-out"
+                            :class="open === {{ $index }} ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+                        >
+                            <div class="min-h-0 overflow-hidden">
+                                <div
+                                    id="faq-answer-{{ $index }}"
+                                    class="mt-3 space-y-3 text-base leading-relaxed text-gray-600 transition-opacity duration-300 ease-out"
+                                    role="region"
+                                    aria-labelledby="faq-question-{{ $index }}"
+                                    :class="open === {{ $index }} ? 'opacity-100' : 'opacity-0'"
+                                    :aria-hidden="(open !== {{ $index }}).toString()"
+                                >
+                                    @if (filled($item['a'] ?? null))
+                                        <p>{{ $item['a'] }}</p>
+                                    @endif
 
-                                @if (filled($item['a_after'] ?? null))
-                                    <p>{{ $item['a_after'] }}</p>
-                                @endif
+                                    @if (! empty($item['list']) && is_array($item['list']))
+                                        <ul class="list-disc space-y-2 pl-5">
+                                            @foreach ($item['list'] as $line)
+                                                <li>{{ $line }}</li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+
+                                    @if (filled($item['a_after'] ?? null))
+                                        <p>{{ $item['a_after'] }}</p>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            @endforeach
+                @endforeach
+            </div>
         </div>
     </section>
 

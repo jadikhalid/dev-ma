@@ -24,6 +24,7 @@
         'page-home' => request()->routeIs('home'),
         'page-how' => request()->routeIs('career.how'),
         'page-contact' => request()->routeIs('contact') && ! \App\Support\PortalHost::isCompanyHost(),
+        'page-faq' => request()->routeIs('faq') && ! \App\Support\PortalHost::isCompanyHost(),
         'page-companies-index' => request()->routeIs('companies.public.index'),
         'page-blog-index' => request()->routeIs('blog.index'),
         'page-offers' => request()->routeIs('career.offers'),
