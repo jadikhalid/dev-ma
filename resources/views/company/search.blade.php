@@ -414,12 +414,12 @@
                             <img
                                 :src="talent.avatar_url"
                                 :alt="talent.name"
-                                class="h-12 w-12 sm:h-14 sm:w-14 shrink-0 rounded-full object-cover ring-1 ring-gray-200"
+                                class="h-14 w-14 min-h-14 min-w-14 shrink-0 aspect-square rounded-full object-cover ring-1 ring-gray-200"
                             >
                         </template>
                         <template x-if="!talent.avatar_url">
                             <span
-                                class="inline-flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm sm:text-base font-bold text-indigo-700"
+                                class="inline-flex h-14 w-14 min-h-14 min-w-14 shrink-0 aspect-square items-center justify-center rounded-full bg-indigo-100 text-base font-bold text-indigo-700"
                                 x-text="talent.initials"
                                 aria-hidden="true"
                             ></span>
@@ -502,7 +502,7 @@
                             :aria-label="@js(__('talenma.talents.view_cv'))"
                             :title="@js(__('talenma.talents.view_cv'))"
                             @click="if (! talent.cv_url) { $event.preventDefault() }"
-                            class="inline-flex h-9 w-[2.25rem] shrink-0 items-center justify-center rounded-lg text-xs font-semibold"
+                            class="inline-flex h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg text-xs font-semibold leading-none"
                             :class="talent.cv_url
                                 ? 'bg-slate-700 text-white hover:bg-slate-800'
                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none'"
@@ -516,12 +516,12 @@
                             :aria-label="labels.linkedin"
                             :title="labels.linkedin"
                             @click="if (! talent.linkedin_url) { $event.preventDefault() }"
-                            class="inline-flex h-9 w-[2.25rem] shrink-0 items-center justify-center rounded-lg"
+                            class="inline-flex h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg"
                             :class="talent.linkedin_url
-                                ? 'bg-[#0A66C2] text-white hover:bg-[#004182]'
+                                ? 'bg-sky-700 text-white hover:bg-sky-800'
                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none'"
                         >
-                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                 <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.114 20.452H3.56V9h3.554v11.452z"/>
                             </svg>
                         </a>
