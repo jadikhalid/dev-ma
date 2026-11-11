@@ -366,6 +366,9 @@ class CompanySearchController extends Controller
             'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
                 ? $profile->presentation_video_url
                 : null,
+            'linkedin_url' => ($isPublic && filled($profile?->linkedin_url))
+                ? $profile->linkedin_url
+                : null,
             'cv_url' => $profile?->cvDocument()
                 ? route('company.talent.cv', $talent)
                 : null,

@@ -60,6 +60,9 @@
                 'presentation_video_url' => ($isPublic && filled($profile?->presentation_video_url))
                     ? $profile->presentation_video_url
                     : null,
+                'linkedin_url' => ($isPublic && filled($profile?->linkedin_url))
+                    ? $profile->linkedin_url
+                    : null,
                 'cv_url' => $profile?->cvDocument()
                     ? route('company.talent.cv', $talent)
                     : null,
@@ -77,7 +80,7 @@
     @endphp
 
     <div
-        class="py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4"
+        class="mx-auto max-w-7xl space-y-4 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8"
         x-data="companyTalentCatalog({
             sectors: @js($sectors),
             searchUrl: @js(route('company.search')),
@@ -108,6 +111,7 @@
                 'error' => __('talenma.home.search_drawer_error'),
                 'profileError' => __('talenma.home.search_drawer_error'),
                 'view' => __('talenma.talents.view'),
+                'linkedin' => __('talenma.talents.linkedin'),
                 'intermediary' => __('talenma.talents.intermediary'),
                 'professionAll' => __('talenma.home.search_profession_all'),
                 'professionBlocked' => __('talenma.home.search_profession_blocked'),
@@ -395,7 +399,7 @@
             x-text="error"
         ></div>
 
-        <div class="grid md:grid-cols-2 gap-6" :class="{ 'opacity-60 pointer-events-none': loading }">
+        <div class="grid min-w-0 gap-4 sm:gap-6 md:grid-cols-2" :class="{ 'opacity-60 pointer-events-none': loading }">
             <template x-if="! loading && ! error && talents.length === 0">
                 <div class="col-span-2 text-center py-16 text-gray-500">
                     <p class="text-lg font-medium" x-text="labels.empty"></p>
@@ -404,44 +408,44 @@
             </template>
 
             <template x-for="talent in talents" :key="talent.id">
-                <div class="bg-white rounded-2xl border p-5 flex flex-col hover:shadow-md transition">
-                    <div class="flex items-start gap-3">
+                <div class="bg-white rounded-2xl border p-4 sm:p-5 flex flex-col hover:shadow-md transition min-w-0">
+                    <div class="flex items-start gap-3 min-w-0">
                         <template x-if="talent.avatar_url">
                             <img
                                 :src="talent.avatar_url"
                                 :alt="talent.name"
-                                class="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-gray-200"
+                                class="h-12 w-12 sm:h-14 sm:w-14 shrink-0 rounded-full object-cover ring-1 ring-gray-200"
                             >
                         </template>
                         <template x-if="!talent.avatar_url">
                             <span
-                                class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-base font-bold text-indigo-700"
+                                class="inline-flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm sm:text-base font-bold text-indigo-700"
                                 x-text="talent.initials"
                                 aria-hidden="true"
                             ></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <h3 class="font-bold text-base text-gray-900 truncate" x-text="talent.name"></h3>
-                            <p class="mt-0.5 text-sm font-medium text-indigo-600 truncate">
-                                <span x-text="talent.profession_label"></span>
-                                <span x-show="talent.profession_label && talent.sector_label"> · </span>
-                                <span x-text="talent.sector_label"></span>
-                            </p>
+                            <h3 class="font-bold text-base text-gray-900 break-words" x-text="talent.name"></h3>
                             <p
-                                class="mt-0.5 text-xs text-gray-500 truncate"
-                                x-show="talent.employer_label"
-                                x-text="talent.employer_label"
+                                class="mt-0.5 text-sm font-medium text-indigo-600 break-words"
+                                x-show="talent.profession_label"
+                                x-text="talent.profession_label"
+                            ></p>
+                            <p
+                                class="mt-0.5 text-xs text-gray-500 break-words"
+                                x-show="talent.sector_label"
+                                x-text="talent.sector_label"
                             ></p>
                         </div>
                         <span
                             x-show="talent.availability_label"
-                            class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                            class="hidden shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold sm:inline-flex"
                             :class="profileStatusClass(talent.availability_tone)"
                             x-text="talent.availability_label"
                         ></span>
                         <span
                             x-show="talent.talent_locked"
-                            class="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200"
+                            class="hidden shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200 sm:inline-flex"
                             :title="labels.talentLocked || ''"
                         >
                             <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
@@ -451,6 +455,20 @@
 
                     <div class="mt-3 flex flex-wrap items-center gap-1.5">
                         <span
+                            x-show="talent.availability_label"
+                            class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold sm:hidden"
+                            :class="profileStatusClass(talent.availability_tone)"
+                            x-text="talent.availability_label"
+                        ></span>
+                        <span
+                            x-show="talent.talent_locked"
+                            class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200 sm:hidden"
+                            :title="labels.talentLocked || ''"
+                        >
+                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+                            {{ __('talenma.recruitment.talent_lock_badge') }}
+                        </span>
+                        <span
                             class="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700"
                             x-show="talent.experience_label"
                             x-text="talent.experience_label"
@@ -459,7 +477,7 @@
 
                     <div class="mt-3 flex flex-wrap gap-1 min-h-[1.5rem]" x-show="keySkills(talent).length">
                         <template x-for="skill in keySkills(talent).slice(0, 4)" :key="skill">
-                            <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded" x-text="skill"></span>
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded break-words" x-text="skill"></span>
                         </template>
                         <span
                             class="px-2 py-0.5 text-xs text-gray-400"
@@ -468,11 +486,11 @@
                         ></span>
                     </div>
 
-                    <div class="mt-auto pt-4 flex gap-2">
+                    <div class="mt-auto flex items-center gap-2 pt-4">
                         <a
                             :href="talent.profile_url"
                             @click.prevent="openProfile(talent.profile_url)"
-                            class="flex-1 text-center px-3 py-2 border border-indigo-200 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-50"
+                            class="inline-flex h-9 min-w-0 flex-1 items-center justify-center rounded-lg border border-indigo-200 px-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
                             x-text="labels.view"
                         ></a>
                         <a
@@ -481,24 +499,32 @@
                             :rel="talent.cv_url ? 'noopener' : null"
                             :aria-disabled="!talent.cv_url"
                             :tabindex="talent.cv_url ? 0 : -1"
+                            :aria-label="@js(__('talenma.talents.view_cv'))"
+                            :title="@js(__('talenma.talents.view_cv'))"
                             @click="if (! talent.cv_url) { $event.preventDefault() }"
-                            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold"
+                            class="inline-flex h-9 w-[2.25rem] shrink-0 items-center justify-center rounded-lg text-xs font-semibold"
                             :class="talent.cv_url
                                 ? 'bg-slate-700 text-white hover:bg-slate-800'
                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none'"
                         >{{ __('talenma.talents.view_cv') }}</a>
-                        <button
-                            type="button"
-                            :disabled="!talent.presentation_video_url"
-                            @click="openVideoModal(talent)"
-                            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold"
-                            :class="talent.presentation_video_url
-                                ? 'bg-violet-600 text-white hover:bg-violet-700'
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
+                        <a
+                            :href="talent.linkedin_url || '#'"
+                            :target="talent.linkedin_url ? '_blank' : null"
+                            :rel="talent.linkedin_url ? 'noopener noreferrer' : null"
+                            :aria-disabled="!talent.linkedin_url"
+                            :tabindex="talent.linkedin_url ? 0 : -1"
+                            :aria-label="labels.linkedin"
+                            :title="labels.linkedin"
+                            @click="if (! talent.linkedin_url) { $event.preventDefault() }"
+                            class="inline-flex h-9 w-[2.25rem] shrink-0 items-center justify-center rounded-lg"
+                            :class="talent.linkedin_url
+                                ? 'bg-[#0A66C2] text-white hover:bg-[#004182]'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none'"
                         >
-                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.34-5.89a1.5 1.5 0 0 0 0-2.54L6.3 2.84Z"/></svg>
-                            {{ __('talenma.talents.view_video') }}
-                        </button>
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.114 20.452H3.56V9h3.554v11.452z"/>
+                            </svg>
+                        </a>
                     </div>
                 </div>
             </template>
