@@ -2802,6 +2802,76 @@ return [
         ],
     ],
     [
+        'slug' => 'customer-experience',
+        'name_fr' => 'Relation client & centres de contact',
+        'name_en' => 'Customer experience & contact centers',
+        'professions' => [
+            // ——— Encadrement CRC / call center ———
+            [
+                'slug' => 'cx-crc-manager',
+                'name_fr' => 'Responsable / Manager CRC (centre de relation client)',
+                'name_en' => 'Customer Relations Center Manager',
+                'suggestions' => [
+                    ['label_fr' => 'Pilotage CRC B2B / B2C', 'label_en' => 'B2B / B2C CRC leadership', 'keywords' => 'crc b2b b2c manager'],
+                    ['label_fr' => 'Cycle client réservations → clôture', 'label_en' => 'Booking-to-closure customer cycle', 'keywords' => 'reservations cycle client'],
+                    ['label_fr' => 'Qualité de service & process', 'label_en' => 'Service quality & process improvement', 'keywords' => 'qualite process amelioration'],
+                    ['label_fr' => 'Coaching équipes & KPIs', 'label_en' => 'Team coaching & KPIs', 'keywords' => 'coaching kpi formation'],
+                    ['label_fr' => 'Fidélisation & réclamations complexes', 'label_en' => 'Loyalty & complex complaints', 'keywords' => 'fidelisation reclamations'],
+                ],
+            ],
+            [
+                'slug' => 'cx-call-center-supervisor',
+                'name_fr' => 'Superviseur / Team Leader centre d\'appels',
+                'name_en' => 'Call Center Supervisor / Team Leader',
+                'suggestions' => [
+                    ['label_fr' => 'Supervision floor / floor support', 'label_en' => 'Floor supervision / floor support', 'keywords' => 'floor support supervision'],
+                    ['label_fr' => 'Coaching agents & phone etiquette', 'label_en' => 'Agent coaching & phone etiquette', 'keywords' => 'coaching etiquette telephone'],
+                    ['label_fr' => 'Suivi performance & qualité', 'label_en' => 'Performance & quality monitoring', 'keywords' => 'performance qualite monitoring'],
+                    ['label_fr' => 'Escalades & cas complexes', 'label_en' => 'Escalations & complex cases', 'keywords' => 'escalades cas complexes'],
+                    ['label_fr' => 'Formation nouveaux arrivants', 'label_en' => 'New joiner training', 'keywords' => 'formation onboarding agents'],
+                ],
+            ],
+            [
+                'slug' => 'cx-customer-advisor',
+                'name_fr' => 'Conseiller / Agent relation client & réservations',
+                'name_en' => 'Customer Advisor / Reservations Agent',
+                'suggestions' => [
+                    ['label_fr' => 'Support inbound / assistance client', 'label_en' => 'Inbound support / customer assistance', 'keywords' => 'support inbound assistance'],
+                    ['label_fr' => 'Réservations & modifications', 'label_en' => 'Bookings & modifications', 'keywords' => 'reservations modifications'],
+                    ['label_fr' => 'Réclamations & satisfaction', 'label_en' => 'Complaints & satisfaction', 'keywords' => 'reclamations satisfaction'],
+                    ['label_fr' => 'Rétention / upsell / cross-sell', 'label_en' => 'Retention / upsell / cross-sell', 'keywords' => 'retention upsell'],
+                    ['label_fr' => 'CRM & suivi dossier client', 'label_en' => 'CRM & case follow-up', 'keywords' => 'crm suivi dossier'],
+                ],
+            ],
+
+            // ——— Accueil premium / mobilité ———
+            [
+                'slug' => 'cx-guest-relations',
+                'name_fr' => 'Guest Relations / Conciergerie & accueil premium',
+                'name_en' => 'Guest Relations / Concierge & Premium Welcome',
+                'suggestions' => [
+                    ['label_fr' => 'Guest relations / guest experience', 'label_en' => 'Guest relations / guest experience', 'keywords' => 'guest relations experience'],
+                    ['label_fr' => 'Conciergerie & demandes spéciales', 'label_en' => 'Concierge & special requests', 'keywords' => 'concierge demandes speciales'],
+                    ['label_fr' => 'VIP / arrangements personnalisés', 'label_en' => 'VIP / personalized arrangements', 'keywords' => 'vip arrangements'],
+                    ['label_fr' => 'Front office / réception', 'label_en' => 'Front office / reception', 'keywords' => 'front office reception'],
+                    ['label_fr' => 'Coordination départements service', 'label_en' => 'Service department coordination', 'keywords' => 'coordination departements'],
+                ],
+            ],
+            [
+                'slug' => 'cx-passenger-mobility',
+                'name_fr' => 'Service passagers / Réservations aérien & mobilité',
+                'name_en' => 'Passenger Service / Airline & Mobility Reservations',
+                'suggestions' => [
+                    ['label_fr' => 'Réservations aériennes & billetterie', 'label_en' => 'Airline bookings & ticketing', 'keywords' => 'reservations billetterie aerien'],
+                    ['label_fr' => 'Duty / opérations passagers', 'label_en' => 'Duty / passenger operations', 'keywords' => 'duty passenger operations'],
+                    ['label_fr' => 'Modifications & demandes spéciales voyageurs', 'label_en' => 'Traveler changes & special requests', 'keywords' => 'modifications voyageurs'],
+                    ['label_fr' => 'Accueil aéroport / mobilité', 'label_en' => 'Airport welcome / mobility', 'keywords' => 'accueil aeroport mobilite'],
+                    ['label_fr' => 'Location / mobilité client (auto, transfer)', 'label_en' => 'Rental / client mobility (car, transfer)', 'keywords' => 'location mobilite auto'],
+                ],
+            ],
+        ],
+    ],
+    [
         'slug' => 'hospitality',
         'name_fr' => 'Hôtellerie, tourisme & restauration',
         'name_en' => 'Hospitality, tourism & catering',
