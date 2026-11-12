@@ -77,11 +77,11 @@
                         x-transition:leave="transition ease-in duration-150"
                         x-transition:leave-start="opacity-100 translate-y-0"
                         x-transition:leave-end="opacity-0 translate-y-1"
-                        class="absolute right-0 top-[calc(100%+0.6rem)] z-30 w-56 rounded-xl bg-indigo-700 px-3 py-2.5 text-left text-xs font-medium leading-snug text-white shadow-lg ring-1 ring-indigo-600/40"
+                        class="absolute right-0 top-full z-30 mt-2.5 w-56 rounded-xl border border-indigo-800 bg-indigo-700 px-3 py-2.5 text-left text-xs font-medium leading-snug text-white shadow-lg"
                         role="status"
                     >
                         <span
-                            class="pointer-events-none absolute -top-1.5 right-3 h-3 w-3 rotate-45 bg-indigo-700 ring-1 ring-indigo-600/40"
+                            class="pointer-events-none absolute -top-2 right-3 h-0 w-0 border-x-8 border-b-8 border-x-transparent border-b-indigo-700"
                             aria-hidden="true"
                         ></span>
                         <div class="relative flex items-start gap-2">
