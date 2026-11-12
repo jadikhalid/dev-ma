@@ -3770,6 +3770,18 @@ return [
 
             // ——— Autres services professionnels ———
             [
+                'slug' => 'facility-manager-multisite',
+                'name_fr' => 'Facility Manager / Responsable technique multi-sites',
+                'name_en' => 'Facility Manager / Multi-site Technical Manager',
+                'suggestions' => [
+                    ['label_fr' => 'Facility Manager tertiaire', 'label_en' => 'Commercial / office facility manager', 'keywords' => 'facility management tertiaire bureaux'],
+                    ['label_fr' => 'Responsable technique multi-sites', 'label_en' => 'Multi-site technical manager', 'keywords' => 'multi sites technique hard services'],
+                    ['label_fr' => 'GMAO / méthodes maintenance', 'label_en' => 'CMMS / maintenance methods', 'keywords' => 'gmao cmms maintenance preventive'],
+                    ['label_fr' => 'Hard & soft services / prestataires', 'label_en' => 'Hard & soft services / vendors', 'keywords' => 'hard soft services prestataires sla'],
+                    ['label_fr' => 'Workplace / services généraux', 'label_en' => 'Workplace / general services', 'keywords' => 'workplace services generaux'],
+                ],
+            ],
+            [
                 'slug' => 'consulting-facility-bpo',
                 'name_fr' => 'Facility management / BPO / Services généraux',
                 'name_en' => 'Facility Management / BPO / General Services',
