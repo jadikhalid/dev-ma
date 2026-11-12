@@ -45,22 +45,61 @@
     <x-slot name="header">
         <div class="flex items-center justify-between gap-3">
             <div class="min-w-0">
-                <h2 class="text-xl font-bold">{{ __('talenma.direct_hire.company_index_title') }}</h2>
+                <h2 class="text-xl font-bold text-gray-900">{{ __('talenma.direct_hire.company_index_title') }}</h2>
+                <p class="mt-0.5 text-sm text-gray-500">{{ __('talenma.direct_hire.company_index_subtitle') }}</p>
             </div>
-            <button
-                type="button"
-                @if ($canCompose)
-                    onclick="window.dispatchEvent(new CustomEvent('direct-hire-open-compose'))"
-                @endif
-                @disabled(! $canCompose)
-                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-indigo-200 bg-white text-indigo-700 shadow-sm transition hover:bg-indigo-50 hover:border-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-indigo-200"
-                aria-label="{{ __('talenma.direct_hire.compose_open_aria') }}"
-                title="{{ $canCompose ? __('talenma.direct_hire.compose_open_aria') : ($composeDisabledReason ?? __('talenma.direct_hire.compose_open_aria')) }}"
+            <div
+                class="relative shrink-0"
+                x-data="{ composeTipOpen: @js($canCompose) }"
             >
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-            </button>
+                <button
+                    type="button"
+                    @if ($canCompose)
+                        onclick="window.dispatchEvent(new CustomEvent('direct-hire-open-compose'))"
+                    @endif
+                    @disabled(! $canCompose)
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-indigo-200 bg-white text-indigo-700 shadow-sm transition hover:bg-indigo-50 hover:border-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-indigo-200"
+                    aria-label="{{ __('talenma.direct_hire.compose_open_aria') }}"
+                    title="{{ $canCompose ? __('talenma.direct_hire.compose_open_aria') : ($composeDisabledReason ?? __('talenma.direct_hire.compose_open_aria')) }}"
+                >
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </button>
+
+                @if ($canCompose)
+                    <div
+                        x-show="composeTipOpen"
+                        x-cloak
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 translate-y-1"
+                        class="absolute right-0 top-[calc(100%+0.6rem)] z-30 w-56 rounded-xl bg-indigo-700 px-3 py-2.5 text-left text-xs font-medium leading-snug text-white shadow-lg ring-1 ring-indigo-600/40"
+                        role="status"
+                    >
+                        <span
+                            class="pointer-events-none absolute -top-1.5 right-3 h-3 w-3 rotate-45 bg-indigo-700 ring-1 ring-indigo-600/40"
+                            aria-hidden="true"
+                        ></span>
+                        <div class="relative flex items-start gap-2">
+                            <p class="min-w-0 flex-1">{{ __('talenma.direct_hire.compose_tip') }}</p>
+                            <button
+                                type="button"
+                                class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-indigo-100 hover:bg-indigo-600 hover:text-white"
+                                @click="composeTipOpen = false"
+                                aria-label="{{ __('talenma.direct_hire.compose_tip_close') }}"
+                            >
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                @endif
+            </div>
         </div>
     </x-slot>
 
