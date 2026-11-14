@@ -7,6 +7,18 @@
     Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains" env=HTTPS
 </IfModule>
 
+# Hostinger ModSecurity: allow rich HTML + cover upload on Blog admin only.
+# Scoped to /admin/blog* — do not disable WAF site-wide.
+<If "%{REQUEST_URI} =~ m#^/admin/blog#">
+    <IfModule mod_security.c>
+        SecFilterEngine Off
+        SecFilterScanPOST Off
+    </IfModule>
+    <IfModule mod_security2.c>
+        SecRuleEngine Off
+    </IfModule>
+</If>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
