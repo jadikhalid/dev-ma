@@ -68,12 +68,16 @@
             </div>
         </div>
 
-        {{-- 3 colonnes : infos | activités récentes | stats + apps --}}
+        {{-- 3 colonnes : infos | notifications + offres | stats + apps --}}
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,25fr)_minmax(0,50fr)_minmax(0,25fr)] lg:gap-5 items-start">
             @include('dashboard.partials.talent-info-column')
 
-            <section class="order-1 min-w-0 space-y-4 lg:order-none" data-talent-activity-column>
-                <div class="flex min-h-[3.25rem] items-center gap-2.5 rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4">
+            <section
+                class="order-1 min-w-0 space-y-4 lg:order-none"
+                data-talent-activity-column
+                x-data="talentNotificationsFeedHeight()"
+            >
+                <div class="flex min-h-[3.25rem] items-center gap-2.5 rounded-2xl border border-indigo-200/70 bg-indigo-100/70 px-4" data-talent-notif-title>
                     <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/20" aria-hidden="true">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

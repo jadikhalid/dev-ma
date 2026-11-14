@@ -1,6 +1,10 @@
-<div class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5">
+{{-- Height set in px by talentNotificationsFeedHeight() from measured Mes Activités block. --}}
+<div
+    class="flex flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-4 sm:p-5"
+    data-talent-activity-feed
+>
     @if (($jobsUnseen ?? false))
-        <div class="mb-3 flex items-center gap-2">
+        <div class="mb-3 flex shrink-0 items-center gap-2">
             @foreach (range(1, 3) as $dot)
                 <span class="relative flex h-2.5 w-2.5" @if ($loop->first) title="{{ __('talenma.jobs.nav_new') }}" @endif>
                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
@@ -12,14 +16,14 @@
     @endif
 
     @if (count($stats['recent_activity']) === 0)
-        <div class="flex h-[calc(5*4.35rem+4*0.625rem)] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 text-center">
+        <div class="flex min-h-0 flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 text-center">
             <span class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400" aria-hidden="true">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </span>
-            <p class="text-sm text-slate-500 max-w-sm mx-auto">{{ __('talenma.dashboard.talent.stats.recent_empty') }}</p>
+            <p class="mx-auto max-w-sm text-sm text-slate-500">{{ __('talenma.dashboard.talent.stats.recent_empty') }}</p>
         </div>
     @else
-        <ol class="activity-scroll relative h-[calc(5*4.35rem+4*0.625rem)] space-y-2.5 overflow-y-auto overscroll-y-auto pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+        <ol class="activity-scroll relative min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-y-auto pr-1 before:absolute before:bottom-3 before:left-[1.15rem] before:top-3 before:w-px before:bg-indigo-100">
             @foreach ($stats['recent_activity'] as $item)
                 @php
                     $label = match ($item['type']) {

@@ -3582,6 +3582,85 @@ Alpine.data('talentPresentationVideo', (config = {}) => ({
     },
 }));
 
+/**
+ * Set only the notifications feed height so "Offres me correspondant"
+ * and "Mes applications" share the same viewport Y.
+ *
+ * Measures the real title tops after layout, then corrects feed height by the delta.
+ */
+Alpine.data('talentNotificationsFeedHeight', () => ({
+    resizeObserver: null,
+    onResize: null,
+    applying: false,
+
+    init() {
+        this.onResize = () => this.apply();
+
+        this.$nextTick(() => {
+            this.apply();
+
+            const stats = document.querySelector('[data-talent-stats-block]');
+            if (stats && typeof ResizeObserver !== 'undefined') {
+                this.resizeObserver = new ResizeObserver(() => this.apply());
+                this.resizeObserver.observe(stats);
+            }
+
+            window.addEventListener('resize', this.onResize);
+        });
+    },
+
+    destroy() {
+        this.resizeObserver?.disconnect();
+        if (this.onResize) {
+            window.removeEventListener('resize', this.onResize);
+        }
+    },
+
+    apply() {
+        if (this.applying) {
+            return;
+        }
+
+        const feed = this.$root.querySelector('[data-talent-activity-feed]');
+        const title = this.$root.querySelector('[data-talent-notif-title]');
+        const stats = document.querySelector('[data-talent-stats-block]');
+        const offresTitle = document.querySelector('[data-talent-matched-jobs] > div');
+        const appsTitle = document.querySelector('[data-dashboard-apps] > div');
+
+        if (! feed || ! title || ! stats) {
+            return;
+        }
+
+        if (window.matchMedia && ! window.matchMedia('(min-width: 1024px)').matches) {
+            feed.style.height = '';
+            return;
+        }
+
+        this.applying = true;
+
+        try {
+            // First estimate from measured blocks (no magic rem).
+            let height = Math.round(stats.getBoundingClientRect().height - title.getBoundingClientRect().height);
+            if (height > 0) {
+                feed.style.height = `${height}px`;
+            }
+
+            // Correct with actual title tops if both are in the layout.
+            if (offresTitle && appsTitle) {
+                const delta = Math.round(appsTitle.getBoundingClientRect().top - offresTitle.getBoundingClientRect().top);
+                if (delta !== 0) {
+                    height = Math.round(feed.getBoundingClientRect().height + delta);
+                    if (height > 0) {
+                        feed.style.height = `${height}px`;
+                    }
+                }
+            }
+        } finally {
+            this.applying = false;
+        }
+    },
+}));
+
 Alpine.data('talentLocationSelect', (config = {}) => ({
     country: config.country ?? '',
     city: config.city ?? '',
