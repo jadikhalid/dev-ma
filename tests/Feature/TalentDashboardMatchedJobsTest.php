@@ -70,6 +70,26 @@ class TalentDashboardMatchedJobsTest extends TestCase
     }
 
     #[Test]
+    public function external_style_job_without_xp_or_modes_still_matches_on_sector(): void
+    {
+        [$sector, $profession] = $this->makeProfessionCatalog();
+        $talent = $this->makeCatalogReadyTalent($sector, $profession);
+
+        [$owner, $company] = $this->makeCompany();
+        $job = $this->makePublishedJob($owner, $company, $sector, $profession, 'EY graduate programme');
+        $job->forceFill([
+            'profession_id' => null,
+            'experience_level' => null,
+            'work_modes' => null,
+        ])->save();
+
+        $this->actingAs($talent)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('EY graduate programme', false);
+    }
+
+    #[Test]
     public function already_applied_jobs_are_excluded_from_matching_block(): void
     {
         [$sector, $profession] = $this->makeProfessionCatalog();

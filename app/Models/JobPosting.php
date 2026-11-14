@@ -371,7 +371,12 @@ class JobPosting extends Model
         $jobModes = array_values(array_filter($this->work_modes ?? []));
         $talentModes = array_values(array_filter($profile->work_modes ?? []));
 
-        if ($jobModes === [] || $talentModes === []) {
+        // Ext-RH / incomplete postings: no modes declared → do not block on modes.
+        if ($jobModes === []) {
+            return $talentModes !== [];
+        }
+
+        if ($talentModes === []) {
             return false;
         }
 
@@ -433,8 +438,13 @@ class JobPosting extends Model
 
     public function experienceLevelMatchesYears(?int $years): bool
     {
-        if ($years === null || ! filled($this->experience_level)) {
+        if ($years === null) {
             return false;
+        }
+
+        // Ext-RH / incomplete postings: no level declared → open to any experience.
+        if (! filled($this->experience_level)) {
+            return true;
         }
 
         return match ($this->experience_level) {
@@ -513,8 +523,17 @@ class JobPosting extends Model
                 $builder->whereNull('profession_id')
                     ->orWhere('profession_id', $profile->profession_id);
             })
-            ->whereIn('experience_level', $levels)
+            ->where(function ($builder) use ($levels) {
+                $builder->whereNull('experience_level')
+                    ->orWhere('experience_level', '')
+                    ->orWhereIn('experience_level', $levels);
+            })
             ->where(function ($builder) use ($remoteCapableModes, $canMatchLocal, $talentCountry) {
+                // No modes on the job (legacy / Ext-RH incomplete) → accept.
+                $builder->whereNull('work_modes')
+                    ->orWhere('work_modes', '[]')
+                    ->orWhere('work_modes', '');
+
                 foreach ($remoteCapableModes as $mode) {
                     $builder->orWhereJsonContains('work_modes', $mode);
                 }
