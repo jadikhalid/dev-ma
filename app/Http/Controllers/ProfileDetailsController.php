@@ -126,6 +126,10 @@ class ProfileDetailsController extends Controller
         $message = __('talenma.talent.section_updated.'.$section);
 
         if ($request->wantsJson()) {
+            if ($request->boolean('from_dashboard')) {
+                $extra['reload'] = true;
+            }
+
             return response()->json(array_merge(['message' => $message], $extra));
         }
 

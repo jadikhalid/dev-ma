@@ -53,7 +53,13 @@ class TalentProfileDocumentController extends Controller
             : __('talenma.talent.section_updated.documents');
 
         if ($request->wantsJson()) {
-            return response()->json(['message' => $message]);
+            $payload = ['message' => $message];
+
+            if ($request->boolean('from_dashboard')) {
+                $payload['reload'] = true;
+            }
+
+            return response()->json($payload);
         }
 
         return redirect()
