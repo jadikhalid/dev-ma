@@ -507,7 +507,12 @@ class JobPosting extends Model
 
         return $query
             ->where('profession_sector_id', $profile->profession_sector_id)
-            ->where('profession_id', $profile->profession_id)
+            // Same rule as matchesTalentProfile(): job profession is optional;
+            // when set it must match the talent, when null sector(+XP+modes) is enough.
+            ->where(function ($builder) use ($profile) {
+                $builder->whereNull('profession_id')
+                    ->orWhere('profession_id', $profile->profession_id);
+            })
             ->whereIn('experience_level', $levels)
             ->where(function ($builder) use ($remoteCapableModes, $canMatchLocal, $talentCountry) {
                 foreach ($remoteCapableModes as $mode) {

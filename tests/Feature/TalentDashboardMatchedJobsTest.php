@@ -54,6 +54,22 @@ class TalentDashboardMatchedJobsTest extends TestCase
     }
 
     #[Test]
+    public function sector_only_job_without_profession_still_matches(): void
+    {
+        [$sector, $profession] = $this->makeProfessionCatalog();
+        $talent = $this->makeCatalogReadyTalent($sector, $profession);
+
+        [$owner, $company] = $this->makeCompany();
+        $job = $this->makePublishedJob($owner, $company, $sector, $profession, 'Sector-wide consulting role');
+        $job->forceFill(['profession_id' => null])->save();
+
+        $this->actingAs($talent)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Sector-wide consulting role', false);
+    }
+
+    #[Test]
     public function already_applied_jobs_are_excluded_from_matching_block(): void
     {
         [$sector, $profession] = $this->makeProfessionCatalog();
