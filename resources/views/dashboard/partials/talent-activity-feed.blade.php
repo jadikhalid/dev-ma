@@ -11,15 +11,19 @@
         </div>
     @endif
 
+    @php
+        $activityFeedHeight = 'h-[calc(5*4.35rem+4*0.625rem)]';
+    @endphp
+
     @if (count($stats['recent_activity']) === 0)
-        <div class="rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 py-8 text-center">
-            <span class="mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400" aria-hidden="true">
+        <div class="{{ $activityFeedHeight }} flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 text-center">
+            <span class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400" aria-hidden="true">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </span>
             <p class="text-sm text-slate-500 max-w-sm mx-auto">{{ __('talenma.dashboard.talent.stats.recent_empty') }}</p>
         </div>
     @else
-        <ol class="activity-scroll relative max-h-[calc((5*4.35rem+4*0.625rem)*1.5)] space-y-2.5 overflow-y-auto overscroll-y-auto pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
+        <ol class="activity-scroll relative {{ $activityFeedHeight }} space-y-2.5 overflow-y-auto overscroll-y-auto pr-1 before:absolute before:left-[1.15rem] before:top-3 before:bottom-3 before:w-px before:bg-indigo-100">
             @foreach ($stats['recent_activity'] as $item)
                 @php
                     $label = match ($item['type']) {

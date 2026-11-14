@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\DirectHireRequest;
+use App\Models\JobPosting;
 use App\Models\PlatformSetting;
 use App\Models\RecruitmentRequest;
+use App\Models\User;
 use App\Services\AdminDashboardService;
 use App\Services\CompanyDashboardActivityService;
 use App\Services\CompanyMemberAccountCompletionService;
@@ -17,6 +19,7 @@ use App\Services\StaffRecruitmentActivityService;
 use App\Services\TalentDashboardStatsService;
 use App\Services\TalentProfileCompletionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class DashboardController extends Controller
 {
@@ -127,7 +130,80 @@ class DashboardController extends Controller
             ->whereIn('status', DirectHireRequest::openStatuses())
             ->count();
         $jobsUnseen = $this->jobs->talentHasUnseenChanges($user);
+        $showJobMatchGate = ! ($completion['is_catalog_ready'] ?? false);
+        $matchedJobs = $showJobMatchGate
+            ? collect()
+            : $this->matchedJobsForTalent($user);
 
-        return view('dashboard.talent', compact('profile', 'completion', 'stats', 'openDirectHires', 'jobsUnseen'));
+        return view('dashboard.talent', compact(
+            'profile',
+            'completion',
+            'stats',
+            'openDirectHires',
+            'jobsUnseen',
+            'matchedJobs',
+            'showJobMatchGate',
+        ));
+    }
+
+    /**
+     * @return Collection<int, array{
+     *     id: int,
+     *     title: string,
+     *     url: string,
+     *     company: string,
+     *     company_logo: string|null,
+     *     company_initials: string,
+     *     location: string|null,
+     *     work_modes: list<string>,
+     *     experience: string|null,
+     *     date: string
+     * }>
+     */
+    private function matchedJobsForTalent(User $user): Collection
+    {
+        return JobPosting::query()
+            ->with(['companyProfile.user', 'profession', 'professionSector'])
+            ->where('status', JobPosting::STATUS_PUBLISHED)
+            ->matchingTalentProfile($user)
+            ->whereDoesntHave('applications', fn ($query) => $query->where('talent_user_id', $user->id))
+            ->latest('published_at')
+            ->limit(4)
+            ->get()
+            ->map(fn (JobPosting $job) => $this->presentMatchedJobCard($job))
+            ->values();
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     title: string,
+     *     url: string,
+     *     company: string,
+     *     company_logo: string|null,
+     *     company_initials: string,
+     *     location: string|null,
+     *     work_modes: list<string>,
+     *     experience: string|null,
+     *     date: string
+     * }
+     */
+    private function presentMatchedJobCard(JobPosting $job): array
+    {
+        $publishedAt = $job->published_at ?? $job->created_at;
+        $location = $job->locationLabel();
+
+        return [
+            'id' => $job->id,
+            'title' => $job->title,
+            'url' => route('talent.jobs.show', $job),
+            'company' => $job->advertiserName(),
+            'company_logo' => $job->advertiserLogoUrl(),
+            'company_initials' => $job->advertiserInitials(),
+            'location' => $location !== '' ? $location : null,
+            'work_modes' => $job->collaborationModeLabels(),
+            'experience' => $job->experienceLabel() ?: null,
+            'date' => $publishedAt?->translatedFormat('d M Y') ?? '',
+        ];
     }
 }

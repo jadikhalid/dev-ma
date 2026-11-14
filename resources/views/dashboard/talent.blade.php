@@ -83,6 +83,8 @@
                 </div>
 
                 @include('dashboard.partials.talent-activity-feed')
+
+                @include('dashboard.partials.talent-matched-jobs')
             </section>
 
             @include('dashboard.partials.talent-actions-column')
